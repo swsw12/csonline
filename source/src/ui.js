@@ -24,13 +24,16 @@ const _dn=new THREE.Vector3();
 const FS={
   el(){return document.fullscreenElement||document.webkitFullscreenElement||null},
   ok(){const d=document.documentElement;return !!(d.requestFullscreen||d.webkitRequestFullscreen)},
+  standalone(){return !!(navigator.standalone||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches)},
   on(){return !!this.el()},
-  toggle(){const d=document.documentElement;try{
+  toggle(){const d=document.documentElement;if(!this.ok()){this.noApi();return}try{
       if(this.on()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}
       if(document.fullscreenEnabled===false&&!document.webkitFullscreenEnabled){this.fail();return}
       const p=(d.requestFullscreen||d.webkitRequestFullscreen).call(d,{navigationUI:'hide'});
       if(p&&p.then)p.then(()=>{if(typeof TOUCH!=='undefined'&&TOUCH.on)try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>this.fail())}catch(_){this.fail()}},
   // embedded pages (an iframe without allow=fullscreen) refuse: say so instead of doing nothing
+  // iPhone Safari has no fullscreen API for pages: the only way is installing the page to the home screen
+  noApi(){const L=LI();FS.toast(this.standalone()?(L?'Already full screen.':'이미 전체화면으로 실행 중이에요.'):(L?'This browser has no fullscreen for web pages. Share → Add to Home Screen, then open it from the home screen.':'이 브라우저는 웹 전체화면을 지원하지 않아요. 공유 버튼 → 「홈 화면에 추가」 후 홈 화면 아이콘으로 열면 전체화면이에요.'))},
   fail(){const L=LI();FS.toast(L?'Fullscreen is blocked on this page — open the game in its own tab (or use F11).':'이 화면에서는 전체화면이 막혀 있어요 — 게임을 새 탭에서 열거나 F11을 눌러 주세요.')},
   toast(msg){let t=$('fsToast');if(!t){t=document.createElement('div');t.id='fsToast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('on');clearTimeout(this.tt);this.tt=setTimeout(()=>t.classList.remove('on'),3200)},
   label(){const L=LI();return this.on()?(L?'Windowed':'창 모드'):(L?'Fullscreen':'전체화면')},
@@ -192,7 +195,7 @@ const UI={open:null,
     <div class="mbtns row"><button data-act="back">${T('back')}</button></div>`},
   buildHelp(){$('help').innerHTML=`<h2>${T('controls')}</h2><div class="keys">${T('keys').map(([k,d])=>`<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>
     <div class="rules"><b>${T('rulesT')}</b><ul>${T('rules').map(r=>`<li>${r}</li>`).join('')}</ul></div><div class="mbtns row"><button data-act="back">${T('back')}</button></div>`},
-  buildPause(){$('pause').innerHTML=`<h2>${T('paused')}</h2>${NET.on?`<p class="hint">${T('mpPaused')}</p>`:''}<div class="mbtns"><button data-act="resume" class="big">${T('resume')}</button><button data-act="opts">${T('settings')}</button><button data-act="help">${T('controls')}</button>${FS.ok()?`<button data-act="full" class="fslbl">${FS.label()}</button>`:''}<button data-act="quit">${T('quit')}</button></div>`},
+  buildPause(){$('pause').innerHTML=`<h2>${T('paused')}</h2>${NET.on?`<p class="hint">${T('mpPaused')}</p>`:''}<div class="mbtns"><button data-act="resume" class="big">${T('resume')}</button><button data-act="opts">${T('settings')}</button><button data-act="help">${T('controls')}</button>${true?`<button data-act="full" class="fslbl">${FS.label()}</button>`:''}<button data-act="quit">${T('quit')}</button></div>`},
   showResults(){const A=G.actors.slice().sort((a,b)=>b.score-a.score);const mvp=A[0];const L=LI();
     $('results').innerHTML=`<h2>${T('results')}</h2><div class="finalScore"><span class="h">${T('humanWins')} ${G.score[TH]}</span> : <span class="z">${G.score[TZ]} ${T('zombieWins')}</span></div>
       <div class="mvp"><img src="${portrait('h_'+mvp.skin,56)}"><div><small>${T('mvp')}</small><b>${esc(mvp.name)}</b><span>${T('kills')} ${mvp.kills} · ${T('infects')} ${mvp.infects} · ${T('dmg')} ${Math.round(mvp.dmgDealt).toLocaleString('en-US')} · ${T('score')} ${Math.round(mvp.score)}</span></div></div>

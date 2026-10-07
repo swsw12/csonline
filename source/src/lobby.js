@@ -45,7 +45,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
-      <div class="tbtns"><button data-act="opts">${ICO.gear}<span>${T('settings')}</span></button><button data-act="help">${ICO.keys}<span>${T('controls')}</span></button>${FS.ok()?`<button data-act="full">${ICO.full}<span>${FS.label()}</span></button>`:''}<button data-act="lang">${ICO.globe}<span>${L?'한국어':'English'}</span></button></div></div>
+      <div class="tbtns"><button data-act="opts">${ICO.gear}<span>${T('settings')}</span></button><button data-act="help">${ICO.keys}<span>${T('controls')}</span></button>${true?`<button data-act="full">${ICO.full}<span>${FS.label()}</span></button>`:''}<button data-act="lang">${ICO.globe}<span>${L?'한국어':'English'}</span></button></div></div>
     <div class="mcards">${cards.map(c=>`<div class="mc ${c.cls}" data-act="${c.act}"><div class="art">${c.art}</div><div class="mtag">${esc(c.tag)}</div><div class="mbar"><b>${c.t}</b><span>${c.s}</span></div></div>`).join('')}</div>
     <div class="lobBot">
       <div class="lp"><div class="lpt"><b class="on">${L?'NOTICE':'공지사항'}</b></div><ul class="news">${news.slice(0,5).map(([k,t])=>`<li><em class="${k==='NEW'?'n':'u'}">${k}</em>${t}</li>`).join('')}</ul></div>
@@ -130,7 +130,7 @@ UI.buildOpts=function(){const L=LI(),t=UI.optTab;
       ${sl('fov',L?'Field of view':'시야각 (FOV)',60,95,1,v=>v+'°','60','95')}</div>
     <div>${ck('bloom',L?'Bloom (glow)':'블룸 (빛 번짐)')}${ck('shadow',L?'Dynamic shadows':'실시간 그림자')}
       ${sl('gamma',L?'Brightness':'밝기',.6,1.2,.02,v=>Math.round((1.2-v)/.6*100),L?'dark':'어둡게',L?'bright':'밝게')}</div></div>
-    ${FS.ok()?`<div class="fsrow"><button data-act="full" class="fslbl">${FS.label()}</button><span>${L?'Alt+Enter toggles it in game':'게임 중에는 Alt+Enter로 전환'}</span></div>`:''}<p class="onote">${L?'Note: lower the render resolution if the game stutters.':'참고: 게임이 끊기면 렌더 해상도를 낮춰 보세요.'}</p>`;
+    ${true?`<div class="fsrow"><button data-act="full" class="fslbl">${FS.label()}</button><span>${L?'Alt+Enter toggles it in game':'게임 중에는 Alt+Enter로 전환'}</span></div>`:''}<p class="onote">${L?'Note: lower the render resolution if the game stutters.':'참고: 게임이 끊기면 렌더 해상도를 낮춰 보세요.'}</p>`;
   $('opts').innerHTML=`<div class="win opt"><div class="dpHead"><b>${L?'Options':'옵션'}</b><span></span><button class="x" data-act="optcancel">✕</button></div>
     <div class="otabs">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="opttab" data-v="${k}">${l}</button>`).join('')}</div>
     <div class="obody">${body}</div>

@@ -45,6 +45,7 @@ if os.path.exists(pj):
     peer = '<script>\n' + open(pj, encoding='utf8').read() + '\n</script>\n'
 standalone = ('<!doctype html>\n<html lang="ko"><head><meta charset="utf-8">\n'
               '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'
+              '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
               + head_sa + '</head><body>\n' + body + '\n<script>\n' + three + '\n</script>\n' + peer + '<script>\n' + js + '\n</script>\n</body></html>\n')
 open(os.path.join(D, 'standalone', 'index.html'), 'w', encoding='utf8').write(standalone)
 print('page bytes', len(page.encode()), 'js', len(js.encode()), 'fonts',
