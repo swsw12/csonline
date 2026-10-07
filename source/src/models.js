@@ -401,13 +401,13 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
     o={hipY:.9,thigh:.42,legSep:.14,legW:.19,legD:.21,shinW:.16,torsoW:.56,torsoH:.56,torsoD:.34,belly:.16,shX:.35,armW:.14,upper:.3,fore:.28,hand:.12,headW:.25,headH:.25,headD:.26,headZ:-.04,neck:.02,claw:.018,curl:.5,curlJ:13,browH:.03,noseW:.17};
     const sk='#9a9e6a';
     mats=Object.assign({top:{base:'#4e5a62'},legs:{base:'#46525a'},sleeve:{base:sk,style:'zskin',blot:'#5a6a2a'},fore:{base:sk,style:'zskin',blot:'#5a6a2a'},shin:{base:'#46525a'},skin:{base:sk,style:'zskin',blot:'#5a6a2a'},hand:{base:dk(sk,.2),style:'zskin',blot:'#3a4a10'},boot:{base:'#2a2622',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#5a6a2a'},
-      boil:{base:'#a8c848',style:'tumor'}},goreM);
+      boil:{base:'#7e9a34',style:'tumor'}},goreM);
     decor={torso:{front:[['band',.86,.94,'#c8a42a'],['flesh',.18,.04,.82,.5,0],['veins',6,'#c8ff50',1],['rot',2],['tear',2,13,sk],['soak',0,.45,'#4a5a10',.6],['grime',.6]],back:[['band',.86,.94,'#c8a42a'],['text','Q7-B',.3,.62,'#1a1e20'],['veins',3,'#c8ff50',1],['rot',3],['grime',.6]],side:[['rot',2],['veins',2,'#c8ff50',1],['grime',.5]]},
       head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#d8ff50',tears:1}],['veins',2,'#c8ff50',1]],top:[['rot',2],['wounds',1,17]],side:[['rot',1],['veins',2,'#c8ff50',1]],bottom:[['teethrow','bottom',.3]]},
       jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.4],['drip',.5,.6,3,.7]],bottom:[['soak',0,1,'#4a5a10',.8]]},
       uaL:{all:[['rot',1],['veins',2,'#c8ff50',1]]},uaR:{all:[['rot',1],['grime',.5]]},faL:{all:[['veins',2,'#c8ff50',1]]},faR:{all:[['rot',1]]},
       thL:{all:[['grime',.6],['soak',.6,1,'#4a5a10',.5]]},thR:{all:[['grime',.6],['tear',1,14,sk]]},pelvis:{fb:[['belt',.75,.95,'#1a1612','#8a8a70']]},
-      boil:{all:[['veins',2,'#f0ff90',1],['glow',.3,.3,.7,.7,'#c8ff50']]}};
+      boil:{all:[['veins',2,'#d8f070',1],['glow',.4,.38,.6,.62,'#b8f048']]}};
     // boils: a cluster on the belly, more on the chest and back, a shoulder and the scalp
     extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2,hc=H.headC;
       return [[1,.06,sY+o.torsoH*.22,zf-.05,.22,.2,.14],[1,-.15,sY+o.torsoH*.36,zf-.03,.13,.12,.09],[1,.16,sY+o.torsoH*.5,zf-.02,.1,.1,.07],[1,-.06,sY+o.torsoH*.74,zf-.02,.09,.08,.06],
@@ -423,7 +423,7 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
       jaw:{top:[['teethrow','top',.36]],front:[['teethrow','top',.4],['soak',0,.8,'#5a8a10',.8],['drip',.5,.6,4,.9]],side:[['flesh',0,.2,1,.9,0]],bottom:[['soak',0,1,'#4a7a10',.8]]},
       neck:{all:[['veins',3,'#c8ff40',1],['rot',1]]},uaL:{all:[['rot',1]]},uaR:{all:[['veins',2,'#4a5a3a']]},faL:{all:[['flesh',.2,.3,.8,.8,1.57]]},faR:{all:[['rot',1],['soak',.3,1,'#5a8a10',.7]]},
       handL:{all:[['soak',0,1,'#4a7a10',.85]]},handR:{all:[['soak',0,1,'#4a7a10',.85]]},thL:{all:[['tear',2,19,sk]]},thR:{all:[['grime',.6]]},
-      sac:{all:[['veins',4,'#e8ff80',1],['glow',.3,.25,.7,.65,'#c8ff40']]}};
+      sac:{all:[['veins',4,'#d8f070',1],['glow',.36,.3,.64,.6,'#b8f040']]}};
     extra=H=>{const o=H.o,nY=H.piv[2][1];return [{n:'sac',b:2,c:[0,nY+.03,o.headZ-.1],s:[.2,.16,.15],m:'sac'},{n:'sac',b:2,c:[.05,nY-.05,o.headZ-.07],s:[.13,.1,.1],m:'sac'},{n:'sac',b:1,c:[-.06,nY-.12,-.12],s:[.1,.09,.07],m:'sac'}]}}
   else{// 비명체 — eyes stitched shut yet still glowing, a jaw that unhinges to the chest, ribs through a blood-soaked lab coat
     o={hipY:.92,torsoW:.38,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.16,legD:.15,shinW:.12,headW:.22,headH:.28,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};

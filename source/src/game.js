@@ -15,7 +15,7 @@ const ZLIST=['rager','runner','brute','scream','coffin'];
 Object.assign(ZCLASS,{
   bomber:{n:['자폭 좀비','Bomber'],sk:['자폭','Self-destruct'],d:['시나리오 전용 · 가까이 오면 부풀어 터진다 (범위 피해)','Scenario only · swells up and bursts next to you (area damage)'],hp:1300,armor:0,speed:5.9,jump:7,kb:1.4,dmg:30,skill:'none',cd:99,dur:0,hw:.36,h:1.8,eye:1.62},
   spitter:{n:['산성 좀비','Spitter'],sk:['산성 침','Acid spit'],d:['시나리오 전용 · 거리를 두고 산성 침을 뱉는다','Scenario only · keeps its distance and spits acid'],hp:1500,armor:40,speed:5.3,jump:7.4,kb:1.2,dmg:26,skill:'none',cd:99,dur:0,hw:.28,h:1.9,eye:1.74},
-  boss:{n:['거대 좀비','The Giant'],sk:['강타','Slam'],d:['시나리오 보스','Scenario boss'],hp:30000,armor:0,speed:4.7,jump:8,kb:.06,dmg:85,skill:'none',cd:99,dur:0,hw:.45,h:2.3,eye:2.15}});
+  boss:{n:['거대 좀비','The Giant'],sk:['강타','Slam'],d:['시나리오 보스','Scenario boss'],hp:30000,armor:0,speed:4.7,jump:8,kb:.06,dmg:70,skill:'none',cd:99,dur:0,hw:.4,h:2.05,eye:2}});
 const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss'],BOSS_S=2.2;
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
@@ -406,7 +406,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
     if(a.alive){
       if(a.bot&&!a.pup)AI.update(a,dt);
       a.frozen=Math.max(0,a.frozen-dt);if(a.rootT>0)a.rootT=Math.max(0,a.rootT-dt);a.staggerT=Math.max(0,a.staggerT-dt);a.dizzy=Math.max(0,a.dizzy-dt);a.shriekT=Math.max(0,a.shriekT-dt);a.skillCD=Math.max(0,a.skillCD-dt);a.skillT=Math.max(0,a.skillT-dt);
-      if(a.team===TZ&&!NET.cli&&G.t-a.lastHurt>5&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*.02*dt);
+      if(a.team===TZ&&!NET.cli&&!a.scen&&G.t-a.lastHurt>5&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*.02*dt);
       // badly hurt zombies leave a trail of blood
       if(a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
       if(a.turning>0){a.turning-=dt;a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=a.cmd.jump=a.cmd.skill=false;a.mvx*=.8;a.mvz*=.8}

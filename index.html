@@ -428,31 +428,12 @@ html.touch #board{max-height:90vh;overflow:auto}
 .tguide div{display:flex;gap:10px;align-items:center;background:rgba(0,0,0,.22);border:1px solid #2e3138;padding:8px 10px;font-size:12px;color:#cfd3da;line-height:1.45}
 .tguide b{flex:none;min-width:58px;text-align:center;color:#ffd890;font-size:12px;border:1px solid #4a4e56;border-radius:14px;padding:4px 6px}
 
-/* ---------- phones: menus scroll, window buttons stay in reach ---------- */
-/* a window taller than the screen used to be squeezed to the screen height and clipped (overflow:hidden on a flex item):
-   it keeps its height now and the screen scrolls */
-.scr>*{flex-shrink:0}
-.win.room,.win.opt{overflow:visible;overflow:clip}
-@media (max-height:560px){
-  .win .dpHead{position:sticky;top:0;z-index:3;box-shadow:0 -14px 0 0 #1c1e23}
-  .win .dpFoot{position:sticky;bottom:0;z-index:3;box-shadow:0 14px 0 0 #1b1d22,0 -8px 16px rgba(0,0,0,.6)}
-  .rdesc{display:none}
-  .obody{max-height:none}
-}
-@media (max-height:560px) and (orientation:landscape){
-  .wbody{grid-template-columns:minmax(0,1fr) minmax(0,40%)}
-  .wchars{grid-template-columns:1fr 1fr}
-  .sprev{grid-template-columns:1fr}.sprev .rprev{grid-row:auto}
-}
-/* range sliders: the whole bar height is the touch target */
-html.touch .rng{height:30px;margin:4px 0 2px;border:none;background:linear-gradient(#0e0f12,#0e0f12) center/100% 6px no-repeat;box-shadow:none}
-html.touch .rng::-webkit-slider-thumb{margin-top:0}
-
 /* ---------- zombie scenario ---------- */
 #hScen{position:absolute;top:66px;left:50%;transform:translateX(-50%);display:none;text-align:center;white-space:nowrap}
 #hScen .ln{display:inline-block;background:var(--pan);border:1px solid var(--line);padding:3px 12px;font-size:13px;color:#d8d4c8}
 #hScen .ln b{color:#fff;font-size:15px}#hScen .ln b.z{color:var(--z)}
-#hScen .lv svg{width:12px;height:11px;fill:#ff4a3a;vertical-align:-1px;margin:0 1px}#hScen .lv i svg{fill:#4a3a3a}
+#hScen .sclv svg{width:12px;height:11px;fill:#ff4a3a;vertical-align:-1px;margin:0 1px}#hScen .sclv i svg{fill:#4a3a3a}
+html.touch #hud.scen #hCenter{top:36%}html.touch #hud.scen #hNote{top:58%}
 #hScen .boss{display:none;margin:6px auto 0;width:min(460px,64vw)}
 #hScen .boss span{display:block;font-size:12px;color:#ffb0a0;letter-spacing:2px;margin-bottom:2px}
 #hScen .boss i{display:block;height:12px;background:rgba(0,0,0,.6);border:1px solid rgba(255,90,70,.6);padding:1px}
@@ -474,6 +455,26 @@ html.touch #hScen .boss{width:min(420px,50vw)}
 html.touch #scPick .scBoxes{gap:8px;padding:10px}
 html.touch .scBox{min-height:112px;padding:14px 6px 10px}html.touch .scBox .no{display:none}
 html.touch .scUp button{min-height:44px}
+
+/* ---------- phones: menus scroll, window buttons stay in reach ---------- */
+/* a window taller than the screen used to be squeezed to the screen height and clipped (overflow:hidden on a flex item):
+   it keeps its height now and the screen scrolls */
+.scr>*{flex-shrink:0}
+.win.room,.win.opt{overflow:visible;overflow:clip}
+@media (max-height:560px){
+  .win .dpHead{position:sticky;top:0;z-index:3;box-shadow:0 -14px 0 0 #1c1e23}
+  .win .dpFoot{position:sticky;bottom:0;z-index:3;box-shadow:0 14px 0 0 #1b1d22,0 -8px 16px rgba(0,0,0,.6)}
+  .rdesc{display:none}
+  .obody{max-height:none}
+}
+@media (max-height:560px) and (orientation:landscape){
+  .wbody{grid-template-columns:minmax(0,1fr) minmax(0,40%)}
+  .wchars{grid-template-columns:1fr 1fr}
+  .sprev{grid-template-columns:1fr}.sprev .rprev{grid-row:auto}
+}
+/* range sliders: the whole bar height is the touch target */
+html.touch .rng{height:30px;margin:4px 0 2px;border:none;background:linear-gradient(#0e0f12,#0e0f12) center/100% 6px no-repeat;box-shadow:none}
+html.touch .rng::-webkit-slider-thumb{margin-top:0}
 
 </style>
 </head><body>
@@ -3240,36 +3241,35 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
       const gy=sY+o.torsoH*.16;[[.04,0,.09,.1],[.07,-.1,.075,.12],[.05,-.22,.065,.12],[.08,-.33,.055,.1],[.06,-.42,.045,.08]].forEach(([x,dy,wd,hh],i)=>L.push({n:'guts',b:0,c:[x,gy+dy,zf-.035-i*.004],s:[wd,hh,wd*.85],m:'guts'}));
       return L}}
   else if(k==='coffin'){// 관짝 — a dead undertaker: black funeral suit, a coffin strapped to the back with iron bands, nails through the scalp
-    o={hipY:.95,thigh:.43,legSep:.12,legW:.17,legD:.19,shinW:.15,torsoW:.5,torsoH:.56,torsoD:.3,shX:.31,armW:.14,upper:.31,fore:.3,hand:.12,headW:.23,headH:.26,headD:.25,neck:.05,claw:.022,curl:.55,curlJ:11,browH:.03};
-    const sk='#8a9098',su='#1c1c22';
-    mats=Object.assign({top:{base:su},legs:{base:su},sleeve:{base:su},fore:{base:sk,style:'zskin',blot:'#4a4a5a'},shin:{base:su},skin:{base:sk,style:'zskin',blot:'#4a4a5a'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:'#121214',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#4a4a5a'},
-      coffin:{base:'#3a2616'},coffinL:{base:'#4a1a12'},iron:{base:'#4a4c50',style:'plate',gloss:246},nailM:{base:'#a8aaae',style:'plate',gloss:248}},goreM);
-    decor={torso:{front:[['vband',.38,.62,'#c8c4b8'],['vband',.47,.53,'#3a0a0a'],['soak',0,.4,'#3a0606',.55],['tear',2,5,sk],['grime',.5]],back:[['grime',.6]],side:[['grime',.5]]},
-      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#ffd060',tears:1}]],top:[['wounds',1,5],['blood',2,3]],side:[['blood',1,6]],bottom:[['teethrow','bottom',.32]]},
-      jaw:{top:[['teethrow','top',.34]],front:[['teethrow','top',.4],['drip',.5,.6,3,.6]],bottom:[['soak',0,1,'#3a0606',.7]]},
-      coffin:{all:[['grime',.5]],back:[['vband',0,.05,'#1e120a'],['vband',.95,1,'#1e120a'],['vband',.32,.34,'#1e120a'],['vband',.66,.68,'#1e120a']]},coffinL:{all:[['grime',.4]]},
-      iron:{all:[['grime',.4]]},uaL:{all:[['tear',1,3,sk],['grime',.5]]},uaR:{all:[['grime',.5],['blood',2,4]]},thL:{all:[['grime',.6]]},thR:{all:[['grime',.6],['tear',1,6,sk]]},
-      pelvis:{fb:[['belt',.75,.95,'#0e0e10','#7a7a70']]},faL:{all:[['gash',.2,.9,.5,.2,3,.1]]},handR:{all:[['soak',0,1,'#4a0606',.8]]}};
-    extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2,hc=H.headC,cy=sY+o.torsoH*.5;
-      const L=[{n:'coffin',b:1,c:[0,cy,zb+.08],s:[.46,.9,.14],m:'coffin'},{n:'coffin',b:1,c:[0,cy+.52,zb+.08],s:[.34,.16,.13],m:'coffin'},{n:'coffin',b:1,c:[0,cy-.52,zb+.08],s:[.3,.16,.13],m:'coffin'},
-        {n:'coffinL',b:1,c:[0,cy+.05,zb+.155],s:[.36,.95,.02],m:'coffinL'},
-        {n:'iron',b:1,c:[0,sY+o.torsoH*.78,zf-.006],s:[o.torsoW*1.03,.045,.02],m:'iron'},{n:'iron',b:1,c:[0,sY+o.torsoH*.78,zb+.02],s:[o.torsoW*1.03,.045,.04],m:'iron'},
-        {n:'iron',b:1,c:[0,sY+o.torsoH*.3,zb+.16],s:[.5,.05,.04],m:'iron'}];
-      for(const s of [-1,1])L.push({n:'iron',b:1,c:[s*.15,sY+o.torsoH*.6,zf-.007],s:[.04,o.torsoH*.62,.02],m:'iron'});
-      for(const [x,z] of [[-.05,0],[.06,-.04],[0,.07]])L.push({n:'nail',b:2,c:[x,hc[1]+o.headH/2+.03,o.headZ+z],s:[.014,.08,.014],m:'nailM'});
-      return L}}
+    o={hipY:.92,torsoW:.38,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.16,legD:.15,shinW:.12,headW:.22,headH:.28,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};
+     const sk='#2a1a15';
+     mats=Object.assign({top:{base:'#8b264b'},legs:{base:'#d4cbb8'},sleeve:{base:sk,style:'zskin'},fore:{base:sk,style:'zskin'},shin:{base:sk,style:'zskin'},skin:{base:sk,style:'zskin'},hand:{base:sk,style:'zskin'},boot:{base:sk,style:'zskin'},jaw:{base:sk,style:'zskin'},hair:{base:'#1a1a1a',style:'hair'},cloth:{base:'#e0e0d8',style:'cloth'},doll:{base:'#8b6b45',style:'cloth'}},goreM);
+    decor={torso:{front:[['rect',.35,.1,.65,.9,sk],['vband',.2,.3,'#3a1c10'],['vband',.7,.8,'#3a1c10'],['belt',0,.1,'#1a100c','#555'],['soak',0,1,'#111',.3],['blood',2,5]],back:[['grime',.8]]},
+      head:{front:[['rect',0,0,1,1,'#111111'],['face','scream',{skin:'#111111',eye:eyeH||'#ffffff',ey:.66,lipless:1}]],top:[['rect',0,0,1,1,'#111111']],back:[['rect',0,0,1,1,'#111111']],bottom:[['rect',0,0,1,1,'#111111']]},
+      jaw:{front:[['rect',0,0,1,1,'#111111']],side:[['rect',0,0,1,1,'#111111']],bottom:[['rect',0,0,1,1,'#111111']]},
+      uaR:{all:[['band',.5,.8,'#2a1a15'],['rect',.3,.5,.7,.8,'#111'],['grime',.4]]},uaL:{all:[['grime',.4]]},faL:{all:[['band',.85,.95,'#5a1010']]},faR:{all:[['band',.85,.95,'#5a1010']]},legs:{all:[['grime',.6]]}};
+    extra=H=>[
+      {n:'cMain',b:1,c:[0,1.05,.22],s:[.5,1.1,.12],m:'coffin'},{n:'cArch',b:1,c:[0,1.7,.22],s:[.35,.25,.12],m:'coffin'},
+      {n:'cFaceBg',b:1,c:[0,1.65,.28],s:[.2,.25,.04],m:'metal'},{n:'cFace',b:1,c:[0,1.65,.3],s:[.14,.18,.02],m:'cface'},
+      {n:'cBlood',b:1,c:[0,1.0,.3],s:[.2,.3,.01],m:'cblood'},{n:'cBase',b:1,c:[0,.45,.22],s:[.55,.15,.14],m:'metal'},
+      {n:'pL1',b:1,c:[-.22,1.75,.22],s:[.08,.08,.08],m:'metal'},{n:'pR1',b:1,c:[.22,1.75,.22],s:[.08,.08,.08],m:'metal'},
+      {n:'pL2',b:1,c:[-.26,1.55,.22],s:[.08,.08,.08],m:'metal'},{n:'pR2',b:1,c:[.26,1.55,.22],s:[.08,.08,.08],m:'metal'},
+      {n:'eArmL',b:1,c:[-.35,1.05,.15],s:[.3,.03,.03],m:'skin'},{n:'eArmR',b:1,c:[.35,1.05,.15],s:[.3,.03,.03],m:'skin'},
+      {n:'eHndL',b:1,c:[-.48,.85,.15],s:[.04,.12,.04],m:'skin'},{n:'eHndR',b:1,c:[.48,.85,.15],s:[.04,.12,.04],m:'skin'},
+      {n:'cEdgL',b:1,c:[-.25,1.05,.28],s:[.03,1.1,.02],m:'metal'},{n:'cEdgR',b:1,c:[.25,1.05,.28],s:[.03,1.1,.02],m:'metal'}
+    ];
   }
   else if(k==='bomber'){// 자폭체 — a swollen chemical-plant worker: overalls split over a belly packed with glowing boils that hiss and leak
     o={hipY:.9,thigh:.42,legSep:.14,legW:.19,legD:.21,shinW:.16,torsoW:.56,torsoH:.56,torsoD:.34,belly:.16,shX:.35,armW:.14,upper:.3,fore:.28,hand:.12,headW:.25,headH:.25,headD:.26,headZ:-.04,neck:.02,claw:.018,curl:.5,curlJ:13,browH:.03,noseW:.17};
     const sk='#9a9e6a';
     mats=Object.assign({top:{base:'#4e5a62'},legs:{base:'#46525a'},sleeve:{base:sk,style:'zskin',blot:'#5a6a2a'},fore:{base:sk,style:'zskin',blot:'#5a6a2a'},shin:{base:'#46525a'},skin:{base:sk,style:'zskin',blot:'#5a6a2a'},hand:{base:dk(sk,.2),style:'zskin',blot:'#3a4a10'},boot:{base:'#2a2622',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#5a6a2a'},
-      boil:{base:'#a8c848',style:'tumor'}},goreM);
+      boil:{base:'#7e9a34',style:'tumor'}},goreM);
     decor={torso:{front:[['band',.86,.94,'#c8a42a'],['flesh',.18,.04,.82,.5,0],['veins',6,'#c8ff50',1],['rot',2],['tear',2,13,sk],['soak',0,.45,'#4a5a10',.6],['grime',.6]],back:[['band',.86,.94,'#c8a42a'],['text','Q7-B',.3,.62,'#1a1e20'],['veins',3,'#c8ff50',1],['rot',3],['grime',.6]],side:[['rot',2],['veins',2,'#c8ff50',1],['grime',.5]]},
       head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#d8ff50',tears:1}],['veins',2,'#c8ff50',1]],top:[['rot',2],['wounds',1,17]],side:[['rot',1],['veins',2,'#c8ff50',1]],bottom:[['teethrow','bottom',.3]]},
       jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.4],['drip',.5,.6,3,.7]],bottom:[['soak',0,1,'#4a5a10',.8]]},
       uaL:{all:[['rot',1],['veins',2,'#c8ff50',1]]},uaR:{all:[['rot',1],['grime',.5]]},faL:{all:[['veins',2,'#c8ff50',1]]},faR:{all:[['rot',1]]},
       thL:{all:[['grime',.6],['soak',.6,1,'#4a5a10',.5]]},thR:{all:[['grime',.6],['tear',1,14,sk]]},pelvis:{fb:[['belt',.75,.95,'#1a1612','#8a8a70']]},
-      boil:{all:[['veins',2,'#f0ff90',1],['glow',.3,.3,.7,.7,'#c8ff50']]}};
+      boil:{all:[['veins',2,'#d8f070',1],['glow',.4,.38,.6,.62,'#b8f048']]}};
     // boils: a cluster on the belly, more on the chest and back, a shoulder and the scalp
     extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2,hc=H.headC;
       return [[1,.06,sY+o.torsoH*.22,zf-.05,.22,.2,.14],[1,-.15,sY+o.torsoH*.36,zf-.03,.13,.12,.09],[1,.16,sY+o.torsoH*.5,zf-.02,.1,.1,.07],[1,-.06,sY+o.torsoH*.74,zf-.02,.09,.08,.06],
@@ -3285,24 +3285,24 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
       jaw:{top:[['teethrow','top',.36]],front:[['teethrow','top',.4],['soak',0,.8,'#5a8a10',.8],['drip',.5,.6,4,.9]],side:[['flesh',0,.2,1,.9,0]],bottom:[['soak',0,1,'#4a7a10',.8]]},
       neck:{all:[['veins',3,'#c8ff40',1],['rot',1]]},uaL:{all:[['rot',1]]},uaR:{all:[['veins',2,'#4a5a3a']]},faL:{all:[['flesh',.2,.3,.8,.8,1.57]]},faR:{all:[['rot',1],['soak',.3,1,'#5a8a10',.7]]},
       handL:{all:[['soak',0,1,'#4a7a10',.85]]},handR:{all:[['soak',0,1,'#4a7a10',.85]]},thL:{all:[['tear',2,19,sk]]},thR:{all:[['grime',.6]]},
-      sac:{all:[['veins',4,'#e8ff80',1],['glow',.3,.25,.7,.65,'#c8ff40']]}};
+      sac:{all:[['veins',4,'#d8f070',1],['glow',.36,.3,.64,.6,'#b8f040']]}};
     extra=H=>{const o=H.o,nY=H.piv[2][1];return [{n:'sac',b:2,c:[0,nY+.03,o.headZ-.1],s:[.2,.16,.15],m:'sac'},{n:'sac',b:2,c:[.05,nY-.05,o.headZ-.07],s:[.13,.1,.1],m:'sac'},{n:'sac',b:1,c:[-.06,nY-.12,-.12],s:[.1,.09,.07],m:'sac'}]}}
   else{// 비명체 — eyes stitched shut yet still glowing, a jaw that unhinges to the chest, ribs through a blood-soaked lab coat
     o={hipY:.92,torsoW:.38,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.16,legD:.15,shinW:.12,headW:.22,headH:.28,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};
     const sk='#2a1a15';
     mats=Object.assign({top:{base:'#8b264b'},legs:{base:'#d4cbb8'},sleeve:{base:sk,style:'zskin'},fore:{base:sk,style:'zskin'},shin:{base:sk,style:'zskin'},skin:{base:sk,style:'zskin'},hand:{base:sk,style:'zskin'},boot:{base:sk,style:'zskin'},jaw:{base:sk,style:'zskin'},hair:{base:'#1a1a1a',style:'hair'},cloth:{base:'#e0e0d8',style:'cloth'},doll:{base:'#8b6b45',style:'cloth'}},goreM);
     decor={
-      torso:{front:[['tear',2,4,sk],['band',0,.05,'#111'],['band',.05,.08,'#d4cbb8'],['soak',0,1,'#111',.3],['blood',2,8]],back:[['rect',.4,.2,.6,.8,sk],['tear',2,5,sk],['grime',.6]]},
-      head:{front:[['face','scream',{skin:sk,eye:eyeH||'#ff0000',ey:.66,lipless:1}],['band',.55,.75,'#e0e0d8'],['soak',.1,.4,'#880000',.8]],back:[['band',.55,.75,'#e0e0d8']],top:[['rect',0,0,1,1,'#1a1a1a']]},
-      jaw:{front:[['teethrow','top',.3],['soak',0,1,'#880000',.9]]},legs:{all:[['grime',.7],['tear',3,2,sk],['tear',2,5,sk]]},
-      shin:{all:[['band',.1,.5,'#cdae66'],['band',.15,.2,'#222'],['band',.3,.35,'#222'],['grime',.4]]},uaL:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0']]},uaR:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0']]},
-      faL:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0'],['band',0,.2,'#4a3020']]},faR:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0'],['band',0,.2,'#4a3020']]},handL:{all:[['soak',0,1,'#4a3020',.8]]},handR:{all:[['soak',0,1,'#4a3020',.8]]}
+       torso:{front:[['tear',2,4,sk],['band',0,.05,'#111'],['band',.05,.08,'#d4cbb8'],['soak',0,1,'#111',.3],['blood',2,8]],back:[['rect',.4,.2,.6,.8,sk],['tear',2,5,sk],['grime',.6]]},
+       head:{front:[['face','scream',{skin:sk,eye:eyeH||'#ff0000',ey:.66,lipless:1}],['band',.55,.75,'#e0e0d8'],['soak',.1,.4,'#880000',.8]],back:[['band',.55,.75,'#e0e0d8']],top:[['rect',0,0,1,1,'#1a1a1a']]},
+       jaw:{front:[['teethrow','top',.3],['soak',0,1,'#880000',.9]]},legs:{all:[['grime',.7],['tear',3,2,sk],['tear',2,5,sk]]},
+       shin:{all:[['band',.1,.5,'#cdae66'],['band',.15,.2,'#222'],['band',.3,.35,'#222'],['grime',.4]]},uaL:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0']]},uaR:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0']]},
+       faL:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0'],['band',0,.2,'#4a3020']]},faR:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0'],['band',0,.2,'#4a3020']]},handL:{all:[['soak',0,1,'#4a3020',.8]]},handR:{all:[['soak',0,1,'#4a3020',.8]]}
     };
-    extra=H=>[
-      {n:'bun',b:2,c:[0,1.72,-.02],s:[.12,.1,.12],m:'hair'},{n:'knot',b:2,c:[0,1.58,.12],s:[.16,.05,.05],m:'cloth'},
-      {n:'earL',b:2,c:[-.12,1.5,0],s:[.02,.05,.02],m:'top'},{n:'earR',b:2,c:[.12,1.5,0],s:[.02,.05,.02],m:'top'},
-      {n:'dollB',b:0,c:[-.16,.9,-.12],s:[.06,.1,.05],m:'doll'},{n:'dollH',b:0,c:[-.16,.98,-.12],s:[.05,.05,.05],m:'doll'}
-    ];
+     extra=H=>[
+       {n:'bun',b:2,c:[0,1.72,-.02],s:[.12,.1,.12],m:'hair'},{n:'knot',b:2,c:[0,1.58,.12],s:[.16,.05,.05],m:'cloth'},
+       {n:'earL',b:2,c:[-.12,1.5,0],s:[.02,.05,.02],m:'top'},{n:'earR',b:2,c:[.12,1.5,0],s:[.02,.05,.02],m:'top'},
+       {n:'dollB',b:0,c:[-.16,.9,-.12],s:[.06,.1,.05],m:'doll'},{n:'dollH',b:0,c:[-.16,.98,-.12],s:[.05,.05,.05],m:'doll'}
+     ];
   }
   if(host||boss){for(const p of Object.keys(decor))for(const fk of ['front','back','all'])if(decor[p][fk])decor[p][fk]=decor[p][fk].concat([['veins',2,vein,1]]);
     decor.torso.front=(decor.torso.front||[]).concat([['veins',4,vein,1]]);decor.torso.back=(decor.torso.back||[]).concat([['veins',3,vein,1]]);}
@@ -5481,7 +5481,7 @@ const ZLIST=['rager','runner','brute','scream','coffin'];
 Object.assign(ZCLASS,{
   bomber:{n:['자폭 좀비','Bomber'],sk:['자폭','Self-destruct'],d:['시나리오 전용 · 가까이 오면 부풀어 터진다 (범위 피해)','Scenario only · swells up and bursts next to you (area damage)'],hp:1300,armor:0,speed:5.9,jump:7,kb:1.4,dmg:30,skill:'none',cd:99,dur:0,hw:.36,h:1.8,eye:1.62},
   spitter:{n:['산성 좀비','Spitter'],sk:['산성 침','Acid spit'],d:['시나리오 전용 · 거리를 두고 산성 침을 뱉는다','Scenario only · keeps its distance and spits acid'],hp:1500,armor:40,speed:5.3,jump:7.4,kb:1.2,dmg:26,skill:'none',cd:99,dur:0,hw:.28,h:1.9,eye:1.74},
-  boss:{n:['거대 좀비','The Giant'],sk:['강타','Slam'],d:['시나리오 보스','Scenario boss'],hp:30000,armor:0,speed:4.7,jump:8,kb:.06,dmg:85,skill:'none',cd:99,dur:0,hw:.45,h:2.3,eye:2.15}});
+  boss:{n:['거대 좀비','The Giant'],sk:['강타','Slam'],d:['시나리오 보스','Scenario boss'],hp:30000,armor:0,speed:4.7,jump:8,kb:.06,dmg:70,skill:'none',cd:99,dur:0,hw:.4,h:2.05,eye:2}});
 const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss'],BOSS_S=2.2;
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
@@ -5872,7 +5872,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
     if(a.alive){
       if(a.bot&&!a.pup)AI.update(a,dt);
       a.frozen=Math.max(0,a.frozen-dt);if(a.rootT>0)a.rootT=Math.max(0,a.rootT-dt);a.staggerT=Math.max(0,a.staggerT-dt);a.dizzy=Math.max(0,a.dizzy-dt);a.shriekT=Math.max(0,a.shriekT-dt);a.skillCD=Math.max(0,a.skillCD-dt);a.skillT=Math.max(0,a.skillT-dt);
-      if(a.team===TZ&&!NET.cli&&G.t-a.lastHurt>5&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*.02*dt);
+      if(a.team===TZ&&!NET.cli&&!a.scen&&G.t-a.lastHurt>5&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*.02*dt);
       // badly hurt zombies leave a trail of blood
       if(a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
       if(a.turning>0){a.turning-=dt;a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=a.cmd.jump=a.cmd.skill=false;a.mvx*=.8;a.mvz*=.8}
@@ -7307,7 +7307,7 @@ const SCEN={POOL:30,STAGES:5,WAVES:3,on:false,stage:1,wave:0,ph:'',t:0,lives:3,q
   H:[],Z:[],pickOpen:false,picked:false,offer:null,best:0,win:false,chkT:0,PH:['prep','wave','break','fail','over']};
 // the horde walks a little slower than infection-mode zombies: there are many more of them
 SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1};
-const SC_DIFF={hp:[.6,1,1.25,1.6],n:[.7,1,1.15,1.3],dmg:[.5,1,1.3,1.6]};
+const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;
 Object.assign(STR.ko,{scen:'좀비 시나리오',scenD:'협동 PvE — 감염 없이 끝까지 인간으로 싸운다. 스테이지 5개 × 웨이브 3번, 마지막엔 거대 좀비. 팀 목숨 3개: 전멸하면 그 스테이지를 다시 하고, 다 쓰면 게임 오버. 죽어도 다음 웨이브에 부활.',scDead:'다음 웨이브에 부활 — 관전 중',allies:'아군 봇'});
 Object.assign(STR.en,{scen:'Zombie Scenario',scenD:'Co-op PvE — no infection, you stay human. 5 stages × 3 waves, a giant at the end. 3 shared lives: a wipe replays the stage, losing them all ends the run. The fallen come back at the next wave.',scDead:'Back at the next wave — spectating',allies:'Ally bots'});
@@ -7373,7 +7373,7 @@ SCEN.makeWave=function(s,w){const H=SCEN.H.length,d=G.diff||0;let n=Math.round((
   if(s===SCEN.STAGES&&w===SCEN.WAVES){q.push('boss');n=Math.round(n*.5)}
   for(let i=0;i<n;i++){let r=Math.random()*tot;for(const [k,p] of W){r-=p;if(r<=0){q.push(k);break}}}return q};
 SCEN.hpFor=function(zc){const H=SCEN.H.length,d=G.diff||0;
-  if(zc==='boss')return Math.round(9000*(.6+.4*H)*SC_DIFF.hp[d]);
+  if(zc==='boss')return Math.round(8000*(.6+.4*H)*SC_DIFF.hp[d]);
   return Math.round(ZCLASS[zc].hp*.28*(1+.1*(H-1))*SC_DIFF.hp[d]*(1+.12*(SCEN.stage-1)+.05*(SCEN.wave-1)))};
 // claw damage scale (base zombie damage is tuned for infection; here claws only wound)
 SCEN.dmgMul=()=>.18*SC_DIFF.dmg[G.diff||0]*(1+.06*(SCEN.stage-1));
@@ -7381,7 +7381,7 @@ SCEN.dmgMul=()=>.18*SC_DIFF.dmg[G.diff||0]*(1+.06*(SCEN.stage-1));
 // a spawn point out of every human's sight and not too close; the big one needs room
 SCEN.spawnPoint=function(big){const H=SCEN.H.filter(h=>h.alive);const pts=MAP.zspawns.length?MAP.zspawns:MAP.spawns;const ok=[];
   for(const p of pts){const x=p[0],z=p[1],y=p[2]||0;let md=1e9,seen=false;for(const h of H){const d=Math.hypot(x-h.c.x,z-h.c.z);md=Math.min(md,d);if(d<28&&losClear(h.c.x,h.c.y+1.6,h.c.z,x,y+1.2,z))seen=true}
-    if(md<10||(seen&&md<30))continue;if(big&&!charFits({hw:.5,h:2.4},x,y+.05,z))continue;ok.push([x,y,z,md])}
+    if(md<10||(seen&&md<30))continue;if(big&&!charFits({hw:.45,h:2.2},x,y+.05,z))continue;ok.push([x,y,z,md])}
   if(!ok.length){const p=zSpawnPoint();return [p[0]+rr(-1,1),p[2]||0,p[1]+rr(-1,1)]}
   ok.sort((a,b)=>a[3]-b[3]);const p=ok[Math.floor(Math.random()*Math.min(ok.length,4))];return [p[0]+rr(-.8,.8),p[1],p[2]+rr(-.8,.8)]};
 // revive the longest-dead free slot of the pool as a zombie of class zc
@@ -7468,7 +7468,7 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
   // unstick: a body this big can wedge itself in a doorway — it jumps at its target
   S.stuck+=dt;if(S.stuck>4){const mv=Math.hypot(c.x-S.lx,c.z-S.lz);if(mv<.8&&a.bot&&a.bot.target&&c.onGround){const t=a.bot.target;const dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz)||1;c.vy=9;c.onGround=false;c.jumped=true;a.kvx+=dx/d*7;a.kvz+=dz/d*7}S.stuck=0;S.lx=c.x;S.lz=c.z}
   if(!S.half&&a.hp<a.maxHp*.5){S.half=true;S.sumT=0;HUD.announce(LI()?'The giant calls the horde!':'거대 좀비가 무리를 부른다!','z',2.5);if(NET.host)netEv('scbh',{})}
-  if(S.half){S.sumT-=dt;if(S.sumT<=0){S.sumT=20;SCEN.bossSummon(a)}}
+  if(S.half){S.sumT-=dt;if(S.sumT<=0){S.sumT=24;SCEN.bossSummon(a)}}
   const tg=a.bot&&a.bot.target;if(tg&&tg.alive&&Math.hypot(tg.c.x-c.x,tg.c.z-c.z)>3.2)S.far+=dt;else S.far=0;
   if(S.mode){S.mt-=dt;
     if(S.mode==='leapW'){a.an.skill=Math.max(a.an.skill,.6);if(S.mt<=0){S.mode='leap';S.mt=3;const t=a.bot&&a.bot.target;if(t)SCEN.leapTo(a,t.c.x,t.c.y,t.c.z,2);AU.at('zroar',c.x,c.y+3,c.z,{vol:1,range:90,rate:.8})}}
@@ -7476,7 +7476,7 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
     else if(S.mode==='dashW'){if(S.mt<=0){S.mode='dash';S.mt=1.1;S.hit=false;AU.at('zroar',c.x,c.y+3,c.z,{vol:1,range:80})}}
     else if(S.mode==='dash'){a.kvx=S.dx*15;a.kvz=S.dz*15;a.yaw=Math.atan2(-S.dx,-S.dz);
       if(Math.random()<dt*30)FX.spawn({x:c.x+rr(-.6,.6),y:c.y+.1,z:c.z+rr(-.6,.6),vy:rr(.3,.9),life:rr(.5,.9),s0:.3,s1:1,r:.4,g:.36,b:.3,a:.5,f:2,drag:2});
-      if(!S.hit)for(const h of SCEN.H){if(!h.alive)continue;if(Math.hypot(h.c.x-c.x,h.c.z-c.z)<c.hw+1&&Math.abs(h.c.y-c.y)<3){S.hit=true;SCEN.pushHuman(h,S.dx*13,7,S.dz*13);hurtHuman(h,40*SCEN.dmgMul()/.18,a,{claw:1});break}}
+      if(!S.hit)for(const h of SCEN.H){if(!h.alive)continue;if(Math.hypot(h.c.x-c.x,h.c.z-c.z)<c.hw+1&&Math.abs(h.c.y-c.y)<3){S.hit=true;SCEN.pushHuman(h,S.dx*13,7,S.dz*13);hurtHuman(h,30*SCEN.dmgMul()/.18,a,{claw:1});break}}
       if(S.mt<=0){S.mode='';a.kvx*=.2;a.kvz*=.2;S.pt=rr(3,5)}}
     else if(S.mode==='slamW'){a.an.skill=Math.max(a.an.skill,.3);if(S.mt<=0){S.mode='';S.pt=rr(3.5,5.5);SCEN.slam(a)}}
     return}
@@ -7490,10 +7490,10 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
   else S.pt=1};
 SCEN.slam=function(a){const c=a.c;SCEN.slamFx(c.x,c.y,c.z);if(NET.host)netEv('scsl',{x:r2(c.x),y:r2(c.y),z:r2(c.z)});
   for(const h of SCEN.H){if(!h.alive)continue;const dx=h.c.x-c.x,dz=h.c.z-c.z,d=Math.hypot(dx,dz);if(d>7.5||Math.abs(h.c.y-c.y)>2.5)continue;const f=1-d/7.5;
-    SCEN.pushHuman(h,dx/(d||1)*10*f,4+5*f,dz/(d||1)*10*f);hurtHuman(h,(14+36*f)*SCEN.dmgMul()/.18,a,{})}};
+    SCEN.pushHuman(h,dx/(d||1)*10*f,4+5*f,dz/(d||1)*10*f);hurtHuman(h,(10+30*f)*SCEN.dmgMul()/.18,a,{})}};
 SCEN.slamFx=function(x,y,z){for(let i=0;i<40;i++){const g=i/40*TAU;FX.spawn({x:x+Math.cos(g)*1.2,y:y+.15,z:z+Math.sin(g)*1.2,vx:Math.cos(g)*rr(5,9),vy:rr(.5,2),vz:Math.sin(g)*rr(5,9),life:rr(.6,1.1),s0:.4,s1:1.4,r:.45,g:.4,b:.34,a:.55,f:2,drag:2.5})}
   AU.at('explode',x,y+.5,z,{vol:.8,range:80,occ:false,rate:.6});const P=G.player;if(P){const pd=Math.hypot(P.c.x-x,P.c.z-z);if(pd<20)FX.shake=Math.max(FX.shake,1-pd/20)}};
-SCEN.bossSummon=function(a){let n=0;for(let i=0;i<6;i++){const g=i/6*TAU;const p=[a.c.x+Math.cos(g)*3,a.c.y+.1,a.c.z+Math.sin(g)*3];if(SCEN.spawn(Math.random()<.6?'rager':'runner',p))n++}
+SCEN.bossSummon=function(a){let n=0;for(let i=0;i<4;i++){const g=i/4*TAU+Math.random();const p=[a.c.x+Math.cos(g)*3,a.c.y+.1,a.c.z+Math.sin(g)*3];if(SCEN.spawn(Math.random()<.6?'rager':'runner',p))n++}
   if(n){AU.at('zroar',a.c.x,a.c.y+3,a.c.z,{vol:1,range:90});SCEN.slamFx(a.c.x,a.c.y,a.c.z);if(NET.host)netEv('scsl',{x:r2(a.c.x),y:r2(a.c.y),z:r2(a.c.z)})}};
 // a ballistic leap onto a target standing somewhere the body cannot walk to (crates, roofs): apex a little above the higher end
 SCEN.leapTo=function(a,x,y,z,over){const c=a.c,G0=GRAV;const apex=Math.max(c.y,y)+(over||1.2);const vy=Math.sqrt(2*G0*Math.max(.5,apex-c.y));
@@ -7536,7 +7536,7 @@ SCEN.renderUp=function(){const el=document.querySelector('#scPick .scUp'),P=G.pl
 SCEN.pickTick=function(){const t=document.querySelector('#scPick .tm');if(t){const s=Math.max(0,Math.ceil(SCEN.ph==='prep'?SCEN.t:0))+(LI()?'s':'초');if(t.textContent!==s)t.textContent=s}SCEN.renderUp()};
 // ---------- HUD ----------
 SCEN.hud=function(){const el=$('hScen');if(!el)return;const on=G.mode==='scen'&&G.st!=='menu'&&!!G.player;const ds=on?'block':'none';if(el.style.display!==ds)el.style.display=ds;HUD.el.hud.classList.toggle('scen',on);if(!on)return;const L=LI();
-  const s=`${L?'STAGE':'스테이지'} <b>${SCEN.stage}/${SCEN.STAGES}</b> · ${L?'WAVE':'웨이브'} <b>${Math.max(1,SCEN.wave)}/${SCEN.WAVES}</b> · ${L?'LEFT':'남은 좀비'} <b class="z">${SCEN.ph==='wave'?SCEN.remain:'-'}</b> · <span class="lv">${SC_HEART.repeat(Math.max(0,SCEN.lives))}<i>${SC_HEART.repeat(Math.max(0,3-SCEN.lives))}</i></span>`;
+  const s=`${L?'STAGE':'스테이지'} <b>${SCEN.stage}/${SCEN.STAGES}</b> · ${L?'WAVE':'웨이브'} <b>${Math.max(1,SCEN.wave)}/${SCEN.WAVES}</b> · ${L?'LEFT':'남은 좀비'} <b class="z">${SCEN.ph==='wave'?SCEN.remain:'-'}</b> · <span class="sclv">${SC_HEART.repeat(Math.max(0,SCEN.lives))}<i>${SC_HEART.repeat(Math.max(0,3-SCEN.lives))}</i></span>`;
   if(el.dataset.s!==s){el.dataset.s=s;el.querySelector('.ln').innerHTML=s}
   const b=SCEN.bossId>=0?byIdAny(SCEN.bossId):null,bar=el.querySelector('.boss');const bon=!!(b&&b.alive&&b.zc==='boss');if(bar.style.display!==(bon?'block':'none'))bar.style.display=bon?'block':'none';if(bon)bar.querySelector('u').style.width=Math.max(0,b.hp/b.maxHp*100).toFixed(1)+'%';
   // the wave clock counts up: never the red "time is running out" blink
@@ -7584,7 +7584,10 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
     if(on){const b=$('board'),h=b&&b.querySelector('h3'),fs=b&&b.querySelector('.finalScore'),L=LI();if(h)h.textContent=`${T('board')} — ${T('scen')} · ${L?'Stage':'스테이지'} ${SCEN.stage}/${SCEN.STAGES}`;
       if(fs)fs.innerHTML=`<span class="h">${L?'Wave':'웨이브'} ${Math.max(1,SCEN.wave)}/${SCEN.WAVES}</span> · <span class="z">${L?'Lives':'목숨'} ${SCEN.lives}</span>`}};
   const sr=UI.showResults.bind(UI);UI.showResults=function(){if(G.mode!=='scen')return sr();const all=G.actors;G.actors=SCEN.H;try{sr()}finally{G.actors=all}
+    const sp=document.querySelector('#results .mvp span');if(sp)sp.textContent=sp.textContent.replace(' · '+T('infects')+' 0','');
     const L=LI(),fs=document.querySelector('#results .finalScore');if(fs)fs.innerHTML=SCEN.win?`<span class="h">${L?'SCENARIO CLEAR':'시나리오 클리어'}</span> <small>· ${L?'all':'전체'} ${SCEN.STAGES} ${L?'stages':'스테이지'}</small>`:`<span class="z">${L?'GAME OVER':'게임 오버'}</span> <small>· ${L?'cleared stages':'클리어 스테이지'} ${SCEN.best}/${SCEN.STAGES}</small>`};
+  // nobody gets infected here: the infections column goes
+  const tb=UI.table.bind(UI);UI.table=function(A){const h=tb(A);if(G.mode!=='scen')return h;const d=document.createElement('div');d.innerHTML=h;for(const tr of d.querySelectorAll('tr')){const c=tr.children[3];if(c)c.remove()}return d.innerHTML};
   const hi=HUD.init.bind(HUD);HUD.init=function(){hi();const el=document.createElement('div');el.id='hScen';el.innerHTML='<div class="ln"></div><div class="boss"><span>'+(LI()?'THE GIANT':'거대 좀비')+'</span><i><u></u></i></div>';$('hud').appendChild(el);
     const pk=document.createElement('div');pk.id='scPick';pk.className='panel off';$('app').appendChild(pk)};
   const hu=HUD.update.bind(HUD);HUD.update=function(dt){hu(dt);SCEN.hud()};

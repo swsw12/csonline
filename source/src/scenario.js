@@ -8,7 +8,7 @@ const SCEN={POOL:30,STAGES:5,WAVES:3,on:false,stage:1,wave:0,ph:'',t:0,lives:3,q
   H:[],Z:[],pickOpen:false,picked:false,offer:null,best:0,win:false,chkT:0,PH:['prep','wave','break','fail','over']};
 // the horde walks a little slower than infection-mode zombies: there are many more of them
 SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1};
-const SC_DIFF={hp:[.6,1,1.25,1.6],n:[.7,1,1.15,1.3],dmg:[.5,1,1.3,1.6]};
+const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;
 Object.assign(STR.ko,{scen:'좀비 시나리오',scenD:'협동 PvE — 감염 없이 끝까지 인간으로 싸운다. 스테이지 5개 × 웨이브 3번, 마지막엔 거대 좀비. 팀 목숨 3개: 전멸하면 그 스테이지를 다시 하고, 다 쓰면 게임 오버. 죽어도 다음 웨이브에 부활.',scDead:'다음 웨이브에 부활 — 관전 중',allies:'아군 봇'});
 Object.assign(STR.en,{scen:'Zombie Scenario',scenD:'Co-op PvE — no infection, you stay human. 5 stages × 3 waves, a giant at the end. 3 shared lives: a wipe replays the stage, losing them all ends the run. The fallen come back at the next wave.',scDead:'Back at the next wave — spectating',allies:'Ally bots'});
@@ -74,7 +74,7 @@ SCEN.makeWave=function(s,w){const H=SCEN.H.length,d=G.diff||0;let n=Math.round((
   if(s===SCEN.STAGES&&w===SCEN.WAVES){q.push('boss');n=Math.round(n*.5)}
   for(let i=0;i<n;i++){let r=Math.random()*tot;for(const [k,p] of W){r-=p;if(r<=0){q.push(k);break}}}return q};
 SCEN.hpFor=function(zc){const H=SCEN.H.length,d=G.diff||0;
-  if(zc==='boss')return Math.round(9000*(.6+.4*H)*SC_DIFF.hp[d]);
+  if(zc==='boss')return Math.round(8000*(.6+.4*H)*SC_DIFF.hp[d]);
   return Math.round(ZCLASS[zc].hp*.28*(1+.1*(H-1))*SC_DIFF.hp[d]*(1+.12*(SCEN.stage-1)+.05*(SCEN.wave-1)))};
 // claw damage scale (base zombie damage is tuned for infection; here claws only wound)
 SCEN.dmgMul=()=>.18*SC_DIFF.dmg[G.diff||0]*(1+.06*(SCEN.stage-1));
@@ -82,7 +82,7 @@ SCEN.dmgMul=()=>.18*SC_DIFF.dmg[G.diff||0]*(1+.06*(SCEN.stage-1));
 // a spawn point out of every human's sight and not too close; the big one needs room
 SCEN.spawnPoint=function(big){const H=SCEN.H.filter(h=>h.alive);const pts=MAP.zspawns.length?MAP.zspawns:MAP.spawns;const ok=[];
   for(const p of pts){const x=p[0],z=p[1],y=p[2]||0;let md=1e9,seen=false;for(const h of H){const d=Math.hypot(x-h.c.x,z-h.c.z);md=Math.min(md,d);if(d<28&&losClear(h.c.x,h.c.y+1.6,h.c.z,x,y+1.2,z))seen=true}
-    if(md<10||(seen&&md<30))continue;if(big&&!charFits({hw:.5,h:2.4},x,y+.05,z))continue;ok.push([x,y,z,md])}
+    if(md<10||(seen&&md<30))continue;if(big&&!charFits({hw:.45,h:2.2},x,y+.05,z))continue;ok.push([x,y,z,md])}
   if(!ok.length){const p=zSpawnPoint();return [p[0]+rr(-1,1),p[2]||0,p[1]+rr(-1,1)]}
   ok.sort((a,b)=>a[3]-b[3]);const p=ok[Math.floor(Math.random()*Math.min(ok.length,4))];return [p[0]+rr(-.8,.8),p[1],p[2]+rr(-.8,.8)]};
 // revive the longest-dead free slot of the pool as a zombie of class zc
@@ -169,7 +169,7 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
   // unstick: a body this big can wedge itself in a doorway — it jumps at its target
   S.stuck+=dt;if(S.stuck>4){const mv=Math.hypot(c.x-S.lx,c.z-S.lz);if(mv<.8&&a.bot&&a.bot.target&&c.onGround){const t=a.bot.target;const dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz)||1;c.vy=9;c.onGround=false;c.jumped=true;a.kvx+=dx/d*7;a.kvz+=dz/d*7}S.stuck=0;S.lx=c.x;S.lz=c.z}
   if(!S.half&&a.hp<a.maxHp*.5){S.half=true;S.sumT=0;HUD.announce(LI()?'The giant calls the horde!':'거대 좀비가 무리를 부른다!','z',2.5);if(NET.host)netEv('scbh',{})}
-  if(S.half){S.sumT-=dt;if(S.sumT<=0){S.sumT=20;SCEN.bossSummon(a)}}
+  if(S.half){S.sumT-=dt;if(S.sumT<=0){S.sumT=24;SCEN.bossSummon(a)}}
   const tg=a.bot&&a.bot.target;if(tg&&tg.alive&&Math.hypot(tg.c.x-c.x,tg.c.z-c.z)>3.2)S.far+=dt;else S.far=0;
   if(S.mode){S.mt-=dt;
     if(S.mode==='leapW'){a.an.skill=Math.max(a.an.skill,.6);if(S.mt<=0){S.mode='leap';S.mt=3;const t=a.bot&&a.bot.target;if(t)SCEN.leapTo(a,t.c.x,t.c.y,t.c.z,2);AU.at('zroar',c.x,c.y+3,c.z,{vol:1,range:90,rate:.8})}}
@@ -177,7 +177,7 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
     else if(S.mode==='dashW'){if(S.mt<=0){S.mode='dash';S.mt=1.1;S.hit=false;AU.at('zroar',c.x,c.y+3,c.z,{vol:1,range:80})}}
     else if(S.mode==='dash'){a.kvx=S.dx*15;a.kvz=S.dz*15;a.yaw=Math.atan2(-S.dx,-S.dz);
       if(Math.random()<dt*30)FX.spawn({x:c.x+rr(-.6,.6),y:c.y+.1,z:c.z+rr(-.6,.6),vy:rr(.3,.9),life:rr(.5,.9),s0:.3,s1:1,r:.4,g:.36,b:.3,a:.5,f:2,drag:2});
-      if(!S.hit)for(const h of SCEN.H){if(!h.alive)continue;if(Math.hypot(h.c.x-c.x,h.c.z-c.z)<c.hw+1&&Math.abs(h.c.y-c.y)<3){S.hit=true;SCEN.pushHuman(h,S.dx*13,7,S.dz*13);hurtHuman(h,40*SCEN.dmgMul()/.18,a,{claw:1});break}}
+      if(!S.hit)for(const h of SCEN.H){if(!h.alive)continue;if(Math.hypot(h.c.x-c.x,h.c.z-c.z)<c.hw+1&&Math.abs(h.c.y-c.y)<3){S.hit=true;SCEN.pushHuman(h,S.dx*13,7,S.dz*13);hurtHuman(h,30*SCEN.dmgMul()/.18,a,{claw:1});break}}
       if(S.mt<=0){S.mode='';a.kvx*=.2;a.kvz*=.2;S.pt=rr(3,5)}}
     else if(S.mode==='slamW'){a.an.skill=Math.max(a.an.skill,.3);if(S.mt<=0){S.mode='';S.pt=rr(3.5,5.5);SCEN.slam(a)}}
     return}
@@ -191,10 +191,10 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
   else S.pt=1};
 SCEN.slam=function(a){const c=a.c;SCEN.slamFx(c.x,c.y,c.z);if(NET.host)netEv('scsl',{x:r2(c.x),y:r2(c.y),z:r2(c.z)});
   for(const h of SCEN.H){if(!h.alive)continue;const dx=h.c.x-c.x,dz=h.c.z-c.z,d=Math.hypot(dx,dz);if(d>7.5||Math.abs(h.c.y-c.y)>2.5)continue;const f=1-d/7.5;
-    SCEN.pushHuman(h,dx/(d||1)*10*f,4+5*f,dz/(d||1)*10*f);hurtHuman(h,(14+36*f)*SCEN.dmgMul()/.18,a,{})}};
+    SCEN.pushHuman(h,dx/(d||1)*10*f,4+5*f,dz/(d||1)*10*f);hurtHuman(h,(10+30*f)*SCEN.dmgMul()/.18,a,{})}};
 SCEN.slamFx=function(x,y,z){for(let i=0;i<40;i++){const g=i/40*TAU;FX.spawn({x:x+Math.cos(g)*1.2,y:y+.15,z:z+Math.sin(g)*1.2,vx:Math.cos(g)*rr(5,9),vy:rr(.5,2),vz:Math.sin(g)*rr(5,9),life:rr(.6,1.1),s0:.4,s1:1.4,r:.45,g:.4,b:.34,a:.55,f:2,drag:2.5})}
   AU.at('explode',x,y+.5,z,{vol:.8,range:80,occ:false,rate:.6});const P=G.player;if(P){const pd=Math.hypot(P.c.x-x,P.c.z-z);if(pd<20)FX.shake=Math.max(FX.shake,1-pd/20)}};
-SCEN.bossSummon=function(a){let n=0;for(let i=0;i<6;i++){const g=i/6*TAU;const p=[a.c.x+Math.cos(g)*3,a.c.y+.1,a.c.z+Math.sin(g)*3];if(SCEN.spawn(Math.random()<.6?'rager':'runner',p))n++}
+SCEN.bossSummon=function(a){let n=0;for(let i=0;i<4;i++){const g=i/4*TAU+Math.random();const p=[a.c.x+Math.cos(g)*3,a.c.y+.1,a.c.z+Math.sin(g)*3];if(SCEN.spawn(Math.random()<.6?'rager':'runner',p))n++}
   if(n){AU.at('zroar',a.c.x,a.c.y+3,a.c.z,{vol:1,range:90});SCEN.slamFx(a.c.x,a.c.y,a.c.z);if(NET.host)netEv('scsl',{x:r2(a.c.x),y:r2(a.c.y),z:r2(a.c.z)})}};
 // a ballistic leap onto a target standing somewhere the body cannot walk to (crates, roofs): apex a little above the higher end
 SCEN.leapTo=function(a,x,y,z,over){const c=a.c,G0=GRAV;const apex=Math.max(c.y,y)+(over||1.2);const vy=Math.sqrt(2*G0*Math.max(.5,apex-c.y));
@@ -237,7 +237,7 @@ SCEN.renderUp=function(){const el=document.querySelector('#scPick .scUp'),P=G.pl
 SCEN.pickTick=function(){const t=document.querySelector('#scPick .tm');if(t){const s=Math.max(0,Math.ceil(SCEN.ph==='prep'?SCEN.t:0))+(LI()?'s':'초');if(t.textContent!==s)t.textContent=s}SCEN.renderUp()};
 // ---------- HUD ----------
 SCEN.hud=function(){const el=$('hScen');if(!el)return;const on=G.mode==='scen'&&G.st!=='menu'&&!!G.player;const ds=on?'block':'none';if(el.style.display!==ds)el.style.display=ds;HUD.el.hud.classList.toggle('scen',on);if(!on)return;const L=LI();
-  const s=`${L?'STAGE':'스테이지'} <b>${SCEN.stage}/${SCEN.STAGES}</b> · ${L?'WAVE':'웨이브'} <b>${Math.max(1,SCEN.wave)}/${SCEN.WAVES}</b> · ${L?'LEFT':'남은 좀비'} <b class="z">${SCEN.ph==='wave'?SCEN.remain:'-'}</b> · <span class="lv">${SC_HEART.repeat(Math.max(0,SCEN.lives))}<i>${SC_HEART.repeat(Math.max(0,3-SCEN.lives))}</i></span>`;
+  const s=`${L?'STAGE':'스테이지'} <b>${SCEN.stage}/${SCEN.STAGES}</b> · ${L?'WAVE':'웨이브'} <b>${Math.max(1,SCEN.wave)}/${SCEN.WAVES}</b> · ${L?'LEFT':'남은 좀비'} <b class="z">${SCEN.ph==='wave'?SCEN.remain:'-'}</b> · <span class="sclv">${SC_HEART.repeat(Math.max(0,SCEN.lives))}<i>${SC_HEART.repeat(Math.max(0,3-SCEN.lives))}</i></span>`;
   if(el.dataset.s!==s){el.dataset.s=s;el.querySelector('.ln').innerHTML=s}
   const b=SCEN.bossId>=0?byIdAny(SCEN.bossId):null,bar=el.querySelector('.boss');const bon=!!(b&&b.alive&&b.zc==='boss');if(bar.style.display!==(bon?'block':'none'))bar.style.display=bon?'block':'none';if(bon)bar.querySelector('u').style.width=Math.max(0,b.hp/b.maxHp*100).toFixed(1)+'%';
   // the wave clock counts up: never the red "time is running out" blink
@@ -285,7 +285,10 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
     if(on){const b=$('board'),h=b&&b.querySelector('h3'),fs=b&&b.querySelector('.finalScore'),L=LI();if(h)h.textContent=`${T('board')} — ${T('scen')} · ${L?'Stage':'스테이지'} ${SCEN.stage}/${SCEN.STAGES}`;
       if(fs)fs.innerHTML=`<span class="h">${L?'Wave':'웨이브'} ${Math.max(1,SCEN.wave)}/${SCEN.WAVES}</span> · <span class="z">${L?'Lives':'목숨'} ${SCEN.lives}</span>`}};
   const sr=UI.showResults.bind(UI);UI.showResults=function(){if(G.mode!=='scen')return sr();const all=G.actors;G.actors=SCEN.H;try{sr()}finally{G.actors=all}
+    const sp=document.querySelector('#results .mvp span');if(sp)sp.textContent=sp.textContent.replace(' · '+T('infects')+' 0','');
     const L=LI(),fs=document.querySelector('#results .finalScore');if(fs)fs.innerHTML=SCEN.win?`<span class="h">${L?'SCENARIO CLEAR':'시나리오 클리어'}</span> <small>· ${L?'all':'전체'} ${SCEN.STAGES} ${L?'stages':'스테이지'}</small>`:`<span class="z">${L?'GAME OVER':'게임 오버'}</span> <small>· ${L?'cleared stages':'클리어 스테이지'} ${SCEN.best}/${SCEN.STAGES}</small>`};
+  // nobody gets infected here: the infections column goes
+  const tb=UI.table.bind(UI);UI.table=function(A){const h=tb(A);if(G.mode!=='scen')return h;const d=document.createElement('div');d.innerHTML=h;for(const tr of d.querySelectorAll('tr')){const c=tr.children[3];if(c)c.remove()}return d.innerHTML};
   const hi=HUD.init.bind(HUD);HUD.init=function(){hi();const el=document.createElement('div');el.id='hScen';el.innerHTML='<div class="ln"></div><div class="boss"><span>'+(LI()?'THE GIANT':'거대 좀비')+'</span><i><u></u></i></div>';$('hud').appendChild(el);
     const pk=document.createElement('div');pk.id='scPick';pk.className='panel off';$('app').appendChild(pk)};
   const hu=HUD.update.bind(HUD);HUD.update=function(dt){hu(dt);SCEN.hud()};
