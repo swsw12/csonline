@@ -94,7 +94,7 @@ const _pr=new THREE.Color(),_fyo=[0,0,0,0];
 function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.isPlayer&&!G.spec&&a.alive)&&(a.alive||a.deadT<60||!a.permaDead||G.st!=='menu');
   ch.grp.visible=show&&(a.alive||a.an.dead>0);if(!ch.grp.visible){if(a.gun)a.gun.visible=false;return}
   const an=a.an;an.atk=Math.max(0,an.atk-dt/(an.atkD||.42));an.flinch=Math.max(0,an.flinch-dt*4);an.flx=(an.flx||0)*Math.exp(-dt*5);an.skill=Math.max(0,an.skill-dt);
-  if(!a.alive)an.dead=Math.min(1,an.dead+dt*2.2);else if(a.reviving>0){a.reviving=Math.max(0,a.reviving-dt);an.dead=a.reviving/1.2}else an.dead=0;
+  if(!a.alive)an.dead=Math.min(1,an.dead+dt*2.2);else if(a.reviving>0){an.dead=a.reviving/1.2}else an.dead=0;
   // locomotion state for animation: body-space velocity, a stride clock tied to distance, turn rate, acceleration, smoothed crouch / air / sprint
   const sp=Math.hypot(c.vx,c.vz);const k10=1-Math.exp(-dt*10),k6=1-Math.exp(-dt*6);
   const fx=-Math.sin(a.yaw),fz=-Math.cos(a.yaw);const vF=c.vx*fx+c.vz*fz,vS=-c.vx*fz+c.vz*fx;an.mvF=lerp(an.mvF||0,vF,k10);an.mvS=lerp(an.mvS||0,vS,k10);
@@ -404,6 +404,8 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       // badly hurt zombies leave a trail of blood
       if(a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
       if(a.turning>0){a.turning-=dt;a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=a.cmd.jump=a.cmd.skill=false;a.mvx*=.8;a.mvz*=.8}
+      // the get-up timer runs here, not in updateVisual: the local player's own body is never drawn, so it would never count down there
+      if(a.reviving>0)a.reviving=Math.max(0,a.reviving-dt);
       if(a.pup)netPuppet(a,dt);else if(a.reviving<=0){actorPhysics(a,dt);if(!(a.turning>0))actorWeapons(a,dt)}
       if(a.team===TZ&&a.frozen>0&&Math.random()<dt*6)FX.spawn({x:a.c.x+rr(-.3,.3),y:a.c.y+rr(.2,1.8),z:a.c.z+rr(-.3,.3),vy:-.3,life:.6,s0:.08,s1:.04,r:.8,g:.95,b:1,f:10,add:1});
       Object.assign(a.pc,a.cmd)}
