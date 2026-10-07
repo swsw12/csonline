@@ -8,6 +8,10 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.0','2026-10-08',[
+ ['NEW','이탈리아 맵 전면 재제작 — 3D 레퍼런스의 지형·높낮이·골목을 그대로 따라 새로 지음 (남쪽 낮은 거리 → 시장 → 북쪽 윗마을, 계단·아치·실내)','Italy rebuilt from a 3D reference: the real street plan, levels, stairs, arches and rooms'],
+ ['NEW','신규 맵 「빅트리」 — 거대한 고목이 자라난 폐허 성채. 나무 데크·성탑 옥상·성벽 회랑·마른 연못까지 3단 높낮이','New map: Big Tree — a ruined castle round a giant tree, three height levels'],
+ ['UP','이탈리아 지형 출처: "Cs_Italy with real light" by Neo_minigan (CC BY 4.0)','Italy geometry reference: "Cs_Italy with real light" by Neo_minigan (CC BY 4.0)']]],
 ['v5.9.1','2026-10-08',[
  ['NEW','전체화면 버튼 — 로비·일시정지·옵션, 게임 중 Alt+Enter (아이폰은 홈 화면 추가 안내)','Fullscreen button in the lobby, pause menu and options, Alt+Enter in game (iPhone: add-to-home-screen help)'],
  ['FIX','무기를 바꿔 이어 친 데미지가 숫자 하나로 합쳐져 표시','Damage dealt right after a weapon swap now shows as one merged number']]],
@@ -94,7 +98,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v5.9 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.0 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

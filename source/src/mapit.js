@@ -1,10 +1,8 @@
 'use strict';
 // ============ Map "이탈리아 Italy": a hill town on a summer afternoon ============
-// The street plan comes from ITALY_DATA (a 0.5 m grid traced from a top-down plan). On top of it the west quarter (spawn piazza,
-// the lane, the north piazza) sits one storey up behind retaining walls; a long stepped ramp, the north stairs and a house you walk
-// through (wallpapered upper floor, inner stair, ground floor) join it to the lower town. The covered cantina is a sunken wine
-// cellar with an open stairwell at one end and a stair tunnel at the other; the east square gets a high terrace. Every walkable
-// 0.5 m cell has a floor height; ground boxes, wall faces, rubble plinths, copings and railings are derived from those heights.
+// v6: rebuilt from a 3D reference of the town. The reference was voxelised at 0.25 m offline, the air reachable from the sky flood-filled,
+// everything else made solid, and each column's solid runs merged into boxes (ITALY_DATA, mapit_data.js). Reachable floor tops keep
+// their exact height; roofs and wall heads round up to 0.5 m. Only the geometry is taken: every surface is painted here.
 Object.assign(MATS,{
   facA:{t:'facA',s:3,k:'stone'},facB:{t:'facB',s:3,k:'stone'},facC:{t:'facC',s:3,k:'stone'},
   roofIt:{t:'roofIt',s:2,k:'stone',cs:2},cobble:{t:'cobble',s:1.5},pavers:{t:'pavers',s:2.4},cobbleR:{t:'cobbleR',s:1.5},
@@ -194,264 +192,21 @@ function bakeItTex(){if(TEX.facA)return;
   TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter;TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false;
   const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['facA','facB','facC','roofIt','cobble','cobbleR','pavers','stoneIt','retW','rubble','cellarF','woodFl'])TEX[k].anisotropy=an;
   MIXC.clear();VN_T.clear();_vnK=-1;_vnT=null;_fbC.length=0}
-// ---------- plan: the traced grid with a few edits, and a floor height for every walkable cell ----------
-const IT_U=3,IT_CEL=-2.4;
-// K (cell kind): 0 street, 1 ramp, 2 cellar floor, 3 upper quarter (iron railings), 4 stair (wooden treads), 5 east terrace (wooden railings), 6 cellar stair
-function itPlan(){const D=ITALY_DATA,NX=D.nx,NZ=D.nz,CS=D.cs,X0=D.x0,Z0=D.z0;
-  const G=D.grid.split('|').map(r=>r.split(''));
-  const I=x=>Math.round((x-X0)/CS),J=z=>Math.round((z-Z0)/CS);
-  const set=(r,c,only)=>{for(let j=Math.max(0,J(r[1]));j<Math.min(NZ,J(r[3]));j++)for(let i=Math.max(0,I(r[0]));i<Math.min(NX,I(r[2]));i++)if(!only||only.indexOf(G[j][i])>=0)G[j][i]=c};
-  // houses cut away: the sliver in front of the walk-through house, a post at the cellar stair, the tunnel out of the cellar
-  const carve=[[-11.5,-3.5,-3.5,-2.5],[7,17,10,17.5],[27,17.5,29,20.5]];
-  set(carve[0],'s');set([7,17,7.5,17.5],'s');set([7.5,17,10,17.5],'d');set(carve[2],'d');
-  set([20.5,14,27,16.5],'d','s');set([11,22,12.5,26],'d','s');// the light well and the wine alcove belong to the cellar
-  const walk=c=>c==='s'||c==='p'||c==='g'||c==='d'||c==='w';
-  const H=new Float32Array(NX*NZ),K=new Uint8Array(NX*NZ);
-  const inR=(x,z,r)=>x>r[0]&&x<r[2]&&z>r[1]&&z<r[3];
-  const UP=[[-41,-17,-14,0],[-20,-15,1.5,-9.5],[-20,0,-13.5,3.5]];
-  for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const c=G[j][i];if(!walk(c))continue;const x=X0+(i+.5)*CS,z=Z0+(j+.5)*CS;let h=0,t=0;
-    if(c==='d'){h=IT_CEL;t=2;
-      if((x<11.5&&z<21.5)||(x<10&&z<22.5)){h=-.3*(Math.floor((x-7.5)/.5)+1);t=6}// open stairwell down from the street
-      else if(x>25&&z>17.5&&z<20.5){h=IT_CEL+.3*(Math.floor((x-25)/.5)+1);t=6}}// the stair tunnel up to the east lane
-    else if(c!=='w'){
-      if(UP.some(r=>inR(x,z,r))){h=IT_U;t=3}
-      if(x<-33&&z<0){h=Math.min(IT_U,.15*Math.floor((z+15)/.5));t=h>=IT_U?3:1}// the lane climbs from the gate up to the piazza level
-      if(x>-18&&x<-8&&z>-6&&z<3.5){h=IT_U-.15*(Math.floor((x+18)/.5)+1);t=1}// the long stepped ramp
-      if(x>-1&&x<1.5&&z>-17.5&&z<-12.5){h=.3*(Math.floor((z+17.5)/.5)+1);t=4}// the north stairs
-      if(x>31.5&&x<33.5&&z>12&&z<17){h=.3*(Math.floor((z-12)/.5)+1);t=4}// stairs up to the east terrace
-      if(x>33.5&&x<40.5&&z>12&&z<21.5){h=IT_U;t=5}}
-    H[j*NX+i]=Math.round(h*100)/100;K[j*NX+i]=t}
-  return {G,H,K,carve}}
-// ---------- geometry ----------
-function buildItaly(){const D=ITALY_DATA,N='none',PL=itPlan(),G=PL.G,HH=PL.H,KK=PL.K,NX=D.nx,NZ=D.nz,CS=D.cs,X0=D.x0,Z0=D.z0,U=IT_U,CEL=IT_CEL;
-  const cI=x=>Math.floor((x-X0)/CS),cJ=z=>Math.floor((z-Z0)/CS),inG=(i,j)=>i>=0&&j>=0&&i<NX&&j<NZ;
-  const at=(x,z)=>{const i=cI(x),j=cJ(z);return inG(i,j)?G[j][i]:'.'};
-  const hAt=(x,z)=>{const i=cI(x),j=cJ(z);return inG(i,j)?HH[j*NX+i]:0};
-  const kAt=(x,z)=>{const i=cI(x),j=cJ(z);return inG(i,j)?KK[j*NX+i]:0};
-  const walk=c=>c==='s'||c==='p'||c==='d'||c==='g'||c==='w';
-  const floorC=c=>walk(c)&&c!=='w';
-  const H=(a,b,c)=>hash2(Math.round(a*7),Math.round(b*7),c);
-  const DIRS=[[1,0],[-1,0],[0,1],[0,-1]],OUTF=['px','nx','pz','nz'];
-  // a box hugging one edge of a cell: d = side (0 +x, 1 -x, 2 +z, 3 -z), L = the edge line, u0..u1 along it, i0..i1 = depth into the cell
-  const edgeBox=(d,L,u0,u1,i0,i1,y0,y1,mat,o)=>d===0?B(L-i1,y0,u0,L-i0,y1,u1,mat,o):d===1?B(L+i0,y0,u0,L+i1,y1,u1,mat,o):d===2?B(u0,y0,L-i1,u1,y1,L-i0,mat,o):B(u0,y0,L+i0,u1,y1,L+i1,mat,o);
-  // walk all cell edges (cell, side, neighbour) and gather runs of edges that share a key along the same line
-  const edgeRuns=(fn,emit)=>{const runs=new Map();
-    for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++)for(let d=0;d<4;d++){const i2=i+DIRS[d][0],j2=j+DIRS[d][1];if(!inG(i2,j2))continue;const key=fn(i,j,i2,j2,d);if(key==null)continue;
-      const line=d===0?i+1:d===1?i:d===2?j+1:j,along=d<2?j:i,kk=d+'|'+line+'|'+key;let r=runs.get(kk);if(!r)runs.set(kk,r=[]);r.push(along)}
-    for(const [kk,arr] of runs){const p=kk.split('|'),d=+p[0],line=+p[1],key=p.slice(2).join('|');arr.sort((a,b)=>a-b);const L=(d<2?X0:Z0)+line*CS,o=d<2?Z0:X0;let s=arr[0],q=arr[0];
-      for(let n=1;n<=arr.length;n++){if(n<arr.length&&arr[n]===q+1){q=arr[n];continue}emit(d,L,o+s*CS,o+(q+1)*CS,key);if(n<arr.length)s=q=arr[n]}}};
-  const roofed=(i,j)=>{const k=KK[j*NX+i];if(k!==2&&k!==6)return false;const x=X0+(i+.5)*CS,z=Z0+(j+.5)*CS;return !(k===6&&x<12)&&!(x>20.5&&z<16.5)};
-  // ---- ground: one box per run of cells with the same floor height and finish; risers and retaining walls are the box sides
-  const TOP={s:'cobble',p:'pavers',g:'cobbleR',d:'cellarF'};
-  const gkey=new Array(NX*NZ);
-  for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const c=G[j][i],k=j*NX+i;if(!floorC(c))continue;const t=KK[k],h=HH[k];
-    let lo=h;for(const [a,b] of DIRS){const i2=i+a,j2=j+b;if(inG(i2,j2)&&floorC(G[j2][i2]))lo=Math.min(lo,HH[j2*NX+i2])}
-    const top=t===4?'stepW':t===6?'stoneIt':TOP[c]||'cobble',side=t===3||t===5?'retW':t===0||t===2?'cellarW':'stoneIt';
-    const gr=t===0&&lo>-.01,y0=gr?-1:Math.min(t===0||t===2||t===6?-1:0,Math.round((lo-.6)*100)/100);
-    gkey[k]=h+'|'+top+'|'+side+'|'+y0+'|'+(gr?1:0)+'|'+(t===1||t===4||t===6?1:0)}
-  {const used=new Uint8Array(NX*NZ);
-    for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i;if(used[k]||!gkey[k])continue;const key=gkey[k];let i1=i;while(i1+1<NX&&!used[k+i1+1-i]&&gkey[k+i1+1-i]===key)i1++;
-      let j1=j;for(;;){if(j1+1>=NZ)break;let ok=true;for(let q=i;q<=i1;q++){const kk=(j1+1)*NX+q;if(used[kk]||gkey[kk]!==key){ok=false;break}}if(!ok)break;j1++}
-      for(let jj=j;jj<=j1;jj++)for(let q=i;q<=i1;q++)used[jj*NX+q]=1;
-      const p=key.split('|'),hh=+p[0],x0=X0+i*CS,x1=X0+(i1+1)*CS,z0=Z0+j*CS,z1=Z0+(j1+1)*CS;const o=p[4]==='1'?{ground:1}:{f:{py:p[1],ny:N}};if(p[5]==='1')o.stair=1;
-      B(x0,+p[3],z0,x1,hh,z1,p[4]==='1'?p[1]:p[2],o)}}
-  // ---- pools and the water channel: a stone basin you can wade into, a fountain in the big one
-  {const seen=new Uint8Array(NX*NZ);
-  for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){if(G[j][i]!=='w'||seen[j*NX+i])continue;let i0=i,i1=i,j0=j,j1=j;const st=[[i,j]];seen[j*NX+i]=1;
-    while(st.length){const [a,b]=st.pop();i0=Math.min(i0,a);i1=Math.max(i1,a);j0=Math.min(j0,b);j1=Math.max(j1,b);
-      for(const [c,d] of [[a+1,b],[a-1,b],[a,b+1],[a,b-1]])if(inG(c,d)&&G[d][c]==='w'&&!seen[d*NX+c]){seen[d*NX+c]=1;st.push([c,d])}}
-    const x0=X0+i0*CS,x1=X0+(i1+1)*CS,z0=Z0+j0*CS,z1=Z0+(j1+1)*CS,r=Math.min(x1-x0,z1-z0)<2?.2:.35;
-    B(x0,-1.6,z0,x1,-.6,z1,'stoneIt',{ground:1});B(x0,-.6,z0,x1,.45,z0+r,'stoneIt');B(x0,-.6,z1-r,x1,.45,z1,'stoneIt');B(x0,-.6,z0+r,x0+r,.45,z1-r,'stoneIt');B(x1-r,-.6,z0+r,x1,.45,z1-r,'stoneIt');
-    B(x0+r,-.14,z0+r,x1-r,-.12,z1-r,'water',{nosolid:true});
-    if(Math.min(x1-x0,z1-z0)>3){const cx=(x0+x1)/2,cz=(z0+z1)/2;B(cx-.5,-.6,cz-.5,cx+.5,.85,cz+.5,'stoneIt');B(cx-1,.85,cz-1,cx+1,1.1,cz+1,'stoneIt');B(cx-.85,1.06,cz-.85,cx+.85,1.1,cz+.85,'water',{nosolid:true});
-      B(cx-.2,1.1,cz-.2,cx+.2,2.1,cz+.2,'stoneIt');B(cx-.36,2.1,cz-.36,cx+.36,2.24,cz+.36,'stoneIt');B(cx-.12,2.24,cz-.12,cx+.12,2.6,cz+.12,'stoneIt');MAP.spray.push([cx,2.5,cz])}}}
-  // ---- houses: stucco blocks with terracotta roofs; faces that only see the outside are not drawn
-  const CARVE=PL.carve.concat([[-14,-10,-1.5,-3.5]]);// the walk-through house is built by hand below
-  const subR=(p,c)=>{if(p[2]<=c[0]||p[0]>=c[2]||p[3]<=c[1]||p[1]>=c[3])return [p];const out=[],q=(a,b,e,f)=>{if(e-a>.01&&f-b>.01)out.push([a,b,e,f].concat(p.slice(4)))};
-    q(p[0],p[1],c[0],p[3]);q(c[2],p[1],p[2],p[3]);const mx0=Math.max(p[0],c[0]),mx1=Math.min(p[2],c[2]);q(mx0,p[1],mx1,c[1]);q(mx0,c[3],mx1,p[3]);return out};
-  const blds=[];for(const b of D.bld){if(b[6]===3){blds.push(b.slice());continue}let parts=[b.slice()];for(const c of CARVE){const np=[];for(const p of parts)np.push(...subR(p,c));parts=np}blds.push(...parts)}
-  // a house that only shows a storey above the upper quarter is raised; the wall behind the fresco is lifted for it
-  // the east edge is kept low beside the terrace so the hills show over it
-  for(const b of blds){if(b[0]>=40.4&&b[6]===0)b[4]=5.8;if(b[6]===3&&b[0]>=42.9&&b[3]>4&&b[1]<26)b[4]=Math.min(b[4],6.5)}
-  for(const b of blds){if(b[6]===3)continue;let lv=0,cel=false;const [x0,z0,x1,z1]=b;
-    for(let x=x0+.25;x<x1;x+=.5)for(const z of [z0-.25,z1+.25]){const c=at(x,z);if(floorC(c)){const t=kAt(x,z);if(t===2||t===6)cel=true;else lv=Math.max(lv,hAt(x,z))}}
-    for(let z=z0+.25;z<z1;z+=.5)for(const x of [x0-.25,x1+.25]){const c=at(x,z);if(floorC(c)){const t=kAt(x,z);if(t===2||t===6)cel=true;else lv=Math.max(lv,hAt(x,z))}}
-    if(b[6]!==0&&b[4]-lv<4.5)b[4]=Math.round((lv+4.5+H(x0,z0,71)*2.5)*2)/2;b.cel=cel;if(x0<-27.5&&x1>-27.5&&z0<-15.2&&z1>-15.2)b[4]=Math.max(b[4],9.5)}
-  const lanterns=[],lines=[],doorZ=[];
-  const near=(L,x,z,d)=>L.some(p=>Math.hypot(p[0]-x,p[1]-z)<d);
-  const flatK=t=>t===0||t===3||t===5;
-  for(const b of blds){const [x0,z0,x1,z1,h,v,k]=b;const mat=['facA','facB','facC'][v];const f={py:'roofIt',ny:N};const open={};
-    if(k===3){// backdrop beyond the edge: only the faces turned toward the town are drawn
-      const cx=(x0+x1)/2,cz=(z0+z1)/2;if(cx>0)f.px=N;else f.nx=N;if(cz>0)f.pz=N;else f.nz=N;B(x0,0,z0,x1,h,z1,mat,{f});
-      if(x1-x0>=3&&H(x0,z0,61)<.5){B(x0+.3,h,z0+.6,x1-.3,h+.5,z1-.6,'roofIt',{nosolid:true,f:{ny:N}})}continue}
-    for(const fk of OUTF){let w=0,o=0,n=0;const ax=fk==='px'||fk==='nx';const fixed=fk==='px'?x1+.25:fk==='nx'?x0-.25:fk==='pz'?z1+.25:z0-.25;
-      for(let u=(ax?z0:x0)+.25;u<(ax?z1:x1);u+=.5){const c=ax?at(fixed,u):at(u,fixed);n++;if(walk(c))w++;else if(c==='.')o++}
-      if(o===n)f[fk]=N;open[fk]=w}
-    B(x0,0,z0,x1,h,z1,mat,{f});
-    if(b.cel)B(x0,-3.2,z0,x1,0,z1,'cellarW',{f:{py:N,ny:N}});// foundations: the cellar walls
-    const w=x1-x0,d=z1-z0;
-    // eaves over the street sides, a ridge on wide roofs, the odd chimney
-    const E={nosolid:true,f:{ny:'woodIt',px:'woodIt',nx:'woodIt',pz:'woodIt',nz:'woodIt'}};
-    if(open.px)B(x1,h-.24,z0,x1+.42,h,z1,'roofIt',E);if(open.nx)B(x0-.42,h-.24,z0,x0,h,z1,'roofIt',E);if(open.pz)B(x0,h-.24,z1,x1,h,z1+.42,'roofIt',E);if(open.nz)B(x0,h-.24,z0-.42,x1,h,z0,'roofIt',E);
-    if(Math.min(w,d)>=4){const R={nosolid:true,f:{ny:N}};if(w>=d){const cz=(z0+z1)/2;B(x0+.3,h,cz-d*.3,x1-.3,h+.45,cz+d*.3,'roofIt',R);B(x0+.5,h+.45,cz-d*.13,x1-.5,h+.8,cz+d*.13,'roofIt',R)}
-      else{const cx=(x0+x1)/2;B(cx-w*.3,h,z0+.3,cx+w*.3,h+.45,z1-.3,'roofIt',R);B(cx-w*.13,h+.45,z0+.5,cx+w*.13,h+.8,z1-.5,'roofIt',R)}}
-    if(k===1&&H(x0,z0,1)<.35&&w>2&&d>2){const cx=x0+.6+H(x0,z1,2)*(w-1.2),cz=z0+.6+H(x1,z0,3)*(d-1.2);B(cx-.3,h,cz-.3,cx+.3,h+1.3,cz+.3,'stoneIt',{nosolid:true});B(cx-.38,h+1.3,cz-.38,cx+.38,h+1.42,cz+.38,'stoneIt',{nosolid:true})}
-    // the street faces: doors at street level (some under a little tiled hood), flower boxes, balconies, lanterns, laundry across narrow lanes
-    for(const fk of OUTF){if(open[fk]<4)continue;const ax=fk==='px'||fk==='nx';const sgn=fk==='px'||fk==='pz'?1:-1;const wall=fk==='px'?x1:fk==='nx'?x0:fk==='pz'?z1:z0;
-      if(fk==='pz'&&Math.abs(wall+15)<.01&&x0<-27.5&&x1>-27.5)continue;// the fresco wall stays bare
-      const a0=ax?z0:x0,a1=ax?z1:x1;const P=(u,o)=>ax?[wall+sgn*o,u]:[u,wall+sgn*o];
-      const FB=(u0,u1,y0,y1,o0,o1,m,oo)=>{const p0=P(u0,o0),p1=P(u1,o1);B(p0[0],y0,p0[1],p1[0],y1,p1[1],m,oo)};
-      const front=u=>{const q=P(u,.6),c=at(q[0],q[1]);if(!floorC(c))return null;const t=kAt(q[0],q[1]);if(t===2||t===6)return null;return {y:hAt(q[0],q[1]),t}};
-      for(let u=Math.ceil((a0-1.5)/3)*3+1.5;u<=a1-.6;u+=3){if(u-.6<a0)continue;const F=front(u);if(!F)continue;const gy=F.y,r=H(u,wall,11);
-        if(r<.16&&flatK(F.t)&&u-.75>a0&&u+.75<a1){const l=front(u-.6),rr=front(u+.6);if(l&&rr&&l.y===gy&&rr.y===gy){
-          FB(u-.65,u+.65,gy,gy+2.5,0,.04,'doorIt',{nosolid:true});FB(u-.8,u-.65,gy,gy+2.7,0,.12,'stoneIt',{nosolid:true});FB(u+.65,u+.8,gy,gy+2.7,0,.12,'stoneIt',{nosolid:true});FB(u-.8,u+.8,gy+2.5,gy+2.7,0,.12,'stoneIt',{nosolid:true});
-          const p0=P(u-.85,-.1),p1=P(u+.85,.6);doorZ.push([Math.min(p0[0],p1[0]),Math.min(p0[1],p1[1]),Math.max(p0[0],p1[0]),Math.max(p0[1],p1[1])]);
-          if(H(u,wall,12)<.4)FB(u-1.05,u+1.05,gy+2.82,gy+2.92,0,.72,'roofIt',{nosolid:true,f:{ny:'woodIt',px:'woodIt',nx:'woodIt',pz:'woodIt',nz:'woodIt'}})}}
-        const f0=Math.floor(gy/3+.01)+1;
-        for(let fl=f0;3*fl+2.5<h;fl++){const q=H(u,wall,20+fl);
-          if(q<.3)FB(u-.58,u+.58,3*fl+.74,3*fl+1,0,.26,'flowers',{nosolid:true});
-          else if(fl===f0&&q>.84&&u-1>a0&&u+1<a1){FB(u-.95,u+.95,3*fl+.82,3*fl+.97,0,.95,'stoneIt',{nosolid:true});FB(u-.95,u+.95,3*fl+.97,3*fl+1.9,.9,.95,'ironRail',{nosolid:true});FB(u-.95,u-.9,3*fl+.97,3*fl+1.9,0,.95,'ironRail',{nosolid:true});FB(u+.9,u+.95,3*fl+.97,3*fl+1.9,0,.95,'ironRail',{nosolid:true})}}}
-      for(let u=Math.ceil(a0/3)*3;u<=a1-.5;u+=3){if(u-.3<a0)continue;const F=front(u);if(!F)continue;const gy=F.y,pp=P(u,.5);
-        if(lanterns.length<40&&!near(lanterns,pp[0],pp[1],9)&&h-gy>4.5&&flatK(F.t)){lanterns.push(pp);FB(u-.05,u+.05,gy+3.35,gy+3.45,0,.42,'metal2',{nosolid:true});FB(u-.13,u+.13,gy+2.95,gy+3.3,.3,.56,'lampO',{nosolid:true});FB(u-.17,u+.17,gy+3.3,gy+3.38,.26,.6,'metal2',{nosolid:true})}
-        // laundry: find the house across the lane
-        if(lines.length<18&&h-gy>6.2){let dist=0;for(let o=1;o<=6.5;o+=.5){const q=P(u,o);if(!walk(at(q[0],q[1]))){dist=o;break}}
-          if(dist>=2&&H(u,wall,31)<.5&&!near(lines,P(u,dist/2)[0],P(u,dist/2)[1],6)){const y=gy+5.7,mid=P(u,dist/2);lines.push(mid);
-            FB(u-.012,u+.012,y,y+.02,0,dist,'metal2',{nosolid:true});for(let o=.6;o<dist-.4;o+=.7+H(o,u,32)*.5){const cm='cloth'+Math.floor(H(o,u,33)*3);const wd=.35+H(o,u,34)*.3;FB(u-.01,u+.01,y-.55-H(o,u,35)*.3,y,o,Math.min(dist-.2,o+wd),cm,{nosolid:true})}}}}}}
-  itHouse(doorZ);
-  // ---- copings and railings along every drop; stairs get a stepped stucco parapet, the east terrace a wooden rail on a low wall
-  const GAP=[[38.6,11.9,39.8,12.1]];// no rail where the crates come up
-  edgeRuns((i,j,i2,j2,d)=>{const k=j*NX+i,k2=j2*NX+i2;if(!floorC(G[j][i])||!floorC(G[j2][i2]))return null;const dh=HH[k]-HH[k2];if(dh<.55||roofed(i2,j2))return null;
-    {const ex=d<2?X0+(d===0?i+1:i)*CS:X0+(i+.5)*CS,ez=d<2?Z0+(j+.5)*CS:Z0+(d===2?j+1:j)*CS;if(GAP.some(r=>ex>=r[0]&&ex<=r[2]&&ez>=r[1]&&ez<=r[3]))return null}
-    const t=KK[k];return HH[k]+'|'+(t===4||t===6?'p':t===5?'w':'i')+'|'+(dh>=1?1:0)},(d,L,u0,u1,key)=>{const p=key.split('|'),ha=+p[0],st=p[1],rail=p[2]==='1';
-    if(st==='p'){edgeBox(d,L,u0,u1,0,.22,ha,ha+.95,'retW',{f:{py:'stoneIt'}});return}
-    if(st==='w'){edgeBox(d,L,u0,u1,0,.3,ha,ha+.3,'stoneIt');if(!rail)return;const n=Math.max(1,Math.round((u1-u0)/1.4));
-      for(let q=0;q<=n;q++){const u=lerp(u0+.06,u1-.06,q/n);edgeBox(d,L,u-.05,u+.05,.1,.2,ha+.3,ha+1.08,'woodIt')}
-      edgeBox(d,L,u0,u1,.11,.19,ha+.62,ha+.7,'woodIt');edgeBox(d,L,u0,u1,.09,.21,ha+.99,ha+1.08,'woodIt');return}
-    edgeBox(d,L,u0,u1,0,.3,ha,ha+.08,'stoneIt');if(!rail)return;const n=Math.max(1,Math.round((u1-u0)/1.6));
-    for(let q=0;q<=n;q++){const u=lerp(u0+.04,u1-.04,q/n);edgeBox(d,L,u-.03,u+.03,.11,.17,ha+.08,ha+1.06,'metal2')}
-    edgeBox(d,L,u0,u1,.13,.15,ha+.08,ha+.99,'ironRail',{pass:1});edgeBox(d,L,u0,u1,.1,.18,ha+.99,ha+1.06,'metal2')});
-  // ---- rubble plinths along every wall foot: house fronts and the faces of the retaining walls
-  edgeRuns((i,j,i2,j2,d)=>{const k=j*NX+i,c=G[j][i];if(!floorC(c))return null;const t=KK[k];if(t===2||t===6)return null;const c2=G[j2][i2],hb=HH[k];let top;
-    if(c2==='#')top=hb+1.15;else if(floorC(c2)){const dh=HH[j2*NX+i2]-hb;if(dh<.9)return null;top=hb+Math.min(1.15,dh-.14)}else return null;
-    const ex=d<2?X0+(d===0?i+1:i)*CS:X0+(i+.5)*CS,ez=d<2?Z0+(j+.5)*CS:Z0+(d===2?j+1:j)*CS;if(doorZ.some(r=>ex>=r[0]&&ex<=r[2]&&ez>=r[1]&&ez<=r[3]))return null;
-    return hb+'|'+top.toFixed(2)},(d,L,u0,u1,key)=>{const p=key.split('|'),f={ny:N};f[OUTF[d]]=N;edgeBox(d,L,u0,u1,0,.07,+p[0]-.02,+p[1],'rubble',{nosolid:true,f})});
-  // ---- the wine cellar: roof, walls where it meets the street, beams, racks, barrels, lanterns
-  {const rk=new Array(NX*NZ);for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++)if(roofed(i,j))rk[j*NX+i]=X0+(i+.5)*CS>27?'t':'h';
-    const used=new Uint8Array(NX*NZ);
-    for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){const k=j*NX+i;if(used[k]||!rk[k])continue;const key=rk[k];let i1=i;while(i1+1<NX&&!used[k+i1+1-i]&&rk[k+i1+1-i]===key)i1++;
-      let j1=j;for(;;){if(j1+1>=NZ)break;let ok=true;for(let q=i;q<=i1;q++){const kk=(j1+1)*NX+q;if(used[kk]||rk[kk]!==key){ok=false;break}}if(!ok)break;j1++}
-      for(let jj=j;jj<=j1;jj++)for(let q=i;q<=i1;q++)used[jj*NX+q]=1;
-      const y0=key==='t'?2.6:1,y1=key==='t'?3:2.6;B(X0+i*CS,y0,Z0+j*CS,X0+(i1+1)*CS,y1,Z0+(j1+1)*CS,'retW',{f:{ny:'beamC',py:'roofFl'}})}}
-  edgeRuns((i,j,i2,j2)=>{if(!roofed(i,j)||!floorC(G[j2][i2]))return null;const t2=KK[j2*NX+i2];if(t2===2||t2===6)return null;const ha=HH[j*NX+i];if(HH[j2*NX+i2]-ha<.55)return null;return ha+''},
-    (d,L,u0,u1,key)=>{const f={};f[OUTF[d]]='retW';edgeBox(d,L,u0,u1,0,.3,+key,1,'cellarW',{f})});
-  {// along the hall: find the walls north and south of the middle line, put racks against the long straight stretches
-    const wallZ=(x,dir)=>{let z=19.25;for(let s=0;s<14;s++){const z2=z+dir*.5;if(!(kAt(x,z2)===2||kAt(x,z2)===6)||!floorC(at(x,z2)))return dir>0?z+.25:z-.25;z=z2}return null};
-    const runs=[];for(let x=12.75;x<24;x+=.5)for(const dir of [1,-1]){if(dir<0&&x>20.5)continue;const wz=wallZ(x,dir);if(wz==null)continue;const r=runs.find(q=>q.dir===dir&&q.z===wz&&Math.abs(q.x1-(x-.25))<.01);if(r)r.x1=x+.25;else runs.push({dir,z:wz,x0:x-.25,x1:x+.25})}
-    for(const r of runs){const len=r.x1-r.x0;if(len<1.2)continue;const n=Math.floor(len/1.25);for(let q=0;q<n;q++){const xa=r.x0+(len-n*1.25)/2+q*1.25;if(H(xa,r.z,91)<.2)continue;
-      if(r.dir>0)B(xa+.03,CEL,r.z-.42,xa+1.22,CEL+2.3,r.z,'woodIt',{f:{nz:'rack'}});else B(xa+.03,CEL,r.z,xa+1.22,CEL+2.3,r.z+.42,'woodIt',{f:{pz:'rack'}})}}}
-  for(let x=12.6;x<26.8;x+=2.4)B(x-.14,.62,16.5,x+.14,1,21.5,'woodIt',{nosolid:true});B(11.5,.7,18.86,27,1,19.14,'woodIt',{nosolid:true});
-  for(const [x,z] of [[12.4,17.1],[13,17.1],[12.7,17.7],[23.6,15.2],[24.2,15.1],[25.9,14.6],[26.3,15.3],[21.2,14.6],[16.3,21.6],[16.9,21.7],[20.4,21.2]])if(kAt(x,z)===2)drum(x,z,CEL,'barrel');
-  B(16.5,CEL+.74,18.75,19.5,CEL+.84,19.25,'woodIt');B(16.7,CEL,18.85,16.85,CEL+.74,19.15,'woodIt');B(19.15,CEL,18.85,19.3,CEL+.74,19.15,'woodIt');
-  for(const x of [14,19,23.4]){B(x-.02,.2,18.98,x+.02,.7,19.02,'metal2',{nosolid:true});B(x-.16,-.18,18.84,x+.16,.2,19.16,'lampO',{nosolid:true});B(x-.2,.2,18.8,x+.2,.26,19.2,'metal2',{nosolid:true});LIGHT(x,-.35,19,'#ffb45a',7.5,.6)}
-  LIGHT(9.5,-1,19,'#ffb45a',5,.3);
-  // the stairwell down from the street: an arch over its mouth with the sign; ivy in the light well; the arched way out east
-  B(7.25,2.7,16.5,7.75,3.1,22,'stoneIt');for(const z of [16.25,21.75])B(7.25,0,z-.25,7.75,2.7,z+.25,'stoneIt');B(7.2,2.75,18,7.25,3.05,20.5,'signIt',{nosolid:true});
-  for(const [x0,z0,x1,z1,face,ytop] of [[20.6,14,22.2,14.06,'pz',10],[23.4,14,24.6,14.06,'pz',10],[25.4,14,26.8,14.06,'pz',10],[20.5,14.4,20.56,15.8,'px',9],[26.94,14.6,27,16.2,'nx',8]]){
-    const f={px:N,nx:N,py:N,ny:N,pz:N,nz:N};f[face]='ivy';B(x0,ytop-3.2-H(x0,z0,93)*2,z0,x1,ytop,z1,'ivy',{nosolid:true,f})}
-  for(const z of [17.5,20.5]){const s=z<19?1:-1;B(29,0,z-(s>0?0:.3),29.25,2.6,z+(s>0?.3:0),'stoneIt',{nosolid:true});B(29,2.05,z+(s>0?.3:-.75),29.25,2.6,z+(s>0?.75:-.3),'stoneIt',{nosolid:true})}
-  B(29,2.6,17.3,29.3,3.15,20.7,'stoneIt');
-  // ---- the north market lane: a striped awning on posts and a row of fruit stalls
-  for(let x=1.5;x<18.5;x+=2.6){if(!walk(at(x,-19))||!walk(at(x+1.6,-19)))continue;B(x,0,-19.6,x+1.6,.85,-18.5,'woodIt',{f:{py:'fruit'}});B(x+.2,.85,-19.4,x+1.4,1.0,-18.7,'fruit',{f:{px:'woodIt',nx:'woodIt',pz:'woodIt',nz:'woodIt',ny:N}});
-    for(const [a,b] of [[x,-19.6],[x+1.54,-19.6],[x,-18.56],[x+1.54,-18.56]])B(a,0,b,a+.06,2.35,b+.06,'woodIt',{nosolid:true});B(x-.15,2.35,-19.9,x+1.75,2.42,-18.2,'awn',{nosolid:true})}
-  for(let x=0.5;x<19.5;x+=3.2)if(walk(at(x,-22.6)))B(x,0,-22.65,x+.12,3.1,-22.53,'woodIt');
-  B(0.4,3.1,-23.6,19.6,3.18,-22.4,'awn',{nosolid:true});
-  for(let x=1;x<19;x+=1.3)if(walk(at(x,-23.2))&&H(x,0,41)<.6){const s=.55+H(x,1,42)*.25;B(x,0,-23.45,x+s,s,-23.45+s,'woodIt',{f:{py:'fruit'}});if(H(x,2,43)<.4)B(x+.05,s,-23.4,x+s-.05,s+.45,-23.45+s-.05,'woodIt',{f:{py:'fruit'}})}
-  // ---- the second market on the east square
-  for(const [x,z] of [[32.6,3],[35.2,3],[37.8,3],[33.8,7.4],[36.6,7.4]]){if(!walk(at(x+.8,z+.5)))continue;B(x,0,z,x+1.7,.85,z+1.1,'woodIt',{f:{py:'fruit'}});
-    for(const [a,b] of [[x,z],[x+1.64,z],[x,z+1.04],[x+1.64,z+1.04]])B(a,0,b,a+.06,2.3,b+.06,'woodIt',{nosolid:true});B(x-.2,2.3,z-.3,x+1.9,2.37,z+1.4,'awn',{nosolid:true})}
-  // ---- the east terrace: café tables, planters; crates stacked against its north wall give a second (jumping) way up
-  B(38.6,0,9.7,39.8,1,10.9,'woodIt');B(38.6,0,10.9,39.8,1,12,'woodIt');B(38.65,1,10.95,39.75,2,11.98,'woodIt');
-  for(const [x,z] of [[36.2,14.6],[38.6,17.6],[36.4,19.6]]){B(x-.06,U,z-.06,x+.06,U+.74,z+.06,'metal2');B(x-.45,U+.74,z-.45,x+.45,U+.8,z+.45,'woodIt');for(const [a,b] of [[-.8,0],[.8,0]])B(x+a-.2,U,z+b-.2,x+a+.2,U+.46,z+b+.2,'woodIt')}
-  for(const [x,z] of [[39.8,12.8],[39.8,20.8],[34.3,20.8]]){B(x-.35,U,z-.35,x+.35,U+.6,z+.35,'stoneIt');B(x-.3,U+.6,z-.3,x+.3,U+1.3,z+.3,'leaves',{nosolid:true})}
-  // ---- the piazza fresco under its little roof, timber posts along the wall; the iron gate at the bottom of the lane
-  B(-29.9,3.55,-15,-26.5,7.8,-14.94,'fresco',{nosolid:true,f:{px:N,nx:N,py:N,ny:N,nz:N}});
-  B(-30.4,7.95,-15,-26,8.07,-14.55,'roofIt',{nosolid:true,f:{ny:'woodIt',px:'woodIt',nx:'woodIt',pz:'woodIt',nz:'woodIt'}});
-  for(const x of [-31.2,-30.45,-25.95,-23.8])B(x-.11,U,-15,x+.11,9.08,-14.82,'woodIt');B(-31.4,8.9,-15,-23.6,9.08,-14.8,'woodIt');
-  {const g=hAt(-35,-13.75);B(-36.2,g,-14,-33.8,g+3,-13.96,'gateA',{nosolid:true,f:{px:N,nx:N,py:N,ny:N,nz:N}});
-  B(-36.6,g,-14,-36.2,g+3.25,-13.8,'stoneIt');B(-33.8,g,-14,-33.4,g+3.25,-13.8,'stoneIt');B(-36.6,g+3,-14,-33.4,g+3.5,-13.8,'stoneIt')}
-  for(const [x,z] of [[-36.3,-12.9],[-36.4,-12.2],[-33.6,-13.1]])drum(x,z,hAt(x,z),'barrel');
-  // ---- the fountain court: benches, potted trees; cypresses up in the west quarter
-  for(const [x,z,ax] of [[-10.6,10.6,'x'],[-1.6,12,'z'],[-1.6,17,'z'],[-6.5,20.6,'x']])if(walk(at(x,z))){if(ax==='x')B(x-.9,0,z-.22,x+.9,.45,z+.22,'stoneIt');else B(x-.22,0,z-.9,x+.22,.45,z+.9,'stoneIt')}
-  const tree=(x,z,s)=>{if(!floorC(at(x,z)))return;const y=hAt(x,z);B(x-.35,y,z-.35,x+.35,y+.55,z+.35,'stoneIt');B(x-.07,y+.55,z-.07,x+.07,y+1.6*s,z+.07,'bark');B(x-.6*s,y+1.4*s,z-.6*s,x+.6*s,y+2.6*s,z+.6*s,'leaves',{nosolid:true});B(x-.42*s,y+2.6*s,z-.42*s,x+.42*s,y+3.2*s,z+.42*s,'leaves',{nosolid:true})};
-  tree(-10.6,8.4,1);tree(-3,8.2,1);tree(-25,-14,1.1);tree(-31,-14.2,1.1);tree(25,-1.2,1);
-  const cypress=(x,z)=>{if(!floorC(at(x,z)))return;const y=hAt(x,z);B(x-.1,y,z-.1,x+.1,y+.8,z+.1,'bark');B(x-.45,y+.8,z-.45,x+.45,y+3.2,z+.45,'leaves',{nosolid:true});B(x-.33,y+3.2,z-.33,x+.33,y+4.6,z+.33,'leaves',{nosolid:true});B(x-.18,y+4.6,z-.18,x+.18,y+5.4,z+.18,'leaves',{nosolid:true})};
-  cypress(-32.2,-1.5);cypress(-24.5,-8.6);cypress(-19,-13.2);cypress(-21,-1.2);
-  // ---- the well and benches on the spawn piazza
-  {const y=U;B(-28.6,y,-12.2,-27.4,y+.8,-11,'stoneIt');B(-28.4,y+.8,-12,-27.6,y+1.6,-11.8,'stoneIt',{nosolid:true});B(-28.4,y+.8,-11.4,-27.6,y+1.6,-11.2,'stoneIt',{nosolid:true});B(-28.6,y+1.6,-12.2,-27.4,y+1.75,-11,'roofIt',{nosolid:true});
-    for(const [x,z] of [[-30.5,-9],[-25.5,-9.2]])if(walk(at(x,z)))B(x-.9,y,z-.22,x+.9,y+.45,z+.22,'stoneIt')}
-  // ================= spawns, camps, title camera =================
-  const free=(x,z)=>{const y=hAt(x,z);for(const [a,b] of [[0,0],[.6,0],[-.6,0],[0,.6],[0,-.6]]){const c=at(x+a,z+b);if(!floorC(c)||Math.abs(hAt(x+a,z+b)-y)>.05)return false}return true};
-  MAP.spawns=[];for(let z=-14;z<=-8;z+=1.6)for(let x=-31.5;x<=-24.5;x+=1.7)if(free(x,z))MAP.spawns.push([x+rr(-.3,.3),z+rr(-.3,.3),hAt(x,z),-Math.PI/2+rr(-.5,.5)]);
-  MAP.zspawns=[];for(const [x,z] of [[36,-0.5],[29,-12],[18,-22],[2,-21],[22,19.5],[11.75,24],[-6,23],[-5,12],[6,8],[30,8],[13,-12],[36,5.5]]){for(let r=0;r<3;r++){const xx=x+rr(-1,1)*r,zz=z+rr(-1,1)*r;if(free(xx,zz)){MAP.zspawns.push([xx,zz,hAt(xx,zz)]);break}}}
-  const cp=(k,w,pts,look)=>{const p=pts.filter(q=>q[1]!=null||floorC(at(q[0],q[2]))).map(q=>[q[0],q[1]==null?hAt(q[0],q[2]):q[1],q[2]]);if(p.length)MAP.camps.push({k,w,p,look})};
-  cp('terrace',.15,[[36,null,13.5],[38.6,null,16.5],[35,null,20.2]],[30,1,10]);
-  cp('market',.12,[[4,0,-21.6],[9,0,-21.6],[14,0,-21.6]],[9,1,-17]);
-  cp('fountain',.1,[[-9.5,0,11.2],[-3,0,11.5],[-9.8,0,21]],[-6,1,16]);
-  cp('cellar',.13,[[13.5,null,18.2],[18,null,20.5],[22.4,null,17.4]],[10,-1.2,19]);
-  cp('plaza',.12,[[-31,null,-14],[-24.5,null,-14.2]],[-28,U+1,-8]);
-  cp('lane',.07,[[-35,null,-12.5],[-35.5,null,-11]],[-35,2.5,-4]);
-  cp('apart',.12,[[-10.5,3,-6.5],[-6,3,-7],[-4,3,-5.5]],[-8,3.6,-12]);
-  cp('ramp',.1,[[-19.5,null,-3],[-19,null,1.5]],[-8,1,-1]);
-  cp('north',.08,[[-.4,null,-11.4],[.8,null,-11]],[0,1,-20]);
-  cp('east',.08,[[38,0,1],[38.5,0,9.5]],[32,1,5]);
+// ---------- geometry: decode the generated boxes ----------
+// each box: x0 z0 w d y0 y1 (2 base-36 chars, cells of D.cs, y offset by D.base) + top material + side material (1 char each)
+function buildItaly(){const D=ITALY_DATA,M=ITALY_META,S=D.boxes,CS=D.cs,N='none';
+  // the top code carries +16 for boxes on steps or ramps: nav treats them as stairs (walk links up to .9 m per metre)
+  const v=i=>parseInt(S.substr(i,2),36);
+  for(let i=0;i+14<=S.length;i+=14){const x0=D.x0+v(i)*CS,z0=D.z0+v(i+2)*CS,x1=x0+v(i+4)*CS,z1=z0+v(i+6)*CS,y0=(v(i+8)-D.base)*CS,y1=(v(i+10)-D.base)*CS;
+    const t=parseInt(S[i+12],36),top=D.mats[t&15],side=D.mats[parseInt(S[i+13],36)];const o={f:{py:top,ny:'ceilT'}};if(t&16)o.stair=1;B(x0,y0,z0,x1,y1,z1,side,o)}
+  // warm lamps over the covered floors (arcades, rooms, the cellar); the sun does the rest
+  for(const p of M.lights||[])LIGHT(p[0],p[1],p[2],p[1]<0?'#ffcf8a':'#ffe2b8',7,.75);
+  MAP.spawns=M.spawns.map(p=>[p[0],p[2],p[1],rr(-.5,.5)+Math.PI]);
+  MAP.zspawns=M.zspawns.map(p=>[p[0],p[2],p[1]]);
+  MAP.camps=M.camps.map(o=>({k:o.k,w:o.w,p:o.p,look:o.look}));
   MAP.spawnYaw=null;
   MAP.moon={d:new THREE.Vector3(-.5,.75,.42).normalize(),c:new THREE.Color('#fff0d6'),i:.8};
-  // title backdrop: a slow high circle over the roofs
-  MAP.cam=(t,cam)=>{const a=t*.035+.6;cam.position.set(Math.sin(a)*24,22+1.5*Math.sin(t*.07),Math.cos(a)*16);cam.lookAt(Math.sin(a+1.2)*4,0,Math.cos(a+1.2)*3)};
+  MAP.cam=(t,cam)=>{const a=t*.03+.6;cam.position.set(Math.sin(a)*30,26+1.5*Math.sin(t*.07),Math.cos(a)*44);cam.lookAt(Math.sin(a+1.2)*4,0,Math.cos(a+1.2)*8)};
 }
-// ---- the walk-through house (plan x -14..-1.5, z -10..-3.5): ground floor on the street, upper floor level with the north piazza.
-// Downstairs: an entrance hall and a stone store room with the stair; upstairs: a wallpapered room round the stair well and a hall.
-function itHouse(doorZ){const X0=-14,X1=-1.5,Z0=-10,Z1=-3.5,T=.3,F1=2.8,F2=3,TOP=5.8,RH=7.5,N='none';
-  const xi0=X0+T,xi1=X1-T,zi0=Z0+T,zi1=Z1-T;
-  // floors: stone below, boards above with the stair well; the roof block's underside is the upper ceiling
-  B(xi0,-1,zi0,xi1,0,zi1,'cellarF',{ground:1});
-  slab(xi0,zi0,xi1,zi1,F1,F2,'woodIt',[[xi0,-8.4,-11.9,-4]],{f:{py:'woodFl',ny:'ceilT'}});// the well is open over the whole flight: tall zombies clear it
-  B(X0,TOP,Z0,X1,RH,Z1,'retW',{f:{py:'roofIt',ny:'ceilT'}});
-  const E={nosolid:true,f:{ny:'woodIt',px:'woodIt',nx:'woodIt',pz:'woodIt',nz:'woodIt'}};
-  B(X0,RH-.24,Z0-.42,X1,RH,Z0,'roofIt',E);B(X0,RH-.24,Z1,X1,RH,Z1+.42,'roofIt',E);
-  {const R={nosolid:true,f:{ny:N}},cz=(Z0+Z1)/2,d=Z1-Z0;B(X0+.3,RH,cz-d*.3,X1-.3,RH+.45,cz+d*.3,'roofIt',R);B(X0+.5,RH+.45,cz-d*.13,X1-.5,RH+.8,cz+d*.13,'roofIt',R)}
-  // outer walls: lime wash outside, stone inside downstairs, wallpaper upstairs. Openings are [u0,u1,y0,y1]
-  const DN=[[-11.3,-9.7,F2,F2+2.46],[-5.3,-3.7,F2,F2+2.46]],WN=[[-13.4,-12.6,4.3,5.5],[-8,-7,4.3,5.5],[-2.9,-2.1,4.3,5.5]];
-  const DS=[[-6.8,-5.2,0,2.4]],WSl=[],DSu=[[-11.3,-9.7,F2,F2+2.46]],WSu=[[-13.3,-12.5,4,5.4],[-7.6,-6.6,4,5.4],[-4.8,-3.8,4,5.4]];
-  const fo=(o,i,m)=>{const f={};f[o]='retW';f[i]=m;return {f}};
-  wallX(X0,X1,Z0,Z0+T,0,F1,'retW',[],fo('nz','pz','cellarW'));wallX(X0,X1,Z0,Z0+T,F1,TOP,'retW',DN.concat(WN),fo('nz','pz','wallP'));
-  wallX(X0,X1,Z1-T,Z1,0,F1,'retW',DS.concat(WSl),fo('pz','nz','cellarW'));wallX(X0,X1,Z1-T,Z1,F1,TOP,'retW',DSu.concat(WSu),fo('pz','nz','wallP'));
-  for(const [x0,x1,o,i] of [[X0,X0+T,'nx','px'],[X1-T,X1,'px','nx']]){wallZ(x0,x1,zi0,zi1,0,F1,'retW',[],fo(o,i,'cellarW'));wallZ(x0,x1,zi0,zi1,F1,TOP,'retW',[],fo(o,i,'wallP'))}
-  // inner walls: downstairs a stone partition with a wide doorway, upstairs an open arch between the room and the hall
-  wallZ(-7.8,-7.5,zi0,zi1,0,F1,'cellarW',[[-6.4,-4.2,0,2.3]]);wallZ(-8.9,-8.6,zi0,zi1,F2,TOP,'wallP',[[-7.4,-4.6,F2,F2+2.4]]);
-  // the stair along the west wall, a handrail on its open side, a rail round the well upstairs
-  stairs('z',xi0,-12.1,-4.4,-8.4,0,F2,10,'woodIt',{f:{py:'stepW'}});
-  for(let s=2;s<10;s++){const za=-4.4-.4*s,top=.3*(s+1);B(-12.15,top,za-.4,-12.05,top+.9,za,'woodIt')}
-  B(-11.95,F2,-8.4,-11.9,F2+.95,-4,'ironRail',{pass:1});B(-12,F2+.92,-8.4,-11.85,F2+1,-4,'woodIt');
-  // door and window frames, shutters, sills; a hood over the street door, a balcony upstairs
-  const frameX=(x0,x1,y0,y1,z0,z1)=>{B(x0,y0,z0,x0+.07,y1,z1,'woodIt',{nosolid:true});B(x1-.07,y0,z0,x1,y1,z1,'woodIt',{nosolid:true});B(x0,y1-.07,z0,x1,y1,z1,'woodIt',{nosolid:true})};
-  for(const [x0,x1,y0,y1] of DN)frameX(x0,x1,y0,y1,Z0,Z0+T);for(const [x0,x1,y0,y1] of DS.concat(DSu))frameX(x0,x1,y0,y1,Z1-T,Z1);
-  const win=(x0,x1,y0,y1,zf,s,sh)=>{const za=s>0?zf:zf-.04,zb=s>0?zf+.04:zf;B(x0-.5,y0,za,x0-.02,y1,zb,sh,{nosolid:true});B(x1+.02,y0,za,x1+.5,y1,zb,sh,{nosolid:true});
-    B(x0-.08,y0-.1,s>0?zf:zf-.12,x1+.08,y0,s>0?zf+.12:zf,'stoneIt',{nosolid:true});frameX(x0,x1,y0,y1,s>0?zf-T:zf,s>0?zf:zf+T)};
-  for(const w of WN)win(w[0],w[1],w[2],w[3],Z0,-1,'shutG');for(const w of WSl.concat(WSu))win(w[0],w[1],w[2],w[3],Z1,1,'shutR');
-  for(const w of WN)B(w[0]-.08,w[2]-.36,Z0-.26,w[1]+.08,w[2]-.1,Z0,'flowers',{nosolid:true});
-  B(-7.3,2.62,Z1,-4.7,2.72,Z1+.75,'roofIt',{nosolid:true,f:{ny:'woodIt',px:'woodIt',nx:'woodIt',pz:'woodIt',nz:'woodIt'}});for(const x of [-7.1,-4.9])B(x-.04,2.2,Z1,x+.04,2.62,Z1+.6,'woodIt',{nosolid:true});
-  B(-11.9,2.9,Z1,-9.1,F2,Z1+.9,'stoneIt');B(-11.9,F2,Z1+.86,-9.1,F2+.95,Z1+.9,'ironRail',{pass:1});B(-11.9,F2,Z1,-11.86,F2+.95,Z1+.9,'ironRail',{pass:1});B(-9.14,F2,Z1,-9.1,F2+.95,Z1+.9,'ironRail',{pass:1});
-  B(-11.95,F2+.95,Z1,-9.05,F2+1.01,Z1+.94,'metal2',{nosolid:true});
-  doorZ.push([-11.4,-10.6,-9.6,-9.9],[-5.4,-10.6,-3.6,-9.9],[-6.9,-3.6,-5.1,-2.9]);
-  // furniture: crates and barrels below, a table, cabinet and pictures above; wall lamps on both floors
-  for(const [x,z] of [[-13.2,-9.2],[-12.6,-9.25],[-13.2,-8.65]])drum(x,z,0,'barrel');
-  B(-9.6,0,-9.6,-8.4,1,-8.6,'woodIt');B(-9.3,1,-9.5,-8.6,1.6,-8.9,'woodIt');
-  B(-4.2,.74,-8.4,-2.8,.82,-7.2,'woodIt');for(const [x,z] of [[-4.1,-8.3],[-2.9,-8.3],[-4.1,-7.3],[-2.9,-7.3]])B(x-.04,0,z-.04,x+.04,.74,z+.04,'woodIt');
-  B(-2.4,0,-6.4,xi1,1.9,-5.2,'woodIt');
-  B(-6.4,F2+.76,-7.1,-5,F2+.84,-5.7,'woodIt');B(-5.76,F2,-6.46,-5.64,F2+.76,-6.34,'woodIt');B(-2.35,F2,-6.6,xi1,F2+1.9,-5.2,'woodIt');
-  B(-12.4,F2+1.3,zi0,-11.6,F2+1.95,zi0+.04,'paintA',{nosolid:true,f:{nz:N,px:N,nx:N,py:N,ny:N}});B(-7.2,F2+1.4,zi0,-6.1,F2+2.2,zi0+.04,'paintB',{nosolid:true,f:{nz:N,px:N,nx:N,py:N,ny:N}});
-  B(xi1-.04,F2+1.3,-8.6,xi1,F2+2.1,-7.4,'paintB',{nosolid:true,f:{px:N,pz:N,nz:N,py:N,ny:N}});
-  for(const [x,y,z,s] of [[-10.6,2.1,zi1,-1],[-4.4,2.1,zi0,1],[-9.2,F2+2.05,zi1,-1],[-8.2,F2+2.05,zi0,1],[-3.4,F2+2.05,zi1,-1]]){B(x-.12,y-.18,s>0?z:z-.12,x+.12,y+.18,s>0?z+.12:z,'lampO',{nosolid:true});LIGHT(x,y,z+s*.35,'#ffd49a',6.5,.62)}}
-MAPDEFS.italy={n:['이탈리아','Italy'],d:['햇살 가득한 언덕 마을. 옹벽으로 나뉜 윗마을과 아랫길, 긴 경사로와 계단, 지나갈 수 있는 집, 반지하 와인 저장고, 동쪽의 높은 테라스.','A sunlit hill town: an upper quarter behind retaining walls, a long stepped ramp and stairs, a house you walk through, a sunken wine cellar and a high terrace in the east.'],
-  env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.92,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-41,-27,41,27],probeY:[-1.6,.9,2.2,3.6,4.8,6.2,7.6],mini:[7.5,40],tex:bakeItTex,build:buildItaly};
+MAPDEFS.italy={n:['이탈리아','Italy'],d:['햇살 가득한 언덕 마을. 남쪽 낮은 거리에서 시작해 시장 광장, 와인 저장고, 북쪽 높은 골목까지 이어지는 오르막 시가지.','A hill town on a summer afternoon: from the low street in the south up through the market square and the wine cellar to the high lanes in the north.'],
+  env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.92,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-34,-61,34,61],probeY:[-2.6,-.9,.9,2.6,4.4,6.2,8],mini:[1.2,4.6],tex:bakeItTex,build:buildItaly};
