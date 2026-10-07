@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.0.2','2026-10-08',[
+ ['UP','이탈리아 — 원본 텍스처 테스트 버전을 되돌리고, 원본의 벽·바닥·지붕 색을 읽어 우리 텍스처로 다시 칠함 (연어색·주황·황토·노랑·회색 외벽, 맨벽돌, 돌벽, 붉은 바닥, 판석, 평지붕)','Italy: back to our own textures, now picked and tinted from the reference colours (salmon, orange, tan, ochre, grey plaster, brick, stone, red and flag floors, flat roofs)'],
+ ['UP','게임 파일 다시 가벼워짐 (5.6 MB → 1.9 MB)','Game file light again (5.6 MB → 1.9 MB)']]],
 ['v6.0.1','2026-10-08',[
  ['UP','이탈리아 — 원본 레퍼런스 텍스처(구워진 조명 포함)로 표시, 충돌은 기존 박스 그대로 (테스트 버전)','Italy shows the reference textures (baked light); collision stays on the boxes (test build)'],
  ['FIX','이탈리아 바닥 높이를 원본 표면에 맞춤 (1/16 m)','Italy floors match the reference surfaces (1/16 m)']]],

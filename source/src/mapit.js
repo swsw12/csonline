@@ -5,6 +5,8 @@
 // their exact height; roofs and wall heads round up to 0.5 m. Only the geometry is taken: every surface is painted here.
 Object.assign(MATS,{
   facA:{t:'facA',s:3,k:'stone'},facB:{t:'facB',s:3,k:'stone'},facC:{t:'facC',s:3,k:'stone'},
+  // v6 colour variants, picked per wall from the reference's paint colour: salmon, orange, tan, ochre, grey plaster, bare brick
+  facR:{t:'facR',s:3,k:'stone'},facO:{t:'facO',s:3,k:'stone'},facT:{t:'facT',s:3,k:'stone'},facY:{t:'facY',s:3,k:'stone'},facG:{t:'facG',s:3,k:'stone'},brickIt:{t:'brickIt',s:2,k:'stone'},
   // v6 colour variants, chosen per wall from the reference's paint colour (salmon, orange, tan, ochre, grey)
   facR:{t:'facR',s:3,k:'stone'},facO:{t:'facO',s:3,k:'stone'},facT:{t:'facT',s:3,k:'stone'},facY:{t:'facY',s:3,k:'stone'},facG:{t:'facG',s:3,k:'stone'},
   roofIt:{t:'roofIt',s:2,k:'stone',cs:2},cobble:{t:'cobble',s:1.5},pavers:{t:'pavers',s:2.4},cobbleR:{t:'cobbleR',s:1.5},
@@ -181,8 +183,14 @@ function texSkyDay(){return paint(1024,256,P=>{const SU=.111,SV=106;
       if(y>235)c=mix('#b8c6d4','#9ca8b4',clamp((y-235)/20,0,1));
       P.set(x,y,c)}}})}
 function texSunDisc(){return paint(64,64,P=>{for(let y=0;y<64;y++)for(let x=0;x<64;x++){const r=Math.hypot(x-31.5,y-31.5)/30;if(r>1){P.alpha(x,y,0);continue}P.set(x,y,r<.7?'#fffaf0':mix('#fffaf0','#ffd8a0',(r-.7)/.3))}})}
+// bare brick: running bond, worn mortar, the odd darker or paler brick, soot streaks
+function texBrickIt(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++){const row=Math.floor(y/12),off=row%2?16:0,ry=y%12;for(let x=0;x<N;x++){const bx=Math.floor((x+off)/32),rx=(x+off)%32,id=row*13+bx;
+    let c;if(ry<2||rx<2)c=dith(P,x,y,.5+(hash2(x,y,1451)-.5)*.3,['#6a6258','#7e766a','#8e8678'],.1);
+    else{const t=.5+(hash2(id,1,1452)-.5)*.45+(P.n(x,y,16,1453,2)-.5)*.25+(hash2(x,y,1454)-.5)*.08;c=dith(P,x,y,clamp(t,0,1),['#5a2a1c','#723826','#884530','#9a5438','#ac6644'],.1)}
+    P.set(x,y,c)}}for(let i=0;i<14;i++)streak(P,Math.floor(hash2(i,1,1455)*N),Math.floor(hash2(i,2,1455)*N*.5),60+Math.floor(hash2(i,3,1455)*140),.14,2)})}
 function bakeItTex(){if(TEX.facA)return;
   TEX.facA=mkTex(texFacade('#e8e3d6','#3e6a46',961));TEX.facB=mkTex(texFacade('#ecd2b6','#8a3026',971));TEX.facC=mkTex(texFacade('#ded5c2','#5a4632',981));
+  TEX.facR=mkTex(texFacade('#dca296','#3e6a46',1401));TEX.facO=mkTex(texFacade('#e0aa78','#5a4632',1411));TEX.facT=mkTex(texFacade('#dcc096','#8a3026',1421));TEX.facY=mkTex(texFacade('#e8cc80','#3e6a46',1431));TEX.facG=mkTex(texFacade('#cfccc4','#5a4632',1441));TEX.brickIt=mkTex(texBrickIt());
   TEX.facR=mkTex(texFacade('#dca296','#3e6a46',1401));TEX.facO=mkTex(texFacade('#e0aa78','#5a4632',1411));TEX.facT=mkTex(texFacade('#dcc096','#8a3026',1421));TEX.facY=mkTex(texFacade('#e8cc80','#3e6a46',1431));TEX.facG=mkTex(texFacade('#cfccc4','#5a4632',1441));
   TEX.roofIt=mkTex(texRoofIt());TEX.cobble=mkTex(texCobble(991));TEX.cobbleR=mkTex(texCobbleR());TEX.pavers=mkTex(texPavers());
   TEX.stoneIt=mkTex(texStoneIt());TEX.woodIt=mkTex(texWoodIt());TEX.doorIt=mkTex(texDoorIt(),false);TEX.awn=mkTex(texAwn());TEX.fruit=mkTex(texFruit(),false);TEX.water=mkTex(texWater());
@@ -193,19 +201,20 @@ function bakeItTex(){if(TEX.facA)return;
   TEX.paintA=mkTex(texPaint(3,'#7aa0c8','#6a7a3a'),false);TEX.paintB=mkTex(texPaint(7,'#d8a070','#5a4a3a'),false);TEX.fresco=mkTex(texFresco(),false);TEX.gateA=mkTex(texGate(),false);
   TEX.ivy=mkTex(texIvy(),false);TEX.shutG=mkTex(texShut('#3e6a46'),false);TEX.shutR=mkTex(texShut('#8a3026'),false);
   TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter;TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false;
-  const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['facA','facB','facC','facR','facO','facT','facY','facG','roofIt','cobble','cobbleR','pavers','stoneIt','retW','rubble','cellarF','woodFl'])TEX[k].anisotropy=an;
+  const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['facA','facB','facC','facR','facO','facT','facY','facG','brickIt','facR','facO','facT','facY','facG','roofIt','cobble','cobbleR','pavers','stoneIt','retW','rubble','cellarF','woodFl'])TEX[k].anisotropy=an;
   MIXC.clear();VN_T.clear();_vnK=-1;_vnT=null;_fbC.length=0}
 // ---------- geometry: decode the generated boxes ----------
 // each box: x0 z0 w d y0 y1 (2 base-36 chars, cells of D.cs, y offset by D.base) + top material + side material (1 char each)
 function buildItaly(){const D=ITALY_DATA,M=ITALY_META,S=D.boxes,CS=D.cs,N='none';
   // the top code carries +16 for boxes on steps or ramps: nav treats them as stairs (walk links up to .9 m per metre)
   // With the reference mesh present (ITALY_MESH) the boxes are collision only: every face is 'nodraw' and the mesh is what you see.
-  const v=i=>parseInt(S.substr(i,2),36),VIS=typeof ITALY_MESH==='undefined',ND='nodraw';
-  for(let i=0;i+14<=S.length;i+=14){const x0=D.x0+v(i)*CS,z0=D.z0+v(i+2)*CS,x1=x0+v(i+4)*CS,z1=z0+v(i+6)*CS,y0=v(i+8)/D.yq-D.yo,y1=v(i+10)/D.yq-D.yo;
+  // then the reference's own paint colour as a tint for the sides and for the top (0..35 -> 0.7..1.3 per channel)
+  const v=i=>parseInt(S.substr(i,2),36),VIS=typeof ITALY_MESH==='undefined',ND='nodraw',tq=i=>[0,1,2].map(k=>.7+parseInt(S[i+k],36)/35*.6);
+  for(let i=0;i+20<=S.length;i+=20){const x0=D.x0+v(i)*CS,z0=D.z0+v(i+2)*CS,x1=x0+v(i+4)*CS,z1=z0+v(i+6)*CS,y0=v(i+8)/D.yq-D.yo,y1=v(i+10)/D.yq-D.yo;
     const t=parseInt(S[i+12],36),top=D.mats[t&15],side=D.mats[parseInt(S[i+13],36)];
-    const o={f:VIS?{py:top,ny:'ceilT'}:{px:ND,nx:ND,py:ND,ny:ND,pz:ND,nz:ND}};if(t&16)o.stair=1;B(x0,y0,z0,x1,y1,z1,side,o)}
+    const o={f:VIS?{py:top,ny:'ceilT'}:{px:ND,nx:ND,py:ND,ny:ND,pz:ND,nz:ND},tint:tq(i+14),ttop:tq(i+17)};if(t&16)o.stair=1;B(x0,y0,z0,x1,y1,z1,side,o)}
   // warm lamps over the covered floors (arcades, rooms, the cellar); the sun does the rest
-  for(const p of M.lights||[])LIGHT(p[0],p[1],p[2],p[1]<0?'#ffcf8a':'#ffe2b8',7,.75);
+  for(const p of (M.lights||[]).slice(0,20))LIGHT(p[0],p[1],p[2],p[1]<0?'#ffcf8a':'#ffe2b8',6,.8);
   MAP.spawns=M.spawns.map(p=>[p[0],p[2],p[1],rr(-.5,.5)+Math.PI]);
   MAP.zspawns=M.zspawns.map(p=>[p[0],p[2],p[1]]);
   MAP.camps=M.camps.map(o=>({k:o.k,w:o.w,p:o.p,look:o.look}));

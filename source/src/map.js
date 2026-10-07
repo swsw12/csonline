@@ -229,7 +229,7 @@ function buildQ7(){
 // ---------- geometry: faces split into ~0.5 m cells (vertex-lit, so finer cells = sharper light pools and shadows); hidden cells are dropped ----------
 function insideSolid(x,y,z,self){_bq.length=0;boxesIn(x,z,x,z,_bq);for(const b of _bq){if(b===self||b.nosolid)continue;if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1&&z>b.z0&&z<b.z1)return true}return false}
 function buildMapGeometry(){
-  const groups={};const g=m=>groups[m]||(groups[m]={pos:[],nrm:[],uv:[],col:[]});
+  const groups={};const g=m=>groups[m]||(groups[m]={pos:[],nrm:[],uv:[],col:[],tn:[]});
   const FACES=[['px',[1,0,0]],['nx',[-1,0,0]],['py',[0,1,0]],['ny',[0,-1,0]],['pz',[0,0,1]],['nz',[0,0,-1]]];
   for(const b of MAP.boxes){
     for(const [fk,n] of FACES){
@@ -239,7 +239,7 @@ function buildMapGeometry(){
       let ax,bx,fixed,fv;if(n[0]){ax=2;bx=1;fixed=0;fv=n[0]>0?b.x1:b.x0}else if(n[1]){ax=0;bx=2;fixed=1;fv=n[1]>0?b.y1:b.y0}else{ax=0;bx=1;fixed=2;fv=n[2]>0?b.z1:b.z0}
       const lo=[b.x0,b.y0,b.z0],hi=[b.x1,b.y1,b.z1];const ua=lo[ax],ub=hi[ax],va=lo[bx],vb=hi[bx];
       const CS=M.cs||(M.emis>=1?2:.5);const nu=Math.max(1,Math.round((ub-ua)/CS)),nv=Math.max(1,Math.round((vb-va)/CS));
-      const G=g(mat);
+      const G=g(mat);const TN=(fk==='py'?b.o.ttop:b.o.tint)||null;// optional per-box colour tint (multiplies the baked light)
       for(let j=0;j<nv;j++)for(let i=0;i<nu;i++){
         const u0=ua+(ub-ua)*i/nu,u1=ua+(ub-ua)*(i+1)/nu,v0=va+(vb-va)*j/nv,v1=va+(vb-va)*(j+1)/nv;
         const c=[0,0,0];c[ax]=(u0+u1)/2;c[bx]=(v0+v1)/2;c[fixed]=fv+n[fixed]*.02;
@@ -250,7 +250,7 @@ function buildMapGeometry(){
         const e1=[P[1][0]-P[0][0],P[1][1]-P[0][1],P[1][2]-P[0][2]],e2=[P[2][0]-P[0][0],P[2][1]-P[0][1],P[2][2]-P[0][2]];
         const cr=[e1[1]*e2[2]-e1[2]*e2[1],e1[2]*e2[0]-e1[0]*e2[2],e1[0]*e2[1]-e1[1]*e2[0]];const flip=(cr[0]*n[0]+cr[1]*n[1]+cr[2]*n[2])<0;
         const order=flip?[0,2,1,0,3,2]:[0,1,2,0,2,3];
-        for(const k of order){const p=P[k];G.pos.push(p[0],p[1],p[2]);G.nrm.push(n[0],n[1],n[2]);G.uv.push(...faceUV(b,M,fk,p))}
+        for(const k of order){const p=P[k];G.pos.push(p[0],p[1],p[2]);G.nrm.push(n[0],n[1],n[2]);G.uv.push(...faceUV(b,M,fk,p));if(TN)G.tn.push(TN[0],TN[1],TN[2]);else G.tn.push(1,1,1)}
       }
     }
   }
@@ -282,7 +282,7 @@ function bakeGroups(groups){const cache=new Map();let n=0;
     for(let i=0;i<G.pos.length;i+=3){if(M.emis>=1){G.col[i]=1;G.col[i+1]=1;G.col[i+2]=1;continue}
       const key=Math.round(G.pos[i]*50)+','+Math.round(G.pos[i+1]*50)+','+Math.round(G.pos[i+2]*50)+','+G.nrm[i]+G.nrm[i+1]+G.nrm[i+2];let c=cache.get(key);
       if(!c){c=lightAt(G.pos[i],G.pos[i+1],G.pos[i+2],G.nrm[i],G.nrm[i+1],G.nrm[i+2]);cache.set(key,c);n++}
-      G.col[i]=c[0];G.col[i+1]=c[1];G.col[i+2]=c[2]}}
+      const T=G.tn;G.col[i]=c[0]*(T?T[i]:1);G.col[i+1]=c[1]*(T?T[i+1]:1);G.col[i+2]=c[2]*(T?T[i+2]:1)}}
   return n}
 // light probes for characters: grid every 1.5 m, 5 heights
 function bakeProbes(){const bb=MAP.bounds||[-30,-30,30,30],S=1.5,X0=bb[0],Z0=bb[1],NX=Math.ceil((bb[2]-bb[0])/S)+1,NZ=Math.ceil((bb[3]-bb[1])/S)+1,YS=MAP.probeY||[.9,2.2,3.6,4.9,6.4],D=new Float32Array(NX*NZ*YS.length*3);
