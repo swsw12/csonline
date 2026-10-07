@@ -123,7 +123,7 @@ function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
     FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
     if(hs&&!t.isPlayer&&a.isPlayer)AU.play('headshot',{vol:.7});else if(!a.isPlayer&&t.isPlayer){}else if(Math.random()<.5)AU.at('imp_flesh',ex,ey,ez,{vol:.6});
     return {hit:true,hs,dmg}}
-  if(hw){const m=wbox.o.f&&wbox.o.f[nf(wn)]||wbox.mat;FX.impact(ex,ey,ez,wn[0],wn[1],wn[2],m);
+  if(hw){if(wbox.coffin&&a.team===TH)COFF.hurt(wbox.coffin,W.pellets?W.dmg*.8:W.dmg,a);const m=wbox.o.f&&wbox.o.f[nf(wn)]||wbox.mat;FX.impact(ex,ey,ez,wn[0],wn[1],wn[2],m);
     if(pi===0||Math.random()<.3){const mk=matKind(m),snd=mk==='metal'?'imp_metal':mk==='wood'?'imp_wood':mk==='soft'?'imp_dirt':'imp_conc';AU.at(snd,ex,ey,ez,{vol:.55,range:30})}}
   return null}
 function nf(n){return n[0]>.5?'px':n[0]<-.5?'nx':n[1]>.5?'py':n[1]<-.5?'ny':n[2]>.5?'pz':'nz'}
@@ -151,7 +151,7 @@ function meleeStrike(a,heavy){const W=meleeW(a),hi=heavy?1:0;const many=heavy&&W
       FX.blood(t.c.x,t.c.y+1.2,t.c.z,_dv.x,0,_dv.z,1.6*(W.sw<1?1.6:1),false)}
     const snd=W.blunt?'hamhit':'khit',t0=list[0];
     if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt?1:W.sw||1});HUD.hitmark(hsAny);if(W.sw<1)FX.shake=Math.max(FX.shake,W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}
-  else if(r&&r.wall){FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer)AU.play('kwall',{vol:.6,rate:W.sw||1});else AU.at('kwall',r.x,r.y,r.z,{vol:.5})}}
+  else if(r&&r.wall){if(r.wall.box&&r.wall.box.coffin&&a.team===TH)COFF.hurt(r.wall.box.coffin,W.dmg[hi]*1.5,a);FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer)AU.play('kwall',{vol:.6,rate:W.sw||1});else AU.at('kwall',r.x,r.y,r.z,{vol:.5})}}
 function knifeAttack(a,heavy){meleeSwing(a,heavy);meleeStrike(a,heavy)}
 // ---------- grenades ----------
 const NADES=[];

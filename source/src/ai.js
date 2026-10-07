@@ -141,6 +141,7 @@ const AI={
       else if(Z.skill==='harden'&&(B.hurtAcc>a.maxHp*.12||(see&&dh<9)))cmd.skill=true;
       else if(Z.skill==='shriek'&&see&&dh<8)cmd.skill=true;
       else if(Z.skill==='invis'&&see&&dh>4&&dh<26)cmd.skill=true;else if(Z.skill==='trap'&&dh<12&&Math.random()<.35)cmd.skill=true;
+      else if(Z.skill==='coffin'&&see&&dh>4&&dh<22&&(B.hurtAcc>a.maxHp*.04||Math.random()<.02))cmd.skill=true;
       else if(Z.skill==='heal'&&(a.hp<a.maxHp*.6||G.actors.some(z=>z!==a&&z.alive&&z.team===TZ&&z.hp<z.maxHp*.5&&dist3(z.c,c)<8)))cmd.skill=true}
     B.hurtAcc=Math.max(0,B.hurtAcc*Math.exp(-dt/2)+(B.lastHp-a.hp>0?B.lastHp-a.hp:0));B.lastHp=a.hp;
     // spore bomb at groups up high

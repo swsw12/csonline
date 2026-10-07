@@ -378,6 +378,25 @@ function defZombie(k,host){
         {n:'tumor',b:1,c:[.17,sY+o.torsoH*.82,zb-.03],s:[.24,.2,.16],m:'tumor'},{n:'tumor',b:2,c:[-.1,hc[1]-.08,o.headZ+.06],s:[.13,.12,.12],m:'tumor'},{n:'tumor',b:5,c:[.5,1.45,.03],s:[.14,.16,.14],m:'tumor'}];
       const gy=sY+o.torsoH*.16;[[.04,0,.09,.1],[.07,-.1,.075,.12],[.05,-.22,.065,.12],[.08,-.33,.055,.1],[.06,-.42,.045,.08]].forEach(([x,dy,wd,hh],i)=>L.push({n:'guts',b:0,c:[x,gy+dy,zf-.035-i*.004],s:[wd,hh,wd*.85],m:'guts'}));
       return L}}
+  else if(k==='coffin'){// 관짝 — a dead undertaker: black funeral suit, a coffin strapped to the back with iron bands, nails through the scalp
+    o={hipY:.95,thigh:.43,legSep:.12,legW:.17,legD:.19,shinW:.15,torsoW:.5,torsoH:.56,torsoD:.3,shX:.31,armW:.14,upper:.31,fore:.3,hand:.12,headW:.23,headH:.26,headD:.25,neck:.05,claw:.022,curl:.55,curlJ:11,browH:.03};
+    const sk='#8a9098',su='#1c1c22';
+    mats=Object.assign({top:{base:su},legs:{base:su},sleeve:{base:su},fore:{base:sk,style:'zskin',blot:'#4a4a5a'},shin:{base:su},skin:{base:sk,style:'zskin',blot:'#4a4a5a'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:'#121214',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#4a4a5a'},
+      coffin:{base:'#3a2616'},coffinL:{base:'#4a1a12'},iron:{base:'#4a4c50',style:'plate',gloss:246},nailM:{base:'#a8aaae',style:'plate',gloss:248}},goreM);
+    decor={torso:{front:[['vband',.38,.62,'#c8c4b8'],['vband',.47,.53,'#3a0a0a'],['soak',0,.4,'#3a0606',.55],['tear',2,5,sk],['grime',.5]],back:[['grime',.6]],side:[['grime',.5]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#ffd060',tears:1}]],top:[['wounds',1,5],['blood',2,3]],side:[['blood',1,6]],bottom:[['teethrow','bottom',.32]]},
+      jaw:{top:[['teethrow','top',.34]],front:[['teethrow','top',.4],['drip',.5,.6,3,.6]],bottom:[['soak',0,1,'#3a0606',.7]]},
+      coffin:{all:[['grime',.5]],back:[['vband',0,.05,'#1e120a'],['vband',.95,1,'#1e120a'],['vband',.32,.34,'#1e120a'],['vband',.66,.68,'#1e120a']]},coffinL:{all:[['grime',.4]]},
+      iron:{all:[['grime',.4]]},uaL:{all:[['tear',1,3,sk],['grime',.5]]},uaR:{all:[['grime',.5],['blood',2,4]]},thL:{all:[['grime',.6]]},thR:{all:[['grime',.6],['tear',1,6,sk]]},
+      pelvis:{fb:[['belt',.75,.95,'#0e0e10','#7a7a70']]},faL:{all:[['gash',.2,.9,.5,.2,3,.1]]},handR:{all:[['soak',0,1,'#4a0606',.8]]}};
+    extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2,hc=H.headC,cy=sY+o.torsoH*.5;
+      const L=[{n:'coffin',b:1,c:[0,cy,zb+.08],s:[.46,.9,.14],m:'coffin'},{n:'coffin',b:1,c:[0,cy+.52,zb+.08],s:[.34,.16,.13],m:'coffin'},{n:'coffin',b:1,c:[0,cy-.52,zb+.08],s:[.3,.16,.13],m:'coffin'},
+        {n:'coffinL',b:1,c:[0,cy+.05,zb+.155],s:[.36,.95,.02],m:'coffinL'},
+        {n:'iron',b:1,c:[0,sY+o.torsoH*.78,zf-.006],s:[o.torsoW*1.03,.045,.02],m:'iron'},{n:'iron',b:1,c:[0,sY+o.torsoH*.78,zb+.02],s:[o.torsoW*1.03,.045,.04],m:'iron'},
+        {n:'iron',b:1,c:[0,sY+o.torsoH*.3,zb+.16],s:[.5,.05,.04],m:'iron'}];
+      for(const s of [-1,1])L.push({n:'iron',b:1,c:[s*.15,sY+o.torsoH*.6,zf-.007],s:[.04,o.torsoH*.62,.02],m:'iron'});
+      for(const [x,z] of [[-.05,0],[.06,-.04],[0,.07]])L.push({n:'nail',b:2,c:[x,hc[1]+o.headH/2+.03,o.headZ+z],s:[.014,.08,.014],m:'nailM'});
+      return L}}
   else{// 비명체 — eyes stitched shut yet still glowing, a jaw that unhinges to the chest, ribs through a blood-soaked lab coat
     o={hipY:.92,torsoW:.38,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.16,legD:.15,shinW:.12,headW:.22,headH:.28,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};
     const sk='#2a1a15';
@@ -639,11 +658,11 @@ function poseHuman(ch,st){const R=ch.R,A=ch.A,P=A.piv;const sc=P[0][1]/.93;ch.gu
     let x=.15-g.arm*.6,fl=.35+.4*g.run;if(a>0&&H.kind==='melee'){x+=.5*Math.sin(a*Math.PI);fl+=.4*Math.sin(a*Math.PI)}if(a>0&&H.kind==='nade'){x=kf1([[0,.15],[.32,1.3],[.5,1.35],[.62,-.2],[.8,-.3],[1,.15]],a);fl=.5}
     setE(R[3],x,0,-.12);setE(R[4],fl,0,0)}}
 // zombie class motion profiles
-const ZGAIT={rager:{stride:.95,knee:.85,runK:.75,limp:1,bob:1.1,twist:1.2},runner:{stride:1.15,knee:1.4,runK:1.2,bob:1.2,twist:1.3},brute:{stride:1.05,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},scream:{stride:.9,knee:.9,runK:.7,sway:1.6,roll:1.5}};
+const ZGAIT={coffin:{stride:.92,knee:.8,runK:.65,bob:1.35,twist:1.3,roll:1.15},rager:{stride:.95,knee:.85,runK:.75,limp:1,bob:1.1,twist:1.2},runner:{stride:1.15,knee:1.4,runK:1.2,bob:1.2,twist:1.3},brute:{stride:1.05,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},scream:{stride:.9,knee:.9,runK:.7,sway:1.6,roll:1.5}};
 // doll bash (third person): [shoulders forward, elbows, spine pitch, jaw, twist]
 KF.vdA=[[0,[0,0,0,0,0]],[.25,[2.1,.9,.18,.25,.1]],[.34,[2.2,.95,.2,.3,.1]],[.45,[-.5,-.3,-.38,.65,-.05]],[.62,[-.55,-.25,-.3,.5,-.05]],[1,[0,0,0,0,0]]];
 KF.vdH=[[0,[0,0,0,0,0]],[.32,[2.5,1,.25,.35,0]],[.44,[2.6,1.05,.28,.4,0]],[.55,[-.65,-.35,-.55,.9,0]],[.72,[-.7,-.3,-.45,.7,0]],[1,[0,0,0,0,0]]];
-const JAW0={rager:.12,runner:.3,brute:.08,scream:.34};
+const JAW0={coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34};
 function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.dead>0){poseDead(ch,st);return}
   const t=st.t,z=st.zclass,sd=st.seed||0,cfg=ZGAIT[z]||ZGAIT.rager;const turn=st.turn>0?Math.min(1,st.turn):0;
@@ -656,7 +675,7 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   ch.root.set(g.sway*sc,-g.drop*sc,rootZ*sc);
   // twitches: the head snaps sideways, a shoulder jerks; frequency differs per class
   const jH=jerk(t,sd,z==='runner'?1.1:1.7,.55),jH2=jerk(t+.3,sd+3,2.3,.45),jS=jerk(t,sd+7,2.9,.4);
-  const hunch={rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1}[z]||-.2;
+  const hunch={coffin:-.34,rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1}[z]||-.2;
   let spP=hunch-g.run*.12*(z==='runner'?1.6:1)+(st.flinch||0)*.45+(st.stun>0?.2:0),twist=0,spR=Math.sin(t*1.1+sd)*.05;
   let aL,aR,zL,zR,fL,fR;// shoulder X (forward), shoulder Z (out), elbow flex
   if(z==='runner'){aL=-.45-g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;aR=-.45+g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;zL=-.18;zR=.18;fL=fR=1.25+.2*g.run}
@@ -676,6 +695,8 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
     else if(side>0){aR+=c[0];zR+=c[1];fR+=c[2];twist-=c[3];spP+=c[4];aL+=-c[0]*.15}else{aL+=c[0];zL-=c[1];fL+=c[2];twist+=c[3];spP+=c[4];aR+=-c[0]*.15}
     jaw+=c[5]}
   if(st.skill>0&&z==='scream'){const k=Math.min(1,st.skill*2.5);const tr=Math.sin(t*60)*.05;aL=lerp(aL,.45,k);aR=lerp(aR,.45,k);zL=lerp(zL,-1.25+tr,k);zR=lerp(zR,1.25-tr,k);fL=fR=lerp(fL,-.1,k);spP=lerp(spP,.32,k);jaw=lerp(jaw,1.3+tr*2,k)}
+  // coffin zombie: both arms drive the coffin down in front
+  if(st.skill>0&&z==='coffin'){const k=Math.min(1,st.skill*2.2);aL=lerp(aL,2.3,k);aR=lerp(aR,2.3,k);zL=lerp(zL,.2,k);zR=lerp(zR,-.2,k);fL=fR=lerp(fL,.25,k);spP=lerp(spP,-.45,k);jaw=lerp(jaw,1,k)}
   if(st.skill>0&&z==='brute'){const k=Math.min(1,st.skill*2);aL=lerp(aL,1.45,k);aR=lerp(aR,1.45,k);zL=lerp(zL,.45,k);zR=lerp(zR,-.45,k);fL=fR=lerp(fL,1.6,k);spP=lerp(spP,-.32,k);jaw=lerp(jaw,.7,k)}
   if(turn>0){const j=Math.sin(t*31)*.5+Math.sin(t*17)*.5;aL=.3+j*.8*turn;aR=.4-j*.7*turn;zL=-.9*turn;zR=.9*turn;fL=fR=1.2*turn;spP=-.55*turn+Math.sin(t*23)*.25*turn;twist=Math.sin(t*13)*.4*turn;jaw=.4+Math.abs(Math.sin(t*11))*.8*turn}
   setE(R[0],0,g.twist,g.roll);setE(R[1],spP,-g.twist*1.2+twist,-g.roll*.7+spR-(st.flinchX||0)*.25);

@@ -3,7 +3,7 @@
 // gun frame: origin at the firing hand's grip, barrel along -Z, up +Y, metres
 const GA_MATS=['blk','blk2','steel','bright','wood','olive','tan','rub','brass','glove','sl_guard','sl_medic','sl_soldier','sl_hazmat','skin','zs_rager',
   'zs_runner','zs_brute','zs_scream','claw','red','heGreen','frost','lens','muzzle','white','wood2','gunmetal','cuff','hglove','nail','flesh',
-  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap'];
+  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap','coffW','coffL','zs_coffin'];
 const GA={W:1024,H:1024,P:128,idx:{},tex:null,texVM:null,canvas:null};
 GA_MATS.forEach((m,i)=>GA.idx[m]=i);
 function paintGunAtlas(){const PS=GA.P;
@@ -52,8 +52,11 @@ function paintGunAtlas(){const PS=GA.P;
       const w=nz(X,Y,46,22);if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55);
       const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,'#5a0808',clamp((bl-.66)*4,0,.8));return c});
     zs('zs_rager','#7a8a6a','#4a2a28');zs('zs_runner','#9a9a86','#5a3a40');zs('zs_brute','#8a7a6a','#6a3a32');zs('zs_scream','#2a1a15','#4a3020');
+    zs('zs_coffin','#8a9098','#3a3a4a');
     patch('claw',(x,y,X,Y)=>{const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=mix(c,'#6a0a08',.7);return c});
     patch('nail',(x,y)=>mix('#c8bca0','#2a1c14',y/127));
+    patch('coffW',(x,y,X,Y)=>{const pl=Math.floor(x/26),g=nz(X,Y,91+pl,14)+Math.sin(y*.35+pl*2.1+nz(X,Y,92,30)*4)*.08;let c=g>.62?'#2e1c10':g<.4?'#4a3020':'#3a2616';if(x%26===0)c='#160c06';if(hash2(X,Y,93)<.01)c='#5a4030';return c});
+    patch('coffL',(x,y,X,Y)=>{const g=nz(X,Y,94,12)+Math.sin(y*.5+nz(X,Y,95,24)*5)*.07;let c=g>.6?'#3a1410':g<.4?'#561e16':'#481a12';if(x<3||y<3||x>124||y>124)c='#1a0806';return c});
     patch('burlap',(x,y,X,Y)=>{const t=nz(X,Y,81,8);let c=((x>>1)+(y>>1))%2?'#9a7646':'#8a6838';if(t>.62)c=dk(c,.18);if(t<.3)c=lt(c,.08);if(x%32===0||y%32===0)c='#5e4424';return c});
     patch('zbSkin',(x,y,X,Y)=>{const t=nz(X,Y,71,10),w=Math.sin(y*.55+nz(X,Y,72,20)*7);let c=t>.62?'#a3301c':t<.36?'#d8653a':'#c0472a';
       if(w>.82)c=dk(c,.32);else if(w<-.9)c=lt(c,.12);const vein=Math.abs(Math.sin(x*.11+Math.sin(y*.05)*2.6)*16-((y*.41)%16));if(vein<1.2&&t>.4)c='#6a1410';if(hash2(X,Y,73)<.015)c='#f09060';return c});

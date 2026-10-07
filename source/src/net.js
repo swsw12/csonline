@@ -10,9 +10,9 @@ const NET={on:false,host:false,cli:false,ghost:0,ev:0,kind:null,api:null,code:''
   lob:{cfg:{mode:'mut',bots:8,diff:1,rounds:7,time:180},pl:[]},k:0,lastK:0,tAcc:0,msg:'',hostTs:0,hostRx:0,netT:0};
 const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
-const ST_L=['menu','prep','fight','end','over'],ZI={rager:0,runner:1,brute:2,scream:3};
+const ST_L=['menu','prep','fight','end','over'],ZI={rager:0,runner:1,brute:2,scream:3,coffin:4};
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-r3'}// r3: Italy rebuilt on two levels (map geometry must match between peers)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-r4'}// r3: Italy rebuilt on two levels (map geometry must match between peers)
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
