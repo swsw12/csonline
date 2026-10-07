@@ -6,11 +6,13 @@ const HSKIN_N={guard:['박재원','Park Jae-won'],medic:['엘레나','Elena'],so
 const ZCLASS={
   rager:{n:['일반 좀비','Regular Zombie'],sk:['광폭화','Berserk'],d:['기본형 · 스킬 G: 광폭화 (5초간 이동속도 +45%, 넉백 저항 / 체력 소모)','Standard · Skill G: Berserk (5s +45% speed, knockback resistance / costs HP)'],hp:2400,armor:120,speed:5.6,jump:7.3,kb:1,dmg:55,skill:'frenzy',cd:14,dur:5,hw:.3,h:1.8,eye:1.62},
   runner:{n:['라이트 좀비','Light Zombie'],sk:['투명화','Invisibility'],d:['고속·고점프 · 스킬 G: 투명화 (8초간 거의 보이지 않음, 봇은 가까이서만 발견) · 체력 낮음','Fast, jumps high · Skill G: Invisibility (8s, nearly invisible; bots only spot you up close) · low HP'],hp:1700,armor:60,speed:6.4,jump:8.6,kb:1.3,dmg:40,skill:'invis',cd:16,dur:8,hw:.28,h:1.82,eye:1.66},
-  brute:{n:['헤비 좀비','Heavy Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:3600,armor:300,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
+  brute:{n:['헤비 좀비','Heavy Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:2700,armor:220,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
   coffin:{n:['관짝 좀비','Coffin Zombie'],sk:['관 방패','Coffin Wall'],d:['방어형 · 스킬 G: 앞에 기다란 관을 세로로 세움 (총알·이동을 막음, 부서지면 좀비 폭탄처럼 폭발, 최대 2개)','Defender · Skill G: stands a tall coffin up in front (stops bullets and bodies; bursts like a zombie bomb when broken; up to 2)'],hp:2800,armor:200,speed:5.3,jump:7,kb:.8,dmg:58,skill:'coffin',cd:14,dur:0,hw:.32,h:1.92,eye:1.72},
   scream:{n:['부두 좀비','Voodoo Zombie'],sk:['치유','Heal'],d:['지원형 · 스킬 G: 치유 (자신 25%, 주변 좀비 20% 회복)','Support · Skill G: Heal (25% to itself, 20% to nearby zombies)'],hp:2000,armor:100,speed:5.5,jump:7.3,kb:1.1,dmg:48,skill:'heal',cd:12,dur:1.2,hw:.29,h:1.85,eye:1.68},
 };
 const ZLIST=['rager','runner','brute','scream','coffin'];
+// every gun carries twice the spare ammo it used to
+for(const W of Object.values(WPN))if(W.res&&W.kind!=='nade'&&!W.resX2){W.res=Math.round(W.res*2);W.resX2=1}
 // scenario-only zombies (never picked by players). ZALL lists every class; its order is also the network index.
 Object.assign(ZCLASS,{
   bomber:{n:['자폭 좀비','Bomber'],sk:['자폭','Self-destruct'],d:['시나리오 전용 · 가까이 오면 부풀어 터진다 (범위 피해)','Scenario only · swells up and bursts next to you (area damage)'],hp:1300,armor:0,speed:5.9,jump:7,kb:1.4,dmg:30,skill:'none',cd:99,dur:0,hw:.36,h:1.8,eye:1.62},

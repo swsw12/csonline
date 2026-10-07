@@ -134,12 +134,12 @@ Object.assign(WPN,{
   // Volcano: 40 rounds of 12-gauge out of six turning barrels
   volc:{slot:1,kind:'shotgun',ny:1,n:['볼케이노','Volcano'],cost:7000,mag:40,res:120,pellets:6,dmg:27,rpm:420,spin:.25,spread:[.05,.065,.1],rec:[.03,.02],kb:2.4,stag:.35,hs:2,reload:4.2,draw:1,speed:.82,snd:'volc',model:'volc',hold:'rifle',shell:1},
   // dragon cannons: a cone of dragon fire that hits everything in front three times and sets it alight
-  bdc:{slot:1,kind:'special',ny:1,n:['흑룡포','Black Dragon Cannon'],cost:6500,mag:20,res:40,dmg:85,rpm:55,semi:1,cone:{r:9,a:.55,ticks:3,burn:3,kb:9,up:3.5},spread:[0,0,0],rec:[.12,.03],kb:9,stag:.8,hs:1,reload:3.6,draw:1,speed:.85,snd:'bdc',model:'bdc',hold:'rifle'},
-  rdc:{slot:1,kind:'special',ny:1,n:['적룡포','Red Dragon Cannon'],cost:9000,mag:30,res:60,dmg:100,rpm:60,semi:1,cone:{r:10,a:.6,ticks:3,burn:4,kb:11,up:4,red:1},alt:'dragon',spread:[0,0,0],rec:[.12,.03],kb:11,stag:.8,hs:1,reload:3.6,draw:1,speed:.84,snd:'rdc',model:'rdc',hold:'rifle'},
+  bdc:{slot:1,kind:'special',ny:1,n:['흑룡포','Black Dragon Cannon'],cost:6500,mag:20,res:40,dmg:85,rpm:55,semi:1,cone:{r:9,a:.55,ticks:3,burn:3,kb:9,up:3.5},spread:[0,0,0],rec:[.12,.03],kb:9,stag:.8,hs:1,shellRel:.32,relStart:.35,draw:1,speed:.85,snd:'bdc',model:'bdc',hold:'rifle'},
+  rdc:{slot:1,kind:'special',ny:1,n:['적룡포','Red Dragon Cannon'],cost:9000,mag:30,res:60,dmg:100,rpm:60,semi:1,cone:{r:10,a:.6,ticks:3,burn:4,kb:11,up:4,red:1},alt:'dragon',spread:[0,0,0],rec:[.12,.03],kb:11,stag:.8,hs:1,shellRel:.3,relStart:.35,draw:1,speed:.84,snd:'rdc',model:'rdc',hold:'rifle'},
   // Ripper: hold LMB to grind (no knockback, heavy stagger, uses fuel); RMB swings it into a crowd (huge knockback, free)
   ripper:{slot:1,kind:'saw',ny:1,n:['리퍼','Ripper'],cost:5000,mag:200,res:400,dmg:34,rpm:600,range:2,alt:'swing',swDmg:120,swKb:20,swCd:.9,reload:3.2,draw:1.1,speed:.95,snd:'sawrev',model:'ripper',hold:'rifle',spread:[0,0,0],rec:[0,0],kb:0,stag:.6,hs:1},
   // Gae Bolg: the harpoon sticks and blows up a second later; RMB blows every harpoon at once (and you can ride the blast)
-  gaebolg:{slot:1,kind:'special',ny:1,n:['게이볼그','Gae Bolg'],cost:6000,mag:3,res:21,dmg:114,rpm:90,semi:1,proj:'harpoon',alt:'detonate',spread:[.003,.02,.06],rec:[.08,.02],kb:4,stag:.5,hs:1,reload:2.6,draw:.9,speed:.9,snd:'harpoon',model:'gaebolg',hold:'rifle'},
+  gaebolg:{slot:1,kind:'special',ny:1,n:['게이볼그','Gae Bolg'],cost:6000,mag:3,res:21,dmg:114,rpm:90,semi:1,proj:'harpoon',alt:'detonate',spread:[.003,.02,.06],rec:[.08,.02],kb:4,stag:.5,hs:1,shellRel:.6,relStart:.35,draw:.9,speed:.9,snd:'harpoon',model:'gaebolg',hold:'rifle'},
   // 혈적자: a spinning blade that cuts through everything for 19 m and comes back; a head hit grinds for 126
   xdz:{slot:1,kind:'special',ny:1,n:['혈적자','Blood Dripper'],cost:5500,mag:50,res:100,dmg:32,hsDmg:126,rpm:150,proj:'disc',spread:[.002,.015,.05],rec:[.03,.01],kb:3,stag:.4,hs:1,reload:3,draw:.8,speed:.95,snd:'disc',model:'xdz',hold:'rifle'},
   // Magnum Drill: automatic 12-gauge through a turning drill; RMB drives the drill into whatever is in front
