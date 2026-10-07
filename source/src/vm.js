@@ -46,6 +46,10 @@ const VMK={
   relB:[[0,[0,0,0,0,0,0]],[.12,[0,-.02,.02,-.45,.08,.2]],[.72,[0,-.03,.02,-.5,.1,.22]],[.8,[0,.01,0,.22,0,0]],[.9,[0,0,0,-.04,0,0]],[1,[0,0,0,0,0,0]]],
 };
 const _vv=new THREE.Vector3(),_vw=new THREE.Vector3(),_vk=[0,0,0,0,0,0],_vk2=[0,0,0,0,0,0],_vd=new THREE.Vector3(),_vb=new THREE.Vector3(),_vq=new THREE.Quaternion();
+// [hand x,y,z, toward-elbow x,y,z, wrist flick of the doll (+ = doll tipped up/back, - = chopped down)]
+const VD_REST=[.09,-.2,-.36,.3,-.55,.78,.25],_vdk=[0,0,0,0,0,0,0];
+VMK.vdA=[[0,VD_REST],[.22,[.17,0,-.4,.3,-.7,.65,1.3]],[.32,[.17,.01,-.4,.3,-.7,.65,1.35]],[.46,[.03,-.1,-.52,.15,-.45,.88,-.65]],[.6,[.05,-.18,-.46,.2,-.6,.78,-.55]],[.82,[.08,-.23,-.38,.28,-.55,.8,0]],[1,VD_REST]];
+VMK.vdH=[[0,VD_REST],[.32,[.18,.06,-.42,.3,-.75,.6,1.6]],[.44,[.18,.07,-.42,.3,-.75,.6,1.65]],[.56,[.03,-.13,-.54,.15,-.4,.9,-.8]],[.72,[.05,-.22,-.47,.2,-.6,.78,-.7]],[.9,[.08,-.24,-.38,.28,-.55,.8,0]],[1,VD_REST]];
 const CLAW_REST=[.19,-.19,-.34,.3,-.75,.65],_vca=[new Float32Array(6),new Float32Array(6)];
 function vspr(s,target,k,dt){const d=2*Math.sqrt(k)*.62;const a=k*(target-s.x)-d*s.v;s.v+=a*dt;s.x+=s.v*dt}
 const _vpB={p:[0,0,0],r:[0,0,0]};
@@ -92,6 +96,15 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
   stance(b){this.sp.py.v-=.2;this.sp.rx.v+=b?.8:-.6},
   melee(heavy){const W=WPN[this.id];this.mel={t:0,d:W&&W.anD?W.anD[heavy?1:0]:(heavy?.75:.42),heavy,side:this.mel&&this.mel.side>0?-1:1};this.trail.S.length=0},
   claw(heavy,side){this.mel={t:0,d:heavy?.75:.46,heavy,side:side||1};this.trail.S.length=0},
+  // voodoo zombie: the right fist holds the doll, the left fist sits just behind it on the doll's legs; light = overhead bash, heavy = bigger slam
+  vdPose(A,dt,m){const M=this.mel;let tr=false;const K=_vdk;
+    if(M){M.t+=dt;const p=clamp(M.t/M.d,0,1);kfv(M.heavy?VMK.vdH:VMK.vdA,p,K);tr=M.heavy?(p>.44&&p<.62):(p>.34&&p<.52);
+      const s=M.heavy?(p>.44&&p<.72?Math.sin((p-.44)/.28*Math.PI):0):(p>.34&&p<.6?Math.sin((p-.34)/.26*Math.PI):0);this.camPitch=-s*(M.heavy?.08:.045)+(p<.4?smooth(p/.4)*.02:0);
+      if(p>=1)this.mel=null}
+    else for(let i=0;i<7;i++)K[i]=VD_REST[i];
+    for(let i=0;i<6;i++)A[0][i]=K[i];if(m.doll)m.doll.rotation.x=K[6];
+    const n=Math.hypot(A[0][3],A[0][4],A[0][5])||1,dx=A[0][3]/n,dy=A[0][4]/n,dz=A[0][5]/n;
+    A[1][0]=A[0][0]+dx*.07-.014;A[1][1]=A[0][1]+dy*.07-.006;A[1][2]=A[0][2]+dz*.07;A[1][3]=dx-.6;A[1][4]=dy;A[1][5]=dz;return tr},
   throwNade(soft){this.throwT=.5;this.soft=!!soft;this.pull=null},
   bombPull(d){this.pull={t:0,d};this.pinOut=false},
   landed(k){const S=this.sp;S.py.v-=k*.55;S.rx.v+=k*1.4},
@@ -164,7 +177,8 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     m.root.position.set(x,y,z);m.root.rotation.set(rx,ry,rz);
     // ---- zombie claws: two arms with their own strokes ----
     if(kind==='claw'){const R_=m.armR,L_=m.armL;const A=_vca;A[0].set(CLAW_REST);A[1].set(CLAW_REST);A[1][0]=-A[1][0];A[1][3]=-A[1][3];
-      if(this.mel){const M=this.mel;M.t+=dt;const p=clamp(M.t/M.d,0,1);
+      if(m.vd)trailOn=this.vdPose(A,dt,m);
+      else if(this.mel){const M=this.mel;M.t+=dt;const p=clamp(M.t/M.d,0,1);
         if(M.heavy){kfv(VMK.clH,p,_vk);A[0].set(_vk);A[1].set(_vk);A[1][0]=-_vk[0];A[1][3]=-_vk[3];trailOn=p>.47&&p<.74;this.camPitch=-Math.sin(clamp((p-.45)/.3,0,1)*Math.PI)*.05+(p<.45?smooth(p/.45)*.02:0)}
         else{kfv(VMK.clL,p,_vk);const sd=M.side>0?1:-1,S1=A[sd>0?0:1];S1.set(_vk);if(sd<0){S1[0]=-_vk[0];S1[3]=-_vk[3]}
           // the other arm pulls back as the body turns into the swipe
@@ -178,7 +192,8 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       m.root.position.set(S.px.x*.6,S.py.x*.6+drY,0);m.root.rotation.set(S.rx.x*.4+drX,S.ry.x*.5,S.rz.x*.5)}
     // ---- trail sampling ----
     if(trailOn){m.root.updateMatrixWorld(true);
-      if(kind==='claw'){const M=this.mel;const arms=M&&M.heavy?[m.armR,m.armL]:[M&&M.side>0?m.armR:m.armL];const am=arms[0].children[0];am.localToWorld(_vv.set(0,-.02,-.08));am.localToWorld(_vw.set(0,-.05,-.22));this.trailPush(_vv,_vw)}
+      if(kind==='claw'&&m.vd){const am=m.doll;am.localToWorld(_vv.set(0,0,-.08));am.localToWorld(_vw.set(0,.02,-.22));this.trailPush(_vv,_vw)}
+      else if(kind==='claw'){const M=this.mel;const arms=M&&M.heavy?[m.armR,m.armL]:[M&&M.side>0?m.armR:m.armL];const am=arms[0].children[0];am.localToWorld(_vv.set(0,-.02,-.08));am.localToWorld(_vw.set(0,-.05,-.22));this.trailPush(_vv,_vw)}
       else if(kind==='axe'){m.gun.localToWorld(_vv.set(0,.03,-.49));m.gun.localToWorld(_vw.set(0,.15,-.49));this.trailPush(_vv,_vw)}
       else if(kind==='hammer'){m.gun.localToWorld(_vv.set(0,-.13,-.81));m.gun.localToWorld(_vw.set(0,.13,-.81));this.trailPush(_vv,_vw)}
       else{m.gun.localToWorld(_vv.set(0,.006,-.1));m.gun.localToWorld(_vw.set(0,.006,-.28));this.trailPush(_vv,_vw)}}

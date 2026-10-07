@@ -410,7 +410,17 @@ function defZombie(k,host){
     ex.push({n:'stumpN',b:14,c:[0,nY+.012,0],s:[.12,.06,.12],m:'stump'});
     for(const sd of [-1,1]){const aw=o2.armW*(sd>0?o2.arm2:1);ex.push({n:'stumpA'+(sd<0?'L':'R'),b:sd<0?15:16,c:[sd*(o2.shX+aw*.08),H.piv[3][1]+.01,0],s:[aw*1.12,aw*1.12,aw*1.12],m:'stump'});
       ex.push({n:'stumpL'+(sd<0?'L':'R'),b:sd<0?17:18,c:[sd*o2.legSep,H.piv[7][1]-.03,0],s:[o2.legW*1.08,.08,o2.legD*1.08],m:'stump'})}
-    mats.stump={base:'#7a1410',style:'flesh'};if(!decor.claw)decor.claw={all:[['soak',0,.7,'#3a0606',.8]]};
+    mats.stump={base:'#7a1410',style:'flesh'};
+    // voodoo zombie: a pinned rag doll gripped by its legs in the right fist (both hands on it), used as a club
+    if(k==='scream'){for(let i=ex.length-1;i>=0;i--)if(/^doll/.test(ex[i].n))ex.splice(i,1);// a doll hanging from the belt moves into the hands
+      const [hx,hy]=H.hand;const D=(n,x,y,z,w,h,d,m)=>ex.push({n,b:6,c:[hx+x,hy+y,z],s:[w,h,d],m});
+      D('vdLegs',0,0,-.04,.05,.045,.08,'vdoll');D('vdBody',0,0,-.13,.08,.06,.11,'vdoll');D('vdHead',0,.004,-.225,.085,.075,.08,'vdoll');
+      D('vdArm',-.058,0,-.15,.04,.03,.03,'vdoll');D('vdArm',.058,0,-.15,.04,.03,.03,'vdoll');
+      for(const [x,z,h] of [[-.018,-.215,.07],[.02,-.235,.06],[.012,-.12,.065]]){D('vdPin',x,.03+h/2,z,.006,h,.006,'vpin');D('vdPinH',x,.032+h,z,.016,.016,.016,'vpinH')}
+      mats.vdoll={base:'#9a7646'};mats.vpin={base:'#c8ccd0',style:'plate',gloss:248};mats.vpinH={base:'#b01414',style:'plate',gloss:246};
+      Object.assign(decor,{vdBody:{all:[['stitch',.5,.05,.5,.95],['grime',.5]],top:[['rect',.3,.35,.7,.7,'#7a1010'],['stitch',.5,.05,.5,.95]]},
+        vdHead:{all:[['grime',.4]],top:[['stitch',.15,.45,.42,.75],['stitch',.15,.75,.42,.45],['stitch',.58,.45,.85,.75],['stitch',.58,.75,.85,.45],['stitch',.3,.22,.7,.22]]},
+        vdLegs:{all:[['stitch',.5,0,.5,1],['grime',.6]]},vdArm:{all:[['grime',.5]]}})}if(!decor.claw)decor.claw={all:[['soak',0,.7,'#3a0606',.8]]};
     decor.nose=decor.nose||{all:[['grime',.5]],bottom:[['rect',0,0,1,1,'#2a0606']]};decor.brow=decor.brow||{all:[['grime',.5]],bottom:[['rect',0,0,1,1,dk(mats.skin.base,.5)]]};
     Object.assign(decor,{stumpN:{top:[['flesh',0,0,1,1,.5],['bonep',.36,.36,.64,.64]],fb:[['flesh',0,.2,1,1,0],['drip',.5,.4,3,.9]],side:[['flesh',0,.2,1,1,0]]},
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
@@ -630,6 +640,9 @@ function poseHuman(ch,st){const R=ch.R,A=ch.A,P=A.piv;const sc=P[0][1]/.93;ch.gu
     setE(R[3],x,0,-.12);setE(R[4],fl,0,0)}}
 // zombie class motion profiles
 const ZGAIT={rager:{stride:.95,knee:.85,runK:.75,limp:1,bob:1.1,twist:1.2},runner:{stride:1.15,knee:1.4,runK:1.2,bob:1.2,twist:1.3},brute:{stride:1.05,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},scream:{stride:.9,knee:.9,runK:.7,sway:1.6,roll:1.5}};
+// doll bash (third person): [shoulders forward, elbows, spine pitch, jaw, twist]
+KF.vdA=[[0,[0,0,0,0,0]],[.25,[2.1,.9,.18,.25,.1]],[.34,[2.2,.95,.2,.3,.1]],[.45,[-.5,-.3,-.38,.65,-.05]],[.62,[-.55,-.25,-.3,.5,-.05]],[1,[0,0,0,0,0]]];
+KF.vdH=[[0,[0,0,0,0,0]],[.32,[2.5,1,.25,.35,0]],[.44,[2.6,1.05,.28,.4,0]],[.55,[-.65,-.35,-.55,.9,0]],[.72,[-.7,-.3,-.45,.7,0]],[1,[0,0,0,0,0]]];
 const JAW0={rager:.12,runner:.3,brute:.08,scream:.34};
 function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.dead>0){poseDead(ch,st);return}
@@ -648,7 +661,7 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   let aL,aR,zL,zR,fL,fR;// shoulder X (forward), shoulder Z (out), elbow flex
   if(z==='runner'){aL=-.45-g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;aR=-.45+g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;zL=-.18;zR=.18;fL=fR=1.25+.2*g.run}
   else if(z==='brute'){aL=.22-g.arm*.75+Math.sin(t*1.6)*.05;aR=.28+g.arm*.75+Math.sin(t*1.8)*.05;zL=-.35;zR=.42;fL=fR=.45}
-  else if(z==='scream'){aL=.05-g.arm*.55;aR=.08+g.arm*.55;zL=-.1;zR=.1;fL=fR=.18;spR+=Math.sin(st.phase)*.08*g.amp}
+  else if(z==='scream'){aL=aR=.72+g.arm*.1;zL=.3;zR=-.3;fL=fR=.62;spR+=Math.sin(st.phase)*.08*g.amp}// both hands on the doll in front of the belly
   else{// rager: reaching, grasping hands that open and close
     aL=1.02+Math.sin(t*1.7+sd)*.1-g.arm*.25;aR=.95+Math.sin(t*1.9+sd*2)*.1+g.arm*.25;zL=-.1;zR=.12;fL=.3+Math.max(0,Math.sin(t*2.6+sd))*.25;fR=.25+Math.max(0,Math.sin(t*2.2+sd*3))*.3}
   if(st.frenzy){aL=-.3-g.arm;aR=-.3+g.arm;fL=fR=1.1;spP-=.25}
@@ -656,7 +669,9 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   aR+=jS*.35*(jS>0?1:0);aL+=jS*.35*(jS<0?-1:0);
   let jaw=JAW0[z]||.12;jaw+=(z==='runner'?.12:.06)*Math.pow(Math.max(0,Math.sin(t*19+sd)),3);if(jH!==0)jaw+=Math.abs(jH)*.35;
   // claw swipe: wind up high and back, whip down across the body, follow through low; heavy: both arms smash down
-  if(a>0){const c=kfv(heavy?KF.clawH:KF.clawA,a,_kv2);
+  // voodoo zombie: both arms raise the doll overhead and club it down
+  if(a>0&&z==='scream'){const c=kfv(heavy?KF.vdH:KF.vdA,a,_kv2);aL+=c[0];aR+=c[0];fL+=c[1];fR+=c[1];spP+=c[2];jaw+=c[3];twist+=c[4]}
+  else if(a>0){const c=kfv(heavy?KF.clawH:KF.clawA,a,_kv2);
     if(heavy){aL+=c[0];aR+=c[0];zL-=c[1];zR+=c[1];fL+=c[2]*.8;fR+=c[2]*.8;spP+=c[4]}
     else if(side>0){aR+=c[0];zR+=c[1];fR+=c[2];twist-=c[3];spP+=c[4];aL+=-c[0]*.15}else{aL+=c[0];zL-=c[1];fL+=c[2];twist+=c[3];spP+=c[4];aR+=-c[0]*.15}
     jaw+=c[5]}

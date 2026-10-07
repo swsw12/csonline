@@ -3,7 +3,7 @@
 // gun frame: origin at the firing hand's grip, barrel along -Z, up +Y, metres
 const GA_MATS=['blk','blk2','steel','bright','wood','olive','tan','rub','brass','glove','sl_guard','sl_medic','sl_soldier','sl_hazmat','skin','zs_rager',
   'zs_runner','zs_brute','zs_scream','claw','red','heGreen','frost','lens','muzzle','white','wood2','gunmetal','cuff','hglove','nail','flesh',
-  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue'];
+  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap'];
 const GA={W:1024,H:1024,P:128,idx:{},tex:null,texVM:null,canvas:null};
 GA_MATS.forEach((m,i)=>GA.idx[m]=i);
 function paintGunAtlas(){const PS=GA.P;
@@ -54,6 +54,7 @@ function paintGunAtlas(){const PS=GA.P;
     zs('zs_rager','#7a8a6a','#4a2a28');zs('zs_runner','#9a9a86','#5a3a40');zs('zs_brute','#8a7a6a','#6a3a32');zs('zs_scream','#2a1a15','#4a3020');
     patch('claw',(x,y,X,Y)=>{const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=mix(c,'#6a0a08',.7);return c});
     patch('nail',(x,y)=>mix('#c8bca0','#2a1c14',y/127));
+    patch('burlap',(x,y,X,Y)=>{const t=nz(X,Y,81,8);let c=((x>>1)+(y>>1))%2?'#9a7646':'#8a6838';if(t>.62)c=dk(c,.18);if(t<.3)c=lt(c,.08);if(x%32===0||y%32===0)c='#5e4424';return c});
     patch('zbSkin',(x,y,X,Y)=>{const t=nz(X,Y,71,10),w=Math.sin(y*.55+nz(X,Y,72,20)*7);let c=t>.62?'#a3301c':t<.36?'#d8653a':'#c0472a';
       if(w>.82)c=dk(c,.32);else if(w<-.9)c=lt(c,.12);const vein=Math.abs(Math.sin(x*.11+Math.sin(y*.05)*2.6)*16-((y*.41)%16));if(vein<1.2&&t>.4)c='#6a1410';if(hash2(X,Y,73)<.015)c='#f09060';return c});
     P.ga=232;patch('zbEye',(x,y)=>{const r=Math.hypot(x-64,y-64);return r<22?'#fff6b0':r<44?'#ffc838':'#e85a10'});P.ga=255;
@@ -296,4 +297,11 @@ function buildClaws(zk,U){const mat=matVM(GA.texVM,U);const root=new THREE.Group
   const mk=s=>{const g=new THREE.Group();const a=armMesh(sk,sk,mat,{claws:1});g.add(a);a.rotation.set(0,0,0);return g};
   const R=mk(1),L=mk(-1);root.add(R);root.add(L);
   lookArm(R.children[0],[0,0,0],[.25,-.5,1]);lookArm(L.children[0],[0,0,0],[-.25,-.5,1]);
-  return {id:'claw',root,gun:root,tags:{},armR:R,armL:L,mat}}
+  let vd=false,doll=null;if(zk==='scream'){vd=true;// voodoo zombie: a pinned rag doll in the right fist, legs in the grip, head forward
+    const B='burlap',dp=[Pt(0,-.004,-.075,.044,.04,.07,B,{r:.012}),Pt(0,-.004,-.15,.07,.054,.1,B,{r:.018}),Pt(0,0,-.235,.075,.066,.072,B,{r:.024}),
+      Pt(-.05,-.004,-.16,.034,.026,.026,B,{r:.01}),Pt(.05,-.004,-.16,.034,.026,.026,B,{r:.01}),Pt(0,.024,-.15,.03,.004,.03,'red'),
+      Pt(-.016,.03,-.23,.016,.004,.016,'blk'),Pt(.016,.03,-.23,.016,.004,.016,'blk'),Pt(0,.03,-.208,.03,.003,.004,'blk')];
+    for(const [x,z,h] of [[-.02,-.24,.06],[.022,-.226,.05],[.012,-.14,.055]]){dp.push(Pt(x,.03+h/2,z,.004,h,.004,'steel'),Pt(x,.032+h,z,.012,.012,.012,'red',{r:.005}))}
+    // the doll hangs from a wrist pivot at the fist so the swing can flick it up and chop it down
+    for(const q of dp)q.c=[q.c[0],q.c[1]+.004,q.c[2]+.065];doll=new THREE.Group();doll.position.set(0,-.004,-.065);doll.add(new THREE.Mesh(partGeo(dp),mat));R.children[0].add(doll)}
+  return {id:'claw',root,gun:root,tags:{},armR:R,armL:L,mat,vd,doll}}
