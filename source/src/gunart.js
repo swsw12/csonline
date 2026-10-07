@@ -51,8 +51,8 @@ function paintGunAtlas(){const PS=GA.P;
       // torn skin showing muscle, smeared blood
       const w=nz(X,Y,46,22);if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55);
       const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,'#5a0808',clamp((bl-.66)*4,0,.8));return c});
-    zs('zs_rager','#7a8a6a','#4a2a28');zs('zs_runner','#9a9a86','#5a3a40');zs('zs_brute','#8a7a6a','#6a3a32');zs('zs_scream','#282321','#3a1c10');
-    zs('zs_coffin','#8a9098','#3a3a4a');
+    zs('zs_rager','#7a8a6a','#4a2a28');zs('zs_runner','#9a9a86','#5a3a40');zs('zs_brute','#8a7a6a','#6a3a32');zs('zs_scream','#2a1a15','#4a3020');
+    zs('zs_coffin','#282321','#3a1c10');
     patch('claw',(x,y,X,Y)=>{const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=mix(c,'#6a0a08',.7);return c});
     patch('nail',(x,y)=>mix('#c8bca0','#2a1c14',y/127));
     patch('coffW',(x,y,X,Y)=>{const pl=Math.floor(x/26),g=nz(X,Y,91+pl,14)+Math.sin(y*.35+pl*2.1+nz(X,Y,92,30)*4)*.08;let c=g>.62?'#2e1c10':g<.4?'#4a3020':'#3a2616';if(x%26===0)c='#160c06';if(hash2(X,Y,93)<.01)c='#5a4030';return c});
