@@ -134,7 +134,7 @@ function meleeHit(a,range,cone){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_dv);
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;if(d<bd){bd=d;best=t}}
   if(best)return {t:best,d:bd};
   const hw=rayCast(eye.x,eye.y,eye.z,_dv.x,_dv.y,_dv.z,range);if(hw)return {wall:hw,x:eye.x+_dv.x*hw.t,y:eye.y+_dv.y*hw.t,z:eye.z+_dv.z*hw.t,n:[hw.nx,hw.ny,hw.nz]};return null}
-function meleeW(a){const W=WPN[a.cur];return W&&W.kind==='melee'?W:WPN.knife}
+function meleeW(a,w){const W=WPN[w||a.cur];return W&&W.kind==='melee'?W:WPN.knife}
 function meleeSwing(a,heavy){const W=meleeW(a);NET.on&&netFxPush(['m',a.id,heavy?1:0,a.an.atkSide||1,WI[a.cur]]);
   if(a.isPlayer){AU.play('kswing',{vol:.7,rate:(heavy?.8:1)*(W.sw||1)});VM.melee(heavy)}else AU.at('kswing',a.c.x,a.c.y+1.4,a.c.z,{vol:.5,rate:W.sw||1})}
 // every enemy in reach in front, nearest first (the hammer's overhead smash catches several)
@@ -143,11 +143,11 @@ function meleeHits(a,range,cone,n){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_d
     const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z;const d=Math.hypot(dx,dy,dz)-c.hw;if(d>range)continue;const dot=(dx*_dv.x+dy*_dv.y+dz*_dv.z)/Math.max(.01,Math.hypot(dx,dy,dz));
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;out.push({t,d})}
   out.sort((p,q)=>p.d-q.d);return out.slice(0,n).map(o=>o.t)}
-function meleeStrike(a,heavy){const W=meleeW(a),hi=heavy?1:0;const many=heavy&&W.cleave?meleeHits(a,W.range[1],.6,W.cleave):null;
+function meleeStrike(a,heavy,w){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;const W=meleeW(a,w),hi=heavy?1:0;const many=heavy&&W.cleave?meleeHits(a,W.range[1],.6,W.cleave):null;
   const r=many&&many.length?{t:many[0]}:meleeHit(a,W.range[hi],heavy?.8:.65);const list=many&&many.length?many:r&&r.t?[r.t]:[];
   if(list.length){aimDir(a.yaw,0,_dv);let hsAny=false;
     for(const t of list){const hs=Math.abs(a.pitch)<.6&&Math.random()<(heavy?.25:.12);hsAny=hsAny||hs;
-      damageActor(t,W.dmg[hi]*(hs?2:1),a,{w:a.cur,hs,dir:[_dv.x,0,_dv.z],kb:W.kb[hi],stag:W.stag?W.stag[hi]:.5,up:W.up?W.up[hi]:0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
+      damageActor(t,W.dmg[hi]*(hs?2:1),a,{w,hs,dir:[_dv.x,0,_dv.z],kb:W.kb[hi],stag:W.stag?W.stag[hi]:.5,up:W.up?W.up[hi]:0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
       FX.blood(t.c.x,t.c.y+1.2,t.c.z,_dv.x,0,_dv.z,1.6*(W.sw<1?1.6:1),false)}
     const snd=W.blunt?'hamhit':'khit',t0=list[0];
     if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt?1:W.sw||1});HUD.hitmark(hsAny);if(W.sw<1)FX.shake=Math.max(FX.shake,W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}

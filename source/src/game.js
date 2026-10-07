@@ -43,13 +43,18 @@ const QUICK_BACK=1.2,QUICK_DRAW=.45;
 function equip(a,id,instant){if(!id||a.cur===id&&!instant)return;const W=WPN[id];if(!W)return;
   const quick=!instant&&id===a.awayId&&G.t-(a.awayT==null?-9:a.awayT)<QUICK_BACK;
   if(a.cur&&a.cur!==id){a.prev=a.cur;a.awayId=a.cur;a.awayT=G.t}
-  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.burstN=0;a.pendingMelee=null;a.nextFire=Math.min(a.nextFire,G.t);
+  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
   if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.kind==='melee'?'kdraw':'draw',{vol:.5,rate:(id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
   // 칼 챈샷 (draw cut): a blade drawn within a second of a gunshot, with an enemy in reach in front, comes out as an instant heavy cut —
   // full heavy damage and knockback on top of the shot that was just fired
   if(!instant&&W.kind==='melee'&&a.team===TH&&a.alive&&G.t-(a.lastFire==null?-9:a.lastFire)<DRAW_CUT_WIN){const r=meleeHit(a,W.range[1],.8);
-    if(r&&r.t){a.drawT=0;a.nextFire=G.t+W.rate[1]*.8;a.an.atk=1;a.an.heavy=true;a.an.atkD=meleeAtkD(W,true)*.85;if(a.isPlayer)VM.draw(.12);meleeSwing(a,true);a.pendingMelee={t:.06,heavy:true};a.drawCuts=(a.drawCuts||0)+1}}}
+    if(r&&r.t){a.drawT=0;a.nextFire=G.t+W.rate[1]*.8;a.an.atk=1;a.an.heavy=true;a.an.atkD=meleeAtkD(W,true)*.85;if(a.isPlayer)VM.draw(.12);meleeSwing(a,true);meleePend(a,.06,true);a.drawCuts=(a.drawCuts||0)+1}}}
 const DRAW_CUT_WIN=1;
+// a melee swing lands hitT after it starts with the weapon that swung it, even if the player switches weapons in between
+// (swap-cancel: the blade/hammer damage still goes in while the next gun comes up)
+function meleePend(a,t,heavy){if(a.pendingMelee)meleeStrike(a,a.pendingMelee.heavy,a.pendingMelee.w);a.pendingMelee={t,heavy,w:a.cur}}
+function meleePendTick(a,dt){const p=a.pendingMelee;if(!p)return false;if(!a.alive||a.team!==TH){a.pendingMelee=null;return false}
+  p.t-=dt;if(p.t<=0){a.pendingMelee=null;meleeStrike(a,p.heavy,p.w)}return true}
 // third-person swing length (seconds) for a melee weapon
 function meleeAtkD(W,heavy){return W&&W.anD?W.anD[heavy?1:0]:heavy?.68:.44}
 function slotPick(a,slot){if(a.team===TZ){if(slot===4&&a.bombs>0)equip(a,'zbomb');else if(slot!==4)equip(a,'claw');return}
@@ -202,6 +207,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   // rotary barrels spin up while either button is held, and wind down slowly
   if(W0&&W0.spin){const want=(cmd.fire||cmd.alt)&&a.drawT<=0&&a.reloadT<=0&&a.frozen<=0;a.spinV=clamp((a.spinV||0)+(want?dt/W0.spin:-dt/(W0.spin*1.8)),0,1)}else a.spinV=0;
   if(a.frozen>0)return;
+  const pend=meleePendTick(a,dt);
   if(cmd.slot){slotPick(a,cmd.slot);cmd.slot=0}
   if(cmd.lastInv){equip(a,hasWeapon(a,a.prev)?a.prev:(a.team===TZ?'claw':bestWeapon(a)));cmd.lastInv=false}
   const W=WPN[a.cur];if(!W)return;
@@ -210,13 +216,13 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){throwNade(a,a.cur);a.inv[a.cur]=Math.max(0,a.inv[a.cur]-1);const nx=['he','frost','flare'].find(k=>a.inv[k]>0);equip(a,nx||bestWeapon(a))}return}
     if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;if(a.isPlayer){VM.throwNade();AU.play('pin',{vol:.5})}}return}
   // melee: the swing starts now, the blade lands a moment later (heavier weapons wind up longer)
-  if(W.kind==='melee'){if(a.pendingMelee){a.pendingMelee.t-=dt;if(a.pendingMelee.t<=0){meleeStrike(a,a.pendingMelee.heavy);a.pendingMelee=null}return}
+  if(W.kind==='melee'){if(pend)return;
     // stance weapons (the hammer): right click switches between the overhead pound (A) and the braced knock-away stance (B); left click attacks in the current stance
     if(W.stance&&a.isPlayer){if(cmd.alt&&!pc.alt&&a.drawT<=0&&G.t>=a.nextFire-.25){a.hamB=!a.hamB;AU.play('kdraw',{vol:.45,rate:a.hamB?.6:.75});VM.stance&&VM.stance(a.hamB)}
       if(G.t>=a.nextFire&&a.drawT<=0&&cmd.fire){const heavy=!!a.hamB;meleeSwing(a,heavy);a.nextFire=G.t+W.rate[heavy?1:0];a.an.atk=1;a.an.heavy=heavy;a.an.atkD=meleeAtkD(W,heavy);
-        const d=W.hitT[heavy?1:0];if(d>.05)a.pendingMelee={t:d,heavy};else meleeStrike(a,heavy)}return}
+        const d=W.hitT[heavy?1:0];if(d>.05)meleePend(a,d,heavy);else meleeStrike(a,heavy)}return}
     if(G.t>=a.nextFire&&a.drawT<=0&&(cmd.fire||cmd.alt)){const heavy=!!cmd.alt;if(!heavy)a.an.atkSide=-(a.an.atkSide||1);meleeSwing(a,heavy);a.nextFire=G.t+W.rate[heavy?1:0];a.an.atk=1;a.an.heavy=heavy;a.an.atkD=meleeAtkD(W,heavy);
-      const d=W.hitT?W.hitT[heavy?1:0]:0;if(d>0)a.pendingMelee={t:d,heavy};else meleeStrike(a,heavy)}return}
+      const d=W.hitT?W.hitT[heavy?1:0]:0;if(d>0)meleePend(a,d,heavy);else meleeStrike(a,heavy)}return}
   const am=a.ammo[a.cur];if(!am)return;
   if(W.alt&&W.kind!=='saw'&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0)nyAlt(a,W);
   // zoom levels cycle with the right button

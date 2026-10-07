@@ -290,7 +290,7 @@ function netDoFx(a,f){if(!a||a.isPlayer||!G.actors.includes(a))return;const T0=f
     n.x=x;n.y=y;n.z=z;n.vx=vx;n.vy=vy;n.vz=vz;n.ghost=true;if(n.mesh){n.mesh.position.set(x,y,z);if(kind!=='disc')n.mesh.lookAt(x-vx,y-vy,z-vz)}return}
   if(T0==='n'){throwNade(a,f[2],{x:f[3]/100,y:f[4]/100,z:f[5]/100,vx:f[6]/100,vy:f[7]/100,vz:f[8]/100});a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;return}
   if(T0==='m'){if(!a.alive)return;const w=WL[f[4]];if(w&&a.cur!==w)equip(a,w,true);const heavy=!!f[2];a.an.atkSide=f[3]||1;meleeSwing(a,heavy);a.an.atk=1;a.an.heavy=heavy;a.an.atkD=meleeAtkD(WPN[a.cur],heavy);
-    const W=meleeW(a);const d=W.hitT?W.hitT[heavy?1:0]:0;nyLater(d,()=>{if(a.alive)meleeStrike(a,heavy)});return}
+    const w0=a.cur,W=meleeW(a);const d=W.hitT?W.hitT[heavy?1:0]:0;nyLater(d,()=>{if(a.alive)meleeStrike(a,heavy,w0)});return}
   if(T0==='c'){if(!a.alive)return;const heavy=!!f[2];a.an.atk=1;a.an.atkD=heavy?.78:.48;a.an.heavy=heavy;a.an.atkSide=f[3]||1;AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.7,range:30});
     nyLater(heavy?.4:.19,()=>{if(a.alive)clawStrike(a,heavy)});return}
   if(T0==='x'){if(!a.alive)return;const w=WL[f[2]],W=WPN[w];if(!W)return;if(a.cur!==w)equip(a,w,true);if(!a.ammo[w])a.ammo[w]={mag:1,res:0};

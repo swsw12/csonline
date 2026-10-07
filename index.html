@@ -5152,7 +5152,7 @@ function meleeHit(a,range,cone){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_dv);
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;if(d<bd){bd=d;best=t}}
   if(best)return {t:best,d:bd};
   const hw=rayCast(eye.x,eye.y,eye.z,_dv.x,_dv.y,_dv.z,range);if(hw)return {wall:hw,x:eye.x+_dv.x*hw.t,y:eye.y+_dv.y*hw.t,z:eye.z+_dv.z*hw.t,n:[hw.nx,hw.ny,hw.nz]};return null}
-function meleeW(a){const W=WPN[a.cur];return W&&W.kind==='melee'?W:WPN.knife}
+function meleeW(a,w){const W=WPN[w||a.cur];return W&&W.kind==='melee'?W:WPN.knife}
 function meleeSwing(a,heavy){const W=meleeW(a);NET.on&&netFxPush(['m',a.id,heavy?1:0,a.an.atkSide||1,WI[a.cur]]);
   if(a.isPlayer){AU.play('kswing',{vol:.7,rate:(heavy?.8:1)*(W.sw||1)});VM.melee(heavy)}else AU.at('kswing',a.c.x,a.c.y+1.4,a.c.z,{vol:.5,rate:W.sw||1})}
 // every enemy in reach in front, nearest first (the hammer's overhead smash catches several)
@@ -5161,11 +5161,11 @@ function meleeHits(a,range,cone,n){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_d
     const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z;const d=Math.hypot(dx,dy,dz)-c.hw;if(d>range)continue;const dot=(dx*_dv.x+dy*_dv.y+dz*_dv.z)/Math.max(.01,Math.hypot(dx,dy,dz));
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;out.push({t,d})}
   out.sort((p,q)=>p.d-q.d);return out.slice(0,n).map(o=>o.t)}
-function meleeStrike(a,heavy){const W=meleeW(a),hi=heavy?1:0;const many=heavy&&W.cleave?meleeHits(a,W.range[1],.6,W.cleave):null;
+function meleeStrike(a,heavy,w){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;const W=meleeW(a,w),hi=heavy?1:0;const many=heavy&&W.cleave?meleeHits(a,W.range[1],.6,W.cleave):null;
   const r=many&&many.length?{t:many[0]}:meleeHit(a,W.range[hi],heavy?.8:.65);const list=many&&many.length?many:r&&r.t?[r.t]:[];
   if(list.length){aimDir(a.yaw,0,_dv);let hsAny=false;
     for(const t of list){const hs=Math.abs(a.pitch)<.6&&Math.random()<(heavy?.25:.12);hsAny=hsAny||hs;
-      damageActor(t,W.dmg[hi]*(hs?2:1),a,{w:a.cur,hs,dir:[_dv.x,0,_dv.z],kb:W.kb[hi],stag:W.stag?W.stag[hi]:.5,up:W.up?W.up[hi]:0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
+      damageActor(t,W.dmg[hi]*(hs?2:1),a,{w,hs,dir:[_dv.x,0,_dv.z],kb:W.kb[hi],stag:W.stag?W.stag[hi]:.5,up:W.up?W.up[hi]:0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
       FX.blood(t.c.x,t.c.y+1.2,t.c.z,_dv.x,0,_dv.z,1.6*(W.sw<1?1.6:1),false)}
     const snd=W.blunt?'hamhit':'khit',t0=list[0];
     if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt?1:W.sw||1});HUD.hitmark(hsAny);if(W.sw<1)FX.shake=Math.max(FX.shake,W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}
@@ -5713,13 +5713,18 @@ const QUICK_BACK=1.2,QUICK_DRAW=.45;
 function equip(a,id,instant){if(!id||a.cur===id&&!instant)return;const W=WPN[id];if(!W)return;
   const quick=!instant&&id===a.awayId&&G.t-(a.awayT==null?-9:a.awayT)<QUICK_BACK;
   if(a.cur&&a.cur!==id){a.prev=a.cur;a.awayId=a.cur;a.awayT=G.t}
-  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.burstN=0;a.pendingMelee=null;a.nextFire=Math.min(a.nextFire,G.t);
+  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
   if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.kind==='melee'?'kdraw':'draw',{vol:.5,rate:(id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
   // 칼 챈샷 (draw cut): a blade drawn within a second of a gunshot, with an enemy in reach in front, comes out as an instant heavy cut —
   // full heavy damage and knockback on top of the shot that was just fired
   if(!instant&&W.kind==='melee'&&a.team===TH&&a.alive&&G.t-(a.lastFire==null?-9:a.lastFire)<DRAW_CUT_WIN){const r=meleeHit(a,W.range[1],.8);
-    if(r&&r.t){a.drawT=0;a.nextFire=G.t+W.rate[1]*.8;a.an.atk=1;a.an.heavy=true;a.an.atkD=meleeAtkD(W,true)*.85;if(a.isPlayer)VM.draw(.12);meleeSwing(a,true);a.pendingMelee={t:.06,heavy:true};a.drawCuts=(a.drawCuts||0)+1}}}
+    if(r&&r.t){a.drawT=0;a.nextFire=G.t+W.rate[1]*.8;a.an.atk=1;a.an.heavy=true;a.an.atkD=meleeAtkD(W,true)*.85;if(a.isPlayer)VM.draw(.12);meleeSwing(a,true);meleePend(a,.06,true);a.drawCuts=(a.drawCuts||0)+1}}}
 const DRAW_CUT_WIN=1;
+// a melee swing lands hitT after it starts with the weapon that swung it, even if the player switches weapons in between
+// (swap-cancel: the blade/hammer damage still goes in while the next gun comes up)
+function meleePend(a,t,heavy){if(a.pendingMelee)meleeStrike(a,a.pendingMelee.heavy,a.pendingMelee.w);a.pendingMelee={t,heavy,w:a.cur}}
+function meleePendTick(a,dt){const p=a.pendingMelee;if(!p)return false;if(!a.alive||a.team!==TH){a.pendingMelee=null;return false}
+  p.t-=dt;if(p.t<=0){a.pendingMelee=null;meleeStrike(a,p.heavy,p.w)}return true}
 // third-person swing length (seconds) for a melee weapon
 function meleeAtkD(W,heavy){return W&&W.anD?W.anD[heavy?1:0]:heavy?.68:.44}
 function slotPick(a,slot){if(a.team===TZ){if(slot===4&&a.bombs>0)equip(a,'zbomb');else if(slot!==4)equip(a,'claw');return}
@@ -5872,6 +5877,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   // rotary barrels spin up while either button is held, and wind down slowly
   if(W0&&W0.spin){const want=(cmd.fire||cmd.alt)&&a.drawT<=0&&a.reloadT<=0&&a.frozen<=0;a.spinV=clamp((a.spinV||0)+(want?dt/W0.spin:-dt/(W0.spin*1.8)),0,1)}else a.spinV=0;
   if(a.frozen>0)return;
+  const pend=meleePendTick(a,dt);
   if(cmd.slot){slotPick(a,cmd.slot);cmd.slot=0}
   if(cmd.lastInv){equip(a,hasWeapon(a,a.prev)?a.prev:(a.team===TZ?'claw':bestWeapon(a)));cmd.lastInv=false}
   const W=WPN[a.cur];if(!W)return;
@@ -5880,13 +5886,13 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){throwNade(a,a.cur);a.inv[a.cur]=Math.max(0,a.inv[a.cur]-1);const nx=['he','frost','flare'].find(k=>a.inv[k]>0);equip(a,nx||bestWeapon(a))}return}
     if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;if(a.isPlayer){VM.throwNade();AU.play('pin',{vol:.5})}}return}
   // melee: the swing starts now, the blade lands a moment later (heavier weapons wind up longer)
-  if(W.kind==='melee'){if(a.pendingMelee){a.pendingMelee.t-=dt;if(a.pendingMelee.t<=0){meleeStrike(a,a.pendingMelee.heavy);a.pendingMelee=null}return}
+  if(W.kind==='melee'){if(pend)return;
     // stance weapons (the hammer): right click switches between the overhead pound (A) and the braced knock-away stance (B); left click attacks in the current stance
     if(W.stance&&a.isPlayer){if(cmd.alt&&!pc.alt&&a.drawT<=0&&G.t>=a.nextFire-.25){a.hamB=!a.hamB;AU.play('kdraw',{vol:.45,rate:a.hamB?.6:.75});VM.stance&&VM.stance(a.hamB)}
       if(G.t>=a.nextFire&&a.drawT<=0&&cmd.fire){const heavy=!!a.hamB;meleeSwing(a,heavy);a.nextFire=G.t+W.rate[heavy?1:0];a.an.atk=1;a.an.heavy=heavy;a.an.atkD=meleeAtkD(W,heavy);
-        const d=W.hitT[heavy?1:0];if(d>.05)a.pendingMelee={t:d,heavy};else meleeStrike(a,heavy)}return}
+        const d=W.hitT[heavy?1:0];if(d>.05)meleePend(a,d,heavy);else meleeStrike(a,heavy)}return}
     if(G.t>=a.nextFire&&a.drawT<=0&&(cmd.fire||cmd.alt)){const heavy=!!cmd.alt;if(!heavy)a.an.atkSide=-(a.an.atkSide||1);meleeSwing(a,heavy);a.nextFire=G.t+W.rate[heavy?1:0];a.an.atk=1;a.an.heavy=heavy;a.an.atkD=meleeAtkD(W,heavy);
-      const d=W.hitT?W.hitT[heavy?1:0]:0;if(d>0)a.pendingMelee={t:d,heavy};else meleeStrike(a,heavy)}return}
+      const d=W.hitT?W.hitT[heavy?1:0]:0;if(d>0)meleePend(a,d,heavy);else meleeStrike(a,heavy)}return}
   const am=a.ammo[a.cur];if(!am)return;
   if(W.alt&&W.kind!=='saw'&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0)nyAlt(a,W);
   // zoom levels cycle with the right button
@@ -6901,7 +6907,7 @@ function netDoFx(a,f){if(!a||a.isPlayer||!G.actors.includes(a))return;const T0=f
     n.x=x;n.y=y;n.z=z;n.vx=vx;n.vy=vy;n.vz=vz;n.ghost=true;if(n.mesh){n.mesh.position.set(x,y,z);if(kind!=='disc')n.mesh.lookAt(x-vx,y-vy,z-vz)}return}
   if(T0==='n'){throwNade(a,f[2],{x:f[3]/100,y:f[4]/100,z:f[5]/100,vx:f[6]/100,vy:f[7]/100,vz:f[8]/100});a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;return}
   if(T0==='m'){if(!a.alive)return;const w=WL[f[4]];if(w&&a.cur!==w)equip(a,w,true);const heavy=!!f[2];a.an.atkSide=f[3]||1;meleeSwing(a,heavy);a.an.atk=1;a.an.heavy=heavy;a.an.atkD=meleeAtkD(WPN[a.cur],heavy);
-    const W=meleeW(a);const d=W.hitT?W.hitT[heavy?1:0]:0;nyLater(d,()=>{if(a.alive)meleeStrike(a,heavy)});return}
+    const w0=a.cur,W=meleeW(a);const d=W.hitT?W.hitT[heavy?1:0]:0;nyLater(d,()=>{if(a.alive)meleeStrike(a,heavy,w0)});return}
   if(T0==='c'){if(!a.alive)return;const heavy=!!f[2];a.an.atk=1;a.an.atkD=heavy?.78:.48;a.an.heavy=heavy;a.an.atkSide=f[3]||1;AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.7,range:30});
     nyLater(heavy?.4:.19,()=>{if(a.alive)clawStrike(a,heavy)});return}
   if(T0==='x'){if(!a.alive)return;const w=WL[f[2]],W=WPN[w];if(!W)return;if(a.cur!==w)equip(a,w,true);if(!a.ammo[w])a.ammo[w]={mag:1,res:0};
