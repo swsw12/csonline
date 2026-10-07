@@ -20,7 +20,7 @@ function buildNav(){const N=NAV;N.nodes=[];N.col=new Array(N.NX*N.NZ);
         if(Math.abs(dy)<=((n.stair||m.stair)?.9:.6)){if(diag){const a=N.col[n.j*N.NX+i2].some(q=>Math.abs(q.y-n.y)<.6),b=N.col[j2*N.NX+n.i].some(q=>Math.abs(q.y-n.y)<.6);if(!a||!b)continue}if(passClear(n,m))n.e.push(m.id,dh,0)}
         else if(!diag&&dy>.6&&dy<=2.4){if(jumpClear(n,m))n.e.push(m.id,dh+1+dy*.8,dy)}
         else if(!diag&&dy<-.6&&dy>=-8.5){if(dropClear(n,m))n.e.push(m.id,dh+.3-dy*.2,dy)}}}}
-  const L=N.nodes.length;N.g=new Float32Array(L);N.f=new Float32Array(L);N.came=new Int32Array(L);N.mark=new Int32Array(L);N.heap=new Int32Array(L*8+16);
+  const L=N.nodes.length;N.g=new Float32Array(L);N.f=new Float32Array(L);N.came=new Int32Array(L);N.mark=new Int32Array(L);N.heap=new Int32Array(L*8+16);N.hf=new Float32Array(L*8+16);
   return L}
 // node under/near a position
 function navNode(x,y,z){const N=NAV;const i=Math.floor((x-N.X0)/N.S),j=Math.floor((z-N.Z0)/N.S);let best=null,bd=1e9;
@@ -30,10 +30,12 @@ function navNode(x,y,z){const N=NAV;const i=Math.floor((x-N.X0)/N.S),j=Math.floo
 // A*: returns array of node ids (start excluded) or null. maxJump limits jump links, maxDrop (if set) the height of drops.
 function navPath(s,t,maxJump,maxIter,maxDrop){const N=NAV;if(!s||!t)return null;if(s===t)return [t.id];N.stamp++;const st=N.stamp,H=N.heap;let hn=0;
   const h=n=>Math.hypot(n.x-t.x,n.z-t.z)+Math.abs(n.y-t.y)*.5;
-  const push=id=>{let i=hn++;H[i]=id;while(i>0){const p=(i-1)>>1;if(N.f[H[p]]<=N.f[H[i]])break;const q=H[p];H[p]=H[i];H[i]=q;i=p}};
-  const pop=()=>{const r=H[0];H[0]=H[--hn];let i=0;for(;;){const l=i*2+1,rr2=l+1;let m=i;if(l<hn&&N.f[H[l]]<N.f[H[m]])m=l;if(rr2<hn&&N.f[H[rr2]]<N.f[H[m]])m=rr2;if(m===i)break;const q=H[m];H[m]=H[i];H[i]=q;i=m}return r};
-  N.mark[s.id]=st;N.g[s.id]=0;N.f[s.id]=h(s);N.came[s.id]=-1;push(s.id);let it=0;maxIter=maxIter||6000;
-  while(hn>0&&it++<maxIter){const cid=pop();if(cid===t.id)break;const c=N.nodes[cid],e=c.e;const gc=N.g[cid];
+  // heap entries keep their own key (HF): a node re-pushed with a lower f leaves a stale entry behind, skipped when popped
+  const HF=N.hf;let pf=0;
+  const push=id=>{let i=hn++;H[i]=id;HF[i]=N.f[id];while(i>0){const p=(i-1)>>1;if(HF[p]<=HF[i])break;let q=H[p];H[p]=H[i];H[i]=q;q=HF[p];HF[p]=HF[i];HF[i]=q;i=p}};
+  const pop=()=>{const r=H[0];pf=HF[0];hn--;H[0]=H[hn];HF[0]=HF[hn];let i=0;for(;;){const l=i*2+1,rr2=l+1;let m=i;if(l<hn&&HF[l]<HF[m])m=l;if(rr2<hn&&HF[rr2]<HF[m])m=rr2;if(m===i)break;let q=H[m];H[m]=H[i];H[i]=q;q=HF[m];HF[m]=HF[i];HF[i]=q;i=m}return r};
+  N.mark[s.id]=st;N.g[s.id]=0;N.f[s.id]=h(s);N.came[s.id]=-1;push(s.id);let it=0;maxIter=maxIter||Math.max(6000,N.nodes.length*1.5|0);
+  while(hn>0&&it++<maxIter){const cid=pop();if(cid===t.id)break;if(pf>N.f[cid]+1e-4)continue;const c=N.nodes[cid],e=c.e;const gc=N.g[cid];
     for(let k=0;k<e.length;k+=3){const nid=e[k],cost=e[k+1],typ=e[k+2];if(typ>0&&typ>maxJump)continue;if(typ<0&&maxDrop&&-typ>maxDrop)continue;const g=gc+cost;
       if(N.mark[nid]===st&&g>=N.g[nid])continue;N.mark[nid]=st;N.g[nid]=g;N.f[nid]=g+h(N.nodes[nid])*1.05;N.came[nid]=cid;if(hn<H.length-1)push(nid)}}
   if(N.mark[t.id]!==st)return null;const out=[];let c=t.id;while(c!==-1&&c!==s.id){out.push(c);c=N.came[c]}out.reverse();return out}
@@ -54,4 +56,4 @@ function navPrune(seeds,maxJ){const N=NAV,L=N.nodes.length;const keep=new Uint8A
   for(let i=0;i<N.col.length;i++)N.col[i]=N.col[i].filter(n=>keep[n.id]);
   const map=new Int32Array(L).fill(-1),nodes=[];for(const n of N.nodes)if(keep[n.id]){map[n.id]=nodes.length;nodes.push(n)}
   for(const n of nodes){const e=n.e,ne=[];for(let k=0;k<e.length;k+=3){const m=map[e[k]];if(m>=0)ne.push(m,e[k+1],e[k+2])}n.e=ne;n.id=map[n.id]}
-  N.nodes=nodes;const K=nodes.length;N.g=new Float32Array(K);N.f=new Float32Array(K);N.came=new Int32Array(K);N.mark=new Int32Array(K);N.heap=new Int32Array(K*8+16);N.stamp=0;return K}
+  N.nodes=nodes;const K=nodes.length;N.g=new Float32Array(K);N.f=new Float32Array(K);N.came=new Int32Array(K);N.mark=new Int32Array(K);N.heap=new Int32Array(K*8+16);N.hf=new Float32Array(K*8+16);N.stamp=0;return K}

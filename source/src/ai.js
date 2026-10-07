@@ -115,7 +115,7 @@ const AI={
     // pick a target every so often: nearest by path where it matters
     B.tgtT-=dt;if(B.tgtT<=0||!B.target||!B.target.alive||B.target.team!==TH){B.tgtT=rr(.8,1.4);const H=G.actors.filter(h=>h.alive&&h.team===TH);
       H.sort((p,q)=>(dist3(p.c,c)+Math.abs(p.c.y-c.y)*3)-(dist3(q.c,c)+Math.abs(q.c.y-c.y)*3));
-      let best=null,bl=1e9;for(const h of H.slice(0,3)){const s=navNode(c.x,c.y,c.z),t=navNode(h.c.x,h.c.y,h.c.z);const p=navPath(s,t,jumpCap(a),2500);if(!p)continue;const l=p.length+(h===B.target?-3:0);if(l<bl){bl=l;best=h;B.path=p;B.pi=0;B.goal=[h.c.x,h.c.y,h.c.z];B.repath=rr(.7,1.1)}}
+      let best=null,bl=1e9;for(const h of H.slice(0,3)){const s=navNode(c.x,c.y,c.z),t=navNode(h.c.x,h.c.y,h.c.z);const p=navPath(s,t,jumpCap(a),Math.max(2500,NAV.nodes.length*.7|0));if(!p)continue;const l=p.length+(h===B.target?-3:0);if(l<bl){bl=l;best=h;B.path=p;B.pi=0;B.goal=[h.c.x,h.c.y,h.c.z];B.repath=rr(.7,1.1)}}
       if(best)B.target=best;else if(H.length)B.target=H[0]}
     const t=B.target;if(!t){this.wander(a,dt);return}
     const e=actorEye(a);const dx=t.c.x-c.x,dz=t.c.z-c.z,dh=Math.hypot(dx,dz),dy=t.c.y-c.y;

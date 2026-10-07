@@ -3,7 +3,11 @@
 const GRAV=20;
 const WORLD={boxes:[],cell:2,gx0:-48,gz0:-48,gw:48,gh:48,cells:null,stamp:1};
 function worldIndex(){
-  const W=WORLD,cs=W.cell;W.cells=new Array(W.gw*W.gh);for(let i=0;i<W.cells.length;i++)W.cells[i]=[];
+  const W=WORLD,cs=W.cell;
+  // the grid covers ±48 m, or more for a bigger map (every box must land in its own cells or queries miss it)
+  let x0=-48,z0=-48,x1=48,z1=48;for(const b of W.boxes){if(b.x0<x0)x0=b.x0;if(b.z0<z0)z0=b.z0;if(b.x1>x1)x1=b.x1;if(b.z1>z1)z1=b.z1}
+  W.gx0=Math.floor(x0/cs)*cs;W.gz0=Math.floor(z0/cs)*cs;W.gw=Math.ceil((x1-W.gx0)/cs);W.gh=Math.ceil((z1-W.gz0)/cs);
+  W.cells=new Array(W.gw*W.gh);for(let i=0;i<W.cells.length;i++)W.cells[i]=[];
   W.boxes.forEach((b,i)=>{b.id=i;b.mark=0;const cx0=Math.max(0,Math.floor((b.x0-W.gx0)/cs)),cx1=Math.min(W.gw-1,Math.floor((b.x1-W.gx0)/cs)),cz0=Math.max(0,Math.floor((b.z0-W.gz0)/cs)),cz1=Math.min(W.gh-1,Math.floor((b.z1-W.gz0)/cs));
     for(let z=cz0;z<=cz1;z++)for(let x=cx0;x<=cx1;x++)W.cells[z*W.gw+x].push(b)})}
 // all boxes whose footprint touches [x0,x1]x[z0,z1]
