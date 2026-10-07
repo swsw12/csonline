@@ -422,3 +422,23 @@ html.touch #board{max-height:90vh;overflow:auto}
 .tguide{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
 .tguide div{display:flex;gap:10px;align-items:center;background:rgba(0,0,0,.22);border:1px solid #2e3138;padding:8px 10px;font-size:12px;color:#cfd3da;line-height:1.45}
 .tguide b{flex:none;min-width:58px;text-align:center;color:#ffd890;font-size:12px;border:1px solid #4a4e56;border-radius:14px;padding:4px 6px}
+
+/* ---------- phones: menus scroll, window buttons stay in reach ---------- */
+/* a window taller than the screen used to be squeezed to the screen height and clipped (overflow:hidden on a flex item):
+   it keeps its height now and the screen scrolls */
+.scr>*{flex-shrink:0}
+.win.room,.win.opt{overflow:visible;overflow:clip}
+@media (max-height:560px){
+  .win .dpHead{position:sticky;top:0;z-index:3;box-shadow:0 -14px 0 0 #1c1e23}
+  .win .dpFoot{position:sticky;bottom:0;z-index:3;box-shadow:0 14px 0 0 #1b1d22,0 -8px 16px rgba(0,0,0,.6)}
+  .rdesc{display:none}
+  .obody{max-height:none}
+}
+@media (max-height:560px) and (orientation:landscape){
+  .wbody{grid-template-columns:minmax(0,1fr) minmax(0,40%)}
+  .wchars{grid-template-columns:1fr 1fr}
+  .sprev{grid-template-columns:1fr}.sprev .rprev{grid-row:auto}
+}
+/* range sliders: the whole bar height is the touch target */
+html.touch .rng{height:30px;margin:4px 0 2px;border:none;background:linear-gradient(#0e0f12,#0e0f12) center/100% 6px no-repeat;box-shadow:none}
+html.touch .rng::-webkit-slider-thumb{margin-top:0}
