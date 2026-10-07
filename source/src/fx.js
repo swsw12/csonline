@@ -122,20 +122,20 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     g.setAttribute('position',new THREE.BufferAttribute(pos,3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('color',new THREE.BufferAttribute(col,3));
     for(let i=0;i<n;i++){const k=.25+Math.random()*.3;col.set([k*.6,k*.68,k*.8,k*.9,k*.95,k],i*6)}
     // streaks glint where they cross the flashlight cone
-    const mat=new THREE.ShaderMaterial({uniforms:{uSpotP:LU.uSpotP,uSpotD:LU.uSpotD,uSpotK:LU.uSpotK},vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-      vertexShader:'uniform vec3 uSpotP;uniform vec3 uSpotD;uniform vec4 uSpotK;varying vec3 vC;void main(){vec4 wp=modelMatrix*vec4(position,1.);vec3 L=wp.xyz-uSpotP;float d=max(length(L),.01);float sp=smoothstep(uSpotK.x-.05,uSpotK.y,dot(L/d,uSpotD))*clamp(1.-d/12.,0.,1.)*uSpotK.w;vC=color*.55*(1.+sp*4.)+vec3(.5,.47,.4)*sp*.4;gl_Position=projectionMatrix*viewMatrix*wp;}',
+    const mat=new THREE.ShaderMaterial({uniforms:{uSpotP:LU.uSpotP,uSpotD:LU.uSpotD,uSpotK:LU.uSpotK,uK:{value:1}},vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+      vertexShader:'uniform vec3 uSpotP;uniform vec3 uSpotD;uniform vec4 uSpotK;uniform float uK;varying vec3 vC;void main(){vec4 wp=modelMatrix*vec4(position,1.);vec3 L=wp.xyz-uSpotP;float d=max(length(L),.01);float sp=smoothstep(uSpotK.x-.05,uSpotK.y,dot(L/d,uSpotD))*clamp(1.-d/12.,0.,1.)*uSpotK.w;vC=color*.55*uK*(1.+sp*4.)+vec3(.5,.47,.4)*sp*.4;gl_Position=projectionMatrix*viewMatrix*wp;}',
       fragmentShader:'varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.);}'});
     const L=new THREE.LineSegments(g,mat);L.frustumCulled=false;L.renderOrder=3;scene.add(L);
     const drops=[];for(let i=0;i<n;i++)drops.push({x:0,y:-99,z:0,f:-99,v:rr(14,18)});
     this.rain={n,g,pos,drops,L,on:true,cx:0,cz:0,hm:null,k:1};this.buildRainHM()},
-  buildRainHM(){const S=.5,N=124,X0=-31,hm=new Float32Array(N*N);for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=X0+(i+.5)*S,z=X0+(j+.5)*S;hm[j*N+i]=Math.max(0,floorBelow(x,40,z,.01))}this.rain.hm={S,N,X0,hm}},
+  buildRainHM(){const bb=MAP.bounds||[-31,-31,31,31],S=.5,X0=Math.min(bb[0],bb[1]),N=Math.ceil((Math.max(bb[2],bb[3])-X0)/S),hm=new Float32Array(N*N);for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=X0+(i+.5)*S,z=X0+(j+.5)*S;hm[j*N+i]=Math.max(0,floorBelow(x,40,z,.01))}this.rain.hm={S,N,X0,hm}},
   rainTop(x,z){const H=this.rain.hm;const i=Math.floor((x-H.X0)/H.S),j=Math.floor((z-H.X0)/H.S);if(i<0||j<0||i>=H.N||j>=H.N)return 0;return H.hm[j*H.N+i]},
   updRain(dt){const R0=this.rain;if(!R0||!R0.on){if(R0)R0.L.visible=false;return}R0.L.visible=true;const c=R.cam.position;const n=Math.floor(R0.n*R0.k);
     for(let i=0;i<R0.n;i++){const d=R0.drops[i];if(i>=n){R0.pos.fill(0,i*6,i*6+6);continue}
-      d.y-=d.v*dt;if(d.y<d.f||Math.abs(d.x-c.x)>20||Math.abs(d.z-c.z)>20){
-        if(d.y<d.f&&d.f>-50&&Math.random()<.08&&Math.hypot(d.x-c.x,d.z-c.z)<9)this.spawn({x:d.x,y:d.f+.02,z:d.z,vy:.6,life:.25,s0:.05,s1:.12,r:.5,g:.55,b:.65,a:.5,f:12});
+      const sn=R0.snow;if(sn){d.y-=d.v*.1*dt;d.x+=Math.sin(G.t*.8+i*1.7)*.5*dt+.35*dt;d.z+=Math.cos(G.t*.6+i)*.3*dt}else d.y-=d.v*dt;if(d.y<d.f||Math.abs(d.x-c.x)>20||Math.abs(d.z-c.z)>20){
+        if(!sn&&d.y<d.f&&d.f>-50&&Math.random()<.08&&Math.hypot(d.x-c.x,d.z-c.z)<9)this.spawn({x:d.x,y:d.f+.02,z:d.z,vy:.6,life:.25,s0:.05,s1:.12,r:.5,g:.55,b:.65,a:.5,f:12});
         d.x=c.x+rr(-20,20);d.z=c.z+rr(-20,20);d.f=this.rainTop(d.x,d.z);d.y=Math.max(c.y+rr(2,14),d.f+.5)}
-      const l=.45;R0.pos.set([d.x,d.y+l,d.z,d.x-.02,d.y,d.z+.01],i*6)}
+      const l=sn?.05:.45;R0.pos.set([d.x,d.y+l,d.z,d.x-(sn?.04:.02),d.y,d.z+.01],i*6)}
     R0.g.attributes.position.needsUpdate=true},
   // ---------- composite effects ----------
   muzzle(x,y,z,dx,dy,dz,big){this.spawn({x,y,z,life:.05,s0:big?.55:.4,s1:big?.7:.5,r:1,g:.8,b:.45,a:1,f:Math.random()<.5?8:9,add:1});

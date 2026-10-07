@@ -5,7 +5,7 @@ D = os.path.join(R, os.environ.get('OUT_DIR', 'dist'))
 FONTS = os.path.join(R, 'fonts')  # Galmuri11 (SIL OFL 1.1); subsetting needs: pip install fonttools brotli
 os.makedirs(os.path.join(D, 'assets'), exist_ok=True)
 os.makedirs(os.path.join(D, 'standalone', 'assets'), exist_ok=True)
-order = ['util', 'i18n', 'world', 'tex', 'shaders', 'map', 'mapsub', 'mapit_data', 'mapit', 'mapmil_data', 'mapmil', 'nav', 'models', 'gunart', 'vm', 'audio', 'fx',
+order = ['util', 'i18n', 'world', 'tex', 'shaders', 'map', 'mapsub', 'mapit_data', 'mapit', 'mapmil_data', 'mapmil', 'maprest', 'nav', 'models', 'gunart', 'vm', 'audio', 'fx',
          'weapons', 'nyw', 'game', 'ai', 'render', 'ui', 'minimap', 'net', 'coffin', 'lobby', 'main', 'scenario', 'touch']
 parts = []
 for f in order:

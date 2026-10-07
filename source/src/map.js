@@ -358,7 +358,7 @@ function* mapLoader(id){
   if(C){for(const k of MAPKEYS)MAP[k]=C[k];WORLD.boxes=MAP.boxes;WORLD.cells=C.cells;Object.assign(NAV,C.nav);if(FX.rain&&C.rainHM)FX.rain.hm=C.rainHM;for(const m of MAP.meshes)R.scene.add(m)}
   else{yield 'lMap';const D=MAPDEFS[id];if(D.tex)D.tex();buildMapData(id);WORLD.boxes=MAP.boxes;worldIndex();
     yield 'lLight';MAP.meshes=[];buildMapMeshes(R.scene);bakeProbes();
-    yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));MAP.mini=miniBuild();if(FX.rain&&MAP.env.rain)FX.buildRainHM()}
+    yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow))FX.buildRainHM()}
   // bots holding paths through the old graph start over
   for(const a of G.actors)if(a.bot){a.bot.path=null;a.bot.goal=null;a.bot.wander=null;a.bot.spot=null}
   mapEnv()}
@@ -381,7 +381,7 @@ function mapEnv(){const E=MAP.env||{};if(MAP.sky)MAP.sky.visible=!!E.sky;
     SP.halo.position.copy(SP.moon.position).multiplyScalar(1.02);SP.halo.lookAt(0,0,0);SP.halo.material.uniforms.uC.value.set(E.halo||(E.sun?'#c87040':'#6b7a9e'));SP.halo.scale.setScalar(E.sun?2.4:1)}
   LU.uFogC.value.set(E.fog||'#0a0c12');LU.uFogD.value=E.fogD||.045;
   if(R.mBright)R.mBright.uniforms.uThr.value=E.bloomThr||.74;// bright daylight maps bloom only on the hottest highlights
-  if(FX.rain)FX.rain.on=!!E.rain;if(AU.setEnv)AU.setEnv(E);
+  if(FX.rain){FX.rain.on=!!(E.rain||E.snow);FX.rain.snow=!!E.snow;FX.rain.L.material.uniforms.uK.value=E.snow?2.6:1}if(AU.setEnv)AU.setEnv(E);
   for(const l of DL.list)if(l.map||l.fire)l.dead=true;if(typeof Main!=='undefined'){Main.fireL=null;Main.lightning=0}
   for(const d of MAP.dyn)DL.add(d[0],d[1],d[2],d[3],d[4],d[5],0,{flick:d[6]||0,map:1});
   if(FX.dec)FX.clearDecals()}
