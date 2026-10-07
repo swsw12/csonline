@@ -380,12 +380,12 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
       return L}}
   else if(k==='coffin'){// 관짝 — a dead undertaker: black funeral suit, a coffin strapped to the back with iron bands, nails through the scalp
     o={hipY:.92,torsoW:.38,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.16,legD:.15,shinW:.12,headW:.22,headH:.28,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};
-     const sk='#2a1a15';
-     mats=Object.assign({top:{base:'#8b264b'},legs:{base:'#d4cbb8'},sleeve:{base:sk,style:'zskin'},fore:{base:sk,style:'zskin'},shin:{base:sk,style:'zskin'},skin:{base:sk,style:'zskin'},hand:{base:sk,style:'zskin'},boot:{base:sk,style:'zskin'},jaw:{base:sk,style:'zskin'},hair:{base:'#1a1a1a',style:'hair'},cloth:{base:'#e0e0d8',style:'cloth'},doll:{base:'#8b6b45',style:'cloth'}},goreM);
-    decor={torso:{front:[['rect',.35,.1,.65,.9,sk],['vband',.2,.3,'#3a1c10'],['vband',.7,.8,'#3a1c10'],['belt',0,.1,'#1a100c','#555'],['soak',0,1,'#111',.3],['blood',2,5]],back:[['grime',.8]]},
-      head:{front:[['rect',0,0,1,1,'#111111'],['face','scream',{skin:'#111111',eye:eyeH||'#ffffff',ey:.66,lipless:1}]],top:[['rect',0,0,1,1,'#111111']],back:[['rect',0,0,1,1,'#111111']],bottom:[['rect',0,0,1,1,'#111111']]},
-      jaw:{front:[['rect',0,0,1,1,'#111111']],side:[['rect',0,0,1,1,'#111111']],bottom:[['rect',0,0,1,1,'#111111']]},
-      uaR:{all:[['band',.5,.8,'#2a1a15'],['rect',.3,.5,.7,.8,'#111'],['grime',.4]]},uaL:{all:[['grime',.4]]},faL:{all:[['band',.85,.95,'#5a1010']]},faR:{all:[['band',.85,.95,'#5a1010']]},legs:{all:[['grime',.6]]}};
+     const sk='#2a2222';
+     mats=Object.assign({top:{base:'#c4c2bc'},legs:{base:'#232122'},sleeve:{base:'#c4c2bc'},fore:{base:'#282321'},shin:{base:'#2b221d'},skin:{base:sk,style:'zskin'},hand:{base:'#282321'},boot:{base:'#2b221d'},jaw:{base:'#111111'},coffin:{base:'#1f2024',style:'flat'},metal:{base:'#18181a',style:'flat'},cface:{base:'#d4d6d0',style:'zskin'},cblood:{base:'#6a0404',style:'flat'}},goreM);
+     decor={torso:{front:[['rect',.35,.1,.65,.9,sk],['vband',.2,.3,'#3a1c10'],['vband',.7,.8,'#3a1c10'],['belt',0,.1,'#1a100c','#555'],['soak',0,1,'#111',.3],['blood',2,5]],back:[['grime',.8]]},
+       head:{front:[['rect',0,0,1,1,'#111111'],['face','scream',{skin:'#111111',eye:eyeH||'#ffffff',ey:.66,lipless:1}]],top:[['rect',0,0,1,1,'#111111']],back:[['rect',0,0,1,1,'#111111']],bottom:[['rect',0,0,1,1,'#111111']]},
+       jaw:{front:[['rect',0,0,1,1,'#111111']],side:[['rect',0,0,1,1,'#111111']],bottom:[['rect',0,0,1,1,'#111111']]},
+       uaR:{all:[['band',.5,.8,'#2a1a15'],['rect',.3,.5,.7,.8,'#111'],['grime',.4]]},uaL:{all:[['grime',.4]]},faL:{all:[['band',.85,.95,'#5a1010']]},faR:{all:[['band',.85,.95,'#5a1010']]},legs:{all:[['grime',.6]]}};
     extra=H=>[
       {n:'cMain',b:1,c:[0,1.05,.22],s:[.5,1.1,.12],m:'coffin'},{n:'cArch',b:1,c:[0,1.7,.22],s:[.35,.25,.12],m:'coffin'},
       {n:'cFaceBg',b:1,c:[0,1.65,.28],s:[.2,.25,.04],m:'metal'},{n:'cFace',b:1,c:[0,1.65,.3],s:[.14,.18,.02],m:'cface'},
