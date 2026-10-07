@@ -317,38 +317,6 @@ button.mini{min-width:0;padding:4px 10px;font-size:12px;vertical-align:middle}
 .rrule ul{margin:4px 0 0;padding-left:16px}
 .win.opt .dpFoot button{min-width:96px}
 @media (max-width:700px){.og2{grid-template-columns:1fr}.otabs{flex-wrap:wrap}}
-/* ---------- touch controls ---------- */
-#touch{position:absolute;inset:0;z-index:7;pointer-events:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-#touch.off{display:none}
-#touch .tzone{position:absolute;top:0;bottom:0;pointer-events:auto;touch-action:none}
-#touch .tzL{left:0;width:42%;top:30%}#touch .tzR{right:0;width:58%}
-.tstick{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(10,12,16,.25);pointer-events:none;opacity:var(--tal,.7)}
-.tstick.off{display:none}.tstick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 2px rgba(0,0,0,.3)}
-.tb{position:absolute;pointer-events:auto;touch-action:none;min-width:0!important;padding:0!important;border-radius:50%;width:58px;height:58px;display:flex;align-items:center;justify-content:center;
-  background:rgba(14,16,20,.5)!important;border:2px solid rgba(255,255,255,.3)!important;color:#fff!important;font-size:12px!important;font-weight:bold;box-shadow:none!important;opacity:var(--tal,.7);-webkit-tap-highlight-color:transparent}
-.tb.on{background:rgba(232,163,58,.55)!important;border-color:#ffd890!important}.tb.lat{border-color:#e8a33a!important;color:#ffd890!important}
-.tb svg{width:60%;height:60%}
-.tFire{right:24px;bottom:118px;width:92px;height:92px;border-color:rgba(255,120,90,.6)!important}
-.tFireL{left:26px;bottom:44%;width:60px;height:60px;border-color:rgba(255,120,90,.5)!important}
-.tAlt{right:128px;bottom:168px}.tJump{right:30px;bottom:226px;width:64px;height:64px}.tDuck{right:108px;bottom:250px;width:52px;height:52px}
-.tRel{right:134px;bottom:96px;width:50px;height:50px}.tSwap{right:196px;bottom:140px;width:52px;height:52px;font-size:20px!important}.tLast{right:196px;bottom:80px;width:46px;height:46px}
-.tSkill{right:140px;bottom:236px;width:62px;height:62px;display:none!important;border-color:rgba(255,90,70,.7)!important}
-#touch.zt .tSkill{display:flex!important}#touch.zt .tDuck{right:212px;bottom:206px}
-.ttop{position:absolute;top:8px;right:10px;display:flex;gap:6px;pointer-events:none}
-.ttop .tb{position:static;width:40px;height:40px;border-radius:8px;font-size:11px!important}
-#touch .tZsel,#touch .tNV{display:none!important}#touch.zt .tZsel,#touch.zt .tNV{display:flex!important}#touch.zt .tBuy,#touch.zt .tLight{display:none!important}
-.tClose{right:14px;top:14px;width:46px;height:46px;display:none!important;font-size:18px!important;opacity:1}
-#touch.ov>*{display:none!important}#touch.ov .tClose{display:flex!important}
-#touch.dead .tAlt,#touch.dead .tJump,#touch.dead .tDuck,#touch.dead .tRel,#touch.dead .tSwap,#touch.dead .tLast,#touch.dead .tSkill,#touch.dead .tFireL{display:none!important}
-.trot{display:none}
-@media (orientation:portrait){html.touch .trot{display:flex;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(5,6,9,.92);color:#ffd890;font-size:16px;pointer-events:auto;text-align:center;padding:20px}}
-/* touch HUD: room for the thumbs */
-html.touch #hFeed{top:58px!important}
-html.touch #hBR{bottom:10px;right:300px;transform:scale(.85);transform-origin:bottom right}
-html.touch #hBL{transform:scale(.85);transform-origin:bottom left}
-html.touch #hMap{width:120px;height:120px}
-html.touch #buy,html.touch #zsel,html.touch #board{max-height:92vh;max-width:96vw}
-html.touch .bi{padding:10px 9px}
 /* small landscape screens (phones): compact menus */
 @media (max-height:520px){
   .lob{gap:8px}.lobTop{padding:4px 8px}.lobLogo{font-size:18px}.prof img{height:30px}.tbtns button{padding:4px 8px}.tbtns svg{width:14px;height:14px}
@@ -364,4 +332,74 @@ html.touch .bi{padding:10px 9px}
   .lobTop{flex-wrap:nowrap!important}.tbtns{margin-left:auto!important}.prof .xp{width:80px}
   .scr{padding:8px}
 }
-#touch.ov{z-index:20}
+
+/* ---------- touch controls (mobile v2) ---------- */
+html.touch{--bs:calc(clamp(46px,14vh,70px)*var(--tsz,1));--gap:clamp(6px,2vh,12px)}
+#touch{position:absolute;inset:0;z-index:7;pointer-events:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#touch.off{display:none}
+#touch .tzone{position:absolute;top:0;bottom:0;pointer-events:auto;touch-action:none}
+#touch .tzL{left:0;width:40%;top:22%}#touch .tzR{right:0;width:60%}
+.tstick{position:absolute;left:calc(var(--bs)*.4 + 3vw);bottom:calc(var(--bs)*.4 + 6vh);width:calc(var(--bs)*1.9);height:calc(var(--bs)*1.9);transform:translate(0,0);border-radius:50%;
+  border:2px solid rgba(255,255,255,.28);background:radial-gradient(circle,rgba(255,255,255,.06),rgba(10,12,16,.28));pointer-events:none;opacity:calc(var(--tal,.75)*.8)}
+.tstick.act{margin:calc(var(--bs)*-.95) 0 0 calc(var(--bs)*-.95);opacity:var(--tal,.75)}
+.tstick i{position:absolute;left:50%;top:50%;width:44%;height:44%;margin:-22% 0 0 -22%;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.tb{position:absolute;pointer-events:auto;touch-action:none;min-width:0!important;padding:0!important;border-radius:50%;width:var(--bs);height:var(--bs);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:rgba(14,16,20,.42)!important;border:2px solid rgba(255,255,255,.32)!important;color:#fff!important;font-size:11px!important;font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,.35)!important;opacity:var(--tal,.75);-webkit-tap-highlight-color:transparent;transition:transform .06s}
+.tb.on{background:rgba(232,163,58,.5)!important;border-color:#ffd890!important;transform:scale(.93)}.tb.lat{border-color:#e8a33a!important;color:#ffd890!important;background:rgba(232,163,58,.25)!important}
+.tb svg{width:46%;height:46%}.tb em{font-style:normal;font-size:9px;opacity:.85;line-height:1}
+/* right thumb: fire in the middle of an arc */
+.tFire{right:calc(3vw + var(--bs)*.55);bottom:calc(6vh + var(--bs)*.55);width:calc(var(--bs)*1.45);height:calc(var(--bs)*1.45);border-color:rgba(255,130,100,.75)!important;background:rgba(60,18,12,.38)!important}
+.tFire svg{width:52%;height:52%}
+.tAlt{right:calc(3vw + var(--bs)*2.25);bottom:calc(6vh + var(--bs)*1.25)}
+.tRel{right:calc(3vw + var(--bs)*2.15);bottom:calc(6vh + var(--bs)*.05);width:calc(var(--bs)*.82);height:calc(var(--bs)*.82)}
+.tJump{right:calc(3vw + var(--bs)*.1);bottom:calc(6vh + var(--bs)*2.15)}
+.tDuck{right:calc(3vw + var(--bs)*1.3);bottom:calc(6vh + var(--bs)*2.35);width:calc(var(--bs)*.86);height:calc(var(--bs)*.86)}
+.tSkill{right:calc(3vw + var(--bs)*2.6);bottom:calc(6vh + var(--bs)*2.35);display:none!important;border-color:rgba(255,90,70,.75)!important}
+#touch.zt .tSkill{display:flex!important}#touch.zt .tRel{display:none!important}
+.tFireL{left:calc(2vw + var(--bs)*.2);top:28%;width:calc(var(--bs)*.95);height:calc(var(--bs)*.95);border-color:rgba(255,130,100,.6)!important}
+#touch.nolf .tFireL{display:none!important}
+/* weapon slots */
+.tbar{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none}
+.tbar .ws{position:relative;border-radius:8px;width:calc(var(--bs)*1.25);height:calc(var(--bs)*.72);padding:2px!important;opacity:var(--tal,.75)}
+.tbar .ws img{max-width:86%;max-height:56%;image-rendering:pixelated;filter:drop-shadow(1px 1px 0 #000)}
+.tbar .ws em{position:absolute;right:4px;top:2px;color:var(--y)}.tbar .ws .am{font-style:normal;font-size:11px;color:#fff;line-height:1.1}
+.tbar .ws.cur{border-color:#ffd890!important;background:rgba(232,163,58,.28)!important;opacity:1}
+/* top right: shop / light / score / pause */
+.ttop{position:absolute;top:6px;right:8px;display:flex;gap:6px;pointer-events:none}
+.ttop .tb{position:static;width:calc(var(--bs)*.72);height:calc(var(--bs)*.72);border-radius:10px}
+.ttop .tBuy,.ttop .tZsel{width:calc(var(--bs)*1.1);flex-direction:row;gap:4px}.ttop .tBuy svg,.ttop .tZsel svg{width:34%}.ttop em{font-size:11px!important}
+#touch .tZsel,#touch .tNV{display:none!important}#touch.zt .tZsel,#touch.zt .tNV{display:flex!important}#touch.zt .tBuy,#touch.zt .tLight{display:none!important}
+/* target under the crosshair (aim assist): a ring */
+.tlock{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:2px solid rgba(255,90,70,.0);transition:border-color .1s,transform .1s;transform:scale(1.25);pointer-events:none}
+.tlock.on{border-color:rgba(255,90,70,.75);transform:scale(1)}
+.tClose{right:10px;top:10px;display:none!important;font-size:18px!important;opacity:1;width:calc(var(--bs)*.8);height:calc(var(--bs)*.8)}
+#touch.ov{z-index:20}#touch.ov>*{display:none!important}#touch.ov .tClose{display:flex!important}
+#touch.dead>.tb:not(.tFire),#touch.dead .tbar{display:none!important}#touch.dead .ttop{display:flex}#touch.dead .ttop .tb{display:none!important}#touch.dead .ttop .tScore,#touch.dead .ttop .tPause{display:flex!important}
+.trot{display:none}
+@media (orientation:portrait){html.touch .trot{display:flex;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(5,6,9,.94);color:#ffd890;font-size:16px;pointer-events:auto;text-align:center;padding:20px}}
+/* touch HUD: status top-left beside the radar, kill feed under the top buttons, ammo lives in the weapon bar */
+html.touch #hMap{width:clamp(80px,24vh,120px);height:clamp(80px,24vh,120px);top:6px;left:6px}
+html.touch #hBL{left:calc(clamp(80px,24vh,120px) + 14px);top:6px;bottom:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;transform:scale(.8);transform-origin:top left;max-width:46vw}
+html.touch #hDmg{display:none}
+html.touch #hFeed{top:calc(var(--bs)*.72 + 14px)!important;transform:scale(.8);transform-origin:top right}
+html.touch #hBR{right:50%;bottom:calc(var(--bs)*.72 + 14px);transform:translateX(50%) scale(.8);transform-origin:bottom center;align-items:center}
+html.touch #hWIcon,html.touch #hWName,html.touch #hAmmo{display:none!important}
+html.touch #hNote{top:30%;font-size:12px;white-space:normal;max-width:70vw;text-align:center}
+html.touch #hSpec{bottom:calc(var(--bs)*1.4)}
+html.touch #cross{transform:scale(1.15)}
+/* touch buy menu: chips + big cards */
+html.touch #buy{min-width:0;width:min(96vw,980px);padding:10px 12px}
+.mbh{display:flex;align-items:center;gap:10px;margin:0 50px 8px 0}.mbh b{font-size:16px;color:var(--y)}.mbh .money{color:#9be07a;font-weight:bold;margin-left:auto}
+.mbh button{min-width:0;padding:8px 12px;font-size:13px}.mbh .mbq{border-color:var(--y);color:#111;background:var(--y);font-weight:bold}
+.mcats{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}.mcats::-webkit-scrollbar{display:none}
+.mcats button{min-width:0;flex:none;padding:8px 14px;font-size:13px;border-radius:16px}
+.mitems{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;max-height:calc(92vh - 110px);overflow-y:auto;padding-top:4px}
+.mbi{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:8px;min-height:84px;text-align:center}
+.mbi img{height:30px;max-width:100%;image-rendering:pixelated}.mbi .ico{font-size:24px;color:var(--h)}.mbi b{font-size:13px}.mbi .c{color:#9be07a;font-size:13px;font-weight:bold}
+.mbi:active{border-color:var(--y);background:rgba(255,210,74,.15)}.mbi.na{opacity:.45}.mbi.own{border-color:rgba(90,180,255,.6)}.mbi.own .c{color:var(--h)}
+html.touch #zsel .cards.wide .card{width:clamp(120px,22vw,170px)}
+/* touch menus: bigger targets */
+html.touch .mbtns button{padding:14px 26px;font-size:16px}
+html.touch .dd,html.touch .tin{min-height:40px;font-size:14px}
+html.touch .ck{min-height:36px}
+html.touch .otabs button{padding:10px 16px}

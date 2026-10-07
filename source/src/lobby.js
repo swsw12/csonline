@@ -105,7 +105,7 @@ UI.mpRender=function(){if(UI.open==='mp'){const m=$('mpMsg');if(m)m.textContent=
 // ---------- options window: tabs (gameplay / keyboard / mouse / audio / video), live preview, OK · Cancel · Apply ----------
 const XC={green:'#7dff6a',yellow:'#ffe14a',cyan:'#5ae8ff',white:'#ffffff',pink:'#ff6ad8'};
 function applyXhair(){const c=$('cross');if(!c)return;c.style.setProperty('--xc',XC[CFG.xc]||XC.green);c.style.setProperty('--g',(CFG.xg||6)+'px')}
-UI.optTab=UI.optTab||'game';if(CFG.xg==null)CFG.xg=6;if(CFG.tsens==null)CFG.tsens=1;if(CFG.tal==null)CFG.tal=.7;if(!CFG.touch)CFG.touch='auto';if(!CFG.xc)CFG.xc='green';
+UI.optTab=UI.optTab||'game';if(CFG.xg==null)CFG.xg=6;if(CFG.tsens==null)CFG.tsens=1;if(CFG.tsz==null)CFG.tsz=1;for(const k of ['autoFire','aimAssist','leftFire','haptic'])if(CFG[k]==null)CFG[k]=true;if(CFG.tal==null)CFG.tal=.7;if(!CFG.touch)CFG.touch='auto';if(!CFG.xc)CFG.xc='green';
 UI.buildOpts=function(){const L=LI(),t=UI.optTab;
   const tabs=[['game',L?'Gameplay':'게임플레이'],['keys',L?'Keyboard':'키보드'],['mouse',L?'Mouse':'마우스'],['audio',L?'Audio':'오디오'],['video',L?'Video':'비디오']];
   const ck=(k,l,inv)=>{const on=inv?!CFG[k]:CFG[k]!==false&&!!CFG[k];return `<label class="ck${on?' on':''}" data-act="optck" data-v="${k}${inv?':inv':''}"><i></i>${l}</label>`};
@@ -116,7 +116,7 @@ UI.buildOpts=function(){const L=LI(),t=UI.optTab;
       <div class="osel"><span>${L?'Nickname':'닉네임'}</span><input id="optName" class="tin" maxlength="14" value="${esc(CFG.mpName||'')}" placeholder="${esc(myName())}" autocomplete="off" spellcheck="false"></div>
       ${sel('touch',L?'Touch controls':'터치 조작 (모바일)',[['auto',L?'Auto':'자동'],['on',L?'On':'켜기'],['off',L?'Off':'끄기']])}
       ${sel('xc',L?'Crosshair colour':'조준점 색상',[['green',L?'Green':'초록'],['yellow',L?'Yellow':'노랑'],['cyan',L?'Cyan':'하늘'],['white',L?'White':'흰색'],['pink',L?'Pink':'분홍']])}</div>
-    <div>${ck('minimap',L?'Show radar':'레이더(미니맵) 표시')}${sl('tsens',L?'Touch look speed':'터치 시점 감도',.4,2.5,.1,v=>(+v).toFixed(1),L?'slow':'느리게',L?'fast':'빠르게')}${sl('tal',L?'Button opacity':'버튼 투명도',.25,1,.05,v=>Math.round(v*100)+'%','25%','100%')}${sl('xg',L?'Crosshair gap':'조준점 간격',2,14,1,v=>v+'px',L?'tight':'좁게',L?'wide':'넓게')}
+    <div>${ck('minimap',L?'Show radar':'레이더(미니맵) 표시')}${ck('autoFire',L?'Auto-fire on target (touch)':'자동 사격 (조준점에 적이 오면 발사)')}${ck('aimAssist',L?'Aim assist (touch)':'조준 보정 (적 쪽으로 살짝 끌림)')}${ck('leftFire',L?'Left fire button':'왼쪽 사격 버튼')}${ck('haptic',L?'Vibration':'진동')}${sl('tsens',L?'Touch look speed':'터치 시점 감도',.4,2.5,.1,v=>(+v).toFixed(1),L?'slow':'느리게',L?'fast':'빠르게')}${sl('tal',L?'Button opacity':'버튼 투명도',.25,1,.05,v=>Math.round(v*100)+'%','25%','100%')}${sl('tsz',L?'Button size':'버튼 크기',.75,1.35,.05,v=>Math.round(v*100)+'%','75%','135%')}${sl('xg',L?'Crosshair gap':'조준점 간격',2,14,1,v=>v+'px',L?'tight':'좁게',L?'wide':'넓게')}
       <div class="xprev" style="--xc:${XC[CFG.xc]||XC.green};--g:${CFG.xg||6}px"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div></div></div>`;
   else if(t==='keys')body=`<table class="ktbl"><tr><th>${L?'Action':'설명'}</th><th>${L?'Key / button':'키/버튼'}</th></tr>${T('keys').map(([k,d])=>`<tr><td>${d}</td><td><kbd>${k}</kbd></td></tr>`).join('')}</table>
     <div class="rrule"><b>${T('rulesT')}</b><ul>${T('rules').map(r=>`<li>${r}</li>`).join('')}</ul></div>`;
@@ -134,9 +134,9 @@ UI.buildOpts=function(){const L=LI(),t=UI.optTab;
   for(const r of document.querySelectorAll('#opts .rng'))r.addEventListener('input',()=>{const k=r.dataset.k;CFG[k]=+r.value;UI.optLive();UI.optLbl(r)});
   const nm=$('optName');if(nm)nm.addEventListener('input',()=>{CFG.mpName=nm.value.trim().slice(0,14);});
   applyXhair()};
-UI.optLbl=function(r){const L=LI(),k=r.dataset.k,v=+r.value,b=$('ov_'+k);if(!b)return;b.textContent=k==='tal'?Math.round(v*100)+'%':k==='tsens'?v.toFixed(1):k==='sens'?v.toFixed(1):k==='vol'?Math.round(v*100):k==='fov'?v+'°':k==='xg'?v+'px':k==='gamma'?Math.round((1.2-v)/.6*100):v;
+UI.optLbl=function(r){const L=LI(),k=r.dataset.k,v=+r.value,b=$('ov_'+k);if(!b)return;b.textContent=k==='tsz'?Math.round(v*100)+'%':k==='tal'?Math.round(v*100)+'%':k==='tsens'?v.toFixed(1):k==='sens'?v.toFixed(1):k==='vol'?Math.round(v*100):k==='fov'?v+'°':k==='xg'?v+'px':k==='gamma'?Math.round((1.2-v)/.6*100):v;
   if(k==='xg'){const p=document.querySelector('#opts .xprev');if(p)p.style.setProperty('--g',v+'px')}};
-UI.optLive=function(){applyCfg();applyXhair();if(typeof TOUCH!=='undefined'){document.documentElement.style.setProperty('--tal',CFG.tal==null?.7:CFG.tal);if(TOUCH.want()!==TOUCH.on)TOUCH.apply()}};
+UI.optLive=function(){applyCfg();applyXhair();if(typeof TOUCH!=='undefined'){document.documentElement.style.setProperty('--tal',CFG.tal==null?.7:CFG.tal);TOUCH.apply()}};
 (function(){const act1=UI.act;
   UI.act=function(a,v,el){
     if(a==='opts'||a==='help'){if(UI.open!=='opts'){UI.ret=UI.open;UI.optBak=JSON.stringify(CFG)}UI.optTab=a==='help'?'keys':(UI.optTab==='keys'?'game':UI.optTab);UI.buildOpts();UI.show('opts');return}
