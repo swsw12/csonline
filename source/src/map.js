@@ -357,7 +357,7 @@ function* mapLoader(id){
   const C=MAPCACHE[id];
   if(C){for(const k of MAPKEYS)MAP[k]=C[k];WORLD.boxes=MAP.boxes;WORLD.cells=C.cells;if(C.grid)[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh]=C.grid;Object.assign(NAV,C.nav);if(FX.rain&&C.rainHM)FX.rain.hm=C.rainHM;for(const m of MAP.meshes)R.scene.add(m)}
   else{yield 'lMap';const D=MAPDEFS[id];if(D.tex)D.tex();buildMapData(id);WORLD.boxes=MAP.boxes;worldIndex();
-    yield 'lLight';MAP.meshes=[];buildMapMeshes(R.scene);bakeProbes();
+    yield 'lLight';MAP.meshes=[];buildMapMeshes(R.scene);if(D.mesh)D.mesh(R.scene);bakeProbes();
     yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow))FX.buildRainHM()}
   // bots holding paths through the old graph start over
   for(const a of G.actors)if(a.bot){a.bot.path=null;a.bot.goal=null;a.bot.wander=null;a.bot.spot=null}

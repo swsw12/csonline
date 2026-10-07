@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.0.1','2026-10-08',[
+ ['UP','이탈리아 — 원본 레퍼런스 텍스처(구워진 조명 포함)로 표시, 충돌은 기존 박스 그대로 (테스트 버전)','Italy shows the reference textures (baked light); collision stays on the boxes (test build)'],
+ ['FIX','이탈리아 바닥 높이를 원본 표면에 맞춤 (1/16 m)','Italy floors match the reference surfaces (1/16 m)']]],
 ['v6.0','2026-10-08',[
  ['NEW','이탈리아 맵 전면 재제작 — 3D 레퍼런스의 지형·높낮이·골목을 그대로 따라 새로 지음 (남쪽 낮은 거리 → 시장 → 북쪽 윗마을, 계단·아치·실내)','Italy rebuilt from a 3D reference: the real street plan, levels, stairs, arches and rooms'],
  ['NEW','신규 맵 「빅트리」 — 거대한 고목이 자라난 폐허 성채. 나무 데크·성탑 옥상·성벽 회랑·마른 연못까지 3단 높낮이','New map: Big Tree — a ruined castle round a giant tree, three height levels'],

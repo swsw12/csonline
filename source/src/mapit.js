@@ -5,6 +5,8 @@
 // their exact height; roofs and wall heads round up to 0.5 m. Only the geometry is taken: every surface is painted here.
 Object.assign(MATS,{
   facA:{t:'facA',s:3,k:'stone'},facB:{t:'facB',s:3,k:'stone'},facC:{t:'facC',s:3,k:'stone'},
+  // v6 colour variants, chosen per wall from the reference's paint colour (salmon, orange, tan, ochre, grey)
+  facR:{t:'facR',s:3,k:'stone'},facO:{t:'facO',s:3,k:'stone'},facT:{t:'facT',s:3,k:'stone'},facY:{t:'facY',s:3,k:'stone'},facG:{t:'facG',s:3,k:'stone'},
   roofIt:{t:'roofIt',s:2,k:'stone',cs:2},cobble:{t:'cobble',s:1.5},pavers:{t:'pavers',s:2.4},cobbleR:{t:'cobbleR',s:1.5},
   stoneIt:{t:'stoneIt',s:2},woodIt:{t:'woodIt',s:2,k:'wood'},doorIt:{t:'doorIt',uv:'box',k:'wood'},awn:{t:'awn',s:2,k:'soft'},fruit:{t:'fruit',uv:'box',k:'wood'},
   water:{t:'water',s:3,emis:.12,k:'glass'},flowers:{t:'flowers',uv:'box',k:'soft'},
@@ -181,6 +183,7 @@ function texSkyDay(){return paint(1024,256,P=>{const SU=.111,SV=106;
 function texSunDisc(){return paint(64,64,P=>{for(let y=0;y<64;y++)for(let x=0;x<64;x++){const r=Math.hypot(x-31.5,y-31.5)/30;if(r>1){P.alpha(x,y,0);continue}P.set(x,y,r<.7?'#fffaf0':mix('#fffaf0','#ffd8a0',(r-.7)/.3))}})}
 function bakeItTex(){if(TEX.facA)return;
   TEX.facA=mkTex(texFacade('#e8e3d6','#3e6a46',961));TEX.facB=mkTex(texFacade('#ecd2b6','#8a3026',971));TEX.facC=mkTex(texFacade('#ded5c2','#5a4632',981));
+  TEX.facR=mkTex(texFacade('#dca296','#3e6a46',1401));TEX.facO=mkTex(texFacade('#e0aa78','#5a4632',1411));TEX.facT=mkTex(texFacade('#dcc096','#8a3026',1421));TEX.facY=mkTex(texFacade('#e8cc80','#3e6a46',1431));TEX.facG=mkTex(texFacade('#cfccc4','#5a4632',1441));
   TEX.roofIt=mkTex(texRoofIt());TEX.cobble=mkTex(texCobble(991));TEX.cobbleR=mkTex(texCobbleR());TEX.pavers=mkTex(texPavers());
   TEX.stoneIt=mkTex(texStoneIt());TEX.woodIt=mkTex(texWoodIt());TEX.doorIt=mkTex(texDoorIt(),false);TEX.awn=mkTex(texAwn());TEX.fruit=mkTex(texFruit(),false);TEX.water=mkTex(texWater());
   TEX.flowers=mkTex(texFlowers(),false);TEX.ironRail=mkTex(texIronRail());TEX.cloth0=mkTex(texCloth('#e8e4da'));TEX.cloth1=mkTex(texCloth('#3a6a9a'));TEX.cloth2=mkTex(texCloth('#c84a3a'));
@@ -190,15 +193,17 @@ function bakeItTex(){if(TEX.facA)return;
   TEX.paintA=mkTex(texPaint(3,'#7aa0c8','#6a7a3a'),false);TEX.paintB=mkTex(texPaint(7,'#d8a070','#5a4a3a'),false);TEX.fresco=mkTex(texFresco(),false);TEX.gateA=mkTex(texGate(),false);
   TEX.ivy=mkTex(texIvy(),false);TEX.shutG=mkTex(texShut('#3e6a46'),false);TEX.shutR=mkTex(texShut('#8a3026'),false);
   TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter;TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false;
-  const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['facA','facB','facC','roofIt','cobble','cobbleR','pavers','stoneIt','retW','rubble','cellarF','woodFl'])TEX[k].anisotropy=an;
+  const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['facA','facB','facC','facR','facO','facT','facY','facG','roofIt','cobble','cobbleR','pavers','stoneIt','retW','rubble','cellarF','woodFl'])TEX[k].anisotropy=an;
   MIXC.clear();VN_T.clear();_vnK=-1;_vnT=null;_fbC.length=0}
 // ---------- geometry: decode the generated boxes ----------
 // each box: x0 z0 w d y0 y1 (2 base-36 chars, cells of D.cs, y offset by D.base) + top material + side material (1 char each)
 function buildItaly(){const D=ITALY_DATA,M=ITALY_META,S=D.boxes,CS=D.cs,N='none';
   // the top code carries +16 for boxes on steps or ramps: nav treats them as stairs (walk links up to .9 m per metre)
-  const v=i=>parseInt(S.substr(i,2),36);
-  for(let i=0;i+14<=S.length;i+=14){const x0=D.x0+v(i)*CS,z0=D.z0+v(i+2)*CS,x1=x0+v(i+4)*CS,z1=z0+v(i+6)*CS,y0=(v(i+8)-D.base)*CS,y1=(v(i+10)-D.base)*CS;
-    const t=parseInt(S[i+12],36),top=D.mats[t&15],side=D.mats[parseInt(S[i+13],36)];const o={f:{py:top,ny:'ceilT'}};if(t&16)o.stair=1;B(x0,y0,z0,x1,y1,z1,side,o)}
+  // With the reference mesh present (ITALY_MESH) the boxes are collision only: every face is 'nodraw' and the mesh is what you see.
+  const v=i=>parseInt(S.substr(i,2),36),VIS=typeof ITALY_MESH==='undefined',ND='nodraw';
+  for(let i=0;i+14<=S.length;i+=14){const x0=D.x0+v(i)*CS,z0=D.z0+v(i+2)*CS,x1=x0+v(i+4)*CS,z1=z0+v(i+6)*CS,y0=v(i+8)/D.yq-D.yo,y1=v(i+10)/D.yq-D.yo;
+    const t=parseInt(S[i+12],36),top=D.mats[t&15],side=D.mats[parseInt(S[i+13],36)];
+    const o={f:VIS?{py:top,ny:'ceilT'}:{px:ND,nx:ND,py:ND,ny:ND,pz:ND,nz:ND}};if(t&16)o.stair=1;B(x0,y0,z0,x1,y1,z1,side,o)}
   // warm lamps over the covered floors (arcades, rooms, the cellar); the sun does the rest
   for(const p of M.lights||[])LIGHT(p[0],p[1],p[2],p[1]<0?'#ffcf8a':'#ffe2b8',7,.75);
   MAP.spawns=M.spawns.map(p=>[p[0],p[2],p[1],rr(-.5,.5)+Math.PI]);
@@ -208,5 +213,23 @@ function buildItaly(){const D=ITALY_DATA,M=ITALY_META,S=D.boxes,CS=D.cs,N='none'
   MAP.moon={d:new THREE.Vector3(-.5,.75,.42).normalize(),c:new THREE.Color('#fff0d6'),i:.8};
   MAP.cam=(t,cam)=>{const a=t*.03+.6;cam.position.set(Math.sin(a)*30,26+1.5*Math.sin(t*.07),Math.cos(a)*44);cam.lookAt(Math.sin(a+1.2)*4,0,Math.cos(a+1.2)*8)};
 }
+// ---------- the reference town as the visible map: its own geometry and baked-light textures ----------
+// the reference's baked light is very dark in the shade: a gamma lift brings the alleys up without washing out the sun
+const FS_BAKED=GLSL_DYN+`uniform sampler2D map;uniform float uK;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
+void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;vec3 c=pow(t.rgb,vec3(.62))*uK+t.rgb*dynLight(vPos,n)*.6;gl_FragColor=vec4(applyFog(c,vPos),1.);}`;
+function itMesh(scene){if(typeof ITALY_MESH==='undefined')return;
+  const b64=s=>{const bin=atob(s),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer};
+  for(const P of ITALY_MESH){
+    const q=new Uint16Array(b64(P.pos)),uq=new Uint16Array(b64(P.uv)),nq=new Int8Array(b64(P.nrm)),ix=new Uint16Array(b64(P.idx)),n=q.length/3;
+    const pos=new Float32Array(n*3),uv=new Float32Array(n*2),nrm=new Float32Array(n*3);
+    for(let i=0;i<n;i++){for(let k=0;k<3;k++){pos[i*3+k]=P.bmin[k]+q[i*3+k]/65535*P.bsz[k];nrm[i*3+k]=nq[i*3+k]/127}
+      for(let k=0;k<2;k++)uv[i*2+k]=P.umin[k]+uq[i*2+k]/65535*P.usz[k]}
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nrm,3));
+    geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.setIndex(new THREE.BufferAttribute(ix,1));geo.computeBoundingSphere();
+    // glTF texture space: no vertical flip, repeat (the atlases tile)
+    const img=new Image(),tex=new THREE.Texture(img);tex.flipY=false;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.minFilter=THREE.LinearMipmapLinearFilter;tex.magFilter=THREE.LinearFilter;
+    tex.anisotropy=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;img.onload=()=>{tex.needsUpdate=true};img.src=P.tex;
+    const mat=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uK:{value:1.1}},LU),vertexShader:VS_WORLD,fragmentShader:FS_BAKED,side:THREE.DoubleSide});
+    const mesh=new THREE.Mesh(geo,mat);mesh.matrixAutoUpdate=false;mesh.updateMatrix();scene.add(mesh);MAP.meshes.push(mesh)}}
 MAPDEFS.italy={n:['이탈리아','Italy'],d:['햇살 가득한 언덕 마을. 남쪽 낮은 거리에서 시작해 시장 광장, 와인 저장고, 북쪽 높은 골목까지 이어지는 오르막 시가지.','A hill town on a summer afternoon: from the low street in the south up through the market square and the wine cellar to the high lanes in the north.'],
-  env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.92,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-34,-61,34,61],probeY:[-2.6,-.9,.9,2.6,4.4,6.2,8],mini:[1.2,4.6],tex:bakeItTex,build:buildItaly};
+  env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.92,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-34,-61,34,61],probeY:[-2.6,-.9,.9,2.6,4.4,6.2,8],mini:[1.2,4.6],tex:bakeItTex,build:buildItaly,mesh:itMesh};
