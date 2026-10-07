@@ -260,12 +260,8 @@ function clawStrike(a,heavy){const r=meleeHit(a,heavy?2.3:2.0,heavy?.6:.5);
   if(r&&r.t){if(!NET.ghost){if(NET.cli)netToHost({t:'claw',i:r.t.id,h:heavy?1:0});else clawApply(a,r.t,heavy)}
     if(a.isPlayer)HUD.hitmark(false)}
   else if(r&&r.wall){FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer)AU.play('kwall',{vol:.4,rate:.7})}}
-function clawApply(a,t,heavy){const Z=ZCLASS[a.zc];const dmg=Z.dmg*(heavy?1.6:1)*(a.host?1.25:1)*(a.lvl>=3?1.2:a.lvl>=2?1.1:1);
-  aimDir(a.yaw,0,_dv);t.kvx+=_dv.x*(heavy?4:2);t.kvz+=_dv.z*(heavy?4:2);
-  if(G.st==='fight'&&humansAlive()===1){hurtHuman(t,dmg*.9,a,{claw:1})}
-  else if(t.armor>0){t.armor=Math.max(0,t.armor-dmg*.72);AU.at('clawarmor',t.c.x,t.c.y+1.2,t.c.z,{vol:.9});if(NET.host)netEv('snd',{n:'clawarmor',x:r2(t.c.x),y:r2(t.c.y+1.2),z:r2(t.c.z)});
-    if(t.isPlayer){HUD.hurt(.5);AU.play('armor',{vol:.5})}FX.spawn({x:t.c.x,y:t.c.y+1.2,z:t.c.z,vy:1,life:.2,s0:.3,s1:.5,r:1,g:.9,b:.6,f:1,add:1})}
-  else infect(t,a)}
+// one claw hit is enough: armour does not stop the infection, and the last human standing turns as well (the zombies win)
+function clawApply(a,t,heavy){aimDir(a.yaw,0,_dv);t.kvx+=_dv.x*(heavy?4:2);t.kvz+=_dv.z*(heavy?4:2);infect(t,a)}
 function useSkill(a){if(NET.cli&&!NET.ev){if(a===G.player&&a.skillCD<=0&&(G.st==='fight'||G.st==='prep'))netToHost({t:'sk'});return}
   if(a.skillCD>0||G.st!=='fight'&&G.st!=='prep')return;const Z=ZCLASS[a.zc];const c=a.c;
   if(Z.skill==='invis'||Z.skill==='trap'||Z.skill==='heal'||Z.skill==='coffin'){if(nySkill(a,Z)){a.skillCD=Z.cd;if(NET.host)netEv('sk',{i:a.id,k:Z.skill})}return}
