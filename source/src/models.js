@@ -379,15 +379,28 @@ function defZombie(k,host){
       const gy=sY+o.torsoH*.16;[[.04,0,.09,.1],[.07,-.1,.075,.12],[.05,-.22,.065,.12],[.08,-.33,.055,.1],[.06,-.42,.045,.08]].forEach(([x,dy,wd,hh],i)=>L.push({n:'guts',b:0,c:[x,gy+dy,zf-.035-i*.004],s:[wd,hh,wd*.85],m:'guts'}));
       return L}}
   else{// 비명체 — eyes stitched shut yet still glowing, a jaw that unhinges to the chest, ribs through a blood-soaked lab coat
-    o={hipY:.92,torsoW:.36,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.13,legD:.14,shinW:.11,headW:.22,headH:.3,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};
-    const sk='#9c9688';
-    mats=Object.assign({top:{base:'#c8c8bc'},legs:{base:'#4a4a52'},sleeve:{base:'#c8c8bc'},fore:{base:sk,style:'zskin',blot:'#5a4a3a'},shin:{base:sk,style:'zskin'},skin:{base:sk,style:'zskin',blot:'#5a4a3a'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:dk(sk,.3),style:'zskin'},sac:{base:'#7a8a3a',style:'zskin',blot:'#5a6a1a'},hair:{base:'#2a2622',style:'hair'},jaw:{base:sk,style:'zskin',blot:'#5a4a3a'}},goreM);
-    decor={torso:{front:[['zip',.5],['soak',.3,1,'#5a0808',.9],['ribs',.3,.42,.7,.8,5],['blood',5,8],['tear',2,6,sk],['grime',.5]],back:[['soak',.6,1,'#5a0808',.7],['blood',2,9],['grime',.5]]},
-      head:{front:[['face','scream',{skin:sk,eye:eyeH||'#a0ff60',ey:.66,sewn:1,tears:1}]],back:[['rect',0,.3,1,1,'#2a2622']],top:[['rect',0,0,1,1,'#2a2622']],bottom:[['teethrow','bottom',.4]]},
-      jaw:{top:[['teethrow','top',.3]],front:[['teethrow','top',.3],['soak',0,.7,'#5a0808',.7],['drip',.5,.6,5,.9]],side:[['flesh',0,0,1,1,1.57]],bottom:[['soak',0,1,'#4a0606',.8]]},
-      sac:{all:[['veins',3,'#c8ff60',1],['glow',.35,.3,.65,.6,'#b8ff50']]},uaL:{all:[['blood',2,4]]},thL:{all:[['tear',1,2,sk]]},faL:{all:[['gash',.2,.9,.6,.2,3,.12]]},faR:{all:[['flesh',.2,.2,.8,.8,1.57]]},handL:{all:[['soak',0,1,'#5a0808',.8]]},handR:{all:[['soak',0,1,'#5a0808',.8]]}};
-    extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2;const L=[{n:'sac',b:2,c:[0,1.47,-.09],s:[.16,.13,.13],m:'sac'},{n:'hair',b:2,c:[0,1.82,.07],s:[.23,.1,.2],m:'hair'}];
-      for(let r=0;r<2;r++)for(const s of [-1,1])L.push({n:'rib',b:1,c:[s*o.torsoW*.15,sY+o.torsoH*(.66-r*.13),zf-.01],s:[o.torsoW*.2,.018,.022],m:'bone'});return L}}
+    o={hipY:.92,torsoW:.38,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.16,legD:.15,shinW:.12,headW:.22,headH:.28,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};
+    const sk='#2a1a15';
+    mats=Object.assign({top:{base:'#8b264b'},legs:{base:'#d4cbb8'},sleeve:{base:sk,style:'zskin'},fore:{base:sk,style:'zskin'},shin:{base:sk,style:'zskin'},skin:{base:sk,style:'zskin'},hand:{base:sk,style:'zskin'},boot:{base:sk,style:'zskin'},jaw:{base:sk,style:'zskin'},hair:{base:'#1a1a1a',style:'hair'},cloth:{base:'#e0e0d8',style:'cloth'},doll:{base:'#8b6b45',style:'cloth'}},goreM);
+    decor={
+      torso:{front:[['tear',2,4,sk],['band',0,.05,'#111'],['band',.05,.08,'#d4cbb8'],['soak',0,1,'#111',.3],['blood',2,8]],back:[['rect',.4,.2,.6,.8,sk],['tear',2,5,sk],['grime',.6]]},
+      head:{front:[['face','scream',{skin:sk,eye:eyeH||'#ff0000',ey:.66,lipless:1}],['band',.55,.75,'#e0e0d8'],['soak',.1,.4,'#880000',.8]],back:[['band',.55,.75,'#e0e0d8']],top:[['rect',0,0,1,1,'#1a1a1a']]},
+      jaw:{front:[['teethrow','top',.3],['soak',0,1,'#880000',.9]]},
+      legs:{all:[['grime',.7],['tear',3,2,sk],['tear',2,5,sk]]},
+      shin:{all:[['band',.1,.5,'#cdae66'],['band',.15,.2,'#222'],['band',.3,.35,'#222'],['grime',.4]]},
+      uaL:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0']]},uaR:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0']]},
+      faL:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0'],['band',0,.2,'#4a3020']]},faR:{all:[['veins',2,'#e0d8c0',0],['tear',2,7,'#e0d8c0'],['band',0,.2,'#4a3020']]},
+      handL:{all:[['soak',0,1,'#4a3020',.8]]},handR:{all:[['soak',0,1,'#4a3020',.8]]}
+    };
+    extra=H=>[
+      {n:'bun',b:2,c:[0,1.72,-.02],s:[.12,.1,.12],m:'hair'},
+      {n:'knot',b:2,c:[0,1.58,.12],s:[.16,.05,.05],m:'cloth'},
+      {n:'earL',b:2,c:[-.12,1.5,0],s:[.02,.05,.02],m:'top'},
+      {n:'earR',b:2,c:[.12,1.5,0],s:[.02,.05,.02],m:'top'},
+      {n:'dollB',b:0,c:[-.16,.9,-.12],s:[.06,.1,.05],m:'doll'},
+      {n:'dollH',b:0,c:[-.16,.98,-.12],s:[.05,.05,.05],m:'doll'}
+    ];
+  }
   if(host){for(const p of Object.keys(decor))for(const fk of ['front','back','all'])if(decor[p][fk])decor[p][fk]=decor[p][fk].concat([['veins',2,vein,1]]);
     decor.torso.front=(decor.torso.front||[]).concat([['veins',4,vein,1]]);decor.torso.back=(decor.torso.back||[]).concat([['veins',3,vein,1]]);}
   o.zombie=1;if(k==='brute')o.eyeSep=.16;const H=humanoid(o);const ex=extra(H);
