@@ -5,6 +5,46 @@
 // and the multiplayer waiting room uses the same window with eight player slots.
 // Everything is drawn here (portraits, gun icons, CSS); map previews are snapshots of the menu scene.
 const THUMB={};
+// ---------- patch notes (공지사항 ＋ button) ----------
+// newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
+const PATCH=[
+['v5.9.1','2026-10-08',[
+ ['NEW','전체화면 버튼 — 로비·일시정지·옵션, 게임 중 Alt+Enter (아이폰은 홈 화면 추가 안내)','Fullscreen button in the lobby, pause menu and options, Alt+Enter in game (iPhone: add-to-home-screen help)'],
+ ['FIX','무기를 바꿔 이어 친 데미지가 숫자 하나로 합쳐져 표시','Damage dealt right after a weapon swap now shows as one merged number']]],
+['v5.9','2026-10-07',[
+ ['NEW','신규 맵 「영동 휴게소」 — 눈 내리는 고속도로 휴게소. 주유소 지붕·세차장 옥상·전망대·육교, 화물차 주차장, 화장실, 놀이터','New map: Yeongdong Rest Stop — snowy highway services with a climbable canopy, car-wash roof, lookout, footbridge, truck park, restrooms, playground'],
+ ['NEW','눈 내리는 날씨 효과','Falling snow weather'],
+ ['UP','흑룡포 · 적룡포 · 게이볼그가 한 발씩 장전하는 단발 장전 무기로 변경','Black/Red Dragon Cannon and Gae Bolg now reload one round at a time'],
+ ['UP','모든 총의 예비 탄약 2배','Every gun carries twice the spare ammo'],
+ ['UP','헤비 좀비 체력 너프 (HP 2700, 방어 220)','Heavy zombie nerfed (HP 2700, armour 220)'],
+ ['FIX','근접무기를 휘두르는 중에 다른 무기로 바꿔도 근접 데미지가 그대로 들어감','A melee swing still lands if you switch weapons mid-swing'],
+ ['FIX','맵이 커져도 좀비 길찾기·충돌이 정상 동작하도록 엔진 수정','Engine fixes so zombie pathfinding and collision work on large maps']]],
+['v5.8','2026-10-07',[
+ ['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 × 3웨이브, 거대 좀비 보스, 보급 상자와 무기 강화','Zombie Scenario — co-op PvE, 5 stages × 3 waves, a giant boss, supply drops and weapon upgrades'],
+ ['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발','Coffin Zombie — raises a coffin wall that bursts when broken'],
+ ['NEW','부두 좀비 — 인형을 양손에 쥐고 후려침','Voodoo zombie — clubs with a rag doll'],
+ ['UP','좀비에게 한 대만 맞아도 즉시 감염 (방어구로도 못 막음)','One claw hit infects, armour no longer absorbs it'],
+ ['FIX','모바일 방 만들기·대기실·옵션 창이 화면에 꽉 차 터치가 안 되던 문제','Phones: room, waiting-room and options windows no longer clip or block taps']]],
+['v5.7','2026-10-07',[
+ ['NEW','모바일 UI 전면 개편 — 엄지 배치, 무기 슬롯 바, 조준 보정 + 자동 사격, 터치 구매 메뉴','Mobile overhaul — thumb layout, weapon bar, aim assist + auto-fire, touch buy menu'],
+ ['FIX','부활한 좀비가 멀티플레이에서 멈추던 문제','Revived zombies no longer freeze in multiplayer']]],
+['v5.6','2026-10-07',[
+ ['UP','멀티플레이 연결 개선 — 릴레이 v2, P2P 전용 옵션, 핑 표시','Multiplayer links — relay v2, P2P-only option, ping readout']]],
+['v5.5','2026-10-07',[
+ ['UP','해머 개편 — 우클릭으로 떡찧기 / 날리기 자세 전환','Hammer reworked — right click switches between pound and knock-away stance']]],
+['v5.4','2026-10-07',[
+ ['NEW','좀비 폭탄 — 머리를 뜯어 던지는 투척 무기','Zombie bomb — rip the gland out and throw it']]],
+['v5.3','2026-10-07',[
+ ['NEW','돈 추가 버튼 · 난이도 「전문가」 · 메인 화면 개편','Add-money button, Expert difficulty, new main menu'],
+ ['NEW','챈샷 — 쏘고 바로 무기를 바꿔 딜레이 단축 / 칼 챈샷 — 사격 직후 칼로 근접 타격','Quick switch (swap right after a shot) and blade draw-cut']]],
+['v5.2','2026-10-07',[
+ ['NEW','새 맵 — 새벽역, 밀리샤, 이탈리아(2층 구조 · 저택 · 와인 저장고로 개편)','New maps — Dawn Station, Militia, Italy (rebuilt with two levels, a house and a wine cellar)']]],
+];
+function patchOpen(){const L=LI();let o=$('patchWin');if(o)o.remove();o=document.createElement('div');o.id='patchWin';
+  o.innerHTML=`<div class="pwin"><div class="pwh"><b>${L?'Patch notes':'패치노트'}</b><button data-pc="x" aria-label="close">×</button></div><div class="pwb">${PATCH.map(([v,d,items])=>
+    `<section><h3><span>${v}</span><time>${d}</time></h3><ul>${items.map(([k,ko,en])=>`<li><em class="${k==='NEW'?'n':k==='UP'?'u':'f'}">${k}</em>${L?en:ko}</li>`).join('')}</ul></section>`).join('')}</div></div>`;
+  o.addEventListener('click',e=>{if(e.target===o||e.target.dataset.pc==='x')o.remove()});document.body.appendChild(o)}
+addEventListener('keydown',e=>{if(e.code==='Escape'&&$('patchWin')){$('patchWin').remove();e.stopPropagation()}},true);
 const ICO={
   full:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1 1h5v2H3v3H1zm9 0h5v5h-2V3h-3zM1 10h2v3h3v2H1zm12 0h2v5h-5v-2h3z"/></svg>',
   gear:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M7 1h2l.4 1.9 1.3.6 1.7-1 1.4 1.4-1 1.7.5 1.3L15 7v2l-1.9.4-.6 1.3 1 1.7-1.4 1.4-1.7-1-1.3.5L9 15H7l-.4-1.9-1.3-.5-1.7 1-1.4-1.4 1-1.7-.5-1.3L1 9V7l1.9-.4.5-1.3-1-1.7 1.4-1.4 1.7 1 1.3-.6zM8 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>',
@@ -45,16 +85,16 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
-      <div class="tbtns"><button data-act="opts">${ICO.gear}<span>${T('settings')}</span></button><button data-act="help">${ICO.keys}<span>${T('controls')}</span></button>${true?`<button data-act="full">${ICO.full}<span>${FS.label()}</span></button>`:''}<button data-act="lang">${ICO.globe}<span>${L?'한국어':'English'}</span></button></div></div>
+      <div class="tbtns"><button data-act="opts">${ICO.gear}<span>${T('settings')}</span></button><button data-act="help">${ICO.keys}<span>${T('controls')}</span></button><button data-act="patch" class="tpatch"><b class="pb">+</b><span>${L?'Patches':'패치노트'}</span></button>${true?`<button data-act="full">${ICO.full}<span>${FS.label()}</span></button>`:''}<button data-act="lang">${ICO.globe}<span>${L?'한국어':'English'}</span></button></div></div>
     <div class="mcards">${cards.map(c=>`<div class="mc ${c.cls}" data-act="${c.act}"><div class="art">${c.art}</div><div class="mtag">${esc(c.tag)}</div><div class="mbar"><b>${c.t}</b><span>${c.s}</span></div></div>`).join('')}</div>
     <div class="lobBot">
-      <div class="lp"><div class="lpt"><b class="on">${L?'NOTICE':'공지사항'}</b></div><ul class="news">${news.slice(0,5).map(([k,t])=>`<li><em class="${k==='NEW'?'n':'u'}">${k}</em>${t}</li>`).join('')}</ul></div>
+      <div class="lp"><div class="lpt"><b class="on">${L?'NOTICE':'공지사항'}</b><button class="pplus" data-act="patch" title="${L?'Patch notes':'패치노트'}">+</button></div><ul class="news">${news.slice(0,5).map(([k,t])=>`<li><em class="${k==='NEW'?'n':'u'}">${k}</em>${t}</li>`).join('')}</ul></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MY RECORD':'내 전적'}</b></div>
         <div class="recs"><div><span>${L?'Matches':'플레이'}</span><b>${r.g}</b></div><div><span>${T('kills')}</span><b>${r.k}</b></div><div><span>${T('infects')}</span><b>${r.inf}</b></div><div><span>${L?'Best score':'최고 점수'}</span><b>${r.best}</b></div></div>
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v5.8 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v5.9 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -143,6 +183,7 @@ UI.optLbl=function(r){const L=LI(),k=r.dataset.k,v=+r.value,b=$('ov_'+k);if(!b)r
 UI.optLive=function(){applyCfg();applyXhair();if(typeof TOUCH!=='undefined'){document.documentElement.style.setProperty('--tal',CFG.tal==null?.7:CFG.tal);TOUCH.apply()}};
 (function(){const act1=UI.act;
   UI.act=function(a,v,el){
+    if(a==='patch'){patchOpen();return}
     if(a==='opts'||a==='help'){if(UI.open!=='opts'){UI.ret=UI.open;UI.optBak=JSON.stringify(CFG)}UI.optTab=a==='help'?'keys':(UI.optTab==='keys'?'game':UI.optTab);UI.buildOpts();UI.show('opts');return}
     if(a==='back'&&UI.open==='opts')a='optcancel';
     if(a==='opttab'){UI.optTab=v;UI.buildOpts();return}

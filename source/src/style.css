@@ -475,3 +475,22 @@ html.touch .rng::-webkit-slider-thumb{margin-top:0}
 .fsrow{display:flex;align-items:center;gap:10px;margin:10px 0 2px}.fsrow button{min-width:120px}.fsrow span{opacity:.7;font-size:12px}
 #fsToast{position:fixed;left:50%;top:18px;transform:translate(-50%,-12px);background:rgba(10,12,16,.92);color:#fff;border:1px solid rgba(255,255,255,.18);padding:9px 14px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:90vw;text-align:center}
 #fsToast.on{opacity:1;transform:translate(-50%,0)}
+
+/* patch notes */
+.lpt .pplus{margin-left:auto;width:20px;height:20px;line-height:16px;padding:0;font-size:15px;font-weight:bold;border-radius:3px;background:#3a3e46;border:1px solid #555a64;color:#ffd890;cursor:pointer}
+.lpt .pplus:hover{background:#4a4f59}
+#patchWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}
+#patchWin .pwin{width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;background:#23262c;border:1px solid #4a4e58;box-shadow:0 10px 40px #000}
+#patchWin .pwh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#2c2f36;border-bottom:2px solid #e8a33a;font-size:15px;color:#ffd890}
+#patchWin .pwh button{width:32px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer}
+#patchWin .pwb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 14px 14px;font-size:13px;color:#c8ccd2}
+#patchWin section{padding:10px 0;border-bottom:1px solid #353941}#patchWin section:last-child{border:0}
+#patchWin h3{margin:0 0 6px;display:flex;align-items:baseline;gap:10px;font-size:15px;color:#fff}#patchWin h3 time{font-size:11px;color:#8a8f98;font-weight:normal}
+#patchWin ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}#patchWin li{line-height:1.45}
+#patchWin em{font-style:normal;font-size:9px;font-weight:bold;padding:1px 4px;margin-right:6px;border-radius:2px;color:#fff}
+#patchWin em.n{background:var(--z)}#patchWin em.u{background:#3a7bc8}#patchWin em.f{background:#4a8a4a}
+
+.tbtns .tpatch{display:none}.tbtns .tpatch .pb{font-size:18px;line-height:1;color:#ffd890}
+@media (max-height:560px){.tbtns .tpatch{display:flex}}
+#patchWin .pwh button{width:36px!important;min-width:0!important;flex:none;height:32px}
+.lpt .pplus{width:22px!important;min-width:0!important;height:22px!important;flex:none;margin-left:auto}
