@@ -177,7 +177,7 @@ function nyProj(a,W,eye,dir,kind){const sp={bolt:78,harpoon:56,disc:24,slug:46}[
 function rayActorsX(n,ox,oy,oz,dx,dy,dz,tmax){const src=n.owner;let best=null,bt=tmax,part=null;
   for(const t of G.actors){if(!t.alive||t===src||t.team===src.team||n.hit.has(t))continue;const c=t.c;const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h*1.15,bt);if(th>=0){bt=th;best=t;part='head'}
-    const hw=c.hw+.04,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);if(tb>=0&&tb<bt){bt=tb;best=t;part=(oy+dy*tb)<c.y+(top-c.y)*.45?'legs':'body'}}
+    const hw=(t.hitW||c.hw)+.04,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);if(tb>=0&&tb<bt){bt=tb;best=t;part=(oy+dy*tb)<c.y+(top-c.y)*.45?'legs':'body'}}
   return best?{a:best,t:bt,part}:null}
 // move a projectile through the world for dt: onActor/onWorld answer 'go' (keep flying), 'stop' (stay where it is) or 'kill' (remove)
 function projStep(n,dt,grav,onActor,onWorld){const sp0=Math.hypot(n.vx,n.vy,n.vz);const steps=Math.max(1,Math.ceil(sp0*dt/.5));const h=dt/steps;

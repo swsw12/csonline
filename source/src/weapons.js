@@ -71,7 +71,7 @@ function rayActors(src,ox,oy,oz,dx,dy,dz,tmax,teamMask){let best=null,bt=tmax,pa
     // quick reject by distance to the ray
     const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h,bt);if(th>=0){bt=th;best=t;part='head'}
-    const hw=c.hw+.02,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);
+    const hw=(t.hitW||c.hw)+.02,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);
     if(tb>=0&&tb<bt){bt=tb;best=t;const hy=oy+dy*tb;part=hy<c.y+(top-c.y)*.45?'legs':'body'}}
   return best?{a:best,t:bt,part}:null}
 // ---------- firing ----------

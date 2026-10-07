@@ -329,8 +329,8 @@ function defHuman(k){
     extra=[{n:'filtL',b:2,c:[-.07,1.585,-.15],s:[.07,.07,.06],m:'filt'},{n:'filtR',b:2,c:[.07,1.585,-.15],s:[.07,.07,.06],m:'filt'},{n:'tank',b:1,c:[0,1.27,.18],s:[.2,.34,.12],m:'tank'}];o.headW=.25;o.headD=.27;o.face='mask'}
   const H=humanoid(o);H.parts.push(...extra.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
   return Object.assign(H,{key:'h_'+k,mats,decor,ppm:100})}
-function defZombie(k,host){
-  let o={},mats,decor,extra=()=>[];const vein=host?'#ff3020':null,eyeH=host?'#ff3a1a':null;
+function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant: the heavy zombie's body in different colours (scaled up by the game)
+  let o={},mats,decor,extra=()=>[];const vein=host||boss?'#ff3020':null,eyeH=host?'#ff3a1a':boss?'#ff5a20':null;
   // shared gore materials: exposed bone, intestine, tumour flesh, nails
   const goreM={bone:{base:'#d4ccae',style:'plate',gloss:243},guts:{base:'#a03a34',style:'meat'},tumor:{base:'#6a3a48',style:'tumor'},nail:{base:'#cfc4a0',style:'plate',gloss:246},flesh:{base:'#8a1c14',style:'flesh'}};
   if(k==='rager'){// 감염자 — a bitten office worker: shirt ripped open over broken ribs, soaked in blood, one eye gouged, jaw hanging loose
@@ -366,9 +366,9 @@ function defZombie(k,host){
       return L}}
   else if(k==='brute'){// 거구 — a bloated quarantine patient: belly stitched shut and burst open again, guts hanging to the knees, tumours, bone through the shoulders
     o={hipY:1.0,thigh:.45,legSep:.15,legW:.22,legD:.24,shinW:.2,torsoW:.66,torsoH:.62,torsoD:.4,belly:.08,shX:.4,armW:.19,upper:.34,fore:.34,hand:.14,headW:.22,headH:.24,headD:.25,headZ:-.06,neck:.03,arm2:1.25,footL:.3,claw:.024,curl:.6,curlJ:7,browH:.036,noseW:.2};
-    const sk='#7e6e60';
-    mats=Object.assign({top:{base:'#b8622a'},legs:{base:'#a85a28'},sleeve:{base:sk,style:'zskin',blot:'#6a3a42'},fore:{base:sk,style:'zskin',blot:'#6a3a42'},shin:{base:'#a85a28'},skin:{base:sk,style:'zskin',blot:'#6a3a42'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:'#1c1814',style:'boot'},band:{base:'#a8a088'},jaw:{base:sk,style:'zskin',blot:'#6a3a42'}},goreM,{bone:{base:'#c8c0a4',style:'plate',gloss:243}});
-    decor={torso:{front:[['text','Q7-031',.12,.88,'#2a1a10'],['flesh',.22,.06,.78,.46,0],['stitch',.18,.5,.82,.5],['stitch',.2,.05,.2,.5],['stitch',.8,.05,.8,.5],['soak',0,.55,'#4a0606',.7],['tear',2,2,sk],['grime',.6],['veins',3,'#4a2a2a']],back:[['text','Q7',.38,.72,'#2a1a10'],['rot',3],['tear',2,3,sk],['grime',.6]],side:[['rot',2],['grime',.5]]},
+    const sk=boss?'#6e5a6a':'#7e6e60';
+    mats=Object.assign({top:{base:boss?'#2e2a30':'#b8622a'},legs:{base:boss?'#2a262c':'#a85a28'},sleeve:{base:sk,style:'zskin',blot:'#6a3a42'},fore:{base:sk,style:'zskin',blot:'#6a3a42'},shin:{base:boss?'#2a262c':'#a85a28'},skin:{base:sk,style:'zskin',blot:'#6a3a42'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:'#1c1814',style:'boot'},band:{base:'#a8a088'},jaw:{base:sk,style:'zskin',blot:'#6a3a42'}},goreM,{bone:{base:'#c8c0a4',style:'plate',gloss:243}});
+    decor={torso:{front:[['text',boss?'Q7-000':'Q7-031',.12,.88,boss?'#b8a8a0':'#2a1a10'],['flesh',.22,.06,.78,.46,0],['stitch',.18,.5,.82,.5],['stitch',.2,.05,.2,.5],['stitch',.8,.05,.8,.5],['soak',0,.55,'#4a0606',.7],['tear',2,2,sk],['grime',.6],['veins',3,'#4a2a2a']],back:[['text','Q7',.38,.72,'#2a1a10'],['rot',3],['tear',2,3,sk],['grime',.6]],side:[['rot',2],['grime',.5]]},
       head:{front:[['face','brute',{skin:sk,eye:eyeH||'#ffb030',tears:1}],['rect',.1,.85,.9,1,dk(sk,.3)],['stitch',.15,.96,.6,.7]],top:[['flesh',.04,.04,.96,.96,0],['bonep',.18,.22,.82,.82]],side:[['blood',1,4],['rot',1]],bottom:[['teethrow','bottom',.34]]},
       jaw:{top:[['teethrow','top',.36]],front:[['teethrow','top',.45],['drip',.5,.5,4,.7]],bottom:[['soak',0,1,'#4a0606',.8]]},
       bone:{all:[['grime',.4],['soak',0,.35,'#5a0808',.8]]},faR:{all:[['rect',0,.3,1,.5,'#a8a088'],['flesh',.1,.55,.9,.95,1.57],['blood',1,7]]},faL:{all:[['rot',2],['gash',.2,.9,.4,.2,3,.1]]},uaR:{all:[['rot',1],['stitch',.5,.1,.5,.9]]},
@@ -397,6 +397,34 @@ function defZombie(k,host){
       for(const s of [-1,1])L.push({n:'iron',b:1,c:[s*.15,sY+o.torsoH*.6,zf-.007],s:[.04,o.torsoH*.62,.02],m:'iron'});
       for(const [x,z] of [[-.05,0],[.06,-.04],[0,.07]])L.push({n:'nail',b:2,c:[x,hc[1]+o.headH/2+.03,o.headZ+z],s:[.014,.08,.014],m:'nailM'});
       return L}}
+  else if(k==='bomber'){// 자폭체 — a swollen chemical-plant worker: overalls split over a belly packed with glowing boils that hiss and leak
+    o={hipY:.9,thigh:.42,legSep:.14,legW:.19,legD:.21,shinW:.16,torsoW:.56,torsoH:.56,torsoD:.34,belly:.16,shX:.35,armW:.14,upper:.3,fore:.28,hand:.12,headW:.25,headH:.25,headD:.26,headZ:-.04,neck:.02,claw:.018,curl:.5,curlJ:13,browH:.03,noseW:.17};
+    const sk='#9a9e6a';
+    mats=Object.assign({top:{base:'#4e5a62'},legs:{base:'#46525a'},sleeve:{base:sk,style:'zskin',blot:'#5a6a2a'},fore:{base:sk,style:'zskin',blot:'#5a6a2a'},shin:{base:'#46525a'},skin:{base:sk,style:'zskin',blot:'#5a6a2a'},hand:{base:dk(sk,.2),style:'zskin',blot:'#3a4a10'},boot:{base:'#2a2622',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#5a6a2a'},
+      boil:{base:'#a8c848',style:'tumor'}},goreM);
+    decor={torso:{front:[['band',.86,.94,'#c8a42a'],['flesh',.18,.04,.82,.5,0],['veins',6,'#c8ff50',1],['rot',2],['tear',2,13,sk],['soak',0,.45,'#4a5a10',.6],['grime',.6]],back:[['band',.86,.94,'#c8a42a'],['text','Q7-B',.3,.62,'#1a1e20'],['veins',3,'#c8ff50',1],['rot',3],['grime',.6]],side:[['rot',2],['veins',2,'#c8ff50',1],['grime',.5]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#d8ff50',tears:1}],['veins',2,'#c8ff50',1]],top:[['rot',2],['wounds',1,17]],side:[['rot',1],['veins',2,'#c8ff50',1]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.4],['drip',.5,.6,3,.7]],bottom:[['soak',0,1,'#4a5a10',.8]]},
+      uaL:{all:[['rot',1],['veins',2,'#c8ff50',1]]},uaR:{all:[['rot',1],['grime',.5]]},faL:{all:[['veins',2,'#c8ff50',1]]},faR:{all:[['rot',1]]},
+      thL:{all:[['grime',.6],['soak',.6,1,'#4a5a10',.5]]},thR:{all:[['grime',.6],['tear',1,14,sk]]},pelvis:{fb:[['belt',.75,.95,'#1a1612','#8a8a70']]},
+      boil:{all:[['veins',2,'#f0ff90',1],['glow',.3,.3,.7,.7,'#c8ff50']]}};
+    // boils: a cluster on the belly, more on the chest and back, a shoulder and the scalp
+    extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2,hc=H.headC;
+      return [[1,.06,sY+o.torsoH*.22,zf-.05,.22,.2,.14],[1,-.15,sY+o.torsoH*.36,zf-.03,.13,.12,.09],[1,.16,sY+o.torsoH*.5,zf-.02,.1,.1,.07],[1,-.06,sY+o.torsoH*.74,zf-.02,.09,.08,.06],
+        [1,-.1,sY+o.torsoH*.55,zb+.03,.17,.16,.1],[1,.14,sY+o.torsoH*.3,zb+.02,.1,.1,.07],[3,-o.shX-.03,H.piv[3][1]+.02,.02,.13,.12,.13],[2,.07,hc[1]+o.headH/2-.01,o.headZ+.03,.1,.07,.1],[2,-.11,hc[1]-.06,o.headZ-.05,.06,.06,.06]]
+        .map(([b,x,y,z,w,h,d])=>({n:'boil',b,c:[x,y,z],s:[w,h,d],m:'boil'}))}}
+  else if(k==='spitter'){// 산성체 — gaunt and stooped, the throat swollen into a glowing acid sac; the chest burnt through where it drools
+    o={hipY:.96,thigh:.45,legW:.12,legD:.13,shinW:.11,torsoW:.34,torsoH:.5,torsoD:.19,shX:.21,armW:.085,upper:.32,fore:.31,hand:.12,headW:.2,headH:.25,headD:.23,headZ:-.06,neck:.13,claw:.04,fingL:.62,curl:.35,curlJ:17,nose:false,ears:[0,0]};
+    const sk='#8c9682';
+    mats=Object.assign({top:{base:'#8a9a9e'},legs:{base:'#3a3e44'},sleeve:{base:sk,style:'zskin',blot:'#4a5a3a'},fore:{base:sk,style:'zskin',blot:'#4a5a3a'},shin:{base:sk,style:'zskin',blot:'#4a5a3a'},skin:{base:sk,style:'zskin',blot:'#4a5a3a'},hand:{base:dk(sk,.2),style:'zskin',blot:'#3a4a10'},boot:{base:dk(sk,.3),style:'zskin'},jaw:{base:sk,style:'zskin',blot:'#4a5a3a'},
+      sac:{base:'#7aa02a',style:'tumor'}},goreM);
+    decor={torso:{front:[['soak',.2,1,'#5a8a10',.85],['rot',3],['ribs',.3,.45,.7,.85,5],['tear',3,17,sk],['grime',.5]],back:[['soak',.5,1,'#4a7a10',.6],['tear',2,18,sk],['grime',.5]],side:[['rot',1],['grime',.5]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#c8ff40',cheek:1,tears:1}],['soak',0,.35,'#5a8a10',.8]],top:[['wounds',1,19],['rot',1]],side:[['rot',1]],bottom:[['teethrow','bottom',.36]]},
+      jaw:{top:[['teethrow','top',.36]],front:[['teethrow','top',.4],['soak',0,.8,'#5a8a10',.8],['drip',.5,.6,4,.9]],side:[['flesh',0,.2,1,.9,0]],bottom:[['soak',0,1,'#4a7a10',.8]]},
+      neck:{all:[['veins',3,'#c8ff40',1],['rot',1]]},uaL:{all:[['rot',1]]},uaR:{all:[['veins',2,'#4a5a3a']]},faL:{all:[['flesh',.2,.3,.8,.8,1.57]]},faR:{all:[['rot',1],['soak',.3,1,'#5a8a10',.7]]},
+      handL:{all:[['soak',0,1,'#4a7a10',.85]]},handR:{all:[['soak',0,1,'#4a7a10',.85]]},thL:{all:[['tear',2,19,sk]]},thR:{all:[['grime',.6]]},
+      sac:{all:[['veins',4,'#e8ff80',1],['glow',.3,.25,.7,.65,'#c8ff40']]}};
+    extra=H=>{const o=H.o,nY=H.piv[2][1];return [{n:'sac',b:2,c:[0,nY+.03,o.headZ-.1],s:[.2,.16,.15],m:'sac'},{n:'sac',b:2,c:[.05,nY-.05,o.headZ-.07],s:[.13,.1,.1],m:'sac'},{n:'sac',b:1,c:[-.06,nY-.12,-.12],s:[.1,.09,.07],m:'sac'}]}}
   else{// 비명체 — eyes stitched shut yet still glowing, a jaw that unhinges to the chest, ribs through a blood-soaked lab coat
     o={hipY:.92,torsoW:.38,torsoD:.2,shX:.22,armW:.09,upper:.3,fore:.29,legW:.16,legD:.15,shinW:.12,headW:.22,headH:.28,headD:.24,neck:.1,claw:.03,fingL:.62,curl:.4,curlJ:9,eyeY:.66,noseW:.12};
     const sk='#2a1a15';
@@ -420,7 +448,7 @@ function defZombie(k,host){
       {n:'dollH',b:0,c:[-.16,.98,-.12],s:[.05,.05,.05],m:'doll'}
     ];
   }
-  if(host){for(const p of Object.keys(decor))for(const fk of ['front','back','all'])if(decor[p][fk])decor[p][fk]=decor[p][fk].concat([['veins',2,vein,1]]);
+  if(host||boss){for(const p of Object.keys(decor))for(const fk of ['front','back','all'])if(decor[p][fk])decor[p][fk]=decor[p][fk].concat([['veins',2,vein,1]]);
     decor.torso.front=(decor.torso.front||[]).concat([['veins',4,vein,1]]);decor.torso.back=(decor.torso.back||[]).concat([['veins',3,vein,1]]);}
   o.zombie=1;if(k==='brute')o.eyeSep=.16;const H=humanoid(o);const ex=extra(H);
   // the lower jaw hangs from its own bone so it can gape, chatter and snap
@@ -445,7 +473,7 @@ function defZombie(k,host){
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
       stumpLL:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]},stumpLR:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]}})}
   H.parts.push(...ex.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
-  return Object.assign(H,{key:'z_'+k+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
+  return Object.assign(H,{key:'z_'+(boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
 const CHAR_ASSETS={};
 function charAsset(key){let A=CHAR_ASSETS[key];if(A)return A;
   const [t,k,h]=key.split('_');const def=t==='h'?defHuman(k):defZombie(k,h==='h');const atlas=paintSkin(def);
@@ -662,10 +690,11 @@ const ZGAIT={coffin:{stride:.92,knee:.8,runK:.65,bob:1.35,twist:1.3,roll:1.15},r
 // doll bash (third person): [shoulders forward, elbows, spine pitch, jaw, twist]
 KF.vdA=[[0,[0,0,0,0,0]],[.25,[2.1,.9,.18,.25,.1]],[.34,[2.2,.95,.2,.3,.1]],[.45,[-.5,-.3,-.38,.65,-.05]],[.62,[-.55,-.25,-.3,.5,-.05]],[1,[0,0,0,0,0]]];
 KF.vdH=[[0,[0,0,0,0,0]],[.32,[2.5,1,.25,.35,0]],[.44,[2.6,1.05,.28,.4,0]],[.55,[-.65,-.35,-.55,.9,0]],[.72,[-.7,-.3,-.45,.7,0]],[1,[0,0,0,0,0]]];
-const JAW0={coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34};
+const JAW0={coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34,bomber:.1,spitter:.3};
+Object.assign(ZGAIT,{bomber:{stride:.85,knee:.7,runK:.6,bob:1.5,wide:2.5,twist:1.2,roll:1.6},spitter:{stride:1.05,knee:1.1,runK:.9,bob:1.2,twist:1.4,sway:1.2},boss:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4}});
 function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.dead>0){poseDead(ch,st);return}
-  const t=st.t,z=st.zclass,sd=st.seed||0,cfg=ZGAIT[z]||ZGAIT.rager;const turn=st.turn>0?Math.min(1,st.turn):0;
+  const t=st.t,z=st.zclass==='boss'?'brute':st.zclass,sd=st.seed||0,cfg=ZGAIT[z]||ZGAIT.rager;const turn=st.turn>0?Math.min(1,st.turn):0;
   // the screamer lurches: its gait clock speeds up and slows down within each stride
   const st2=z==='scream'?Object.assign({},st,{phase:st.phase+.4*Math.sin(st.phase)}):st;
   const a=st.atk||0,heavy=st.heavy,side=st.atkSide>0?1:-1;
@@ -675,12 +704,14 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   ch.root.set(g.sway*sc,-g.drop*sc,rootZ*sc);
   // twitches: the head snaps sideways, a shoulder jerks; frequency differs per class
   const jH=jerk(t,sd,z==='runner'?1.1:1.7,.55),jH2=jerk(t+.3,sd+3,2.3,.45),jS=jerk(t,sd+7,2.9,.4);
-  const hunch={coffin:-.34,rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1}[z]||-.2;
+  const hunch={coffin:-.34,rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1,bomber:-.04,spitter:-.4}[z]||-.2;
   let spP=hunch-g.run*.12*(z==='runner'?1.6:1)+(st.flinch||0)*.45+(st.stun>0?.2:0),twist=0,spR=Math.sin(t*1.1+sd)*.05;
   let aL,aR,zL,zR,fL,fR;// shoulder X (forward), shoulder Z (out), elbow flex
   if(z==='runner'){aL=-.45-g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;aR=-.45+g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;zL=-.18;zR=.18;fL=fR=1.25+.2*g.run}
   else if(z==='brute'){aL=.22-g.arm*.75+Math.sin(t*1.6)*.05;aR=.28+g.arm*.75+Math.sin(t*1.8)*.05;zL=-.35;zR=.42;fL=fR=.45}
   else if(z==='scream'){aL=aR=.72+g.arm*.1;zL=.3;zR=-.3;fL=fR=.62;spR+=Math.sin(st.phase)*.08*g.amp}// both hands on the doll in front of the belly
+  else if(z==='bomber'){aL=.42+Math.sin(t*1.4+sd)*.07-g.arm*.55;aR=.46+Math.sin(t*1.6+sd)*.07+g.arm*.55;zL=-.46;zR=.46;fL=fR=.5}// arms held out round the belly
+  else if(z==='spitter'){aL=.3+Math.sin(t*1.3+sd)*.08-g.arm*.45;aR=.26+Math.sin(t*1.5+sd*2)*.08+g.arm*.45;zL=-.14;zR=.16;fL=.75;fR=.8}
   else{// rager: reaching, grasping hands that open and close
     aL=1.02+Math.sin(t*1.7+sd)*.1-g.arm*.25;aR=.95+Math.sin(t*1.9+sd*2)*.1+g.arm*.25;zL=-.1;zR=.12;fL=.3+Math.max(0,Math.sin(t*2.6+sd))*.25;fR=.25+Math.max(0,Math.sin(t*2.2+sd*3))*.3}
   if(st.frenzy){aL=-.3-g.arm;aR=-.3+g.arm;fL=fR=1.1;spP-=.25}
@@ -697,6 +728,9 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.skill>0&&z==='scream'){const k=Math.min(1,st.skill*2.5);const tr=Math.sin(t*60)*.05;aL=lerp(aL,.45,k);aR=lerp(aR,.45,k);zL=lerp(zL,-1.25+tr,k);zR=lerp(zR,1.25-tr,k);fL=fR=lerp(fL,-.1,k);spP=lerp(spP,.32,k);jaw=lerp(jaw,1.3+tr*2,k)}
   // coffin zombie: both arms drive the coffin down in front
   if(st.skill>0&&z==='coffin'){const k=Math.min(1,st.skill*2.2);aL=lerp(aL,2.3,k);aR=lerp(aR,2.3,k);zL=lerp(zL,.2,k);zR=lerp(zR,-.2,k);fL=fR=lerp(fL,.25,k);spP=lerp(spP,-.45,k);jaw=lerp(jaw,1,k)}
+  // bomber about to burst: arms thrown wide, shaking, mouth open; spitter: rears back, then lunges the acid out
+  if(st.skill>0&&z==='bomber'){const k=Math.min(1,st.skill*3),tr=Math.sin(t*50)*.08;aL=lerp(aL,1.2+tr,k);aR=lerp(aR,1.2-tr,k);zL=lerp(zL,-1.1,k);zR=lerp(zR,1.1,k);fL=fR=lerp(fL,.25,k);spP=lerp(spP,.3,k);jaw=lerp(jaw,1.35,k)}
+  if(st.skill>0&&z==='spitter'){const p=1-Math.min(1,st.skill/.55);spP+=kf1([[0,0],[.3,.4],[.5,-.55],[.8,-.4],[1,0]],p);jaw=Math.max(jaw,kf1([[0,.3],[.3,.7],[.45,1.45],[.8,1.2],[1,.3]],p))}
   if(st.skill>0&&z==='brute'){const k=Math.min(1,st.skill*2);aL=lerp(aL,1.45,k);aR=lerp(aR,1.45,k);zL=lerp(zL,.45,k);zR=lerp(zR,-.45,k);fL=fR=lerp(fL,1.6,k);spP=lerp(spP,-.32,k);jaw=lerp(jaw,.7,k)}
   if(turn>0){const j=Math.sin(t*31)*.5+Math.sin(t*17)*.5;aL=.3+j*.8*turn;aR=.4-j*.7*turn;zL=-.9*turn;zR=.9*turn;fL=fR=1.2*turn;spP=-.55*turn+Math.sin(t*23)*.25*turn;twist=Math.sin(t*13)*.4*turn;jaw=.4+Math.abs(Math.sin(t*11))*.8*turn}
   setE(R[0],0,g.twist,g.roll);setE(R[1],spP,-g.twist*1.2+twist,-g.roll*.7+spR-(st.flinchX||0)*.25);

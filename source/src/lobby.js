@@ -31,7 +31,7 @@ const thumb=(id,cls)=>`<div class="mthw ${cls||''}"><div class="mtph">${esc(mapN
 UI.lobTab=UI.lobTab||0;
 UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.includes(CFG.skin)?CFG.skin:'guard';
   const cards=[
-    {act:'go',cls:'c0',t:L?'QUICK START':'빠른 시작',s:L?'Last room settings, straight in':'지난 방 설정 그대로 바로 출격',tag:`${mapName(CFG.map)} · ${T('d'+CFG.diff)}`,
+    {act:'go',cls:'c0',t:L?'QUICK START':'빠른 시작',s:L?'Last room settings, straight in':'지난 방 설정 그대로 바로 출격',tag:`${T(CFG.mode==='scen'?'scen':CFG.mode==='mut'?'mut':'orig')} · ${mapName(CFG.map)} · ${T('d'+CFG.diff)}`,
       art:`<img class="a1" src="${portrait('h_'+skin,150)}"><img class="a2" src="${portrait('z_'+CFG.zclass,CFG.zclass==='brute'?120:140)}">`},
     {act:'start',cls:'c1',t:L?'CREATE ROOM':'방 만들기',s:L?'Pick the map, bots and difficulty':'맵 · 봇 · 난이도를 직접 설정',tag:L?'Bot match':'봇전',
       art:`<img class="a1" src="${portrait('z_brute',128)}"><img class="a3" src="${portrait('z_runner',96)}">`},
@@ -39,39 +39,38 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       art:`<img class="a1" src="${portrait('h_'+(HSKINS[1]||skin),140)}"><img class="a3" src="${portrait('h_'+(HSKINS[2]||skin),110)}">`},
     {act:'help',cls:'c3',t:L?'TRAINING':'조작법 · 훈련',s:L?'Keys, quick switch, draw cuts':'키 설정 · 챈샷 · 칼 챈샷',tag:L?'Guide':'가이드',
       art:`<img class="gun g1" src="${gunIcon('sr8',40)}"><img class="gun g2" src="${gunIcon('hammer',58)}"><img class="gun g3" src="${gunIcon('knife',30)}">`}];
-  const news=L?[['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
-    :[['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
+  const news=L?[['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
+    :[['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
       <div class="tbtns"><button data-act="opts">${ICO.gear}<span>${T('settings')}</span></button><button data-act="help">${ICO.keys}<span>${T('controls')}</span></button>${typeof TOUCH!=='undefined'&&TOUCH.on&&document.documentElement.requestFullscreen?`<button data-act="tfull">⛶<span>${L?'Full':'전체화면'}</span></button>`:''}<button data-act="lang">${ICO.globe}<span>${L?'한국어':'English'}</span></button></div></div>
     <div class="mcards">${cards.map(c=>`<div class="mc ${c.cls}" data-act="${c.act}"><div class="art">${c.art}</div><div class="mtag">${esc(c.tag)}</div><div class="mbar"><b>${c.t}</b><span>${c.s}</span></div></div>`).join('')}</div>
     <div class="lobBot">
-      <div class="lp"><div class="lpt"><b class="on">${L?'NOTICE':'공지사항'}</b></div><ul class="news">${news.map(([k,t])=>`<li><em class="${k==='NEW'?'n':'u'}">${k}</em>${t}</li>`).join('')}</ul></div>
+      <div class="lp"><div class="lpt"><b class="on">${L?'NOTICE':'공지사항'}</b></div><ul class="news">${news.slice(0,5).map(([k,t])=>`<li><em class="${k==='NEW'?'n':'u'}">${k}</em>${t}</li>`).join('')}</ul></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MY RECORD':'내 전적'}</b></div>
         <div class="recs"><div><span>${L?'Matches':'플레이'}</span><b>${r.g}</b></div><div><span>${T('kills')}</span><b>${r.k}</b></div><div><span>${T('infects')}</span><b>${r.inf}</b></div><div><span>${L?'Best score':'최고 점수'}</span><b>${r.best}</b></div></div>
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v5.3 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v5.8 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
-const OPT={mode:()=>[['mut',T('mut')],['orig',T('orig')]],map:()=>MAPLIST().map(id=>[id,mapName(id)]),rounds:()=>[[5,5],[7,7],[9,9]],time:()=>[[120,'2'+T('min')],[180,'3'+T('min')],[240,'4'+T('min')]],diff:()=>[0,1,2,3].map(i=>[i,T('d'+i)])};
-function roomPreview(c){const L=LI();return `<div class="rprev">${thumb(c.map,'big')}<div class="rpi"><b>${esc(mapName(c.map))}</b><span>${c.mode==='mut'?T('mut'):T('orig')}</span></div></div>
-  <p class="rdesc">${(MAPDEFS[c.map]||MAPDEFS.q7).d[L]}</p><div class="rrule"><b>${L?'Rules':'규칙'}</b>${c.mode==='mut'?T('mutD'):T('origD')}</div>`}
+const OPT={mode:()=>[['mut',T('mut')],['orig',T('orig')],['scen',T('scen')]],map:()=>MAPLIST().map(id=>[id,mapName(id)]),rounds:()=>[[5,5],[7,7],[9,9]],time:()=>[[120,'2'+T('min')],[180,'3'+T('min')],[240,'4'+T('min')]],diff:()=>[0,1,2,3].map(i=>[i,T('d'+i)])};
+function roomPreview(c){const L=LI();return `<div class="rprev">${thumb(c.map,'big')}<div class="rpi"><b>${esc(mapName(c.map))}</b><span>${T(c.mode==='scen'?'scen':c.mode==='mut'?'mut':'orig')}</span></div></div>
+  <p class="rdesc">${(MAPDEFS[c.map]||MAPDEFS.q7).d[L]}</p><div class="rrule"><b>${L?'Rules':'규칙'}</b>${T(c.mode==='scen'?'scenD':c.mode==='mut'?'mutD':'origD')}</div>`}
 function charPick(act){const L=LI();return `<div class="rsec"><div class="rst">${T('char')}</div><div class="cards">${HSKINS.map(k=>`<div class="card${CFG.skin===k?' on':''}" data-act="${act}" data-v="skin:${k}"><img src="${portrait('h_'+k,62)}"><span>${HSKIN_N[k][L]}</span></div>`).join('')}</div></div>
-  <div class="rsec"><div class="rst">${T('zcls')}<small>${ZCLASS[CFG.zclass].d[L]}</small></div><div class="cards">${ZLIST.map(k=>`<div class="card z${CFG.zclass===k?' on':''}" data-act="${act}" data-v="zclass:${k}"><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${ZCLASS[k].n[L]}</span></div>`).join('')}</div></div>`}
+  ${(act==='set'?CFG.mode:NET.lob&&NET.lob.cfg.mode)==='scen'?'':`<div class="rsec"><div class="rst">${T('zcls')}<small>${ZCLASS[CFG.zclass].d[L]}</small></div><div class="cards">${ZLIST.map(k=>`<div class="card z${CFG.zclass===k?' on':''}" data-act="${act}" data-v="zclass:${k}"><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${ZCLASS[k].n[L]}</span></div>`).join('')}</div></div>`}`}
 UI.buildSetup=function(){const L=LI();const row=(l,ctl)=>`<div class="fr"><label>${l}</label>${ctl}</div>`;
   $('setup').innerHTML=`<div class="win room"><div class="dpHead"><b>${L?'Create Room':'방 만들기'}</b><span>${L?'Bot match':'봇전'} · ${esc(myName())}</span><button class="x" data-act="back">✕</button></div>
     <div class="wbody"><div class="rform">
       ${row(L?'Room title':'방 제목',`<input id="roomT" class="tin" maxlength="24" value="${esc(CFG.room||(L?myName()+"'s room":myName()+'의 방'))}" autocomplete="off" spellcheck="false">`)}
       ${row(T('mode'),dd('set','mode',CFG.mode,OPT.mode()))}
       ${row(T('map'),dd('set','map',CFG.map,OPT.map()))}
-      ${row(T('bots'),dd('set','bots',CFG.bots,[[7,7],[11,11],[15,15],[19,19]].map(([v])=>[v,v+(L?' bots':'명')])))}
+      ${CFG.mode==='scen'?row(T('allies'),dd('set','scBots',CFG.scBots??3,[0,1,3,5,7].map(v=>[v,v+(L?' allies':'명')]))):row(T('bots'),dd('set','bots',CFG.bots,[[7,7],[11,11],[15,15],[19,19]].map(([v])=>[v,v+(L?' bots':'명')])))}
       ${row(T('diff'),`<button class="diffBtn d${CFG.diff}" data-act="diffopen"><span class="sk">${skulls(CFG.diff+1)}</span><b>${T('d'+CFG.diff)}</b><i>▸</i></button>`)}
-      ${row(T('rounds'),dd('set','rounds',CFG.rounds,OPT.rounds().map(([v])=>[v,v+(L?' rounds':'라운드')])))}
-      ${row(T('rtime'),dd('set','time',CFG.time,OPT.time()))}
+      ${CFG.mode==='scen'?row(L?'Stages':'스테이지',`<span class="fixv">${L?'5 stages × 3 waves · 3 lives':'5스테이지 × 3웨이브 · 목숨 3개'}</span>`):row(T('rounds'),dd('set','rounds',CFG.rounds,OPT.rounds().map(([v])=>[v,v+(L?' rounds':'라운드')])))+row(T('rtime'),dd('set','time',CFG.time,OPT.time()))}
     </div><div class="rside">${roomPreview(CFG)}</div></div>
     <div class="wchars">${charPick('set')}</div>
     <div class="dpFoot"><button data-act="back">${T('cancel')}</button><button class="ok" data-act="go">${ICO.play} ${L?'Start game':'게임 시작'}</button></div></div>`;
@@ -83,7 +82,7 @@ UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.
   $('lobby').innerHTML=`<div class="win room"><div class="dpHead"><b>${L?'Waiting Room':'게임 대기실'}</b><span>${L?'Room code':'방 코드'} <span class="mpcode">${esc(NET.code)}</span> <button class="mini" data-act="mpcopy">${T('mpCopy')}</button> · ${T('mpShare')}</span><button class="x" data-act="mpleave">✕</button></div>
     <div class="wbody"><div class="slots">${slots.map((p,i)=>p?`<div class="slot pl${p.k===NET.me?' me':''}"><span class="no">${i+1}</span><img src="${portrait('h_'+(HSKINS.includes(p.s)?p.s:'guard'),40)}"><div><b>${esc(p.n||'?')}</b>${p.k===NET.me?`<small>(${T('mpMe')})</small>`:''}<em>${i===0?'':(p.r?T('mpRelay')+' · ':'')+(p.p||0)+'ms'}</em></div>${i===0?`<span class="ht">${T('mpHost')}</span>`:'<span class="rd">READY</span>'}</div>`
         :`<div class="slot empty"><span class="no">${i+1}</span><div>${L?'Open':'빈 자리'}</div></div>`).join('')}<div class="sprev">${roomPreview(c)}</div></div>
-      <div class="rside"><div class="rform">${row(T('mode'),'mode',OPT.mode())}${row(T('map'),'map',OPT.map())}${row(T('mpBots'),'bots',[[0,0],[4,4],[8,8],[12,12]])}${row(T('diff'),'diff',OPT.diff())}${row(T('rounds'),'rounds',OPT.rounds())}${row(T('rtime'),'time',OPT.time())}</div>
+      <div class="rside"><div class="rform">${row(T('mode'),'mode',OPT.mode())}${row(T('map'),'map',OPT.map())}${row(c.mode==='scen'?T('allies'):T('mpBots'),'bots',c.mode==='scen'?[[0,0],[1,1],[3,3],[5,5],[7,7]]:[[0,0],[4,4],[8,8],[12,12]])}${row(T('diff'),'diff',OPT.diff())}${c.mode==='scen'?'':row(T('rounds'),'rounds',OPT.rounds())+row(T('rtime'),'time',OPT.time())}</div>
         ${H?'':`<p class="hint">${T('mpOnlyHost')}</p>`}</div></div>
     <div class="wchars">${charPick('mpme')}</div>
     <div class="dpFoot"><span class="conn">${NET.kind==='room'?(conn&&conn.kind==='relay'?T('mpRelay')+(NET.relayWhy?' ('+relayWhyT(NET.relayWhy)+')':''):T('mpDirect'))+' · claude.ai':'PeerJS · '+T('mpDirect')} · ${lb.pl.length}/${NET_MAXP}</span><button data-act="mpleave">${T('mpLeave')}</button>${H?`<button class="ok" data-act="mpstart">${ICO.play} ${T('mpStart')}</button>`:`<span class="mpwait">${T('mpWait')}</span>`}</div></div>`;
@@ -95,6 +94,7 @@ UI.mpRender=function(){if(UI.open==='mp'){const m=$('mpMsg');if(m)m.textContent=
 // ---------- actions ----------
 (function(){const act0=UI.act.bind(UI),show0=UI.show.bind(UI),res0=UI.showResults.bind(UI);
   UI.act=function(a,v,el){
+    if(a==='mpset'&&v==='mode:scen'&&NET.host&&NET.lob)NET.lob.cfg.bots=3;
     if(a==='lobmap'){CFG.map=v;saveCfg();loadMapUI(v).then(()=>{if(UI.open==='menu')UI.buildTitle()});UI.buildTitle();return}
     if(a==='set'&&v&&v.startsWith('map:')){const id=v.slice(4);CFG.map=id;saveCfg();UI.buildSetup();loadMapUI(id).then(()=>{if(UI.open==='setup')UI.buildSetup()});return}
     return act0(a,v,el)};

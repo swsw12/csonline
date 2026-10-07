@@ -56,7 +56,7 @@ const AI={
     if(B.think<=0){B.think=.12+Math.random()*.05;const e=actorEye(a);let best=null,bd=1e9;
       for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>48)continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;
         const ang=Math.abs(wrapA(Math.atan2(-(z.c.x-c.x),-(z.c.z-c.z))-a.yaw));if(ang>1.5&&d>6&&!(B.seen&&B.seen.a===z))continue;
-        if(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z))continue;const sc=d*(ang>1.5?1.5:1);if(sc<bd){bd=sc;best=z}}
+        if(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+(z.zc==='boss'?2.8:1.2),z.c.z))continue;const sc=d*(ang>1.5?1.5:1);if(sc<bd){bd=sc;best=z}}
       if(best){if(!B.seen||B.seen.a!==best){B.seen={a:best,t:G.t};B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<4?.35:1)}}else if(B.seen&&G.t-B.seen.t>.8)B.seen=null;else if(B.seen&&!B.seen.a.alive)B.seen=null}
     const tgt=B.seen&&B.seen.a.alive?B.seen.a:null;
     // where to stand
@@ -81,7 +81,7 @@ const AI={
       {const am=a.ammo[a.cur];const prim=a.cur===a.inv[1];const side=a.inv[2]&&a.ammo[a.inv[2]];
         if(am&&W&&W.mag&&prim&&am.mag===0&&tdist<10&&side&&side.mag>0&&a.drawT<=0)equip(a,a.inv[2]);
         else if(am&&W&&W.mag&&am.mag<=Math.max(1,W.mag*.25)&&am.res>0&&tdist>13&&!zNear.length&&a.reloadT<=0)cmd.reload=true;
-        if(a.reloadT>0&&a.relKind==='shell'&&am&&am.mag>0&&tdist<7){a.reloadT=0;a.relKind=null}}const tx=tgt.c.x,tz=tgt.c.z,ty=hs?tgt.head.y:tgt.c.y+tgt.c.h*.55;
+        if(a.reloadT>0&&a.relKind==='shell'&&am&&am.mag>0&&tdist<7){a.reloadT=0;a.relKind=null}}const tx=tgt.c.x,tz=tgt.c.z,ty=hs?tgt.head.y:tgt.c.y+(tgt.zc==='boss'?2.6:tgt.c.h*.55);
       B.aimX=lerp(B.aimX,rr(-1,1)*D.err,dt*3);B.aimY=lerp(B.aimY,rr(-1,1)*D.err,dt*3);
       const yaw=Math.atan2(-(tx-e.x),-(tz-e.z))+B.aimX,dist=Math.hypot(tx-e.x,tz-e.z),pitch=Math.atan2(ty-e.y,dist)+B.aimY;
       this.turnTo(a,yaw,pitch,dt,D.turn*(dist<4?1.8:1));B.react-=dt;

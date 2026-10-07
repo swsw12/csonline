@@ -10,9 +10,9 @@ const NET={on:false,host:false,cli:false,ghost:0,ev:0,kind:null,api:null,code:''
   lob:{cfg:{mode:'mut',bots:8,diff:1,rounds:7,time:180},pl:[]},k:0,lastK:0,tAcc:0,msg:'',hostTs:0,hostRx:0,netT:0};
 const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
-const ST_L=['menu','prep','fight','end','over'],ZI={rager:0,runner:1,brute:2,scream:3,coffin:4};
+const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-r4'}// r3: Italy rebuilt on two levels (map geometry must match between peers)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-r5'}// r3: Italy rebuilt on two levels (map geometry must match between peers)
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
@@ -220,8 +220,9 @@ NET.frameEnd=function(dt){
 function netSafe(f){try{f()}catch(e){console.error(e)}}
 
 // ---------- the host's tick ----------
-function netHostTick(){NET.k++;const o={k:NET.k,ts:Math.round(netNow()),g:[ST_L.indexOf(G.st),Math.round(G.time*10),G.round,G.score[0],G.score[1],G.moraleLvl,G.hostN],A:G.actors.map(netEncA),f:NET.fx};
-  if(NET.k%10===0)o.S=G.actors.map(a=>[a.id,a.kills,a.infects,a.deaths,Math.round(a.score),Math.round(a.dmgDealt),Math.round(a.dmgRound||0),a.net&&NET.links.get(a.net)?Math.round(NET.links.get(a.net).rtt):-1]);
+function netHostTick(){NET.k++;const o={k:NET.k,ts:Math.round(netNow()),g:[ST_L.indexOf(G.st),Math.round(G.time*10),G.round,G.score[0],G.score[1],G.moraleLvl,G.hostN],A:(G.mode==='scen'?SCEN.H:G.actors).map(netEncA),f:NET.fx};
+  if(NET.k%10===0)o.S=(G.mode==='scen'?SCEN.H:G.actors).map(a=>[a.id,a.kills,a.infects,a.deaths,Math.round(a.score),Math.round(a.dmgDealt),Math.round(a.dmgRound||0),a.net&&NET.links.get(a.net)?Math.round(NET.links.get(a.net).rtt):-1]);
+  if(G.mode==='scen'&&SCEN.on){o.Z=SCEN.encZ(NET.k);o.sc=SCEN.encState()}
   const s=JSON.stringify(o);NET.fx=[];for(const L of NET.links.values())if(L.ok&&L.inGame)L.send(s,false);if(NET.kind==='room')RSIG.flush()}
 function netCliTick(){NET.k++;const P=G.player;const o={k:NET.k,ts:Math.round(netNow()),f:NET.fx};if(NET.hostTs)o.e=[NET.hostTs,Math.round(netNow()-NET.hostRx)];if(P)o.s=netEncSelf(P);NET.fx=[];
   const L=NET.links.get(NET.hostKey);if(L&&L.ok)L.send(JSON.stringify(o),false);if(NET.kind==='room')RSIG.flush()}
@@ -245,7 +246,8 @@ function netOnSnap(L,m){if(m.t||!(m.k>NET.lastK))return;NET.lastK=m.k;const now=
     netSample(a,m.ts,e[1]/100,e[2]/100,e[3]/100,e[4]/100,e[5]/100,e[6]/1000,e[7]/1000,F,e[9]);a.nsrc='h';if(!same)continue;
     a.hp=e[10];a.armor=e[11];a.maxHp=e[12];a.lvl=e[13];a.skillT=e[15]/10;a.frozen=e[16]/10;a.rootT=e[17]/10;a.money=e[18];a.skillCD=e[19]/10;a.host=!!(F&16);
     a.permaDead=!!(F&2048);a.burnT=F&8192?Math.max(a.burnT||0,.3):0;
-    if(a.team===TZ){const zc=ZLIST[e[14]]||a.zc;if(zc!==a.zc){a.zc=zc;setHull(a);ensureRig(a)}}}
+    if(a.team===TZ){const zc=ZALL[e[14]]||a.zc;if(zc!==a.zc){a.zc=zc;setHull(a);ensureRig(a)}}}
+  if(G.mode==='scen'){if(m.Z)SCEN.decZ(m.Z,m.ts);if(m.sc)SCEN.decState(m.sc)}
   if(m.S)for(const s of m.S){const a=byId(s[0]);if(!a)continue;a.kills=s[1];a.infects=s[2];a.deaths=s[3];a.score=s[4];a.dmgDealt=s[5];a.dmgRound=s[6];a.ping=s[7]}
   for(const f of netFxList(L,m)){if(!Array.isArray(f))continue;const a=byId(f[1]);if(a&&a!==P)netQueueFx(a,f)}}
 function netFxList(L,m){if(Array.isArray(m.f))return m.f;if(!Array.isArray(m.fw))return [];const out=[];let hi=L.fxK||0;
@@ -322,7 +324,7 @@ function netApplyEff(a,e,src){if(!a||!a.alive)return;
 // a hit this page saw on someone it does not own: shown at once, judged by the host
 function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||t.team===TH)return 0;
   NET.hits.push([t.id,Math.round(dmg),WI[o.w]??-1,(o.hs?1:0)|(o.knife?2:0)|(o.heavy?4:0)|(o.he?8:0)|(o.blunt?16:0),o.dir?r2(o.dir[0]):0,o.dir?r2(o.dir[1]):0,o.dir?r2(o.dir[2]):0,r1(o.kb),r2(o.stag),r2(o.x),r2(o.y),r2(o.z),r1(o.up)]);
-  const d=dmg*(1+.1*G.moraleLvl),ab=Math.min(Math.max(0,t.armor),d*.5),dealt=Math.max(0,Math.min(d-ab,Math.max(0,t.hp))+ab);
+  const d=dmg*(1+.1*G.moraleLvl)*(src.wup&&src.wup[o.w]?1+.1*src.wup[o.w]:1),ab=Math.min(Math.max(0,t.armor),d*.5),dealt=Math.max(0,Math.min(d-ab,Math.max(0,t.hp))+ab);
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
   HUD.dmgNum(t,dealt,!!o.hs,false);if(Math.random()<.18&&!AU.throttle('zp'+t.id,500))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
 
@@ -393,7 +395,8 @@ NET.leave=function(){if(!NET.on)return;netAll({t:'bye'});netFlushR();if(NET.kind
   NET.on=NET.host=NET.cli=false;NET.ui='';NET.out.clear();NET.inQ=[];NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.hostKey=''};
 function netFatal(msg){console.warn('net: end',msg);const wasGame=NET.ui==='game';NET.leave();NET.msg=msg;if(wasGame||G.st!=='menu'){Main.toTitle();UI.act('mp')}else UI.act('mp');setTimeout(()=>{NET.msg=msg;UI.mpRender&&UI.mpRender()},30)}
 NET.start=function(){if(!NET.host||NET.ui!=='lobby')return;const cfg=Object.assign({},NET.lob.cfg);CFG.mpCfg=cfg;saveCfg();
-  const ro=[];let id=0;for(const p of NET.lob.pl)ro.push([id++,p.n,p.s,p.z,p.k]);const names=shuffle(BOT_NAMES.slice());for(let i=0;i<cfg.bots;i++)ro.push([id++,names[i%names.length],rpick(HSKINS),rpick(ZLIST),'']);
+  const ro=[];let id=0;for(const p of NET.lob.pl)ro.push([id++,p.n,p.s,p.z,p.k]);const names=shuffle(BOT_NAMES.slice());const nb=cfg.mode==='scen'?Math.max(0,Math.min(cfg.bots|0,NET_MAXP-NET.lob.pl.length)):cfg.bots;for(let i=0;i<nb;i++)ro.push([id++,names[i%names.length],rpick(HSKINS),rpick(ZLIST),'']);
+  if(cfg.mode==='scen')for(let i=0;i<=SCEN.POOL;i++)ro.push([id++,'Z','guard','rager','',1]);
   for(const L of NET.links.values())L.inGame=NET.lob.pl.some(p=>p.k===L.key);
   netEv('start',{cfg,ro});netBegin(cfg,ro)};
 // every page builds the same actors from the host's roster

@@ -11,6 +11,12 @@ const ZCLASS={
   scream:{n:['부두 좀비','Voodoo Zombie'],sk:['치유','Heal'],d:['지원형 · 스킬 G: 치유 (자신 25%, 주변 좀비 20% 회복)','Support · Skill G: Heal (25% to itself, 20% to nearby zombies)'],hp:2000,armor:100,speed:5.5,jump:7.3,kb:1.1,dmg:48,skill:'heal',cd:12,dur:1.2,hw:.29,h:1.85,eye:1.68},
 };
 const ZLIST=['rager','runner','brute','scream','coffin'];
+// scenario-only zombies (never picked by players). ZALL lists every class; its order is also the network index.
+Object.assign(ZCLASS,{
+  bomber:{n:['자폭 좀비','Bomber'],sk:['자폭','Self-destruct'],d:['시나리오 전용 · 가까이 오면 부풀어 터진다 (범위 피해)','Scenario only · swells up and bursts next to you (area damage)'],hp:1300,armor:0,speed:5.9,jump:7,kb:1.4,dmg:30,skill:'none',cd:99,dur:0,hw:.36,h:1.8,eye:1.62},
+  spitter:{n:['산성 좀비','Spitter'],sk:['산성 침','Acid spit'],d:['시나리오 전용 · 거리를 두고 산성 침을 뱉는다','Scenario only · keeps its distance and spits acid'],hp:1500,armor:40,speed:5.3,jump:7.4,kb:1.2,dmg:26,skill:'none',cd:99,dur:0,hw:.28,h:1.9,eye:1.74},
+  boss:{n:['거대 좀비','The Giant'],sk:['강타','Slam'],d:['시나리오 보스','Scenario boss'],hp:30000,armor:0,speed:4.7,jump:8,kb:.06,dmg:85,skill:'none',cd:99,dur:0,hw:.45,h:2.3,eye:2.15}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss'],BOSS_S=2.2;
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};
@@ -133,7 +139,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   U.uEmisA.value=a.team===TZ?(a.lvl>=3?1.6:a.lvl>=2?1.25:1):1;
   ensureGun(a);if(a.gun){a.gun.visible=!!ch.gunOn;if(ch.gunOn){a.gun.matrix.multiplyMatrices(ch.M[1],ch.gunM);a.gun.material.uniforms.uProbe.value.copy(U.uProbe.value)}}
   if(a.gun2){a.gun2.visible=!!ch.gunOn2;if(ch.gunOn2)a.gun2.matrix.multiplyMatrices(ch.M[1],ch.gunM2)}
-  charHead(ch,a.head);a.headR=a.zc==='brute'&&a.team===TZ?.16:.14;
+  charHead(ch,a.head);a.headR=a.team===TZ?(a.zc==='brute'?.16:a.zc==='boss'?.16*BOSS_S:.14):.14;
   // flashlight beam for human bots
   if(a.team===TH&&a.alive&&!a.isPlayer&&a.flash&&a.gun&&a.gun.visible){if(!a.beam){a.beam=mkBeam();a.gun.add(a.beam)}a.beam.visible=true}else if(a.beam)a.beam.visible=false}
 let BEAM_GEO=null,BEAM_MAT=null;
@@ -144,7 +150,7 @@ function mkBeam(){if(!BEAM_GEO){BEAM_GEO=new THREE.ConeGeometry(1.5,9,10,1,true)
   const m=new THREE.Mesh(BEAM_GEO,BEAM_MAT);m.position.set(0,.06,-.3);m.renderOrder=7;return m}
 // ---------- movement ----------
 function maxSpeed(a){if(a.frozen>0)return 0;let s;
-  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.5;if(a.duck)s*=.45}
+  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1)*(a.spdMul||1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.5;if(a.duck)s*=.45}
   else{const W=WPN[a.cur];s=5.15*(W?W.speed:1);if(W&&W.stance&&a.hamB)s*=W.stanceSpd;if(a.zoom>0)s*=.6;if(a.duck)s*=.36;else if(a.cmd.walk)s*=.52;if(a.shriekT>0)s*=.6}
   return s}
 function jumpV(a){if(a.team===TZ)return ZCLASS[a.zc].jump;return 6.3}
@@ -280,7 +286,7 @@ function zombiesAlive(){let n=0;for(const a of G.actors)if(a.team===TZ&&(a.alive
 function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==='end'||G.st==='over'?0:netClaimHit(t,dmg,src,o);if(!t.alive||G.st==='end'||G.st==='over')return;
   if(t.team===TH){return}
   if(t.reviving>0)return;
-  if(src&&src.team===TH)dmg*=1+.1*G.moraleLvl;
+  if(src&&src.team===TH)dmg*=1+.1*G.moraleLvl;if(src&&src.wup&&o.w&&src.wup[o.w])dmg*=1+.1*src.wup[o.w];
   if(t.skillT>0&&t.zc==='brute')dmg*=.4;
   const hp0=t.hp,ar0=t.armor;
   if(t.armor>0){const ab=Math.min(t.armor,dmg*.5);t.armor-=ab;dmg-=ab}
@@ -358,12 +364,14 @@ function onPlayerDeath(src){G.deathCam=3;G.killer=src||null;if(G.player)G.player
 function startMatch(cfg){G.cfg=cfg;G.mode=cfg.mode;G.rounds=cfg.rounds;G.roundTime=cfg.time;G.prepTime=20;G.diff=cfg.diff;G.round=0;G.score=[0,0];G.t=0;
   for(const a of G.actors){if(a.ch)R.scene.remove(a.ch.grp)}G.actors=[];ACTOR_ID=0;
   if(cfg.ro){G.player=null;for(const r of cfg.ro){const me=!!r[4]&&r[4]===NET.me;const a=mkActor(r[1],me,r[2]);a.id=r[0];a.zpick=me?(CFG.zclass||r[3]):r[3];a.net=r[4]||null;
-      a.pup=NET.host?(!!r[4]&&!me):!me;if(!a.pup&&!r[4])a.bot=AI.mk(a);if(me)G.player=a;G.actors.push(a)}ACTOR_ID=cfg.ro.length}
+      a.pup=NET.host?(!!r[4]&&!me):!me;if(r[5])a.scen=true;if(!a.pup&&!r[4])a.bot=AI.mk(a);if(me)G.player=a;G.actors.push(a)}ACTOR_ID=cfg.ro.length}
   else{const P=mkActor(cfg.name||T('you'),true,cfg.skin||'guard');P.zpick=cfg.zclass||'rager';G.player=P;G.actors.push(P);
-    const names=shuffle(BOT_NAMES.slice());for(let i=0;i<cfg.bots;i++){const b=mkActor(names[i%names.length],false,rpick(HSKINS));b.zpick=rpick(ZLIST);b.bot=AI.mk(b);G.actors.push(b)}}
-  for(const a of G.actors){a.money=cfg.money||4000;a.survived=false}
+    const names=shuffle(BOT_NAMES.slice()),nb=cfg.mode==='scen'?Math.min(7,cfg.bots|0):cfg.bots;for(let i=0;i<nb;i++){const b=mkActor(names[i%names.length],false,rpick(HSKINS));b.zpick=rpick(ZLIST);b.bot=AI.mk(b);G.actors.push(b)}
+    if(cfg.mode==='scen')for(let i=0;i<=SCEN.POOL;i++){const z=mkActor('Z',false,'guard');z.scen=true;z.bot=AI.mk(z);G.actors.push(z)}}
+  for(const a of G.actors){a.money=a.scen?0:(cfg.money||4000);a.survived=false}
+  if(cfg.mode==='scen'){const pl=G.actors.filter(a=>a.scen);if(pl.length)pl[pl.length-1].boss=true;SCEN.initPool()}else SCEN.on=false;
   if(NET.cli){G.st='prep';G.time=G.prepTime;return}
-  startRound()}
+  if(cfg.mode==='scen')SCEN.begin();else startRound()}
 function startRound(plan){if(NET.cli&&!plan)return;G.round=plan?plan.n:G.round+1;G.st='prep';FX.clearLimbs();G.time=G.prepTime;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=11;G.hostN=0;
   clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
   const sp=shuffle(MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
@@ -387,7 +395,8 @@ function endRound(win){if(NET.cli&&!NET.ev)return;if(G.st!=='fight'&&G.st!=='pre
   HUD.announce(win===TH?T('winH'):T('winZ'),win===TH?'h':'z',5);AU.play(win===TH?'stingH':'stingZ',{vol:.7});AU.muSet&&AU.muSet(win===TH?'win':'dead');if(NET.host)netEv('end',{w:win,sc:G.score.slice()})}
 function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors)updateVisual(a,dt);return}
   G.t+=dt;
-  if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=10){AU.play(s<=3?'beep2':'beep',{vol:.5});HUD.countdown(s)}}
+  if(G.mode==='scen')SCEN.update(dt);// the scenario runs its own stage / wave flow
+  else if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=10){AU.play(s<=3?'beep2':'beep',{vol:.5});HUD.countdown(s)}}
     if(G.time<=0){if(NET.cli)G.time=0;else{selectHosts();G.st='fight';G.time=G.roundTime}}}
   else if(G.st==='fight'){G.time-=dt;const h=humansAlive();
     if(!NET.cli){if(h===0)endRound(TZ);else if(G.time<=0)endRound(TH);else if(G.mode==='mut'&&zombiesAlive()===0)endRound(TH)}
