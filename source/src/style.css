@@ -470,3 +470,8 @@ html.touch .scUp button{min-height:44px}
 /* range sliders: the whole bar height is the touch target */
 html.touch .rng{height:30px;margin:4px 0 2px;border:none;background:linear-gradient(#0e0f12,#0e0f12) center/100% 6px no-repeat;box-shadow:none}
 html.touch .rng::-webkit-slider-thumb{margin-top:0}
+
+/* fullscreen: options row + toast when the page may not go fullscreen */
+.fsrow{display:flex;align-items:center;gap:10px;margin:10px 0 2px}.fsrow button{min-width:120px}.fsrow span{opacity:.7;font-size:12px}
+#fsToast{position:fixed;left:50%;top:18px;transform:translate(-50%,-12px);background:rgba(10,12,16,.92);color:#fff;border:1px solid rgba(255,255,255,.18);padding:9px 14px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:90vw;text-align:center}
+#fsToast.on{opacity:1;transform:translate(-50%,0)}

@@ -20,11 +20,30 @@ function miniIcon(k){if(MINI[k])return MINI[k];const [cv,x]=mkCanvas(k==='claw'?
   return MINI[k]=cv.toDataURL()}
 function weaponIcon(w,h){if(w==='claw')return miniIcon('claw');if(w==='fall')return miniIcon('fall');const W=WPN[w];if(W&&W.model)return gunIcon(W.model,h||16);return miniIcon('skull')}
 const _dn=new THREE.Vector3();
+// ---------- fullscreen (lobby/pause/options buttons, Alt+Enter) ----------
+const FS={
+  el(){return document.fullscreenElement||document.webkitFullscreenElement||null},
+  ok(){const d=document.documentElement;return !!(d.requestFullscreen||d.webkitRequestFullscreen)},
+  on(){return !!this.el()},
+  toggle(){const d=document.documentElement;try{
+      if(this.on()){(document.exitFullscreen||document.webkitExitFullscreen).call(document);return}
+      if(document.fullscreenEnabled===false&&!document.webkitFullscreenEnabled){this.fail();return}
+      const p=(d.requestFullscreen||d.webkitRequestFullscreen).call(d,{navigationUI:'hide'});
+      if(p&&p.then)p.then(()=>{if(typeof TOUCH!=='undefined'&&TOUCH.on)try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>this.fail())}catch(_){this.fail()}},
+  // embedded pages (an iframe without allow=fullscreen) refuse: say so instead of doing nothing
+  fail(){const L=LI();FS.toast(L?'Fullscreen is blocked on this page — open the game in its own tab (or use F11).':'이 화면에서는 전체화면이 막혀 있어요 — 게임을 새 탭에서 열거나 F11을 눌러 주세요.')},
+  toast(msg){let t=$('fsToast');if(!t){t=document.createElement('div');t.id='fsToast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('on');clearTimeout(this.tt);this.tt=setTimeout(()=>t.classList.remove('on'),3200)},
+  label(){const L=LI();return this.on()?(L?'Windowed':'창 모드'):(L?'Fullscreen':'전체화면')},
+};
+// keep every fullscreen button's label in step (screens rebuilt by the resize that fullscreen causes are caught by the later passes)
+FS.sync=()=>{for(const b of document.querySelectorAll('[data-act="full"] span,[data-act="full"].fslbl'))b.textContent=FS.label()};
+for(const ev of ['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,()=>{FS.sync();setTimeout(FS.sync,120);setTimeout(FS.sync,500)});
 const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0,last:0,dmgL:[],dmgPool:[],wIcon:null,
   init(){RADAR.init();for(const id of ['aimInfo','hud','hRound','hTime','hSH','hSZ','hAH','hAZ','hMorale','hFeed','hBig','hSub','hNote','hHPv','hARv','hMoney','hLvl','hWName','hMag','hRes','hNades','hSkill','cross','hit','scope','hSpec','hAR','hAmmo','hBR','hBL','hDaze','dmgLayer','hDmg','hWIcon','hRel'])this.el[id]=$(id)},
   // floating damage numbers: one per target, hits landing in quick succession add up into the same number
   dmgNum(t,v,hs,kill){if(!(v>0)||!this.el.dmgLayer)return;
-    let d=null;for(const o of this.dmgL)if(o.tg===t&&!o.done&&o.age<.45){d=o;break}
+    // hits on the same target join one number; right after a weapon swap (knife ↔ gun combos) the window is longer so the combo shows as one total
+    const P=G.player,win=P&&G.t-(P.swapT==null?-9:P.swapT)<1.5?.95:.45;let d=null;for(const o of this.dmgL)if(o.tg===t&&!o.done&&o.age<win){d=o;break}
     if(d){d.v+=v;d.hs=d.hs||hs;d.kill=d.kill||kill;d.age=Math.min(d.age,.08);d.pop=1}
     else{const el=this.dmgPool.pop()||document.createElement('div');d={tg:t,v,hs,kill,age:0,pop:1,el,ox:(Math.random()<.5?-1:1)*rr(.25,.45),done:false};el.className='dn';this.el.dmgLayer.appendChild(el);this.dmgL.push(d);if(this.dmgL.length>18)this.dmgL[0].age=99}
     d.x=t.head.x;d.y=t.head.y+.42;d.z=t.head.z;
@@ -110,7 +129,7 @@ const UI={open:null,
   init(){this.buildTitle();document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;AU.init();AU.play('ui',{vol:.5});this.act(t.dataset.act,t.dataset.v,t)})},
   show(id){for(const s of ['menu','setup','opts','help','pause','results','mp','lobby'])$(s).classList.toggle('off',s!==id);this.open=id;$('menuBg').classList.toggle('off',!id||id==='pause'&&G.st!=='menu')},
   hideAll(){for(const s of ['menu','setup','opts','help','pause','results','mp','lobby'])$(s).classList.add('off');this.open=null;$('menuBg').classList.add('off')},
-  act(a,v,el){if(UI.mpAct&&UI.mpAct(a,v))return;
+  act(a,v,el){if(a==='full'){FS.toggle();return}if(UI.mpAct&&UI.mpAct(a,v))return;
     if(a==='start'){this.buildSetup();this.show('setup')}
     else if(a==='opts'){this.ret=this.open;this.buildOpts();this.show('opts')}
     else if(a==='help'){this.ret=this.open;this.buildHelp();this.show('help')}
@@ -173,7 +192,7 @@ const UI={open:null,
     <div class="mbtns row"><button data-act="back">${T('back')}</button></div>`},
   buildHelp(){$('help').innerHTML=`<h2>${T('controls')}</h2><div class="keys">${T('keys').map(([k,d])=>`<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>
     <div class="rules"><b>${T('rulesT')}</b><ul>${T('rules').map(r=>`<li>${r}</li>`).join('')}</ul></div><div class="mbtns row"><button data-act="back">${T('back')}</button></div>`},
-  buildPause(){$('pause').innerHTML=`<h2>${T('paused')}</h2>${NET.on?`<p class="hint">${T('mpPaused')}</p>`:''}<div class="mbtns"><button data-act="resume" class="big">${T('resume')}</button><button data-act="opts">${T('settings')}</button><button data-act="help">${T('controls')}</button><button data-act="quit">${T('quit')}</button></div>`},
+  buildPause(){$('pause').innerHTML=`<h2>${T('paused')}</h2>${NET.on?`<p class="hint">${T('mpPaused')}</p>`:''}<div class="mbtns"><button data-act="resume" class="big">${T('resume')}</button><button data-act="opts">${T('settings')}</button><button data-act="help">${T('controls')}</button>${FS.ok()?`<button data-act="full" class="fslbl">${FS.label()}</button>`:''}<button data-act="quit">${T('quit')}</button></div>`},
   showResults(){const A=G.actors.slice().sort((a,b)=>b.score-a.score);const mvp=A[0];const L=LI();
     $('results').innerHTML=`<h2>${T('results')}</h2><div class="finalScore"><span class="h">${T('humanWins')} ${G.score[TH]}</span> : <span class="z">${G.score[TZ]} ${T('zombieWins')}</span></div>
       <div class="mvp"><img src="${portrait('h_'+mvp.skin,56)}"><div><small>${T('mvp')}</small><b>${esc(mvp.name)}</b><span>${T('kills')} ${mvp.kills} · ${T('infects')} ${mvp.infects} · ${T('dmg')} ${Math.round(mvp.dmgDealt).toLocaleString('en-US')} · ${T('score')} ${Math.round(mvp.score)}</span></div></div>

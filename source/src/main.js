@@ -67,7 +67,8 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       P.yaw=wrapA(P.yaw-e.movementX*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*e.movementY*k,-1.53,1.53)});
     addEventListener('wheel',e=>{const P=G.player;if(!P||!P.alive||this.paused||this.overlay||G.st==='menu')return;const order=P.team===TZ?['claw','zbomb']:[P.inv[1],P.inv[2],P.inv[3]||'knife',...['he','frost','flare'].filter(k=>P.inv[k]>0)].filter(Boolean);
       if(P.team===TZ&&P.bombs<=0)return;const i=order.indexOf(P.cur);const n=order[(i+(e.deltaY>0?1:-1)+order.length)%order.length];equip(P,n)},{passive:true});
-    addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;const k=e.code;if(['Tab','Space','ArrowUp','ArrowDown','Backquote'].includes(k)||(e.ctrlKey&&k!=='KeyR'))e.preventDefault();AU.init();
+    addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;const k=e.code;
+      if(e.altKey&&(k==='Enter'||k==='NumpadEnter')){e.preventDefault();if(!e.repeat)FS.toggle();return}if(['Tab','Space','ArrowUp','ArrowDown','Backquote'].includes(k)||(e.ctrlKey&&k!=='KeyR'))e.preventDefault();AU.init();
       if(e.repeat&&k!=='Tab')return;this.keys[k]=true;const P=G.player;
       if(G.st==='menu'||G.st==='over'){if(k==='Escape'&&UI.open&&UI.open!=='menu'&&UI.open!=='results')UI.act('back');return}
       if(k==='Escape'){if(this.overlay){this.closeOverlay();return}

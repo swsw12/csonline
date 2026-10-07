@@ -53,7 +53,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
         return `<div class="mbi${ok?'':' na'}${own?' own':''}" data-act="buy" data-v="${id}">${icon}<b>${nm}</b><span class="c">${own?T('owned'):free?T('nyFree'):'$'+cost}</span></div>`}).join('');
       $('buy').innerHTML=`<div class="mbh"><b>${T('buyT')}</b><span class="money">$ ${P.money}</span><button class="addm" data-act="addmoney">${L?'+$3000':'+3000'}</button><button class="mbq" data-act="tquick">${L?'Quick buy':'추천 구매'}</button></div>
         <div class="mcats">${BUY_MENU.map((c,i)=>`<button class="${i===this.buyCat?'on':''}" data-act="buycat" data-v="${i}">${c.n[L]}</button>`).join('')}</div><div class="mitems">${items}</div>`};
-    const a0=UI.act.bind(UI);UI.act=function(a,v,el){if(a==='tquick'){TOUCH.quickBuy();return}if(a==='tfull'){TOUCH.full(true);return}
+    const a0=UI.act.bind(UI);UI.act=function(a,v,el){if(a==='tquick'){TOUCH.quickBuy();return}if(a==='tfull'){FS.toggle();return}
       // starting a match on a phone: go fullscreen (Android) so the address bar does not eat the screen
       if(TOUCH.on&&(a==='go'||a==='again'||a==='mpstart'||a==='mpcreate'||a==='mpjoin'))TOUCH.full(false);return a0(a,v,el)};
     const oo=Main.openOverlay.bind(Main),co=Main.closeOverlay.bind(Main);Main.openOverlay=function(k){oo(k);TOUCH.st=-1;TOUCH.update()};Main.closeOverlay=function(s){co(s);TOUCH.st=-1;TOUCH.update()}},
