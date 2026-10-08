@@ -43,7 +43,7 @@ const QUICK_BACK=1.2,QUICK_DRAW=.45;
 function equip(a,id,instant){if(!id||a.cur===id&&!instant)return;const W=WPN[id];if(!W)return;
   const quick=!instant&&id===a.awayId&&G.t-(a.awayT==null?-9:a.awayT)<QUICK_BACK;
   if(a.cur&&a.cur!==id){a.prev=a.cur;a.awayId=a.cur;a.awayT=G.t;if(!instant)a.swapT=G.t}
-  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
+  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.dualB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
   if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.kind==='melee'?'kdraw':'draw',{vol:.5,rate:(id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
   // 칼 챈샷 (draw cut): a blade drawn within a second of a gunshot, with an enemy in reach in front, comes out as an instant heavy cut —
   // full heavy damage and knockback on top of the shot that was just fired
@@ -227,6 +227,8 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   const am=a.ammo[a.cur];if(!am)return;
   if(W.alt&&W.kind!=='saw'&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0)nyAlt(a,W);
   // zoom levels cycle with the right button
+  // Dual Berettas: the aim key flips the stance (looks only)
+  if(W.dual&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
   if(W.zoom&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0){a.zoom=(a.zoom+1)%(W.zoom.length+1);a.zoomWas=0;if(a.isPlayer)AU.play('ui',{vol:.3,rate:.7})}
   // reloading
   if(a.reloadT>0){a.reloadT-=dt;

@@ -53,6 +53,8 @@ VMK.vdH=[[0,VD_REST],[.32,[.18,.06,-.42,.3,-.75,.6,1.6]],[.44,[.18,.07,-.42,.3,-
 const CLAW_REST=[.19,-.19,-.34,.3,-.75,.65],_vca=[new Float32Array(6),new Float32Array(6)];
 function vspr(s,target,k,dt){const d=2*Math.sqrt(k)*.62;const a=k*(target-s.x)-d*s.v;s.v+=a*dt;s.x+=s.v*dt}
 const _vpB={p:[0,0,0],r:[0,0,0]};
+// Dual Berettas: stance B offsets (b*) and the draw-time X-cross (x*), per gun; sides mirror
+const DUAL_POSE={bX:.1,bY:-.005,bZ:.0,bRoll:-1.25,bYaw:.15,bPitch:.02, xX:.05,xY:.06,xZ:-.01,xPitch:.6,xYaw:.55,xRoll:.25};
 const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,drawD:.5,rel:null,pumpT:0,boltT:0,mel:null,throwT:0,flash:null,flashT:0,lastYaw:0,lastPitch:0,land:0,vis:true,spinA:0,
   sp:null,camRoll:0,camYaw:0,camPitch:0,slapped:false,trail:null,
   init(){this.U={uProbe:{value:new THREE.Color(.5,.5,.55)},uSpot:{value:0},uMuzzle:{value:new THREE.Color(0,0,0)},uAmbV:{value:1}};
@@ -134,7 +136,13 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     const tags=m.tags;for(const T of [tags,m.tags2])if(T)for(const t in T){const b=T[t].userData.base;T[t].position.copy(b);T[t].rotation.set(0,0,0)}
     if(m.armL&&m.armL.userData.base)m.armL.position.copy(m.armL.userData.base);
     this.kick=Math.max(0,(this.kick||0)-dt*10);this.kick2=Math.max(0,(this.kick2||0)-dt*10);
-    if(m.gun2){const k=this.kick*this.kick,k2=this.kick2*this.kick2;m.gun.position.set(.13,0,k*.035-.02);m.gun.rotation.set(k*.14,.05,0);m.gun2.position.set(-.13,0,k2*.035-.02);m.gun2.rotation.set(k2*.14,-.05,0)}
+    if(m.gun2){const k=this.kick*this.kick,k2=this.kick2*this.kick2;m.gun.position.set(.13,0,k*.035-.02);m.gun.rotation.set(k*.14,.05,0);m.gun2.position.set(-.13,0,k2*.035-.02);m.gun2.rotation.set(k2*.14,-.05,0);
+      // Dual Berettas: an X-cross flourish while drawing; the aim key toggles stance B (wide apart, rolled outward on their sides)
+      const tgt=a.dualB?1:0;this.stD=(this.stD||0)+(tgt-(this.stD||0))*Math.min(1,dt*10);const kB=smooth(clamp(this.stD,0,1));
+      let kX=0;if(this.drawT>0&&this.drawD>0){const p=1-this.drawT/this.drawD;kX=p<.3?smooth(p/.3):p<.62?1:1-smooth((p-.62)/.38)}
+      for(const [g,sd] of [[m.gun,1],[m.gun2,-1]]){const P=DUAL_POSE;
+        g.position.x+=sd*P.bX*kB;g.position.y+=P.bY*kB;g.position.z+=P.bZ*kB;g.rotation.z-=sd*P.bRoll*kB;g.rotation.y+=sd*P.bYaw*kB;g.rotation.x+=P.bPitch*kB;
+        g.position.x-=sd*P.xX*kX;g.position.y+=P.xY*kX;g.position.z+=(P.xZ-sd*.012)*kX;g.rotation.x+=P.xPitch*kX;g.rotation.y+=sd*P.xYaw*kX;g.rotation.z+=sd*P.xRoll*kX}}
     if(tags.spin){this.spinA+=dt*(a.spinV||0)*40;tags.spin.rotation.z=this.spinA}
     // ---- reload choreography ----
     if(this.rel){const R0=this.rel;R0.t+=dt;const p=clamp(R0.t/R0.d,0,1);

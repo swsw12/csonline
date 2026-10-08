@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.1.4','2026-10-08',[
+ ['NEW','듀얼 베레타 — 꺼낼 때 두 총을 X자로 교차했다가 원래 자세로, 조준 키(우클릭 / 모바일 조준 버튼)로 총을 옆으로 눕혀 양쪽으로 벌리는 자세로 전환 (다시 누르면 원래대로, 보이는 것만 바뀜)','Dual Berettas: crossed in an X while being drawn, and the aim key (RMB / the phone aim button) switches to a wide stance with both guns turned on their sides (press again to go back; looks only)']]],
 ['v6.1.3','2026-10-08',[
  ['NEW','좀비모드 카운트다운 음악 — 숙주 등장 전 10초 카운트다운이 시작되면 라운드 시작 사운드의 앞 9초가 나옴 (삑 소리 대신)','Infection modes: the first 9 seconds of the round-start track play over the countdown before the host appears (instead of the beeps)'],
  ['UP','좀비가 맞을 때 새 피격음, 맞을 때마다 나옴 (한 좀비당 0.35초 간격)','New zombie hurt sound, now on every hit (at most every 0.35 s per zombie)']]],
@@ -119,7 +121,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.1.3 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.1.4 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
