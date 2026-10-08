@@ -8,6 +8,10 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.4','2026-10-08',[
+ ['NEW','보급상자 — 라운드 중 20~30초 뒤 첫 투하, 이후 35~50초마다 낙하산을 단 보급상자가 사람 근처 트인 곳에 떨어짐(최대 2개). 붉은 연기와 화면·미니맵 표시로 위치를 알려주고, 인간이 밟으면 열림: 45% 보급상자 전용 무기, 30% 중화기, 나머지는 보급품(탄약 가득·방탄복·수류탄·$1000)','Supply crates — the first one 20-30 s into the round, then every 35-50 s a crate parachutes into an open spot near the humans (two at most). Red smoke and markers on screen and minimap show where; a human walking into it opens it: 45 % the crate-only weapon, 30 % a heavy weapon, otherwise supplies (full ammo, armour, grenades, $1000).'],
+ ['NEW','보급상자 전용 무기 「이벤트 호라이즌」 — 느린 구체를 쏘면 맞은 곳에 블랙홀이 3초간 열려 9m 안의 좀비를 끌어당겨 공중에 띄우고 갈아버린 뒤 폭발. 상점에서 안 팔고 탄약도 보급상자로만 채워짐 (3발)','Crate-only weapon "Event Horizon" — a slow orb opens a black hole where it lands: for 3 s it drags every zombie within 9 m in, lifts and grinds them, then collapses in a blast. Not sold, and its 3 shots only come back from crates.'],
+ ['UP','리퍼 경직 강화 — 톱날에 물린 좀비는 거의 못 움직이고(속도 12%) 점프·할퀴기·스킬을 못 씀. 휘두르기에 맞으면 더 오래 묶임. 숙주 좀비는 덜 묶이고 공격은 가능, 경직화 중인 헤비 좀비는 무시','Ripper stagger buffed — a zombie caught in the chain can barely move (12 % speed) and cannot jump, claw or use its skill; a swing pins it longer. Host zombies are slowed less and can still attack; a hardened Heavy ignores it.']]],
 ['v6.3','2026-10-08',[
  ['NEW','넉백 무기 「에어 버스터」 (특수 · $3300) — 압축공기를 부채꼴로 초당 10번 뿜어 좀비를 뒤로 날려버림. 피해는 약하지만 사거리 8m 안의 여러 마리를 한꺼번에 밀어내고, 4발마다 살짝 띄워 올림. 재장전은 등에 멘 공기탱크 교체','Knockback gun "Air Burster" (Special · $3300) — blasts a cone of compressed air 10 times a second: weak damage, but shoves every zombie within 8 m back and lifts them every fourth blast. Reload swaps the air tank.'],
  ['NEW','정전 이벤트 — 라운드 중 가끔(약 45%) 전기가 나가 20초쯤 맵 조명·간판·창문 불빛이 꺼짐. 불·조명탄·총구 섬광·손전등만 빛남. 인간 봇은 손전등을 켬','Blackout — now and then (about 45 % of rounds) the power fails for ~20 s: lamps, signs and windows go dark; only fires, flares, muzzle flashes and flashlights light the map. Human bots switch their flashlights on.'],
@@ -136,7 +140,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.3 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.4 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

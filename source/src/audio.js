@@ -174,6 +174,21 @@ const SFX={
     {const e=B.env(0,.003,1,.2,out);const f=B.f('bandpass',rr(2200,2800),.9,e);f.frequency.setValueAtTime(rr(3200,3800),0);f.frequency.exponentialRampToValueAtTime(rr(900,1200),.22);B.nz('white',0,.3,f)}
     {const e=B.env(0,.004,.7,.09,out);B.osc('sine',rr(95,115),48,0,.12,e)}
     {const e=B.env(0,.001,.25,.012,out);B.nz('white',0,.02,B.f('highpass',4500,.7,e))}}},
+  // Event Horizon shot: a deep sub thump under a rising glassy zap
+  bhole:{n:2,dur:1.2,ch:2,peak:.9,gain:.8,rev:.25,poly:2,fn:B=>{const out=B.comp(-10,4,.002,.2,B.g(.95));
+    {const e=B.env(0,.004,1,.35,B.sh(2,out));B.osc('sine',90,32,0,.45,e)}
+    {const e=B.env(.02,.05,.45,.6,out);B.osc('sawtooth',180,1400,.02,.5,B.f('bandpass',900,2,e))}
+    {const e=B.env(0,.01,.35,.8,out);B.osc('sine',620,1900,0,.9,e)}
+    {const e=B.env(0,.002,.5,.2,out);B.nz('pink',0,.3,B.f('lowpass',1200,.7,e))}}},
+  // the black hole: a swelling, wobbling low drone with a rushing wind that rises in pitch until it collapses
+  vortex:{n:1,dur:3.4,ch:2,peak:.85,gain:.75,rev:.3,poly:2,fn:B=>{const out=B.g(.9);
+    {const e=B.env(0,.4,.9,1.6,out,1.2);const g=B.g(1,e);B.osc('sine',46,92,0,3.3,g);B.osc('triangle',69,140,0,3.3,B.g(.4,g));B.am(g,0,3.3,7,.45)}
+    {const e=B.env(0,.6,.6,1.4,out,1.2);const f=B.f('bandpass',300,3,e);f.frequency.setValueAtTime(300,0);f.frequency.exponentialRampToValueAtTime(2600,3.2);B.nz('white',0,3.3,f)}
+    for(const s of [-1,1]){const e=B.env(.2,.8,.3,1.2,B.pan(s*.7,out),1);B.osc('sine',300+s*7,1200+s*20,.2,3,e)}}},
+  // supply plane: a propeller drone passing over (pitch drops as it goes), a short whistle as the crate is pushed out
+  supply:{n:1,dur:4,ch:2,peak:.8,gain:.7,rev:.35,poly:1,fn:B=>{const out=B.g(.9);
+    {const e=B.env(0,1.2,.8,1.6,out,1);const o=B.g(1,B.f('lowpass',900,.7,e));for(const [f,l] of [[92,1],[184,.4],[276,.2]])B.osc('sawtooth',f*1.08,f*.88,0,3.9,B.g(l*.3,o));B.am(o,0,3.9,23,.35)}
+    {const e=B.env(1.4,.05,.35,.9,out);B.osc('sine',1800,700,1.4,1,e)}}},
   // power cut: a heavy relay clunk, the hum of the lights sagging away, a long electric whine dropping off
   blackout:{n:1,dur:2.6,ch:2,peak:.85,gain:.75,rev:.35,poly:1,fn:B=>{const out=B.g(.9);
     {const e=B.env(0,.002,1,.25,out);B.osc('sine',70,38,0,.3,e);B.nz('brown',0,.25,B.f('lowpass',400,.8,B.env(0,.001,.8,.12,out)))}
@@ -279,7 +294,7 @@ const SFX={
 };
 const SFX_ORDER=['ui','uiok','buy','beep','beep2','countdown','hit','hsding','p9','ar7','claw','clawhit','clawarmor','zgrowl','zpain','zdie','zatk','step_conc','step_dirt','step_metal','step_wood','zstep','land','magout','magin','rack','dry','draw','kdraw','kswing','khit','hamhit','kwall',
   'imp_conc','imp_metal','imp_wood','imp_dirt','imp_flesh','headshot','casing','shellcase','k5','kv47','hmg','sg8','as12','r700','d50','pump','shellin','bolt','slide','zinfect','zscream','zroar','zleap','zharden','zrevive','hurt','hdie','hscream',
-  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','airb','blackout','powerup','spinloop','brk','gib'];
+  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','airb','blackout','powerup','bhole','vortex','supply','spinloop','brk','gib'];
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 // ---- live score: minor-key pulse that tightens with the round ----
 const CHORDS=[{n:[48,51,55,58],b:36},{n:[44,48,51,55],b:32},{n:[46,50,53,58],b:34},{n:[43,47,50,55],b:31}];

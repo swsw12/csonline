@@ -176,7 +176,7 @@ function throwNade(a,kind,X){if(!WPN[kind])return;const eye=actorEye(a);const so
   const m=new THREE.Mesh(gunGeo(kind==='zbomb'?'zbombT':WPN[kind].model),matGun());m.position.set(n.x,n.y,n.z);R.scene.add(m);n.mesh=m;NADES.push(n);
   if(a.isPlayer){AU.play('throw',{vol:.7})}else AU.at('throw',eye.x,eye.y,eye.z,{vol:.5});
   NET.on&&netFxPush(['n',a.id,kind,r2(n.x),r2(n.y),r2(n.z),r2(n.vx),r2(n.vy),r2(n.vz)])}
-function launchProj(a,W,eye,dir){if(NET.ghost)return;if(W.proj!=='gl'){nyLaunch(a,W,eye,dir);return}const sp=38;
+function launchProj(a,W,eye,dir){if(NET.ghost)return;if(W.proj==='vortex'){vortexLaunch(a,W,eye,dir);return}if(W.proj!=='gl'){nyLaunch(a,W,eye,dir);return}const sp=38;
   const n={kind:'gl',owner:a,w:a.cur,x:eye.x+dir.x*.6,y:eye.y+dir.y*.6-.06,z:eye.z+dir.z*.6,vx:dir.x*sp,vy:dir.y*sp+.6,vz:dir.z*sp,t:0,fuse:6,rest:false,mesh:null,spin:0,impact:1};
   const m=new THREE.Mesh(gunGeo('glnade'),matGun());m.position.set(n.x,n.y,n.z);R.scene.add(m);n.mesh=m;NADES.push(n);
   NET.on&&netFxPush(['p',a.id,WI[a.cur],'gl',r2(n.x),r2(n.y),r2(n.z),r2(n.vx),r2(n.vy),r2(n.vz)])}

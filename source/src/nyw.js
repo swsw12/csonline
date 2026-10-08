@@ -137,7 +137,7 @@ Object.assign(WPN,{
   bdc:{slot:1,kind:'special',ny:1,n:['흑룡포','Black Dragon Cannon'],cost:6500,mag:20,res:40,dmg:85,rpm:55,semi:1,cone:{r:9,a:.55,ticks:3,burn:3,kb:9,up:3.5},spread:[0,0,0],rec:[.12,.03],kb:9,stag:.8,hs:1,shellRel:.32,relStart:.35,draw:1,speed:.85,snd:'bdc',model:'bdc',hold:'rifle'},
   rdc:{slot:1,kind:'special',ny:1,n:['적룡포','Red Dragon Cannon'],cost:9000,mag:30,res:60,dmg:100,rpm:60,semi:1,cone:{r:10,a:.6,ticks:3,burn:4,kb:11,up:4,red:1},alt:'dragon',spread:[0,0,0],rec:[.12,.03],kb:11,stag:.8,hs:1,shellRel:.3,relStart:.35,draw:1,speed:.84,snd:'rdc',model:'rdc',hold:'rifle'},
   // Ripper: hold LMB to grind (no knockback, heavy stagger, uses fuel); RMB swings it into a crowd (huge knockback, free)
-  ripper:{slot:1,kind:'saw',ny:1,n:['리퍼','Ripper'],cost:5000,mag:200,res:400,dmg:34,rpm:600,range:2,alt:'swing',swDmg:120,swKb:20,swCd:.9,reload:3.2,draw:1.1,speed:.95,snd:'sawrev',model:'ripper',hold:'rifle',spread:[0,0,0],rec:[0,0],kb:0,stag:.6,hs:1},
+  ripper:{slot:1,kind:'saw',ny:1,n:['리퍼','Ripper'],cost:5000,mag:200,res:400,dmg:34,rpm:600,range:2.2,alt:'swing',swDmg:120,swKb:20,swCd:.9,reload:3.2,draw:1.1,speed:.95,snd:'sawrev',model:'ripper',hold:'rifle',spread:[0,0,0],rec:[0,0],kb:0,stag:.6,hs:1},
   // Gae Bolg: the harpoon sticks and blows up a second later; RMB blows every harpoon at once (and you can ride the blast)
   gaebolg:{slot:1,kind:'special',ny:1,n:['게이볼그','Gae Bolg'],cost:6000,mag:3,res:21,dmg:114,rpm:90,semi:1,proj:'harpoon',alt:'detonate',spread:[.003,.02,.06],rec:[.08,.02],kb:4,stag:.5,hs:1,shellRel:.6,relStart:.35,draw:.9,speed:.9,snd:'harpoon',model:'gaebolg',hold:'rifle'},
   // 혈적자: a spinning blade that cuts through everything for 19 m and comes back; a head hit grinds for 126
@@ -266,7 +266,7 @@ function sawUpdate(a,W,dt){const cmd=a.cmd,pc=a.pc,am=a.ammo[a.cur];
   const cutting=!!cmd.fire&&am.mag>0&&a.drawT<=0;a.sawRev=approach(a.sawRev||0,cutting?1:.22,dt*(cutting?6:2));a.sawCut=cutting;
   if(cutting&&G.t>=a.nextFire){a.nextFire=G.t+60/W.rpm;am.mag--;a.an.atk=Math.max(a.an.atk,.55);a.an.atkD=.3;a.an.heavy=false;a.lastFire=G.t;
     const r=meleeHit(a,W.range,.55);
-    if(r&&r.t){const t=r.t;aimDir(a.yaw,0,_dv);damageActor(t,W.dmg,a,{w:a.cur,dir:[_dv.x,0,_dv.z],kb:0,stag:.6,x:t.c.x,y:t.c.y+1.1,z:t.c.z});if(!NET.ghost)t.staggerT=Math.max(t.staggerT,.45);
+    if(r&&r.t){const t=r.t;aimDir(a.yaw,0,_dv);damageActor(t,W.dmg,a,{w:a.cur,dir:[_dv.x,0,_dv.z],kb:0,stag:.9,x:t.c.x,y:t.c.y+1.1,z:t.c.z});if(!NET.ghost){t.staggerT=Math.max(t.staggerT,.6);t.an.flinch=1}
       FX.blood(t.c.x,t.c.y+1.1,t.c.z,_dv.x,.4,_dv.z,1.4,false);if(Math.random()<.5)FX.spark(t.c.x,t.c.y+1.1,t.c.z,rr(-2,2),rr(1,3),rr(-2,2),.2,[1,.6,.4]);
       if(!AU.throttle('saw'+a.id,150))AU.at('sawhit',t.c.x,t.c.y+1.1,t.c.z,{vol:.85});if(a.isPlayer){HUD.hitmark(false);FX.shake=Math.max(FX.shake,.14)}a.sawBite=1}
     else if(r&&r.wall){if(Math.random()<.5)FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);for(let i=0;i<3;i++)FX.spark(r.x,r.y,r.z,r.n[0]*rr(2,6)+rr(-2,2),rr(1,4),r.n[2]*rr(2,6)+rr(-2,2),rr(.15,.4));

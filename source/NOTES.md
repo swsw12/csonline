@@ -245,3 +245,17 @@
   blood mist, green spores, red ring, red DL, delayed 'zroar'. Player also hears two heartbeats.
 - HUD.roundResult(win) (ui.js, element #hRRes — note #hRes is the ammo reserve): per-round deltas from a.r0 snapshot taken in startRound,
   human MVP (dmg + 400·kills), zombie MVP (infects), top-8 table with fate, round bonus (a.rBonus). Hides the big banner; hidden when st≠'end'.
+
+## v6.4 — supply crates, Event Horizon (crate-only), Ripper pin
+- supply.js (build order after drops): SUP — host drops a crate 20-32 s into the fight then every 35-50 s (≤2 on the map) at an open-sky nav node
+  8-26 m from a random human; it falls 20 m at 4.2 m/s under a parachute (models 'supbox','supchute'), lands with dust, red smoke, a blinking light,
+  a screen marker (.supMk) and a minimap square. A human within 1.1 m opens it (host decides): 45 % 'bhole', 30 % a heavy weapon, else kit
+  (full ammo, armour 100, he/frost/flare, +$1000). Net: 'sb' spawn, 'so' open (the opener applies the reward to his own inventory). Reset each round.
+- WPN.bhole 'Event Horizon' (sup:1, not in BUY_MENU, 3/3): proj 'vortex' (vortexMake/vortexLaunch/vortexUpd; replayed as a ghost on other pages
+  through the 'p' fx). Orb 24 m/s → hole on contact or after 1.1 s, lifted to floor+1.9; 3.2 s: pull (host only) up to 38 m/s² within 9 m with LOS,
+  kv capped 9, lift within 4.5 m, 60 dmg / .25 s within 2.6 m; then blastDamage 6.5 m / 950 / kb 18. Sounds 'bhole','vortex','supply'.
+  Test: a ring of 6 zombies (4 m) gathered to 0.5 m mean spread, ~1500 dmg each.
+- Weapon atlas grown to 8×10 slots (GA.H 1280): the NY materials past slot 63 were off the atlas; new 'voidC','voidG','supW','chute' (paintSupAtlas).
+- Ripper pin: damageActor gives saw hits t.holdT (.32 s, swing .7 s; not a hardened Heavy) → maxSpeed ×.12 (hosts ×.3), no jump, non-host zombies
+  can't claw/skill (actorWeapons). holdT is in EFF_T ('hd') so client-owned zombies get it. Grind stag .9, staggerT .6, range 2.2.
+  Test: a rager run into the saw was pinned 93 % of 3 s, 0 claw attempts.

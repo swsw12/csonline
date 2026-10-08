@@ -286,6 +286,7 @@ function netDoFx(a,f){if(!a||a.isPlayer||!G.actors.includes(a))return;const T0=f
     const y0=a.yaw,p0=a.pitch;a.yaw=f[3]/1000;a.pitch=f[4]/1000;a.punchY=a.punchP=0;fireGun(a,W);a.yaw=y0;a.pitch=p0;return}
   if(T0==='p'){const w=WL[f[2]],W=WPN[w],kind=f[3];if(!W)return;const x=f[4]/100,y=f[5]/100,z=f[6]/100,vx=f[7]/100,vy=f[8]/100,vz=f[9]/100;let n;
     if(kind==='gl'){n={kind:'gl',owner:a,w,x,y,z,vx,vy,vz,t:0,fuse:6,rest:false,mesh:null,spin:0,impact:1};const m=new THREE.Mesh(gunGeo('glnade'),matGun());R.scene.add(m);n.mesh=m;NADES.push(n)}
+    else if(kind==='vortex')n=vortexMake(a,w,x,y,z,vx,vy,vz,true);
     else{n=nyProj(a,W,{x,y,z},{x:0,y:0,z:-1},kind);if(!n)return;n.w=w}
     n.x=x;n.y=y;n.z=z;n.vx=vx;n.vy=vy;n.vz=vz;n.ghost=true;if(n.mesh){n.mesh.position.set(x,y,z);if(kind!=='disc')n.mesh.lookAt(x-vx,y-vy,z-vz)}return}
   if(T0==='n'){throwNade(a,f[2],{x:f[3]/100,y:f[4]/100,z:f[5]/100,vx:f[6]/100,vy:f[7]/100,vz:f[8]/100});a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;return}
@@ -304,7 +305,7 @@ function skillFx(a,k){const c=a.c;
   else if(k==='trap'){a.an.skill=.4;if(a.isPlayer)HUD.note(T('nyTrapSet'),1.5)}}
 
 // ---------- effects on actors this page does not own: found by diffing around the frame, sent to their owner ----------
-const EFF_T=[['frozen','fz'],['staggerT','st'],['dizzy','dz'],['shriekT','sh'],['rootT','rt']];
+const EFF_T=[['frozen','fz'],['holdT','hd'],['staggerT','st'],['dizzy','dz'],['shriekT','sh'],['rootT','rt']];
 function netPre(){for(const a of G.actors){if(!a.pup||!a.alive){a._ef=null;continue}a.kvx=a.kvz=0;a.c.vy=0;const e=a._ef||(a._ef={});for(const [f] of EFF_T)e[f]=a[f]||0;e.burnT=a.burnT||0}}
 function netPost(){for(const a of G.actors){const e0=a._ef;if(!e0||!a.pup||!a.alive)continue;const e={t:'eff',i:a.id};let any=false;
     if(Math.abs(a.kvx)>.01||Math.abs(a.kvz)>.01){e.kx=r2(a.kvx);e.kz=r2(a.kvz);any=true}
@@ -318,7 +319,7 @@ function netApplyEff(a,e,src){if(!a||!a.alive)return;
   if(e.rt){a.rootT=Math.max(a.rootT||0,e.rt/10);a.c.vx=a.c.vz=0;a.mvx=a.mvz=a.kvx=a.kvz=0}
   if(e.kx||e.kz){a.kvx+=(e.kx||0)/100;a.kvz+=(e.kz||0)/100}
   if(e.up){a.c.vy=Math.max(a.c.vy,e.up/100);a.c.onGround=false;a.c.jumped=true}
-  if(e.st)a.staggerT=Math.max(a.staggerT,e.st/10);if(e.dz)a.dizzy=Math.max(a.dizzy,e.dz/10);if(e.sh)a.shriekT=Math.max(a.shriekT,e.sh/10);
+  if(e.hd)a.holdT=Math.max(a.holdT||0,e.hd/10);if(e.st)a.staggerT=Math.max(a.staggerT,e.st/10);if(e.dz)a.dizzy=Math.max(a.dizzy,e.dz/10);if(e.sh)a.shriekT=Math.max(a.shriekT,e.sh/10);
   if(e.bt&&src&&a.team===TZ){a.burnT=Math.max(a.burnT||0,e.bt/10);a.burnSrc=src;a.burnW=WL[e.bw]||'bdc'}
   if(a.isPlayer&&e.dz)FX.shake=Math.max(FX.shake,.5)}
 // a hit this page saw on someone it does not own: shown at once, judged by the host

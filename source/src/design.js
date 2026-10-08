@@ -77,7 +77,10 @@ const SOUND_DESIGN={
   gl40:    {vol:1, rate:1, file:''},  // M79 유탄발사기 '퐁' 발사음
   airb:    {vol:1, rate:1, file:''},  // 에어 버스터(넉백총) 압축공기 '피슉' 소리 — 초당 10번 나는 짧은 소리
   blackout:{vol:1, rate:1, file:''},  // 정전 이벤트 — 전기 끊기는 '쿵' + 형광등 꺼지는 웅 소리
-  powerup: {vol:1, rate:1, file:''},  // 전력 복구 — 발전기 돌아가며 조명이 차례로 켜지는 소리
+  powerup: {vol:1, rate:1, file:''},
+  bhole:   {vol:1, rate:1, file:''},  // 이벤트 호라이즌(보급상자 전용) 발사음 — 낮은 '쿵' + 올라가는 전자음
+  vortex:  {vol:1, rate:1, file:''},  // 블랙홀이 열려 있는 3초 동안의 웅웅거리는 소리 (끝나면 폭발음은 explode 재사용)
+  supply:  {vol:1, rate:1, file:''},  // 보급상자 투하 — 수송기 프로펠러가 머리 위로 지나가는 소리  // 전력 복구 — 발전기 돌아가며 조명이 차례로 켜지는 소리
   volc:    {vol:1, rate:1, file:''},  // 볼케이노 (연사 샷건) 발사음
   mdrill:  {vol:1, rate:1, file:''},  // 매그넘 드릴 발사음
   drill:   {vol:1, rate:1, file:''},  // 매그넘 드릴 우클릭 — 드릴 돌리며 찌르기
