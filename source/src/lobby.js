@@ -9,7 +9,7 @@ const THUMB={};
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
 ['v6.1.3','2026-10-08',[
- ['NEW','좀비모드 카운트다운 음악 — 숙주 등장 전 10초 카운트다운이 시작되면 라운드 시작 사운드의 앞 10초가 나오고 숙주 등장과 함께 끝남 (삑 소리 대신)','Infection modes: the first 10 seconds of the round-start track play over the countdown before the host appears, ending as it appears (instead of the beeps)'],
+ ['NEW','좀비모드 카운트다운 음악 — 숙주 등장 전 10초 카운트다운이 시작되면 라운드 시작 사운드의 앞 9초가 나옴 (삑 소리 대신)','Infection modes: the first 9 seconds of the round-start track play over the countdown before the host appears (instead of the beeps)'],
  ['UP','좀비가 맞을 때 새 피격음, 맞을 때마다 나옴 (한 좀비당 0.35초 간격)','New zombie hurt sound, now on every hit (at most every 0.35 s per zombie)']]],
 ['v6.1.2','2026-10-08',[
  ['UP','듀얼 베레타 새 색 — 오른손은 검정이 섞인 딥레드, 왼손은 딥옐로우 (1인칭·3인칭·바닥에 떨어진 총 모두)','Dual Berettas recoloured: the right gun deep red clouded with black, the left one deep yellow (first person, third person and on the floor)'],

@@ -171,8 +171,8 @@ const SOUND_DESIGN={
   ui:      {vol:1, rate:1, file:''},  // 버튼 딸깍 (메뉴 버튼, 손전등 F, 야간투시 N, 저격 줌)
   uiok:    {vol:1, rate:1, file:''},  // 확인 '띵동' (좀비 종류 고르기, 멀티 방 입장)
   buy:     {vol:1, rate:1, file:''},  // 구매 성공 '찰칵'
-  countdown:{vol:1,rate:1, file:'sound/round_start.mp3', len:10},  // 좀비모드 라운드 시작 후 숙주 등장 전 10초 카운트다운이 시작되는 순간 한 번 재생.
-                                    // 원본은 12초 — len:10 으로 앞 10초만 쓰고 끊는다 (숙주 등장과 함께 끝남)
+  countdown:{vol:1,rate:1, file:'sound/round_start.mp3', len:9},  // 좀비모드 라운드 시작 후 숙주 등장 전 10초 카운트다운이 시작되는 순간 한 번 재생.
+                                    // 원본은 12초 — len:9 로 앞 9초만 쓰고 끊는다 (숙주 등장 1초 전에 끝남)
                                     // 이 파일이 있으면 아래 beep/beep2 대신 이것만 나온다 (시나리오 모드는 그대로 삑)
   beep:    {vol:1, rate:1, file:''},  // 남은 시간 카운트다운 '삑' (10~4초) — countdown 파일이 없을 때, 시나리오 웨이브 사이
   beep2:   {vol:1, rate:1, file:''},  // 마지막 3초 카운트다운 '삑삑' / 시나리오 자폭 좀비 점화

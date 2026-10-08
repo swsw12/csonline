@@ -201,5 +201,5 @@
   The VM shader lights roughly ×3, so these atlas colours are kept dark.
 - v6.1.3: recorded sounds live in source/sound (the owner drops files there) — build.py copies sound/ next to both builds, and the repo root keeps a copy in sound/ for Vercel (copy it on every deploy).
   SOUND_DESIGN.file may be a list (first that decodes wins: ogg first, an mp3 copy for iPhones). AU.fromFile[name] marks file-backed sounds; AU.stopAll(name).
-  countdown (sound/round_start.mp3, 12.4 s, trimmed to len:10 by trimBuf with a 60 ms fade) plays once at the 10-second mark of the infection modes' prep and replaces the beeps there (scenario keeps beeps);
+  countdown (sound/round_start.mp3, 12.4 s, trimmed to len:9 by trimBuf with a 60 ms fade) plays once at the 10-second mark of the infection modes' prep and replaces the beeps there (scenario keeps beeps);
   stopped on startRound / back to menu / leaving the room. zpain (sound/Zombi_hurt_01.ogg) now plays on every hit, throttled to 0.35 s per zombie.
