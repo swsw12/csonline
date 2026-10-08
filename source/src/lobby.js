@@ -9,7 +9,7 @@ const THUMB={};
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
 ['v6.1.4','2026-10-08',[
- ['NEW','듀얼 베레타 — 꺼낼 때 두 총을 X자로 교차했다가 원래 자세로, 조준 키(우클릭 / 모바일 조준 버튼)로 총을 옆으로 눕혀 양쪽으로 벌리는 자세로 전환 (다시 누르면 원래대로, 보이는 것만 바뀜)','Dual Berettas: crossed in an X while being drawn, and the aim key (RMB / the phone aim button) switches to a wide stance with both guns turned on their sides (press again to go back; looks only)']]],
+ ['NEW','듀얼 베레타 — 꺼낼 때 두 총을 X자로 교차했다가 원래 자세로, 조준 키(우클릭 / 모바일 조준 버튼)로 총을 옆으로 눕혀 양쪽으로 벌리는 자세로 전환 — 이 자세에선 꾹 누르면 연사 (다시 누르면 원래 자세·단발)','Dual Berettas: crossed in an X while being drawn, and the aim key (RMB / the phone aim button) switches to a wide stance with both guns turned on their sides that fires full-auto while held (press again for the normal stance, semi-auto)']]],
 ['v6.1.3','2026-10-08',[
  ['NEW','좀비모드 카운트다운 음악 — 숙주 등장 전 10초 카운트다운이 시작되면 라운드 시작 사운드의 앞 9초가 나옴 (삑 소리 대신)','Infection modes: the first 9 seconds of the round-start track play over the countdown before the host appears (instead of the beeps)'],
  ['UP','좀비가 맞을 때 새 피격음, 맞을 때마다 나옴 (한 좀비당 0.35초 간격)','New zombie hurt sound, now on every hit (at most every 0.35 s per zombie)']]],

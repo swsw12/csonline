@@ -204,4 +204,4 @@
   countdown (sound/round_start.mp3, 12.4 s, trimmed to len:9 by trimBuf with a 60 ms fade) plays once at the 10-second mark of the infection modes' prep and replaces the beeps there (scenario keeps beeps);
   stopped on startRound / back to menu / leaving the room. zpain (sound/Zombi_hurt_01.ogg) now plays on every hit, throttled to 0.35 s per zombie.
 - v6.1.4: Dual Berettas poses in vm.js (DUAL_POSE): kX = X-cross flourish while VM.drawT runs (peaks 30–62 % of the draw), kB = stance B blended by a.dualB
-  (game.js: aim key toggles a.dualB for W.dual, reset on equip; first person only, not networked).
+  (game.js: aim key toggles a.dualB for W.dual, reset on equip; first person only, not networked). Stance B fires full-auto while held (game.js fire gate, touch.js autoF); HUD name shows · 연사.

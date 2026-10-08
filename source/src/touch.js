@@ -118,7 +118,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     const on=melee?best.ang<.6:best.ang<best.body*1.15+.01;if(!on)return;
     const am=P.ammo&&P.ammo[P.cur];if(!melee&&am&&am.mag<=0)return;
     // semi-autos need a fresh press for every shot
-    this.fr++;this.autoF=(W.semi||W.burst)&&!melee?(this.fr%3!==0):true},
+    this.fr++;this.autoF=((W.semi&&!(W.dual&&P.dualB))||W.burst)&&!melee?(this.fr%3!==0):true},
   // ---------- weapon bar ----------
   slots(P){if(P.team===TZ){const s=[['claw',null]];if(P.bombs>0)s.push(['zbomb',null]);return s}
     const s=[];for(const id of [P.inv[1],P.inv[2],P.inv[3]||'knife'])if(id)s.push([id,null]);for(const k of ['he','frost','flare'])if(P.inv[k]>0)s.push([k,P.inv[k]]);return s},

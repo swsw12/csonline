@@ -248,7 +248,8 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;
   // a burst keeps going after the trigger is released
   if(a.burstN>0){if(ready){if(am.mag<=0)a.burstN=0;else{fireGun(a,W);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/W.rpm:W.burstCd)}}return}
-  if(cmd.fire&&ready&&(!(W.semi||W.burst)||!pc.fire||!a.isPlayer)){
+  // Dual Berettas in the sideways stance fire full-auto while held
+  if(cmd.fire&&ready&&(!((W.semi&&!(W.dual&&a.dualB))||W.burst)||!pc.fire||!a.isPlayer)){
     if(am.mag<=0){if(!pc.fire&&a.isPlayer)AU.play('dry',{vol:.6});a.nextFire=G.t+.25;return}
     if(W.spin&&a.spinV<1)return;
     fireGun(a,W);a.an.atk=0;
