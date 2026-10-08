@@ -32,7 +32,11 @@ const AI={
     if(cmd.f||cmd.s){const mv=Math.hypot(a.c.x-B.lx,a.c.z-B.lz);if(mv<dt*.8)B.stuckT+=dt;else B.stuckT=Math.max(0,B.stuckT-dt*2)}else B.stuckT=0;
     B.lx=a.c.x;B.lz=a.c.z;
     if(B.stuckT>.6&&a.c.onGround&&B.jumpT<=0){cmd.jump=true;B.jumpT=.8}if(B.stuckT>1.6){B.path=null;B.repath=0;B.detour=1.2;B.stuckT=0}
-    B.jumpT-=dt;if(B.detour>0){B.detour-=dt;cmd.s=Math.sin(G.t*2+a.id)>0?1:-1}},
+    B.jumpT-=dt;if(B.detour>0){B.detour-=dt;cmd.s=Math.sin(G.t*2+a.id)>0?1:-1}
+    // big zombies (heavy, giant) squeeze through: when wedged they crouch and narrow to a normal hull for a moment
+    // (the nav graph is built for a normal body; game.js widens the hull again as soon as it fits)
+    if(a.team===TZ&&B.stuckT>.45){const Z=ZCLASS[a.zc];if(Z&&(Z.hw>.31||Z.h>1.85))B.squeeze=1.6}
+    if(B.squeeze>0){B.squeeze-=dt;cmd.duck=true;if(a.c.hw>.3)a.c.hw=.3;B.sqz=1}else if(B.sqz){B.sqz=0;cmd.duck=false}},
   // follow the current path; returns true while moving
   follow(a,dt,run){const B=a.bot,cmd=a.cmd;if(!B.path||B.pi>=B.path.length)return false;const c=a.c;
     let n=NAV.nodes[B.path[B.pi]];if(!n){B.path=null;return false}

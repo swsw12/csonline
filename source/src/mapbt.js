@@ -142,6 +142,10 @@ function buildBigTree(){const CV={nosolid:true},ST='btStone',GR='btGrass';
   // the walls stand 1.1 m above the roof (a parapet to shoot over), merlons above that
   const MY=KR+1.5;for(let x=KX0;x<KX1-.5;x+=2)B(x,MY,KZ1-.8,x+1,MY+.8,KZ1,ST);for(let z=KZ0+1;z<KZ1-.5;z+=2){B(KX0,MY,z,KX0+.8,MY+.8,z+1,ST);B(KX1-.8,MY,z,KX1,MY+.8,z+1,ST)}
   stairs('z',KX0+.8,KX0+2.6,-25.3,-36.5,KY,KR,14,'btStep');
+  // a solid rail up the open side of the flight (steps 2-10): no climbing on from the side; the top steps stay open for the walk onto the roof
+  {const da=(-36.5+25.3)/14,dy=(KR-KY)/14;for(let i=1;i<10;i++){const s0=-25.3+da*i,s1=-25.3+da*(i+1);B(KX0+2.6,KY,s1,KX0+2.72,KY+dy*(i+1)+1,s0,ST)}}
+  // a rail round the stairwell on the roof: you come out at the north end; nobody runs back into the hole chasing someone across the roof
+  B(KX0+2.6,KR+.4,-35.3,KX0+2.72,KR+1.4,-30.2,ST,{f:{py:'btStep'}});B(KX0+.8,KR+.4,-30.32,KX0+2.72,KR+1.4,-30.2,ST,{f:{py:'btStep'}});
   B(15,KY,-35.5,16.6,KY+.9,-33.5,'btWood');B(13.4,KY,-35.6,14.4,KY+1,-34.6,'btWood');brazier(8.4,KY,-22.6);brazier(13.6,KY,-22.6);LIGHT(11,KY+3.6,-30,'#ffcf9a',8,.7);
   ivy(KX1-.02,KY,-28,KX1+.02,9,-24.6,'px');
   // ================= the big tree: a trunk five metres across, roots over the grass, a deck round it, a canopy over half the terrace =================

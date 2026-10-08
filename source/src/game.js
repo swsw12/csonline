@@ -200,6 +200,7 @@ function separate(dt){const A=G.actors;for(let i=0;i<A.length;i++){const a=A[i];
   for(const [t,sg,w] of [[a,-1,wa],[b,1,1-wa]]){const nx=t.c.x+ux*push*2*w*sg,nz=t.c.z+uz*push*2*w*sg;if(charFits(t.c,nx,t.c.y,nz)){t.c.x=nx;t.c.z=nz}}}}}
 // ---------- weapons in hand ----------
 function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
+  if(cmd.drop&&!pc.drop&&a.team===TH)playerDrop(a);// G: throw the gun in hand (drops.js)
   a.punchP*=Math.exp(-dt*7);a.punchY*=Math.exp(-dt*7);a.recoilSpread*=Math.exp(-dt*4.5);a.kick=Math.max(0,a.kick-dt*6);
   if(!cmd.fire)a.shots=Math.max(0,a.shots-dt*12);
   if(a.drawT>0)a.drawT-=dt;const W0=WPN[a.cur];
@@ -313,7 +314,7 @@ function hurtHuman(t,dmg,src,o){if(NET.ghost)return;if(NET.cli&&!NET.ev){if(t===
   t.hp-=dmg;t.lastHurt=G.t;
   if(src){const dealt=(ar0-t.armor)+(hp0-Math.max(0,t.hp));src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;if(src.isPlayer)HUD.dmgNum(t,dealt,false,t.hp<=0)}if(t.isPlayer){HUD.hurt(clamp(dmg/40,.25,1));FX.shake=Math.max(FX.shake,.3)}AU.at('hurt',t.c.x,t.c.y+1.5,t.c.z,{vol:.8});if(o.claw)AU.at('clawhit',t.c.x,t.c.y+1.2,t.c.z,{vol:.9});
   FX.blood(t.c.x,t.c.y+1.2,t.c.z,rr(-1,1),0,rr(-1,1),1,false);
-  if(t.hp<=0){t.hp=0;t.alive=false;t.permaDead=true;t.deadT=0;t.deaths++;t.an.dead=Math.max(t.an.dead,.001);t.deadDir=Math.random()<.5?1:-1;AU.at('hdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1});
+  if(t.hp<=0){dropDeath(t);t.hp=0;t.alive=false;t.permaDead=true;t.deadT=0;t.deaths++;t.an.dead=Math.max(t.an.dead,.001);t.deadDir=Math.random()<.5?1:-1;AU.at('hdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1});
     if(src){src.kills++;src.score+=3;src.money=Math.min(16000,src.money+500)}HUD.feed(src,src?'claw':'fall',t,{});if(t.isPlayer)onPlayerDeath(src);if(NET.host)netEv('hdie',{i:t.id,s:src?src.id:-1})}}
 function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.deadT=0;t.deaths++;t.frozen=0;t.skillT=0;t.reviving=0;t.an.dead=Math.max(t.an.dead,.001);// keeps the body drawn while it falls
   aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;
@@ -352,7 +353,7 @@ function infect(t,src){if(NET.ghost||(NET.cli&&!NET.ev))return;if(t.team!==TH||!
   if(t.isPlayer){HUD.infected(src);R.PU.uInfect.value=1;FX.shake=Math.max(FX.shake,.8)}
   const n=humansAlive();if(n===1&&G.st==='fight'){const last=G.actors.find(a=>a.alive&&a.team===TH);G.lastHuman=last;HUD.announce(T('lastHuman',last.name),'h',3);AU.play('stingL',{vol:.6})}}
 function zBaseHp(a){return ZCLASS[a.zc].hp}
-function becomeZombie(a,host){const nh=G.actors.filter(x=>x.team===TH&&x!==a).length;
+function becomeZombie(a,host){if(a.team===TH)dropDeath(a);const nh=G.actors.filter(x=>x.team===TH&&x!==a).length;
   a.team=TZ;a.host=host;a.zc=a.zpick||'rager';const Z=ZCLASS[a.zc];a.lvl=host?2:1;a.infR=0;
   a.maxHp=host?Math.round(Z.hp*1.05+160*Math.max(1,nh)/Math.max(1,G.hostN)):Z.hp;if(a.bot)a.maxHp=Math.round(a.maxHp*DIFF_Z.hp[G.diff||0]);a.hp=a.maxHp;a.armor=host?300:Z.armor;
   a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='mut'?1:0;a.skillCD=host?3:4;a.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
@@ -380,7 +381,7 @@ function startMatch(cfg){G.cfg=cfg;G.mode=cfg.mode;G.rounds=cfg.rounds;G.roundTi
   if(cfg.mode==='scen'){const pl=G.actors.filter(a=>a.scen);if(pl.length)pl[pl.length-1].boss=true;SCEN.initPool()}else SCEN.on=false;
   if(NET.cli){G.st='prep';G.time=G.prepTime;return}
   if(cfg.mode==='scen')SCEN.begin();else startRound()}
-function startRound(plan){if(NET.cli&&!plan)return;G.round=plan?plan.n:G.round+1;G.st='prep';FX.clearLimbs();G.time=G.prepTime;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=11;G.hostN=0;
+function startRound(plan){if(NET.cli&&!plan)return;dropsClear();G.round=plan?plan.n:G.round+1;G.st='prep';FX.clearLimbs();G.time=G.prepTime;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=11;G.hostN=0;
   clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
   const sp=shuffle(MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
   for(const a of G.actors){const q=pm[a.id];const keep=plan?!!(q&&q[5]):a.survived&&a.team===TH;a.nb=null;a.team=TH;a.host=false;a.alive=true;a.dmgRound=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.permaDead=false;a.hp=100;a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;
@@ -428,7 +429,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){a.reviveT-=dt;if(a.reviveT<=0)reviveZombie(a,null)}else{a.respawnT-=dt;if(a.respawnT<=0){const p=zSpawnPoint();reviveZombie(a,[p[0],p[2]||0,p[1]])}}}}
     // dead bodies still settle under gravity
     if(!a.alive&&a.deadT<3){a.c.vy-=GRAV*dt;a.c.vx*=.9;a.c.vz*=.9;a.c.vx+=a.kvx*.3;a.c.vz+=a.kvz*.3;a.kvx*=.8;a.kvz*=.8;moveChar(a.c,dt)}}
-  separate(dt);updateNades(dt);nyUpdate(dt);
+  separate(dt);updateNades(dt);nyUpdate(dt);dropsUpdate(dt);
   for(const a of G.actors)updateVisual(a,dt)}
 
 // zombie grenade: the free hand comes up, hooks two fingers into the mouth, yanks the bone pin out and drops away; armed, the bomb trembles in the fist

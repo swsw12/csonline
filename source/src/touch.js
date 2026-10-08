@@ -87,6 +87,9 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     if(id==='fire'){if(on&&P&&!P.alive&&!G.deathCam){M.nextSpec();return}M.ml=on||[...this.btn.values()].some(b=>b.id==='fire');return}
     if(id==='alt'){M.mr=on;return}
     if(id==='score'){M.boardOn=on;UI.board(on);return}
+    // long press on the weapon in hand = drop it; a short tap still swaps back (quick switch)
+    if(id==='slot'){if(on){if(P&&P.alive&&v===P.cur&&v!=='claw'){clearTimeout(this.slotHold);this.slotHold=setTimeout(()=>{this.slotHold=null;this.buzz(25);playerDrop(G.player)},550);return}}
+      else{if(this.slotHold){clearTimeout(this.slotHold);this.slotHold=null;if(P&&P.alive)P.cmd.lastInv=true}return}}
     if(!on)return;this.buzz(8);
     if(id==='duck'){this.duck=!this.duck;this.el.querySelector('.tDuck').classList.toggle('lat',this.duck);return}
     if(id==='pause'){if(M.overlay)M.closeOverlay();M.pause();return}
@@ -95,7 +98,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     if(id==='buy'){if(M.overlay==='buy')M.closeOverlay();else M.openOverlay('buy');return}
     if(id==='zsel'){if(M.overlay==='zsel')M.closeOverlay();else M.openOverlay('zsel');return}
     if(!P.alive)return;
-    if(id==='slot'){if(v===P.cur&&v!=='claw'){P.cmd.lastInv=true;return}equip(P,v);return}// tapping the weapon in hand = quick switch back
+    if(id==='slot'){equip(P,v);return}
     if(id==='light'&&P.team===TH){P.flash=!P.flash;AU.play('ui',{vol:.35,rate:.6});return}
     if(id==='nv'&&P.team===TZ){P.nv=!P.nv;AU.play('ui',{vol:.35,rate:.5});return}},
   buzz(ms){if(CFG.haptic===false)return;try{navigator.vibrate&&navigator.vibrate(ms)}catch(_){}},

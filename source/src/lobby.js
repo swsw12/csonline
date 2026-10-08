@@ -8,6 +8,17 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.1','2026-10-08',[
+ ['NEW','무기 버리기·줍기 — G(모바일: 들고 있는 무기 슬롯 길게 누르기)로 버리고, 그 슬롯이 비어 있으면 바닥의 무기를 밟기만 해도 주움. 죽거나 감염되면 주무기를 떨어뜨림','Drop and pick up guns: G (phone: hold the weapon in hand) drops it, walk over a gun to take it into an empty slot; the fallen drop their primary'],
+ ['NEW','그래픽 프리셋 — 옵션 › 비디오에 고화질·균형·저사양 원터치 버튼, 렌더 해상도 150%·200% (폰·고해상도 화면에서 실제 화소로 선명하게)','Graphics presets (high / balanced / low) and 150% / 200% render resolution for sharp phone and retina screens'],
+ ['UP','이탈리아 로딩 약 40% 단축','Italy loads about 40% faster'],
+ ['FIX','헤비·거대 좀비가 좁은 문·계단에 끼면 웅크려서 비집고 지나감','Heavy and giant zombies crouch and squeeze through tight doors and stairs'],
+ ['FIX','빅트리 성탑 계단 옆면·옥상 계단 구멍에 난간','Big Tree keep stair: side rail and a rail round the roof stairwell']]],
+['v6.1','2026-10-08',[
+ ['NEW','그래픽 프리셋 — 옵션 › 비디오에 고화질·균형·저사양 원터치 버튼, 렌더 해상도 150%·200% (폰·고해상도 화면에서 실제 화소로 선명하게)','Graphics presets (high / balanced / low) and 150% / 200% render resolution for sharp phone and retina screens'],
+ ['UP','이탈리아 로딩 약 40% 단축 (쓰지 않는 텍스처 정리, 큰 벽 조명 계산 간소화)','Italy loads about 40% faster'],
+ ['FIX','헤비·거대 좀비가 좁은 문·계단에 끼면 웅크려서 비집고 지나감','Heavy and giant zombies crouch and squeeze through tight doors and stairs'],
+ ['FIX','빅트리 성탑 계단 옆면·옥상 계단 구멍에 난간 — 좀비가 옆으로 오르거나 구멍으로 떨어지던 문제','Big Tree keep stair: side rail and a rail round the roof stairwell']]],
 ['v6.0.2','2026-10-08',[
  ['UP','이탈리아 — 원본 텍스처 테스트 버전을 되돌리고, 원본의 벽·바닥·지붕 색을 읽어 우리 텍스처로 다시 칠함 (연어색·주황·황토·노랑·회색 외벽, 맨벽돌, 돌벽, 붉은 바닥, 판석, 평지붕)','Italy: back to our own textures, now picked and tinted from the reference colours (salmon, orange, tan, ochre, grey plaster, brick, stone, red and flag floors, flat roofs)'],
  ['UP','게임 파일 다시 가벼워짐 (5.6 MB → 1.9 MB)','Game file light again (5.6 MB → 1.9 MB)']]],
@@ -55,6 +66,7 @@ function patchOpen(){const L=LI();let o=$('patchWin');if(o)o.remove();o=document
     `<section><h3><span>${v}</span><time>${d}</time></h3><ul>${items.map(([k,ko,en])=>`<li><em class="${k==='NEW'?'n':k==='UP'?'u':'f'}">${k}</em>${L?en:ko}</li>`).join('')}</ul></section>`).join('')}</div></div>`;
   o.addEventListener('click',e=>{if(e.target===o||e.target.dataset.pc==='x')o.remove()});document.body.appendChild(o)}
 addEventListener('keydown',e=>{if(e.code==='Escape'&&$('patchWin')){$('patchWin').remove();e.stopPropagation()}},true);
+UI.gfxPre=()=>{const s=CFG.scale;if(s==='auto')return 'mid';if(+s>=1&&CFG.shadow!==false&&CFG.bloom!==false)return 'hi';if(+s<=.5&&CFG.shadow===false&&CFG.bloom===false)return 'lo';return ''};
 const ICO={
   full:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1 1h5v2H3v3H1zm9 0h5v5h-2V3h-3zM1 10h2v3h3v2H1zm12 0h2v5h-5v-2h3z"/></svg>',
   gear:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M7 1h2l.4 1.9 1.3.6 1.7-1 1.4 1.4-1 1.7.5 1.3L15 7v2l-1.9.4-.6 1.3 1 1.7-1.4 1.4-1.7-1-1.3.5L9 15H7l-.4-1.9-1.3-.5-1.7 1-1.4-1.4 1-1.7-.5-1.3L1 9V7l1.9-.4.5-1.3-1-1.7 1.4-1.4 1.7 1 1.3-.6zM8 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>',
@@ -104,7 +116,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.0 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -169,18 +181,19 @@ UI.buildOpts=function(){const L=LI(),t=UI.optTab;
       ${sel('xc',L?'Crosshair colour':'조준점 색상',[['green',L?'Green':'초록'],['yellow',L?'Yellow':'노랑'],['cyan',L?'Cyan':'하늘'],['white',L?'White':'흰색'],['pink',L?'Pink':'분홍']])}</div>
     <div>${ck('minimap',L?'Show radar':'레이더(미니맵) 표시')}${ck('autoFire',L?'Auto-fire on target (touch)':'자동 사격 (조준점에 적이 오면 발사)')}${ck('aimAssist',L?'Aim assist (touch)':'조준 보정 (적 쪽으로 살짝 끌림)')}${ck('leftFire',L?'Left fire button':'왼쪽 사격 버튼')}${ck('invert',L?'Invert look (Y)':'시점 상하 반전')}${ck('haptic',L?'Vibration':'진동')}${sl('tsens',L?'Touch look speed':'터치 시점 감도',.4,2.5,.1,v=>(+v).toFixed(1),L?'slow':'느리게',L?'fast':'빠르게')}${sl('tal',L?'Button opacity':'버튼 투명도',.25,1,.05,v=>Math.round(v*100)+'%','25%','100%')}${sl('tsz',L?'Button size':'버튼 크기',.75,1.35,.05,v=>Math.round(v*100)+'%','75%','135%')}${sl('xg',L?'Crosshair gap':'조준점 간격',2,14,1,v=>v+'px',L?'tight':'좁게',L?'wide':'넓게')}
       <div class="xprev" style="--xc:${XC[CFG.xc]||XC.green};--g:${CFG.xg||6}px"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div></div></div>`;
-  else if(t==='keys'&&typeof TOUCH!=='undefined'&&TOUCH.on){const g=L?[['Left thumb','Move — the stick starts wherever you touch; push past half for full speed'],['Right drag','Look around — slow drags are precise, flicks turn far'],['◎ big button','Fire. Hold it and drag to aim while shooting'],['Auto','Aim near an enemy: the sight is pulled in and it fires for you (Options)'],['Aim','Scope / alt attack / hammer stance / soft bomb lob'],['↑ ↓','Jump · crouch (toggle)'],['↻','Reload'],['Bottom bar','Tap a weapon to equip · tap the one in hand to swap back (quick switch)'],['Buy','Shop · Quick buy = best rifle + armour + grenade in one tap'],['⚡','Zombie skill · CLASS picks the zombie class · NV night vision'],['≡ / Ⅱ','Hold for the scoreboard · pause'],['Dead','Tap fire to watch the next player']]
-      :[['왼손','이동 — 왼쪽 아무 데나 대면 그 자리에 스틱, 반 이상 밀면 달리기'],['오른손 드래그','시점 — 천천히 끌면 정밀, 휙 그으면 크게 회전'],['◎ 큰 버튼','사격. 누른 채로 끌면 쏘면서 조준'],['자동','적 근처로 조준하면 끌려가면서 자동 사격 (옵션에서 끄기)'],['조준','저격 줌 · 보조 공격 · 해머 자세 · 폭탄 살짝 던지기'],['↑ ↓','점프 · 앉기(토글)'],['↻','재장전'],['아래 슬롯','무기 탭해서 교체 · 들고 있는 무기 다시 탭 = 챈샷'],['구매','상점 · 추천 구매 한 번에 소총+방탄+수류탄'],['⚡','좀비 스킬 · 클래스 = 좀비 종류 · NV 야간투시'],['≡ / Ⅱ','누르는 동안 점수판 · 일시정지'],['사망 시','사격 버튼으로 다른 사람 관전']];
+  else if(t==='keys'&&typeof TOUCH!=='undefined'&&TOUCH.on){const g=L?[['Left thumb','Move — the stick starts wherever you touch; push past half for full speed'],['Right drag','Look around — slow drags are precise, flicks turn far'],['◎ big button','Fire. Hold it and drag to aim while shooting'],['Auto','Aim near an enemy: the sight is pulled in and it fires for you (Options)'],['Aim','Scope / alt attack / hammer stance / soft bomb lob'],['↑ ↓','Jump · crouch (toggle)'],['↻','Reload'],['Bottom bar','Tap a weapon to equip · tap the one in hand to swap back (quick switch) · hold it to drop it; walk over a gun to pick it up into an empty slot'],['Buy','Shop · Quick buy = best rifle + armour + grenade in one tap'],['⚡','Zombie skill · CLASS picks the zombie class · NV night vision'],['≡ / Ⅱ','Hold for the scoreboard · pause'],['Dead','Tap fire to watch the next player']]
+      :[['왼손','이동 — 왼쪽 아무 데나 대면 그 자리에 스틱, 반 이상 밀면 달리기'],['오른손 드래그','시점 — 천천히 끌면 정밀, 휙 그으면 크게 회전'],['◎ 큰 버튼','사격. 누른 채로 끌면 쏘면서 조준'],['자동','적 근처로 조준하면 끌려가면서 자동 사격 (옵션에서 끄기)'],['조준','저격 줌 · 보조 공격 · 해머 자세 · 폭탄 살짝 던지기'],['↑ ↓','점프 · 앉기(토글)'],['↻','재장전'],['아래 슬롯','무기 탭해서 교체 · 들고 있는 무기 다시 탭 = 챈샷 · 길게 누르면 버리기, 빈 슬롯이면 바닥 무기를 밟아서 줍기'],['구매','상점 · 추천 구매 한 번에 소총+방탄+수류탄'],['⚡','좀비 스킬 · 클래스 = 좀비 종류 · NV 야간투시'],['≡ / Ⅱ','누르는 동안 점수판 · 일시정지'],['사망 시','사격 버튼으로 다른 사람 관전']];
     body=`<div class="tguide">${g.map(([k,d])=>`<div><b>${k}</b><span>${d}</span></div>`).join('')}</div><div class="rrule" style="margin-top:10px"><b>${T('rulesT')}</b><ul>${T('rules').map(r=>`<li>${r}</li>`).join('')}</ul></div>`}
   else if(t==='keys')body=`<table class="ktbl"><tr><th>${L?'Action':'설명'}</th><th>${L?'Key / button':'키/버튼'}</th></tr>${T('keys').map(([k,d])=>`<tr><td>${d}</td><td><kbd>${k}</kbd></td></tr>`).join('')}</table>
     <div class="rrule"><b>${T('rulesT')}</b><ul>${T('rules').map(r=>`<li>${r}</li>`).join('')}</ul></div>`;
   else if(t==='mouse')body=`<div class="og2"><div>${sl('sens',L?'Mouse sensitivity':'마우스 감도',.4,4,.1,v=>(+v).toFixed(1),L?'slow':'느리게',L?'fast':'빠르게')}</div><div>${ck('invert',L?'Invert mouse (Y)':'마우스 반전 (상하)')}</div></div>`;
   else if(t==='audio')body=`<div class="og2"><div>${sl('vol',L?'Master volume':'전체 볼륨',0,1,.05,v=>Math.round(v*100),'0','100')}</div><div>${ck('music',L?'Background music':'배경 음악')}</div></div>`;
-  else body=`<div class="og2"><div>${sel('scale',L?'Render resolution':'렌더 해상도',[['auto',T('auto')],[.4,'40%'],[.5,'50%'],[.65,'65%'],[.8,'80%'],[1,'100%']])}
+  else body=`<div class="og2"><div>${sel('scale',L?'Render resolution':'렌더 해상도',[['auto',T('auto')],[.4,'40%'],[.5,'50%'],[.65,'65%'],[.8,'80%'],[1,'100%'],[1.5,'150%'],[2,'200%']])}
       ${sl('fov',L?'Field of view':'시야각 (FOV)',60,95,1,v=>v+'°','60','95')}</div>
     <div>${ck('bloom',L?'Bloom (glow)':'블룸 (빛 번짐)')}${ck('shadow',L?'Dynamic shadows':'실시간 그림자')}
       ${sl('gamma',L?'Brightness':'밝기',.6,1.2,.02,v=>Math.round((1.2-v)/.6*100),L?'dark':'어둡게',L?'bright':'밝게')}</div></div>
-    ${true?`<div class="fsrow"><button data-act="full" class="fslbl">${FS.label()}</button><span>${L?'Alt+Enter toggles it in game':'게임 중에는 Alt+Enter로 전환'}</span></div>`:''}<p class="onote">${L?'Note: lower the render resolution if the game stutters.':'참고: 게임이 끊기면 렌더 해상도를 낮춰 보세요.'}</p>`;
+    ${true?`<div class="fsrow"><button data-act="full" class="fslbl">${FS.label()}</button><span>${L?'Alt+Enter toggles it in game':'게임 중에는 Alt+Enter로 전환'}</span></div>`:''}<div class="gpre"><span>${L?'Presets':'한 번에 설정'}</span>${[['hi',L?'High quality':'고화질'],['mid',L?'Balanced':'균형'],['lo',L?'Low spec':'저사양']].map(([k,n])=>`<button data-act="gfxpre" data-v="${k}" class="${UI.gfxPre()===k?'on':''}">${n}</button>`).join('')}</div>
+    <p class="onote">${L?'High quality draws at the screen\'s real resolution (up to 200%) with shadows and bloom; lower it if the game stutters.':'고화질은 화면 실제 해상도(최대 200%)로 그리고 그림자·블룸을 켭니다. 게임이 끊기면 낮춰 보세요.'}</p>`;
   $('opts').innerHTML=`<div class="win opt"><div class="dpHead"><b>${L?'Options':'옵션'}</b><span></span><button class="x" data-act="optcancel">✕</button></div>
     <div class="otabs">${tabs.map(([k,l])=>`<button class="${t===k?'on':''}" data-act="opttab" data-v="${k}">${l}</button>`).join('')}</div>
     <div class="obody">${body}</div>
@@ -197,6 +210,10 @@ UI.optLive=function(){applyCfg();applyXhair();if(typeof TOUCH!=='undefined'){doc
     if(a==='opts'||a==='help'){if(UI.open!=='opts'){UI.ret=UI.open;UI.optBak=JSON.stringify(CFG)}UI.optTab=a==='help'?'keys':(UI.optTab==='keys'?'game':UI.optTab);UI.buildOpts();UI.show('opts');return}
     if(a==='back'&&UI.open==='opts')a='optcancel';
     if(a==='opttab'){UI.optTab=v;UI.buildOpts();return}
+    // graphics presets: high = native pixels (device pixel ratio, max 2) + shadows + bloom; balanced = auto resolution; low = half resolution, no shadows or bloom
+    if(a==='gfxpre'){const dpr=Math.min(2,Math.max(1,Math.round((window.devicePixelRatio||1)*2)/2));
+      if(v==='hi')Object.assign(CFG,{scale:dpr,shadow:true,bloom:true});else if(v==='mid')Object.assign(CFG,{scale:'auto',shadow:!(typeof TOUCH!=='undefined'&&TOUCH.on),bloom:true});else Object.assign(CFG,{scale:.5,shadow:false,bloom:false});
+      UI.optLive();UI.buildOpts();return}
     if(a==='optck'){const [k,inv]=v.split(':');CFG[k]=inv?!CFG[k]:!(CFG[k]!==false&&!!CFG[k]);UI.optLive();UI.buildOpts();return}
     if(a==='opt'&&v&&v.startsWith('lang:')){const l=v.slice(5);if(l!==LANG){LANG=l;LS.set('lang',LANG)}UI.buildOpts();return}
     if(a==='opt'){const i=v.indexOf(':'),k=v.slice(0,i),val=v.slice(i+1);CFG[k]=val==='true'?true:val==='false'?false:isNaN(+val)?val:+val;UI.optLive();UI.buildOpts();return}

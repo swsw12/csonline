@@ -25,7 +25,9 @@ const R={renderer:null,scene:null,cam:null,vmScene:null,vmCam:null,rt:null,post:
   makeRT(rw,rh){const smooth=this.scale>=.6;const f=smooth?THREE.LinearFilter:THREE.NearestFilter;
     if(this.rt&&this.rt.width===rw&&this.rt.height===rh&&this.rt.texture.magFilter===f)return;if(this.rt)this.rt.dispose();
     this.rt=new THREE.WebGLRenderTarget(rw,rh,{minFilter:f,magFilter:f,depthBuffer:true,stencilBuffer:false,generateMipmaps:false});this.PU.tDiffuse.value=this.rt.texture;this.PU.uFxaa.value=smooth?1:0},
-  resize(){if(!this.renderer)return;const w=Math.max(320,innerWidth),h=Math.max(200,innerHeight);this.w=w;this.h=h;this.renderer.setSize(w,h,false);
+  resize(){if(!this.renderer)return;const w=Math.max(320,innerWidth),h=Math.max(200,innerHeight);this.w=w;this.h=h;
+    // above 100% the canvas itself gets more pixels (up to the device pixel ratio), so phones and retina screens show native detail
+    const pr=this.scale>1?Math.min(this.scale,Math.max(1,window.devicePixelRatio||1)):1;if(this.renderer.getPixelRatio()!==pr)this.renderer.setPixelRatio(pr);this.renderer.setSize(w,h,false);
     const rh=Math.max(180,Math.round(h*this.scale)),rw=Math.max(240,Math.round(rh*w/h));this.makeRT(rw,rh);this.PU.uRes.value.set(rw,rh);
     const bw=Math.max(16,Math.round(w/4)),bh=Math.max(16,Math.round(h/4));this.bA.setSize(bw,bh);this.bB.setSize(bw,bh);this.bC.setSize(Math.max(8,bw>>1),Math.max(8,bh>>1));this.bD.setSize(Math.max(8,bw>>1),Math.max(8,bh>>1));
     this.cam.aspect=w/h;this.cam.updateProjectionMatrix();this.vmCam.aspect=w/h;this.vmCam.updateProjectionMatrix()},

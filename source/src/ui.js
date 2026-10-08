@@ -184,7 +184,7 @@ const UI={open:null,
   buildOpts(){$('opts').innerHTML=`<h2>${T('settings')}</h2><div class="opts">
     ${this.optRow(T('sens'),'sens',[[.6,'0.6'],[1,'1'],[1.6,'1.6'],[2.2,'2.2'],[3,'3'],[4,'4']])}
     ${this.optRow(T('fov'),'fov',[[64,'64'],[70,'70'],[74,'74'],[80,'80'],[88,'88']])}
-    ${this.optRow(T('scale'),'scale',[['auto',T('auto')],[.4,'40%'],[.5,'50%'],[.8,'80%'],[1,'100%']])}
+    ${this.optRow(T('scale'),'scale',[['auto',T('auto')],[.4,'40%'],[.5,'50%'],[.8,'80%'],[1,'100%'],[1.5,'150%'],[2,'200%']])}
     ${this.optRow(T('bloomO'),'bloom',[[true,T('on')],[false,T('off')]])}
     ${this.optRow(T('shadowO'),'shadow',[[true,T('on')],[false,T('off')]])}
     ${this.optRow(T('miniO'),'minimap',[[true,T('on')],[false,T('off')]])}

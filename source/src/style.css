@@ -494,3 +494,6 @@ html.touch .rng::-webkit-slider-thumb{margin-top:0}
 @media (max-height:560px){.tbtns .tpatch{display:flex}}
 #patchWin .pwh button{width:36px!important;min-width:0!important;flex:none;height:32px}
 .lpt .pplus{width:22px!important;min-width:0!important;height:22px!important;flex:none;margin-left:auto}
+
+/* graphics presets */
+.gpre{display:flex;align-items:center;gap:8px;margin:10px 0 2px;flex-wrap:wrap}.gpre span{opacity:.75;font-size:12px;margin-right:4px}.gpre button{min-width:84px}.gpre button.on{border-color:#e8a33a;color:#ffd890}

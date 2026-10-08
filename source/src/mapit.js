@@ -4,19 +4,19 @@
 // everything else made solid, and each column's solid runs merged into boxes (ITALY_DATA, mapit_data.js). Reachable floor tops keep
 // their exact height; roofs and wall heads round up to 0.5 m. Only the geometry is taken: every surface is painted here.
 Object.assign(MATS,{
-  facA:{t:'facA',s:3,k:'stone'},facB:{t:'facB',s:3,k:'stone'},facC:{t:'facC',s:3,k:'stone'},
+  facA:{t:'facA',s:3,k:'stone',cs:1},facB:{t:'facB',s:3,k:'stone',cs:1},facC:{t:'facC',s:3,k:'stone',cs:1},
   // v6 colour variants, picked per wall from the reference's paint colour: salmon, orange, tan, ochre, grey plaster, bare brick
-  facR:{t:'facR',s:3,k:'stone'},facO:{t:'facO',s:3,k:'stone'},facT:{t:'facT',s:3,k:'stone'},facY:{t:'facY',s:3,k:'stone'},facG:{t:'facG',s:3,k:'stone'},brickIt:{t:'brickIt',s:2,k:'stone'},
+  facR:{t:'facR',s:3,k:'stone',cs:1},facO:{t:'facO',s:3,k:'stone',cs:1},facT:{t:'facT',s:3,k:'stone',cs:1},facY:{t:'facY',s:3,k:'stone',cs:1},facG:{t:'facG',s:3,k:'stone',cs:1},brickIt:{t:'brickIt',s:2,k:'stone',cs:1},
   // v6 colour variants, chosen per wall from the reference's paint colour (salmon, orange, tan, ochre, grey)
-  facR:{t:'facR',s:3,k:'stone'},facO:{t:'facO',s:3,k:'stone'},facT:{t:'facT',s:3,k:'stone'},facY:{t:'facY',s:3,k:'stone'},facG:{t:'facG',s:3,k:'stone'},
+  facR:{t:'facR',s:3,k:'stone',cs:1},facO:{t:'facO',s:3,k:'stone',cs:1},facT:{t:'facT',s:3,k:'stone',cs:1},facY:{t:'facY',s:3,k:'stone',cs:1},facG:{t:'facG',s:3,k:'stone',cs:1},
   roofIt:{t:'roofIt',s:2,k:'stone',cs:2},cobble:{t:'cobble',s:1.5},pavers:{t:'pavers',s:2.4},cobbleR:{t:'cobbleR',s:1.5},
-  stoneIt:{t:'stoneIt',s:2},woodIt:{t:'woodIt',s:2,k:'wood'},doorIt:{t:'doorIt',uv:'box',k:'wood'},awn:{t:'awn',s:2,k:'soft'},fruit:{t:'fruit',uv:'box',k:'wood'},
+  stoneIt:{t:'stoneIt',s:2,cs:1},woodIt:{t:'woodIt',s:2,k:'wood'},doorIt:{t:'doorIt',uv:'box',k:'wood'},awn:{t:'awn',s:2,k:'soft'},fruit:{t:'fruit',uv:'box',k:'wood'},
   water:{t:'water',s:3,emis:.12,k:'glass'},flowers:{t:'flowers',uv:'box',k:'soft'},
   ironRail:{t:'ironRail',uv:'boxV',s:1.2,k:'metal'},cloth0:{t:'cloth0',uv:'box',k:'soft'},cloth1:{t:'cloth1',uv:'box',k:'soft'},cloth2:{t:'cloth2',uv:'box',k:'soft'},
   leaves:{t:'leaves',s:1.5,k:'soft'},bark:{t:'bark',s:1,k:'wood'},signIt:{t:'signIt',uv:'box',emis:.2,k:'wood'},
-  retW:{t:'retW',s:2,k:'stone'},rubble:{t:'rubble',s:2,k:'stone'},stepW:{t:'stepW',s:1,k:'wood'},roofFl:{t:'roofFl',s:2,k:'stone'},
-  cellarW:{t:'cellarW',s:2,k:'stone'},cellarF:{t:'cellarF',s:2},beamC:{t:'beamC',s:2,k:'wood'},rack:{t:'rack',uv:'box',k:'wood'},
-  wallP:{t:'wallP',s:1,k:'stone'},woodFl:{t:'woodFl',s:2,k:'wood'},ceilT:{t:'ceilT',s:1.2},
+  retW:{t:'retW',s:2,k:'stone',cs:1},rubble:{t:'rubble',s:2,k:'stone'},stepW:{t:'stepW',s:1,k:'wood'},roofFl:{t:'roofFl',s:2,k:'stone',cs:2},
+  cellarW:{t:'cellarW',s:2,k:'stone',cs:1},cellarF:{t:'cellarF',s:2},beamC:{t:'beamC',s:2,k:'wood'},rack:{t:'rack',uv:'box',k:'wood'},
+  wallP:{t:'wallP',s:1,k:'stone'},woodFl:{t:'woodFl',s:2,k:'wood'},ceilT:{t:'ceilT',s:1.2,cs:1},
   paintA:{t:'paintA',uv:'box',k:'wood'},paintB:{t:'paintB',uv:'box',k:'wood'},fresco:{t:'fresco',uv:'box',k:'stone'},gateA:{t:'gateA',uv:'box',k:'metal'},
   ivy:{t:'ivy',uv:'box',k:'soft'},shutG:{t:'shutG',uv:'box',k:'wood'},shutR:{t:'shutR',uv:'box',k:'wood'},
 });
@@ -189,19 +189,14 @@ function texBrickIt(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++){const
     else{const t=.5+(hash2(id,1,1452)-.5)*.45+(P.n(x,y,16,1453,2)-.5)*.25+(hash2(x,y,1454)-.5)*.08;c=dith(P,x,y,clamp(t,0,1),['#5a2a1c','#723826','#884530','#9a5438','#ac6644'],.1)}
     P.set(x,y,c)}}for(let i=0;i<14;i++)streak(P,Math.floor(hash2(i,1,1455)*N),Math.floor(hash2(i,2,1455)*N*.5),60+Math.floor(hash2(i,3,1455)*140),.14,2)})}
 function bakeItTex(){if(TEX.facA)return;
+  // v6: only what the rebuilt town uses (the old hand-built set — awnings, frescoes, racks, cloth… — is no longer painted)
   TEX.facA=mkTex(texFacade('#e8e3d6','#3e6a46',961));TEX.facB=mkTex(texFacade('#ecd2b6','#8a3026',971));TEX.facC=mkTex(texFacade('#ded5c2','#5a4632',981));
   TEX.facR=mkTex(texFacade('#dca296','#3e6a46',1401));TEX.facO=mkTex(texFacade('#e0aa78','#5a4632',1411));TEX.facT=mkTex(texFacade('#dcc096','#8a3026',1421));TEX.facY=mkTex(texFacade('#e8cc80','#3e6a46',1431));TEX.facG=mkTex(texFacade('#cfccc4','#5a4632',1441));TEX.brickIt=mkTex(texBrickIt());
-  TEX.facR=mkTex(texFacade('#dca296','#3e6a46',1401));TEX.facO=mkTex(texFacade('#e0aa78','#5a4632',1411));TEX.facT=mkTex(texFacade('#dcc096','#8a3026',1421));TEX.facY=mkTex(texFacade('#e8cc80','#3e6a46',1431));TEX.facG=mkTex(texFacade('#cfccc4','#5a4632',1441));
-  TEX.roofIt=mkTex(texRoofIt());TEX.cobble=mkTex(texCobble(991));TEX.cobbleR=mkTex(texCobbleR());TEX.pavers=mkTex(texPavers());
-  TEX.stoneIt=mkTex(texStoneIt());TEX.woodIt=mkTex(texWoodIt());TEX.doorIt=mkTex(texDoorIt(),false);TEX.awn=mkTex(texAwn());TEX.fruit=mkTex(texFruit(),false);TEX.water=mkTex(texWater());
-  TEX.flowers=mkTex(texFlowers(),false);TEX.ironRail=mkTex(texIronRail());TEX.cloth0=mkTex(texCloth('#e8e4da'));TEX.cloth1=mkTex(texCloth('#3a6a9a'));TEX.cloth2=mkTex(texCloth('#c84a3a'));
-  TEX.leaves=mkTex(texLeaves());TEX.bark=mkTex(texBark());TEX.barrel=mkTex(texBarrel());TEX.signIt=mkTex(texSign([{t:'CANTINA'},{t:'VINI · OLIO',s:7}],'#3a2414','#e8c878',96,28),false);
-  TEX.retW=mkTex(texRetW());TEX.rubble=mkTex(texRubble());TEX.stepW=mkTex(texStepW());TEX.cellarW=mkTex(texCellarW());TEX.cellarF=mkTex(texCellarF());TEX.beamC=mkTex(texBeamC());
-  TEX.rack=mkTex(texRack(),false);TEX.wallP=mkTex(texWallP());TEX.woodFl=mkTex(texWoodFl());TEX.ceilT=mkTex(texCeilT());TEX.roofFl=mkTex(texRoofFl());
-  TEX.paintA=mkTex(texPaint(3,'#7aa0c8','#6a7a3a'),false);TEX.paintB=mkTex(texPaint(7,'#d8a070','#5a4a3a'),false);TEX.fresco=mkTex(texFresco(),false);TEX.gateA=mkTex(texGate(),false);
-  TEX.ivy=mkTex(texIvy(),false);TEX.shutG=mkTex(texShut('#3e6a46'),false);TEX.shutR=mkTex(texShut('#8a3026'),false);
-  TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter;TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false;
-  const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['facA','facB','facC','facR','facO','facT','facY','facG','brickIt','facR','facO','facT','facY','facG','roofIt','cobble','cobbleR','pavers','stoneIt','retW','rubble','cellarF','woodFl'])TEX[k].anisotropy=an;
+  TEX.roofIt=mkTex(texRoofIt());TEX.cobble=mkTex(texCobble(991));TEX.cobbleR=mkTex(texCobbleR());TEX.pavers=mkTex(texPavers());TEX.stoneIt=mkTex(texStoneIt());
+  TEX.retW=mkTex(texRetW());TEX.cellarW=mkTex(texCellarW());TEX.cellarF=mkTex(texCellarF());TEX.woodFl=mkTex(texWoodFl());TEX.ceilT=mkTex(texCeilT());TEX.roofFl=mkTex(texRoofFl());
+  if(!TEX.skyDay){TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter}
+  if(!TEX.sunDisc){TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false}
+  const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['facA','facB','facC','facR','facO','facT','facY','facG','brickIt','roofIt','cobble','cobbleR','pavers','stoneIt','retW','cellarF','woodFl'])TEX[k].anisotropy=an;
   MIXC.clear();VN_T.clear();_vnK=-1;_vnT=null;_fbC.length=0}
 // ---------- geometry: decode the generated boxes ----------
 // each box: x0 z0 w d y0 y1 (2 base-36 chars, cells of D.cs, y offset by D.base) + top material + side material (1 char each)

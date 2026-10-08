@@ -104,7 +104,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
   nextSpec(){const L=G.actors.filter(a=>a.alive&&!a.isPlayer);if(!L.length){G.spec=null;return}G.specIdx=(G.specIdx+1)%L.length;G.spec=L[G.specIdx]},
   playerCmd(dt){const P=G.player,k=this.keys,c=P.cmd;if(!P.alive)return;const free=!this.overlay||this.overlay;
     c.f=(k.KeyW||k.ArrowUp?1:0)-(k.KeyS||k.ArrowDown?1:0);c.s=(k.KeyD?1:0)-(k.KeyA?1:0);c.jump=!!k.Space;c.duck=!!(k.KeyC||k.ControlLeft||k.ControlRight);c.walk=!!(k.ShiftLeft||k.ShiftRight);
-    const canShoot=!this.overlay||this.locked;c.fire=this.ml&&canShoot;c.alt=this.mr&&canShoot;c.reload=!!k.KeyR;c.skill=!!(k.KeyG||k.KeyE);
+    const canShoot=!this.overlay||this.locked;c.fire=this.ml&&canShoot;c.alt=this.mr&&canShoot;c.reload=!!k.KeyR;c.skill=!!(k.KeyG||k.KeyE);c.drop=!!k.KeyG;
     if(k.ArrowLeft)P.yaw+=dt*2.4;if(k.ArrowRight)P.yaw-=dt*2.4;
     // without pointer lock: turn while the cursor rests near the screen edge
     if(this.lockFail&&!this.overlay&&!this.paused){const ex=this.mx/innerWidth;if(ex<.06)P.yaw+=dt*2.6*(1-ex/.06);else if(ex>.94)P.yaw-=dt*2.6*((ex-.94)/.06);const ey=this.my/innerHeight;if(ey<.06)P.pitch=Math.min(1.5,P.pitch+dt*1.5);else if(ey>.94)P.pitch=Math.max(-1.5,P.pitch-dt*1.5)}},
