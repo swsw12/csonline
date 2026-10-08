@@ -40,6 +40,10 @@ function finishBuf(buf,peak){let m=0;for(let c=0;c<buf.numberOfChannels;c++){con
   const k=(m>1e-6&&isFinite(m))?peak/m:0;const fl=Math.min(buf.length,Math.floor(ASR*.012));
   for(let c=0;c<buf.numberOfChannels;c++){const d=buf.getChannelData(c);for(let i=0;i<d.length;i++)d[i]=isFinite(d[i])?d[i]*k:0;for(let i=0;i<fl;i++)d[d.length-1-i]*=i/fl}
   return buf}
+// keep only the first `sec` seconds of a recorded sound (design.js len), with a short fade so the cut does not click
+function trimBuf(buf,sec){const L=Math.min(buf.length,Math.max(1,Math.round(sec*buf.sampleRate)));if(L>=buf.length)return buf;
+  const out=abuf(buf.numberOfChannels,L);const F=Math.min(L,Math.round(.06*buf.sampleRate));
+  for(let c=0;c<buf.numberOfChannels;c++){const s=buf.getChannelData(c),d=out.getChannelData(c);for(let i=0;i<L;i++)d[i]=s[i];for(let i=0;i<F;i++)d[L-1-i]*=i/F}return out}
 function makeLoop(buf,xf){const X=Math.floor(xf*ASR),L=buf.length-X;const out=abuf(buf.numberOfChannels,L);
   for(let c=0;c<buf.numberOfChannels;c++){const s=buf.getChannelData(c),d=out.getChannelData(c);for(let i=0;i<L;i++)d[i]=s[i];for(let i=0;i<X;i++){const k=i/X;d[i]=s[i]*Math.sqrt(k)+s[L+i]*Math.sqrt(1-k)}}return out}
 // The impulse response MUST be built at the live context's exact rate: ConvolverNode throws if the
@@ -274,7 +278,7 @@ const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:
     try{makeNoise()}catch(e){console.warn('noise',e);return}
     let k=0;for(const name of SFX_ORDER){const d=SFX[name];const arr=[];
       // design.js can swap a synthesised sound for a recorded file
-      const fb=soundDesign(name).file?await this.loadFile(soundDesign(name).file):null;if(fb){this.bank[name]=[fb];this.fromFile[name]=true;k++;if(onProg)onProg(k/SFX_ORDER.length);continue}
+      let fb=soundDesign(name).file?await this.loadFile(soundDesign(name).file):null;if(fb&&soundDesign(name).len>0)fb=trimBuf(fb,soundDesign(name).len);if(fb){this.bank[name]=[fb];this.fromFile[name]=true;k++;if(onProg)onProg(k/SFX_ORDER.length);continue}
       for(let v=0;v<d.n;v++){try{let b=await renderSfx(d.dur,d.ch||1,B=>d.fn(B,v));b=finishBuf(b,d.peak||.9);if(d.loop)b=makeLoop(b,d.loop);arr.push(b)}catch(e){console.warn('sfx',name,e)}}this.bank[name]=arr;k++;if(onProg)onProg(k/SFX_ORDER.length)}
     this.ready=true},
   // a recorded replacement (design.js SOUND_DESIGN[name].file): decoded at the bank rate; null when missing or unreadable
