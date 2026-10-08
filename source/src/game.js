@@ -103,7 +103,7 @@ function ensureGun(a){const W=WPN[a.cur];const want=a.team===TH&&W&&W.model?W.mo
   if(!a.gunMat)a.gunMat=matGun();
   const m=new THREE.Mesh(gunGeo(W.model),a.gunMat);m.matrixAutoUpdate=false;a.ch.grp.add(m);a.gun=m;
   if(a.beam){a.beam.parent&&a.beam.parent.remove(a.beam);a.beam=null}
-  if(W.dual){const m2=new THREE.Mesh(gunGeo(W.model),a.gunMat);m2.matrixAutoUpdate=false;a.ch.grp.add(m2);a.gun2=m2}}
+  if(W.dual){const m2=new THREE.Mesh(gunGeo(GUNS[W.model].alt||W.model),a.gunMat);m2.matrixAutoUpdate=false;a.ch.grp.add(m2);a.gun2=m2}}
 const _pr=new THREE.Color(),_fyo=[0,0,0,0];
 function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.isPlayer&&!G.spec&&a.alive)&&(a.alive||a.deadT<60||!a.permaDead||G.st!=='menu');
   ch.grp.visible=show&&(a.alive||a.an.dead>0);if(!ch.grp.visible){if(a.gun)a.gun.visible=false;return}

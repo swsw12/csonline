@@ -3,7 +3,7 @@
 // gun frame: origin at the firing hand's grip, barrel along -Z, up +Y, metres
 const GA_MATS=['blk','blk2','steel','bright','wood','olive','tan','rub','brass','glove','sl_guard','sl_medic','sl_soldier','sl_hazmat','skin','zs_rager',
   'zs_runner','zs_brute','zs_scream','claw','red','heGreen','frost','lens','muzzle','white','wood2','gunmetal','cuff','hglove','nail','flesh',
-  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap','coffW','coffL','zs_coffin'];
+  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap','coffW','coffL','zs_coffin','dred','dyel'];
 const GA={W:1024,H:1024,P:128,idx:{},tex:null,texVM:null,canvas:null};
 GA_MATS.forEach((m,i)=>GA.idx[m]=i);
 function paintGunAtlas(){const PS=GA.P;
@@ -44,15 +44,15 @@ function paintGunAtlas(){const PS=GA.P;
     patch('cuff',(x,y)=>y%12<2?'#141416':'#1e1e20');
     const sleeve=(name,base,camo)=>patch(name,(x,y,X,Y)=>{const t=nz(X,Y,11,22)+(Math.sin(x*.2+hash2(Math.floor(y/12),2,1)*4)*.5)*.2;let c=t>.62?lt(base,.08):t<.38?dk(base,.15):base;
       if(camo){const n=nz(X,Y,13,24);if(n>.62)c=mix(c,camo[0],.7);else if(n<.36)c=mix(c,camo[1],.7)}if(y<2||y>125)c=dk(c,.3);if(x%40===0)c=dk(c,.2);return c});
-    sleeve('sl_guard','#2b3346');sleeve('sl_medic','#5e706e');sleeve('sl_soldier','#4c5436',['#2e3424','#6a6a48']);sleeve('sl_hazmat','#c8a42a');
+    // sleeve and zombie-arm colours come from ARM_DESIGN (design.js)
+    for(const k of ['sl_guard','sl_medic','sl_soldier','sl_hazmat']){const a=ARM_DESIGN[k];sleeve(k,a[0],a.length>2?[a[1],a[2]]:null)}
     patch('skin',(x,y,X,Y)=>{const t=nz(X,Y,14,18);return t>.6?'#d4a684':t<.4?'#b48464':'#c49474'});
     const zs=(name,base,blot)=>patch(name,(x,y,X,Y)=>{const t=nz(X,Y,15,10),t2=nz(X,Y,16,24);let c=t>.62?dk(base,.25):t<.32?lt(base,.1):base;if(t2>.64)c=mix(c,blot,.5);
       if(hash2(X,Y,17)<.02)c='#3a0c0a';if(((x*7+y*3)%41===0)&&hash2(x,y,18)<.5)c=dk(base,.45);const v=Math.abs(Math.sin(x*.09+Math.sin(y*.07)*2.5));if(v<.03)c=mix(c,'#3a2a40',.6);
       // torn skin showing muscle, smeared blood
       const w=nz(X,Y,46,22);if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55);
       const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,'#5a0808',clamp((bl-.66)*4,0,.8));return c});
-    zs('zs_rager','#7a8a6a','#4a2a28');zs('zs_runner','#9a9a86','#5a3a40');zs('zs_brute','#8a7a6a','#6a3a32');zs('zs_scream','#2a1a15','#4a3020');
-    zs('zs_coffin','#282321','#3a1c10');
+    for(const k of ['zs_rager','zs_runner','zs_brute','zs_scream','zs_coffin']){const a=ARM_DESIGN[k];zs(k,a[0],a[1])}
     patch('claw',(x,y,X,Y)=>{const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=mix(c,'#6a0a08',.7);return c});
     patch('nail',(x,y)=>mix('#c8bca0','#2a1c14',y/127));
     patch('coffW',(x,y,X,Y)=>{const pl=Math.floor(x/26),g=nz(X,Y,91+pl,14)+Math.sin(y*.35+pl*2.1+nz(X,Y,92,30)*4)*.08;let c=g>.62?'#2e1c10':g<.4?'#4a3020':'#3a2616';if(x%26===0)c='#160c06';if(hash2(X,Y,93)<.01)c='#5a4030';return c});
@@ -68,6 +68,10 @@ function paintGunAtlas(){const PS=GA.P;
     patch('heGreen',(x,y,X,Y)=>{let c=nz(X,Y,21,16)>.55?'#4a5a34':'#3a4828';if(y%32===0||x%32===0)c='#2a3420';if(y%32===1||x%32===1)c='#5a6a44';return c});
     patch('frost',(x,y,X,Y)=>{let c=nz(X,Y,22,16)>.5?'#5a8ab8':'#4a78a4';if(hash2(X,Y,23)<.06)c='#d8eeff';if(y<16)c='#d8e8f4';return c});
     patch('lens',(x,y)=>{const r=Math.hypot(x-48,y-48);let c=y<x*.5?'#1a2a4a':'#0c1424';if(r<16)c='#8ab8e8';if(r<6)c='#d8f0ff';if(Math.abs(x-y-20)<3)c='#2a4a7a';return c});
+    // Dual Berettas: one deep red clouded with black, one deep yellow
+    patch('dred',(x,y,X,Y)=>{const t=nz(X,Y,96,14)+(hash2(X,Y,97)-.5)*.12,b=nz(X,Y,98,26);let c=t>.62?'#460a0e':t<.38?'#260406':'#36070a';
+      if(b>.52)c=mix(c,'#080203',clamp((b-.52)*4,0,.85));if(scr(x,y,X,Y,99))c='#5a1216';return c});
+    patch('dyel',(x,y,X,Y)=>{const t=nz(X,Y,100,14)+(hash2(X,Y,101)-.5)*.12;let c=t>.62?'#866008':t<.38?'#5c4004':'#725006';if(scr(x,y,X,Y,102))c='#a07820';return c});
     patch('muzzle',()=>'#08080a');
     patch('white',(x,y)=>(y%16===0)?'#8a8a84':'#b8b8b0');
   });
@@ -131,8 +135,12 @@ const GUNS={
       Pt(.0152,.05,-.02,.002,.018,.05,'muzzle'),Pt(.0152,.044,.02,.002,.026,.004,'blk2'),Pt(.0152,.044,.012,.002,.026,.004,'blk2'),Pt(.0152,.044,.004,.002,.026,.004,'blk2'),Pt(-.0152,.044,.02,.002,.026,.004,'blk2'),Pt(-.0152,.044,.012,.002,.026,.004,'blk2')]),
     Pt(0,.02,-.06,.028,.02,.17,'blk2'),Pt(0,.009,-.11,.024,.008,.06,'rail'),...pGrip('grip2',-.035,.012,.22),...TAG('mag',[Pt(0,-.087,.024,.031,.012,.048,'blk',{rx:.22})]),...tGuard(-.035),Pt(.0145,.022,-.03,.004,.006,.012,'steel')],
     grip:[0,-.02,.005],sup:[-.012,-.045,.01],muzzle:[0,.047,-.16],mag:[0,-.07,.02],eject:[.02,.05,-.03]},
-  tw9:{parts:[...TAG('slide',[Pt(0,.045,-.065,.03,.034,.2,'chrome'),Pt(0,.047,-.165,.012,.012,.008,'muzzle'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.15,.006,.008,.006,'steel'),Pt(.0152,.05,-.02,.002,.018,.05,'muzzle')]),
-    Pt(0,.02,-.06,.028,.02,.17,'blk'),...pGrip('wood2',-.035,.012,.2),...TAG('mag',[Pt(0,-.087,.024,.031,.012,.048,'chrome',{rx:.2})]),...tGuard(-.035)],
+  // Dual Berettas: right hand deep red (black-clouded), left hand deep yellow; alt = the left-hand twin
+  tw9:{parts:[...TAG('slide',[Pt(0,.045,-.065,.03,.034,.2,'dred'),Pt(0,.047,-.165,.012,.012,.008,'muzzle'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.15,.006,.008,.006,'steel'),Pt(.0152,.05,-.02,.002,.018,.05,'muzzle')]),
+    Pt(0,.02,-.06,.028,.02,.17,'dred'),...pGrip('grip2',-.035,.012,.2),...TAG('mag',[Pt(0,-.087,.024,.031,.012,.048,'blk',{rx:.2})]),...tGuard(-.035)],
+    grip:[0,-.02,.005],sup:null,muzzle:[0,.047,-.17],mag:[0,-.07,.02],eject:[.02,.05,-.03],alt:'tw9b'},
+  tw9b:{parts:[...TAG('slide',[Pt(0,.045,-.065,.03,.034,.2,'dyel'),Pt(0,.047,-.165,.012,.012,.008,'muzzle'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.15,.006,.008,.006,'steel'),Pt(.0152,.05,-.02,.002,.018,.05,'muzzle')]),
+    Pt(0,.02,-.06,.028,.02,.17,'dyel'),...pGrip('grip2',-.035,.012,.2),...TAG('mag',[Pt(0,-.087,.024,.031,.012,.048,'blk',{rx:.2})]),...tGuard(-.035)],
     grip:[0,-.02,.005],sup:null,muzzle:[0,.047,-.17],mag:[0,-.07,.02],eject:[.02,.05,-.03]},
   f7:{parts:[...TAG('slide',[Pt(0,.045,-.055,.03,.034,.17,'blk'),Pt(0,.046,-.16,.034,.03,.04,'blk2'),Pt(.017,.05,-.16,.002,.014,.026,'muzzle'),Pt(-.017,.05,-.16,.002,.014,.026,'muzzle'),Pt(0,.047,-.181,.012,.012,.004,'muzzle'),Pt(0,.066,.02,.022,.008,.008,'blk')]),
     Pt(0,.02,-.055,.028,.02,.16,'blk2'),Pt(0,-.02,-.115,.02,.05,.02,'blk2',{rx:-.2}),...pGrip('rub',-.035,.012,.22),...TAG('mag',[Pt(0,-.11,.03,.026,.15,.04,'blk',{rx:.22}),Pt(0,-.19,.05,.03,.012,.046,'blk2',{rx:.22})]),...tGuard(-.035),Pt(.016,.028,-.01,.006,.01,.02,'orange')],
@@ -292,7 +300,7 @@ function buildVM(id,skinKey,U,dual){const G=GUNS[id];const mat=matVM(GA.texVM,U)
   gun.add(armR);
   const gr=G.grip||[0,0,0];lookArm(armR,[gr[0]+.012,gr[1]-.02,gr[2]+.02],G.armR||[.35,-.42,1]);
   let gun2=null,tags2=null;
-  if(dual){const B=vmGun(G,mat);gun2=B.gun;tags2=B.tags;root.add(gun2);gun2.add(armL);lookArm(armL,[gr[0]-.012,gr[1]-.02,gr[2]+.02],[-.35,-.42,1])}
+  if(dual){const B=vmGun(G.alt?GUNS[G.alt]:G,mat);gun2=B.gun;tags2=B.tags;root.add(gun2);gun2.add(armL);lookArm(armL,[gr[0]-.012,gr[1]-.02,gr[2]+.02],[-.35,-.42,1])}
   else{gun.add(armL);if(G.sup){lookArm(armL,G.sup,G.armL||[-.45,-.6,.75])}else{armL.visible=false}}
   return {id,root,gun,tags:A.tags,armR,armL,mat,gun2,tags2}}
 // zombie claws: two arms only

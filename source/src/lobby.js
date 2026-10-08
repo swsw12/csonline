@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.1.2','2026-10-08',[
+ ['UP','듀얼 베레타 새 색 — 오른손은 검정이 섞인 딥레드, 왼손은 딥옐로우 (1인칭·3인칭·바닥에 떨어진 총 모두)','Dual Berettas recoloured: the right gun deep red clouded with black, the left one deep yellow (first person, third person and on the floor)'],
+ ['NEW','design.js — 효과음 121개(볼륨·음높이·녹음 파일 교체)와 캐릭터 외형(인간 4명·좀비 8종·1인칭 팔 색)을 한 파일에서 관리, 항목마다 무슨 디자인·어디서 나는 소리인지 주석','design.js: all 121 sound effects (volume, pitch, swap in a recorded file) and every character look (4 humans, 8 zombies, first-person arm colours) in one file, each entry commented with what it is and where it plays']]],
 ['v6.1.1','2026-10-08',[
  ['UP','멀티 방 코드가 항상 1234 — 방 만들기만 누르면 1234 방이 열리고, 참가 칸에도 1234가 미리 들어가 있음 (이미 열려 있으면 그 방으로 자동 참가)','The room code is always 1234: create opens room 1234, join is pre-filled (if it is already open you join it)']]],
 ['v6.1','2026-10-08',[
@@ -16,11 +19,6 @@ const PATCH=[
  ['UP','이탈리아 로딩 약 40% 단축','Italy loads about 40% faster'],
  ['FIX','헤비·거대 좀비가 좁은 문·계단에 끼면 웅크려서 비집고 지나감','Heavy and giant zombies crouch and squeeze through tight doors and stairs'],
  ['FIX','빅트리 성탑 계단 옆면·옥상 계단 구멍에 난간','Big Tree keep stair: side rail and a rail round the roof stairwell']]],
-['v6.1','2026-10-08',[
- ['NEW','그래픽 프리셋 — 옵션 › 비디오에 고화질·균형·저사양 원터치 버튼, 렌더 해상도 150%·200% (폰·고해상도 화면에서 실제 화소로 선명하게)','Graphics presets (high / balanced / low) and 150% / 200% render resolution for sharp phone and retina screens'],
- ['UP','이탈리아 로딩 약 40% 단축 (쓰지 않는 텍스처 정리, 큰 벽 조명 계산 간소화)','Italy loads about 40% faster'],
- ['FIX','헤비·거대 좀비가 좁은 문·계단에 끼면 웅크려서 비집고 지나감','Heavy and giant zombies crouch and squeeze through tight doors and stairs'],
- ['FIX','빅트리 성탑 계단 옆면·옥상 계단 구멍에 난간 — 좀비가 옆으로 오르거나 구멍으로 떨어지던 문제','Big Tree keep stair: side rail and a rail round the roof stairwell']]],
 ['v6.0.2','2026-10-08',[
  ['UP','이탈리아 — 원본 텍스처 테스트 버전을 되돌리고, 원본의 벽·바닥·지붕 색을 읽어 우리 텍스처로 다시 칠함 (연어색·주황·황토·노랑·회색 외벽, 맨벽돌, 돌벽, 붉은 바닥, 판석, 평지붕)','Italy: back to our own textures, now picked and tinted from the reference colours (salmon, orange, tan, ochre, grey plaster, brick, stone, red and flag floors, flat roofs)'],
  ['UP','게임 파일 다시 가벼워짐 (5.6 MB → 1.9 MB)','Game file light again (5.6 MB → 1.9 MB)']]],
@@ -118,7 +116,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.1.2 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

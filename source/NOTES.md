@@ -187,3 +187,15 @@
 - Big zombies squeeze: a heavy/giant bot wedged for 0.45 s crouches and takes a 0.3 m hull for 1.6 s (game.js widens it again once it fits). Italy reach 15/16.
 - Big Tree keep: stepped solid rail on the stair's open side (steps 2–10) and a rail round the roof stairwell (exit at the north end).
 - v6.1.1: room code fixed to NET_FIXED_CODE '1234' (net.js NET.create). PeerJS: host id qzg-1234; if it is taken ('unavailable-id') the creator joins that room instead. The join box is pre-filled with 1234. Only one 1234 room can exist on the public PeerJS server at a time.
+
+## v6.1.2 — design.js (the owner's design / sound file), Dual Beretta colours
+- src/design.js (built right after i18n) holds, with Korean comments on every entry:
+  1) SOUND_MIX {music, ambience} and SOUND_DESIGN {name:{vol, rate, file}} for all 121 SFX (audio.js + nyw.js). AU.play multiplies vol/rate;
+     spin/saw loops too; AU.prepare loads `file` (URL or data: URI) via AU.loadFile instead of synthesising, falling back to the synth on error.
+     New SFX must get a SOUND_DESIGN line (a check: every SFX key has one, no extras).
+  2) ARM_DESIGN — first-person sleeve / zombie-arm atlas colours (gunart.js paints sl_* and zs_* from it).
+  3) SKIN_C, defHuman, defZombie (moved out of models.js), with a field reference (o / mats / decor ops / extra / bone numbers).
+     The coffin and voodoo (scream) bodies there are the owner's own designs — keep them.
+- sync_cs.py now stamps a hash of every pushed file (scratchpad sync_stamp.json); a repo file edited on GitHub is pulled into game2 first, both-sides edits stop the sync.
+- Dual Berettas: GUNS.tw9 (right hand, deep red 'dred' with black clouding) has alt:'tw9b' (left hand, deep yellow 'dyel'); buildVM and ensureGun use the alt for the second gun.
+  The VM shader lights roughly ×3, so these atlas colours are kept dark.

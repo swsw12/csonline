@@ -427,4 +427,4 @@ SFX_ORDER.push('xbow','xbowa','hstick','volc','mdrill','bdc','rdc','harpoon','di
 // the Ripper's engine: one looping voice whose pitch and level follow the throttle
 AU.saw=function(v,cut){const c=this.ctx;if(!c||!this.sfx||c.state!=='running')return;const b=this.bank.sawloop;if(!b||!b.length)return;
   if(!this.sawS){if(!(v>.01))return;const s=c.createBufferSource();s.buffer=b[0];s.loop=true;const g=c.createGain();g.gain.value=0;s.connect(g);g.connect(this.sfx);s.start();this.sawS=s;this.sawG=g}
-  const t=c.currentTime;this.sawS.playbackRate.setTargetAtTime(.55+.9*v,t,.05);this.sawG.gain.setTargetAtTime(this.muted||!(v>.01)?0:(.12+.3*v)*(cut?1.1:1),t,.05)};
+  const t=c.currentTime;const sd=soundDesign('sawloop');this.sawS.playbackRate.setTargetAtTime((.55+.9*v)*(sd.rate||1),t,.05);this.sawG.gain.setTargetAtTime(this.muted||!(v>.01)?0:(.12+.3*v)*(cut?1.1:1)*sd.vol,t,.05)};

@@ -271,8 +271,14 @@ const AU={ctx:null,bank:{},ready:false,preparing:false,vol:.7,muted:false,musicO
   async prepare(onProg){if(this.preparing||!OAC)return;this.preparing=true;
     const c=this.ensureCtx();if(c&&c.sampleRate>0)ASR=clamp(Math.round(c.sampleRate),44100,48000);
     try{makeNoise()}catch(e){console.warn('noise',e);return}
-    let k=0;for(const name of SFX_ORDER){const d=SFX[name];const arr=[];for(let v=0;v<d.n;v++){try{let b=await renderSfx(d.dur,d.ch||1,B=>d.fn(B,v));b=finishBuf(b,d.peak||.9);if(d.loop)b=makeLoop(b,d.loop);arr.push(b)}catch(e){console.warn('sfx',name,e)}}this.bank[name]=arr;k++;if(onProg)onProg(k/SFX_ORDER.length)}
+    let k=0;for(const name of SFX_ORDER){const d=SFX[name];const arr=[];
+      // design.js can swap a synthesised sound for a recorded file
+      const fb=soundDesign(name).file?await this.loadFile(soundDesign(name).file):null;if(fb){this.bank[name]=[fb];k++;if(onProg)onProg(k/SFX_ORDER.length);continue}
+      for(let v=0;v<d.n;v++){try{let b=await renderSfx(d.dur,d.ch||1,B=>d.fn(B,v));b=finishBuf(b,d.peak||.9);if(d.loop)b=makeLoop(b,d.loop);arr.push(b)}catch(e){console.warn('sfx',name,e)}}this.bank[name]=arr;k++;if(onProg)onProg(k/SFX_ORDER.length)}
     this.ready=true},
+  // a recorded replacement (design.js SOUND_DESIGN[name].file): decoded at the bank rate; null when missing or unreadable
+  async loadFile(url){try{const r=await fetch(url);if(!r.ok)throw new Error(r.status);const ab=await r.arrayBuffer();const oc=new OAC(2,1,ASR);
+      return await new Promise((ok,no)=>{const p=oc.decodeAudioData(ab,ok,no);if(p&&p.then)p.then(ok,no)})}catch(e){console.warn('sound file',url,e);return null}},
   init(){const c=this.ensureCtx();if(!c)return;
     if(c.state!=='running'){try{const p=c.resume();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
     if(this.graph)return;this.graph=true;if(!NZ.white)try{makeNoise()}catch(e){}
@@ -295,15 +301,15 @@ const AU={ctx:null,bank:{},ready:false,preparing:false,vol:.7,muted:false,musicO
     this.apply();
     try{this.startAmb()}catch(e){console.warn('ambience',e)}
     try{this.startMusic()}catch(e){console.warn('music',e)}},
-  apply(){if(!this.master)return;const t=this.ctx.currentTime;this.master.gain.setTargetAtTime(this.muted?0:this.vol,t,.05);if(this.mus)this.mus.gain.setTargetAtTime(this.musicOn&&!this.muted?.42:0,t,.3)},
+  apply(){if(!this.master)return;const t=this.ctx.currentTime;this.master.gain.setTargetAtTime(this.muted?0:this.vol,t,.05);if(this.mus)this.mus.gain.setTargetAtTime(this.musicOn&&!this.muted?SOUND_MIX.music:0,t,.3)},
   throttle(k,ms){const n=performance.now();if(this.last[k]&&n-this.last[k]<ms)return true;this.last[k]=n;return false},
   play(name,o){o=o||{};const d=SFX[name],bank=this.bank[name];if(!this.sfx||!d||!bank||!bank.length||this.muted||this.vol<=0)return null;
-    const vol=(o.vol==null?1:o.vol)*(d.gain||1);if(!(vol>=.006))return null;
+    const sd=soundDesign(name);const vol=(o.vol==null?1:o.vol)*(d.gain||1)*(sd.vol==null?1:sd.vol);if(!(vol>=.006))return null;
     const c=this.ctx,now=c.currentTime;if(c.state!=='running')return null;
     const L=this.voices[name]||(this.voices[name]=[]);while(L.length&&L[0].end<now)L.shift();
     if(L.length>=(d.poly||6)){const v=L.shift();try{v.g.gain.setTargetAtTime(0,now,.01);v.s.stop(now+.06)}catch(e){}}
     if(this.nvo>64&&d.low)return null;
-    const s=c.createBufferSource();s.buffer=bank[(Math.random()*bank.length)|0];const pj=d.pj==null?.035:d.pj;s.playbackRate.value=(o.rate||1)*(1+(Math.random()*2-1)*pj);
+    const s=c.createBufferSource();s.buffer=bank[(Math.random()*bank.length)|0];const pj=d.pj==null?.035:d.pj;s.playbackRate.value=(o.rate||1)*(sd.rate||1)*(1+(Math.random()*2-1)*pj);
     const far=clamp(o.far||0,0,1);let n=s;
     if(far>.03||o.lp){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=Math.min(o.lp||20000,lerp(17000,1500,Math.pow(far,.8)));f.Q.value=.5;n.connect(f);n=f}
     const g=c.createGain();g.gain.value=vol;n.connect(g);n=g;
@@ -321,8 +327,8 @@ const AU={ctx:null,bank:{},ready:false,preparing:false,vol:.7,muted:false,musicO
   // rotary-barrel motor: one looping voice whose pitch and level follow the spin
   spin(v,firing){const c=this.ctx;if(!c||!this.sfx||c.state!=='running')return;const b=this.bank.spinloop;if(!b||!b.length)return;
     if(!this.spinS){if(!(v>.01))return;const s=c.createBufferSource();s.buffer=b[0];s.loop=true;const g=c.createGain();g.gain.value=0;s.connect(g);g.connect(this.sfx);s.start();this.spinS=s;this.spinG=g}
-    const t=c.currentTime;this.spinS.playbackRate.setTargetAtTime(.5+.7*v,t,.06);this.spinG.gain.setTargetAtTime(this.muted||!(v>.01)?0:(.1+.2*v)*(firing?.75:1),t,.06)},
-  setAmb(v){if(this.amb)this.amb.gain.setTargetAtTime(v,this.ctx.currentTime,.8)},
+    const t=c.currentTime;const sd=soundDesign('spinloop');this.spinS.playbackRate.setTargetAtTime((.5+.7*v)*(sd.rate||1),t,.06);this.spinG.gain.setTargetAtTime(this.muted||!(v>.01)?0:(.1+.2*v)*(firing?.75:1)*sd.vol,t,.06)},
+  setAmb(v){if(this.amb)this.amb.gain.setTargetAtTime(v*SOUND_MIX.ambience,this.ctx.currentTime,.8)},
   muffle(on){this.mufBase=on?800:20000;if(this.muf)this.muf.frequency.setTargetAtTime(this.mufBase,this.ctx.currentTime,.15)},
   shock(k){if(!this.muf||!(k>.02))return;k=Math.min(1,k);const c=this.ctx,t=c.currentTime;
     const f=this.muf.frequency;f.cancelScheduledValues(t);f.setValueAtTime(Math.max(40,f.value),t);f.exponentialRampToValueAtTime(lerp(11000,900,k),t+.04);f.setTargetAtTime(this.mufBase,t+.22,.3+k*.55);
