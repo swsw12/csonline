@@ -8,6 +8,10 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.2','2026-10-08',[
+ ['NEW','모든 좀비가 포자탄을 가짐 — 오리지널·뮤테이션 둘 다 감염되거나 부활할 때마다 포자탄 1개 (시나리오 제외). 좀비 봇도 무리 지은 인간, 높은 곳·닿지 않는 곳의 인간, 자기를 쏘는 인간에게 던짐','Every zombie carries a spore bomb: in Original and Mutation, one with every infection and revival (not in the scenario). Zombie bots throw it at groups, at humans up high or out of reach, and at whoever is shooting them'],
+ ['UP','인간 봇이 한자리에 박혀 있지 않고 맵을 돌아다님 — 대부분은 잠깐 머물렀다가 다른 캠프나 좀비가 없는 빈 공간으로 이동, 좀비가 보이면 멈춰서 사격하고 조용해지면 다시 이동 (일부는 캠프를 지킴)','Human bots no longer sit in one spot all round: most hold briefly, then move on to another camp or open ground away from the zombies, stop to shoot when a zombie shows up and move again once it is quiet (a few still hold their camp)'],
+ ['FIX','좀비 봇이 사람이 보인다고 무조건 직진하지 않음 — 사이에 벽·상자·난간·구멍·단차가 있으면 길을 찾아 돌아가고, 지붕처럼 닿을 수 없는 곳의 사람은 가장 가까운 곳까지 가서 그 아래를 맴돌며 점프를 시도 (벽에 몸을 비비는 시간이 크게 줄어듦)','Zombie bots no longer run straight at anyone they can see: with a wall, crate, railing, gap or ledge in between they take the way round, and under someone out of reach (on a roof) they go to the nearest point, pace below and try to jump up (far less time spent pushing into walls)']]],
 ['v6.1.4','2026-10-08',[
  ['NEW','듀얼 베레타 — 꺼낼 때 두 총을 X자로 교차했다가 원래 자세로, 조준 키(우클릭 / 모바일 조준 버튼)로 총을 옆으로 눕혀 양쪽으로 벌리는 자세로 전환 — 이 자세에선 꾹 누르면 연사 (다시 누르면 원래 자세·단발)','Dual Berettas: crossed in an X while being drawn, and the aim key (RMB / the phone aim button) switches to a wide stance with both guns turned on their sides that fires full-auto while held (press again for the normal stance, semi-auto)']]],
 ['v6.1.3','2026-10-08',[
@@ -121,7 +125,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.1.4 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.2 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

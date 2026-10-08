@@ -3,7 +3,7 @@
 let LANG=LS.get('lang','ko');
 const STR={
   ko:{title:'QUARANTINE Z',sub:'격리구역 : 좀비 감염전',start:'게임 시작',settings:'설정',controls:'조작법',lang:'English',back:'뒤로',play:'출격',resume:'계속하기',quit:'메인으로',
-    mode:'모드',mut:'뮤테이션',orig:'오리지널',mutD:'좀비 부활·레벨업·스킬·포자탄, 인간 사기 상승. 나이프로, 또는 헤드샷·HE로 죽인 일반 좀비는 부활하지 못한다.',origD:'클래식 감염전. 좀비는 죽어도 5초 뒤 다시 나타난다. 인간은 시간까지 버티면 승리.',
+    mode:'모드',mut:'뮤테이션',orig:'오리지널',mutD:'좀비 부활·레벨업·스킬·포자탄, 인간 사기 상승. 나이프로, 또는 헤드샷·HE로 죽인 일반 좀비는 부활하지 못한다.',origD:'클래식 감염전. 좀비는 죽어도 5초 뒤 다시 나타나고, 목숨마다 포자탄 1개. 인간은 시간까지 버티면 승리.',
     bots:'봇 인원',diff:'봇 난이도',d0:'쉬움',d1:'보통',d2:'어려움',d3:'전문가',diffT:'난이도 선택',ok:'확인',cancel:'취소',rounds:'라운드',rtime:'라운드 시간',min:'분',char:'캐릭터',zcls:'좀비 클래스',
     you:'나',auto:'자동',bloomO:'빛 번짐 (블룸)',shadowO:'손전등 그림자',miniO:'미니맵',sens:'마우스 감도',fov:'시야각',scale:'해상도 배율',vol:'음량',music:'음악',gamma:'밝기',invert:'마우스 Y 반전',on:'켜기',off:'끄기',
     round:'라운드',human:'인간',zombie:'좀비',alive:'생존',
@@ -24,7 +24,7 @@ const STR={
     nyComplete:'근하신년! 근하신년 무기 1개 무료',nyGot:c=>`'${c}' 획득!`,nyDup:c=>`'${c}' (이미 있음)`,nyFree:'무료',
     rulesT:'규칙',fps:'FPS'},
   en:{title:'QUARANTINE Z',sub:'Quarantine Zone : Infection',start:'Start Game',settings:'Settings',controls:'Controls',lang:'한국어',back:'Back',play:'Deploy',resume:'Resume',quit:'Main Menu',
-    mode:'Mode',mut:'Mutation',orig:'Original',mutD:'Zombie revival, levels, skills and spore bombs; human morale. Knife kills, and headshot/HE kills on regular zombies, stay down.',origD:'Classic infection. Dead zombies come back after 5 s. Humans win by surviving the clock.',
+    mode:'Mode',mut:'Mutation',orig:'Original',mutD:'Zombie revival, levels, skills and spore bombs; human morale. Knife kills, and headshot/HE kills on regular zombies, stay down.',origD:'Classic infection. Dead zombies come back after 5 s with a spore bomb each life. Humans win by surviving the clock.',
     bots:'Bots',diff:'Bot skill',d0:'Easy',d1:'Normal',d2:'Hard',d3:'Expert',diffT:'Select Difficulty',ok:'OK',cancel:'Cancel',rounds:'Rounds',rtime:'Round time',min:'min',char:'Character',zcls:'Zombie class',
     you:'You',auto:'Auto',bloomO:'Bloom',shadowO:'Flashlight shadows',miniO:'Minimap',sens:'Mouse sensitivity',fov:'Field of view',scale:'Render scale',vol:'Volume',music:'Music',gamma:'Brightness',invert:'Invert mouse Y',on:'On',off:'Off',
     round:'Round',human:'Humans',zombie:'Zombies',alive:'alive',

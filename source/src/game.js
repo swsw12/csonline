@@ -359,7 +359,7 @@ function zBaseHp(a){return ZCLASS[a.zc].hp}
 function becomeZombie(a,host){if(a.team===TH)dropDeath(a);const nh=G.actors.filter(x=>x.team===TH&&x!==a).length;
   a.team=TZ;a.host=host;a.zc=a.zpick||'rager';const Z=ZCLASS[a.zc];a.lvl=host?2:1;a.infR=0;
   a.maxHp=host?Math.round(Z.hp*1.05+160*Math.max(1,nh)/Math.max(1,G.hostN)):Z.hp;if(a.bot)a.maxHp=Math.round(a.maxHp*DIFF_Z.hp[G.diff||0]);a.hp=a.maxHp;a.armor=host?300:Z.armor;
-  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='mut'?1:0;a.skillCD=host?3:4;a.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
+  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomba.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
   a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.an.skill=1;a.permaDead=false;a.alive=true;a.turning=host?2:1.4;
   if(a.isPlayer){a.nv=false;VM.set('claw','z_'+a.zc);VM.draw(.9)}
   if(a.bot)AI.onTeam(a)}
@@ -368,7 +368,7 @@ function reviveZombie(a,at){if(NET.cli&&!NET.ev)return;
   if(!a.host&&a.zpick&&a.zpick!==a.zc){a.zc=a.zpick;const Z=ZCLASS[a.zc];const mult=a.lvl>=3?1.5:a.lvl>=2?1.25:1;a.maxHp=Math.round(Z.hp*mult);setHull(a);ensureRig(a);if(a.isPlayer)VM.set('claw','z_'+a.zc)}
   a.alive=true;a.reviving=1.2;a.hp=Math.round(a.maxHp*.6);a.armor=0;a.frozen=0;a.staggerT=0;a.kvx=a.kvz=0;a.mvx=a.mvz=0;
   if(at){placeAt(a,at[0],at[1],at[2],a.yaw);a.reviving=0;a.hp=a.maxHp;a.armor=Math.round(ZCLASS[a.zc].armor*.5)}else{a.c.vx=a.c.vz=0;setHull(a)}
-  equip(a,'claw',true);if(G.mode==='mut'&&a.bombs<1&&Math.random()<.5)a.bombs=1;
+  equip(a,'claw',true);if(G.mode!=='scen'&&a.bombs<1)a.bombs=1;// a fresh spore bomb with every life
   AU.at('zrevive',a.c.x,a.c.y+1,a.c.z,{vol:1});if(a.isPlayer){G.spec=null;VM.set('claw','z_'+a.zc);VM.draw(1);HUD.note(T('revived'))}if(a.bot)AI.onTeam(a);
   if(NET.host)netEv('rv',{i:a.id,at:at?[r2(a.c.x),r2(a.c.y),r2(a.c.z)]:0,z:a.zc})}
 function onPlayerDeath(src){G.deathCam=3;G.killer=src||null;if(G.player)G.player.zoom=0}

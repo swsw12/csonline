@@ -273,7 +273,7 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
       if(L&&L!==a&&(B.lead!==L||!B.leadAt||Math.hypot(L.c.x-B.leadAt[0],L.c.z-B.leadAt[1])>7))SCEN.spotNear(a)}}
     au(a,dt);if(G.mode!=='scen'||!a.alive||a.team!==TZ)return;
     if(SCEN.leapStep(a,dt))return;
-    if(a.zc!=='boss'&&a.c.onGround){const B=a.bot,t=B.target;let k=false;if(t&&t.alive&&!B.path){const dy=t.c.y-a.c.y,dh=Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z);k=dy>1.2&&dy<4.6&&dh<7.5}
+    if(a.zc!=='boss'&&a.c.onGround){const B=a.bot,t=B.target;let k=false;if(t&&t.alive&&(!B.path||B.partial)){const dy=t.c.y-a.c.y,dh=Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z);k=dy>1.2&&dy<4.6&&dh<7.5}
       if(k){B.climbT=(B.climbT||0)+dt;if(B.climbT>1.2&&losClear(a.c.x,a.c.y+1.6,a.c.z,t.c.x,t.c.y+1.4,t.c.z)){B.climbT=0;SCEN.leapTo(a,t.c.x+rr(-.4,.4),t.c.y,t.c.z+rr(-.4,.4),1);AU.at('zleap',a.c.x,a.c.y+1.5,a.c.z,{vol:.8})}}else B.climbT=0}
     if(a.zc==='spitter')SCEN.spitAI(a,dt);
     else if(a.zc==='boss'&&a.sb){if(a.sb.mode&&a.sb.mode!=='leap'){a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=false}else{const t=a.bot.target;if(t&&t.alive&&Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z)<2.6&&Math.abs(t.c.y-a.c.y)<2.2)a.cmd.fire=Math.random()<.85}}};

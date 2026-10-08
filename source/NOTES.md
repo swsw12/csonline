@@ -205,3 +205,14 @@
   stopped on startRound / back to menu / leaving the room. zpain (sound/Zombi_hurt_01.ogg) now plays on every hit, throttled to 0.35 s per zombie.
 - v6.1.4: Dual Berettas poses in vm.js (DUAL_POSE): kX = X-cross flourish while VM.drawT runs (peaks 30–62 % of the draw), kB = stance B blended by a.dualB
   (game.js: aim key toggles a.dualB for W.dual, reset on equip; first person only, not networked). Stance B fires full-auto while held (game.js fire gate, touch.js autoF); HUD name shows · 연사.
+
+## v6.2 — spore bombs for every zombie, roaming human bots, terrain-aware zombie chase
+- Spore bombs: becomeZombie gives 1 (0 in the scenario), reviveZombie tops up to 1 (orig respawns and mut revivals). Zombie bots throw at groups, dy>1.5, unreachable targets (B.partial), when hurt, or 40 % on a clear 5–15 m view (bombT 6–12 s).
+- Human bots: B.roam (75 %) — roamers hold rr(5,15) s (prep 1.5–4 s) then pickRoam (random open node 5–28 m away, scored away from zombies) or 30 % pickCamp;
+  with a zombie in view >6.5 m they plant (stop and shoot), walk on after 2.5 s without one. Off-camp spots sweep the view (B.scanY). Not in the scenario.
+- Zombie chase: straight run only when navStraight says the line is walkable (|dy|<.6, <14 m, LOS) — else the path. navPath(...,partial) returns the way to the
+  reachable node nearest the target (array .partial); unreachable targets → prowl() under them (step in if walkable, running jump if dy<jumpCap+.3, side pacing
+  that never walks off a ledge). Old blind "run at the target when there is no path" only when off the grid (B.offGrid). Target choice tries 3 nearest, 6 when
+  none of them is reachable; nobody reachable → nearest with a partial path, rechecked every 2.2–3.4 s. scenario climb-leap also fires on partial paths.
+- Tests (scratchpad zai/): obstacle chase (LOS but no walkable line) fails 4→1 of ~74, wall-push time q7 4.2→1.6 %, italy 23→3.5 %, bigtree 4.1→1.1 %;
+  unreachable targets wall-push 14–16 %→1–3 %; human bots cover ~2× the ground; zombie AI cost per call went down.
