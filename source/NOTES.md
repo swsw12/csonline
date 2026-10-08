@@ -199,3 +199,7 @@
 - sync_cs.py now stamps a hash of every pushed file (scratchpad sync_stamp.json); a repo file edited on GitHub is pulled into game2 first, both-sides edits stop the sync.
 - Dual Berettas: GUNS.tw9 (right hand, deep red 'dred' with black clouding) has alt:'tw9b' (left hand, deep yellow 'dyel'); buildVM and ensureGun use the alt for the second gun.
   The VM shader lights roughly ×3, so these atlas colours are kept dark.
+- v6.1.3: recorded sounds live in source/sound (the owner drops files there) — build.py copies sound/ next to both builds, and the repo root keeps a copy in sound/ for Vercel (copy it on every deploy).
+  SOUND_DESIGN.file may be a list (first that decodes wins: ogg first, an mp3 copy for iPhones). AU.fromFile[name] marks file-backed sounds; AU.stopAll(name).
+  countdown (sound/round_start.mp3, 12.4 s) plays once at the 10-second mark of the infection modes' prep and replaces the beeps there (scenario keeps beeps);
+  stopped on startRound / back to menu / leaving the room. zpain (sound/Zombi_hurt_01.ogg) now plays on every hit, throttled to 0.35 s per zombie.

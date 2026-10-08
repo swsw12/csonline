@@ -48,6 +48,10 @@ standalone = ('<!doctype html>\n<html lang="ko"><head><meta charset="utf-8">\n'
               '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
               + head_sa + '</head><body>\n' + body + '\n<script>\n' + three + '\n</script>\n' + peer + '<script>\n' + js + '\n</script>\n</body></html>\n')
 open(os.path.join(D, 'standalone', 'index.html'), 'w', encoding='utf8').write(standalone)
+# sound files (design.js SOUND_DESIGN[...].file = 'sound/…') sit next to the page: copy sound/ into both builds
+if os.path.isdir(os.path.join(R, 'sound')):
+    for out in (D, os.path.join(D, 'standalone')):
+        shutil.copytree(os.path.join(R, 'sound'), os.path.join(out, 'sound'), dirs_exist_ok=True)
 print('page bytes', len(page.encode()), 'js', len(js.encode()), 'fonts',
       [os.path.getsize(os.path.join(D, 'assets', f)) for f in ('galmuri11.woff', 'galmuri11b.woff')], 'chars', len(chars),
       'standalone', len(standalone.encode()))

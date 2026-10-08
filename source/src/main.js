@@ -32,7 +32,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     startMatch({mode:CFG.mode,bots:CFG.mode==='scen'?(CFG.scBots??3):CFG.bots,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,skin:CFG.skin,zclass:CFG.zclass,money:6000,name:T('you')});
     HUD.show(true);this.paused=false;this.overlay=null;this.lock();window.onbeforeunload=e=>{if(G.st!=='menu'&&G.st!=='over'){e.preventDefault();e.returnValue='';return ''}}},
   toTitle(){if(NET.on)NET.leave();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);G.actors=[];G.player=null;clearNades();NY.clear();FX.clearDecals();this.closeOverlay(true);this.paused=false;
-    R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;window.onbeforeunload=null;this.menuDemo();UI.buildTitle();UI.show('menu');AU.muSet&&AU.muSet('calm')},
+    R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;window.onbeforeunload=null;AU.stopAll('countdown');this.menuDemo();UI.buildTitle();UI.show('menu');AU.muSet&&AU.muSet('calm')},
   pause(){if(G.st==='menu'||G.st==='over'||this.paused)return;this.paused=true;this.pausedAt=performance.now();this.closeOverlay(true);UI.buildPause();UI.show('pause')},
   resume(){UI.hideAll();this.paused=false;this.lock()},
   lock(){const c=$('cv');if(this.lockFail)return;try{const p=c.requestPointerLock&&c.requestPointerLock();if(p&&p.catch)p.catch(()=>this.onLockFail())}catch(e){this.onLockFail()}},

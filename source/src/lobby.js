@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.1.3','2026-10-08',[
+ ['NEW','좀비모드 카운트다운 음악 — 숙주 등장 전 10초 카운트다운이 시작되면 라운드 시작 사운드가 나옴 (삑 소리 대신)','Infection modes: the round-start track plays when the 10-second countdown before the host appears begins (instead of the beeps)'],
+ ['UP','좀비가 맞을 때 새 피격음, 맞을 때마다 나옴 (한 좀비당 0.35초 간격)','New zombie hurt sound, now on every hit (at most every 0.35 s per zombie)']]],
 ['v6.1.2','2026-10-08',[
  ['UP','듀얼 베레타 새 색 — 오른손은 검정이 섞인 딥레드, 왼손은 딥옐로우 (1인칭·3인칭·바닥에 떨어진 총 모두)','Dual Berettas recoloured: the right gun deep red clouded with black, the left one deep yellow (first person, third person and on the floor)'],
  ['NEW','design.js — 효과음 121개(볼륨·음높이·녹음 파일 교체)와 캐릭터 외형(인간 4명·좀비 8종·1인칭 팔 색)을 한 파일에서 관리, 항목마다 무슨 디자인·어디서 나는 소리인지 주석','design.js: all 121 sound effects (volume, pitch, swap in a recorded file) and every character look (4 humans, 8 zombies, first-person arm colours) in one file, each entry commented with what it is and where it plays']]],
@@ -116,7 +119,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.1.2 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.1.3 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

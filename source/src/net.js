@@ -326,7 +326,7 @@ function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||t.
   NET.hits.push([t.id,Math.round(dmg),WI[o.w]??-1,(o.hs?1:0)|(o.knife?2:0)|(o.heavy?4:0)|(o.he?8:0)|(o.blunt?16:0),o.dir?r2(o.dir[0]):0,o.dir?r2(o.dir[1]):0,o.dir?r2(o.dir[2]):0,r1(o.kb),r2(o.stag),r2(o.x),r2(o.y),r2(o.z),r1(o.up)]);
   const d=dmg*(1+.1*G.moraleLvl)*(src.wup&&src.wup[o.w]?1+.1*src.wup[o.w]:1),ab=Math.min(Math.max(0,t.armor),d*.5),dealt=Math.max(0,Math.min(d-ab,Math.max(0,t.hp))+ab);
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
-  HUD.dmgNum(t,dealt,!!o.hs,false);if(Math.random()<.18&&!AU.throttle('zp'+t.id,500))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
+  HUD.dmgNum(t,dealt,!!o.hs,false);if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
 
 // ---------- host: handlers for what clients send ----------
 const HOSTH={
@@ -409,7 +409,7 @@ function netBegin(cfg,ro){netTables();AU.init();MAP.want=MAPDEFS[cfg.map]?cfg.ma
   startMatch(Object.assign({},cfg,{money:6000,ro}));for(const a of G.actors)NET.ids.set(a.id,a);
   HUD.show(true);Main.paused=false;Main.overlay=null;if(NET.host)Main.lock();else HUD.note(T('clickToPlay'),4);window.onbeforeunload=e=>{if(NET.on){e.preventDefault();e.returnValue='';return ''}}}
 function netToLobby(){if(NET.host)netEv('tolobby');for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);G.actors=[];G.player=null;clearNades();NY.clear();FX.clearDecals();
-  Main.closeOverlay(true);Main.paused=false;R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;NET.ui='lobby';NET.ids.clear();NET.fxQ=[];
+  AU.stopAll('countdown');Main.closeOverlay(true);Main.paused=false;R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;NET.ui='lobby';NET.ids.clear();NET.fxQ=[];
   Main.menuDemo();Main.unlock();UI.mpLobby();if(NET.host)netLobbyCast()}
 
 // ---------- screens ----------

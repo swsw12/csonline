@@ -307,7 +307,7 @@ function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(o.dir)t.an.flx=clamp((t.an.flx||0)+(o.dir[0]*Math.cos(t.yaw)-o.dir[2]*Math.sin(t.yaw))*.6,-1,1);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
   if(src){src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;src.score+=dealt/100;const m=Math.round(dealt/8);if(m>0)src.money=Math.min(16000,src.money+m);if(src.isPlayer)HUD.dmgNum(t,dealt,!!o.hs,t.hp<=0)}
   if(t.isPlayer){HUD.hurt(clamp(dmg/600,.15,.8));FX.shake=Math.max(FX.shake,.15)}
-  if(Math.random()<.18&&!AU.throttle('zp'+t.id,500))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});
+  if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});
   if(t.bot)AI.onHurt(t,src);
   if(t.hp<=0)killZombie(t,src,o);return dealt}
 function hurtHuman(t,dmg,src,o){if(NET.ghost)return;if(NET.cli&&!NET.ev){if(t===G.player&&o.fall)netToHost({t:'fall',d:Math.round(dmg)});return}if(!t.alive||t.team!==TH)return;const hp0=t.hp,ar0=t.armor;if(t.armor>0&&!o.fall){const ab=Math.min(t.armor,dmg*.5);t.armor-=ab;dmg-=ab}
@@ -381,7 +381,7 @@ function startMatch(cfg){G.cfg=cfg;G.mode=cfg.mode;G.rounds=cfg.rounds;G.roundTi
   if(cfg.mode==='scen'){const pl=G.actors.filter(a=>a.scen);if(pl.length)pl[pl.length-1].boss=true;SCEN.initPool()}else SCEN.on=false;
   if(NET.cli){G.st='prep';G.time=G.prepTime;return}
   if(cfg.mode==='scen')SCEN.begin();else startRound()}
-function startRound(plan){if(NET.cli&&!plan)return;dropsClear();G.round=plan?plan.n:G.round+1;G.st='prep';FX.clearLimbs();G.time=G.prepTime;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=11;G.hostN=0;
+function startRound(plan){if(NET.cli&&!plan)return;AU.stopAll('countdown');dropsClear();G.round=plan?plan.n:G.round+1;G.st='prep';FX.clearLimbs();G.time=G.prepTime;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=11;G.hostN=0;
   clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
   const sp=shuffle(MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
   for(const a of G.actors){const q=pm[a.id];const keep=plan?!!(q&&q[5]):a.survived&&a.team===TH;a.nb=null;a.team=TH;a.host=false;a.alive=true;a.dmgRound=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.permaDead=false;a.hp=100;a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;
@@ -405,7 +405,7 @@ function endRound(win){if(NET.cli&&!NET.ev)return;if(G.st!=='fight'&&G.st!=='pre
 function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors)updateVisual(a,dt);return}
   G.t+=dt;
   if(G.mode==='scen')SCEN.update(dt);// the scenario runs its own stage / wave flow
-  else if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=10){AU.play(s<=3?'beep2':'beep',{vol:.5});HUD.countdown(s)}}
+  else if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=10){const rec=AU.fromFile.countdown;if(s===10&&rec)AU.play('countdown',{vol:1,rev:0});if(!rec)AU.play(s<=3?'beep2':'beep',{vol:.5});HUD.countdown(s)}}
     if(G.time<=0){if(NET.cli)G.time=0;else{selectHosts();G.st='fight';G.time=G.roundTime}}}
   else if(G.st==='fight'){G.time-=dt;const h=humansAlive();
     if(!NET.cli){if(h===0)endRound(TZ);else if(G.time<=0)endRound(TH);else if(G.mode==='mut'&&zombiesAlive()===0)endRound(TH)}

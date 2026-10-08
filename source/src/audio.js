@@ -242,6 +242,7 @@ const SFX={
   ui:{n:2,dur:.15,peak:.6,gain:.35,rev:.04,fn:B=>{const e=B.env(0,.001,.6,.03);B.osc('sine',rr(1050,1150),700,0,.04,B.f('lowpass',4000,.7,e));B.grain(0,2200,1.5,.003,.25)}},
   uiok:{n:1,dur:.8,peak:.6,gain:.35,rev:.15,fn:B=>{tone(B,0,880,.45,.4);tone(B,.08,1318.5,.45,.35)}},
   buy:{n:1,dur:.6,peak:.7,gain:.45,rev:.05,fn:B=>{B.grain(0,3000,2,.01,.6);tone(B,.03,1568,.25,.3,'square');tone(B,.09,2093,.3,.25,'square')}},
+  countdown:{n:1,dur:.3,peak:.6,gain:.9,rev:0,pj:0,poly:1,fn:B=>tone(B,0,988,.18,.5,'square')},
   beep:{n:1,dur:.3,peak:.6,gain:.4,rev:.1,pj:0,fn:B=>tone(B,0,988,.18,.5,'square')},
   beep2:{n:1,dur:.5,peak:.6,gain:.45,rev:.1,pj:0,fn:B=>{tone(B,0,1318.5,.35,.5,'square');tone(B,0,659,.35,.3,'square')}},
   hit:{n:2,dur:.1,peak:.6,gain:.3,rev:0,pj:.05,fn:B=>{B.grain(0,3200,3,.01,.7);tone(B,0,1900,.03,.3,'square')}},
@@ -257,7 +258,7 @@ const SFX={
   stingH:{n:1,dur:3,ch:2,peak:.85,gain:.6,rev:.4,fn:B=>{for(const [m,t] of [[62,0],[66,.12],[69,.24],[74,.36]]){const e=B.env(t,.01,.3,1.8,B.pan(rr(-.4,.4)));B.osc('sawtooth',mtof(m),mtof(m),t,1.9,B.f('lowpass',2400,.7,e))}}},
   stingL:{n:1,dur:3.5,ch:2,peak:.85,gain:.6,rev:.45,fn:B=>{for(const [m,t] of [[50,0],[49,.25],[46,.5],[41,.75]]){const e=B.env(t,.02,.32,1.8,B.pan(rr(-.4,.4)));B.osc('sawtooth',mtof(m),mtof(m)*.98,t,1.9,B.f('lowpass',1200,.7,e))}}},
 };
-const SFX_ORDER=['ui','uiok','buy','beep','beep2','hit','hsding','p9','ar7','claw','clawhit','clawarmor','zgrowl','zpain','zdie','zatk','step_conc','step_dirt','step_metal','step_wood','zstep','land','magout','magin','rack','dry','draw','kdraw','kswing','khit','hamhit','kwall',
+const SFX_ORDER=['ui','uiok','buy','beep','beep2','countdown','hit','hsding','p9','ar7','claw','clawhit','clawarmor','zgrowl','zpain','zdie','zatk','step_conc','step_dirt','step_metal','step_wood','zstep','land','magout','magin','rack','dry','draw','kdraw','kswing','khit','hamhit','kwall',
   'imp_conc','imp_metal','imp_wood','imp_dirt','imp_flesh','headshot','casing','shellcase','k5','kv47','hmg','sg8','as12','r700','d50','pump','shellin','bolt','slide','zinfect','zscream','zroar','zleap','zharden','zrevive','hurt','hdie','hscream',
   'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','spinloop','brk','gib'];
 const mtof=m=>440*Math.pow(2,(m-69)/12);
@@ -265,7 +266,7 @@ const mtof=m=>440*Math.pow(2,(m-69)/12);
 const CHORDS=[{n:[48,51,55,58],b:36},{n:[44,48,51,55],b:32},{n:[46,50,53,58],b:34},{n:[43,47,50,55],b:31}];
 const MUS_LV={calm:{pad:.8,bell:.5,bass:0,drum:0,arp:0,perc:0},prep:{pad:.65,bell:.2,bass:.55,drum:0,arp:.45,perc:0},fight:{pad:.55,bell:.1,bass:.8,drum:.85,arp:.5,perc:.2},intense:{pad:.5,bell:0,bass:1,drum:1,arp:.85,perc:.85},dead:{pad:.35,bell:0,bass:0,drum:0,arp:0,perc:0},win:{pad:.8,bell:.8,bass:0,drum:0,arp:0,perc:0}};
 const MU={started:false,bpm:104,step:0,next:0,state:'calm',T:MUS_LV.calm,L:{},pad:[],padF:null,timer:0};
-const AU={ctx:null,bank:{},ready:false,preparing:false,vol:.7,muted:false,musicOn:true,voices:{},nvo:0,last:{},mufBase:20000,nextBeat:0,ambOn:false,graph:false,L:{x:0,y:0,z:0,yaw:0},
+const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:false,musicOn:true,voices:{},nvo:0,last:{},mufBase:20000,nextBeat:0,ambOn:false,graph:false,L:{x:0,y:0,z:0,yaw:0},
   ensureCtx(){if(this.ctx)return this.ctx;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
     try{this.ctx=new AC({latencyHint:'interactive'})}catch(e){try{this.ctx=new AC()}catch(e2){this.ctx=null}}return this.ctx},
   async prepare(onProg){if(this.preparing||!OAC)return;this.preparing=true;
@@ -273,11 +274,12 @@ const AU={ctx:null,bank:{},ready:false,preparing:false,vol:.7,muted:false,musicO
     try{makeNoise()}catch(e){console.warn('noise',e);return}
     let k=0;for(const name of SFX_ORDER){const d=SFX[name];const arr=[];
       // design.js can swap a synthesised sound for a recorded file
-      const fb=soundDesign(name).file?await this.loadFile(soundDesign(name).file):null;if(fb){this.bank[name]=[fb];k++;if(onProg)onProg(k/SFX_ORDER.length);continue}
+      const fb=soundDesign(name).file?await this.loadFile(soundDesign(name).file):null;if(fb){this.bank[name]=[fb];this.fromFile[name]=true;k++;if(onProg)onProg(k/SFX_ORDER.length);continue}
       for(let v=0;v<d.n;v++){try{let b=await renderSfx(d.dur,d.ch||1,B=>d.fn(B,v));b=finishBuf(b,d.peak||.9);if(d.loop)b=makeLoop(b,d.loop);arr.push(b)}catch(e){console.warn('sfx',name,e)}}this.bank[name]=arr;k++;if(onProg)onProg(k/SFX_ORDER.length)}
     this.ready=true},
   // a recorded replacement (design.js SOUND_DESIGN[name].file): decoded at the bank rate; null when missing or unreadable
-  async loadFile(url){try{const r=await fetch(url);if(!r.ok)throw new Error(r.status);const ab=await r.arrayBuffer();const oc=new OAC(2,1,ASR);
+  async loadFile(url){if(Array.isArray(url)){for(const u of url){const b=await this.loadFile(u);if(b)return b}return null}
+    try{const r=await fetch(url);if(!r.ok)throw new Error(r.status);const ab=await r.arrayBuffer();const oc=new OAC(2,1,ASR);
       return await new Promise((ok,no)=>{const p=oc.decodeAudioData(ab,ok,no);if(p&&p.then)p.then(ok,no)})}catch(e){console.warn('sound file',url,e);return null}},
   init(){const c=this.ensureCtx();if(!c)return;
     if(c.state!=='running'){try{const p=c.resume();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
@@ -328,6 +330,8 @@ const AU={ctx:null,bank:{},ready:false,preparing:false,vol:.7,muted:false,musicO
   spin(v,firing){const c=this.ctx;if(!c||!this.sfx||c.state!=='running')return;const b=this.bank.spinloop;if(!b||!b.length)return;
     if(!this.spinS){if(!(v>.01))return;const s=c.createBufferSource();s.buffer=b[0];s.loop=true;const g=c.createGain();g.gain.value=0;s.connect(g);g.connect(this.sfx);s.start();this.spinS=s;this.spinG=g}
     const t=c.currentTime;const sd=soundDesign('spinloop');this.spinS.playbackRate.setTargetAtTime((.5+.7*v)*(sd.rate||1),t,.06);this.spinG.gain.setTargetAtTime(this.muted||!(v>.01)?0:(.1+.2*v)*(firing?.75:1)*sd.vol,t,.06)},
+  // stop every voice of one sound (e.g. the round-start countdown when the round is cut short)
+  stopAll(name){const L=this.voices[name];if(!L||!this.ctx)return;const now=this.ctx.currentTime;for(const v of L){try{v.g.gain.setTargetAtTime(0,now,.03);v.s.stop(now+.15)}catch(e){}}L.length=0},
   setAmb(v){if(this.amb)this.amb.gain.setTargetAtTime(v*SOUND_MIX.ambience,this.ctx.currentTime,.8)},
   muffle(on){this.mufBase=on?800:20000;if(this.muf)this.muf.frequency.setTargetAtTime(this.mufBase,this.ctx.currentTime,.15)},
   shock(k){if(!this.muf||!(k>.02))return;k=Math.min(1,k);const c=this.ctx,t=c.currentTime;
