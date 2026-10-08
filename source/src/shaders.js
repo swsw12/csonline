@@ -5,7 +5,7 @@ const LU={
   uFogC:{value:new THREE.Color('#0a0c12')},uFogD:{value:.045},
   uSpotP:{value:new THREE.Vector3()},uSpotD:{value:new THREE.Vector3(0,0,-1)},uSpotK:{value:new THREE.Vector4(.86,.97,26,0)},uSpotC:{value:new THREE.Color('#fff2d8')},
   uPL:{value:[0,1,2,3].map(()=>new THREE.Vector4(0,-99,0,1))},uPLc:{value:[0,1,2,3].map(()=>new THREE.Color(0,0,0))},
-  uAmb:{value:1},uTime:{value:0},
+  uAmb:{value:1},uTime:{value:0},uLamp:{value:1},// uLamp: lit windows, signs and lamps (0 in a blackout)
   // flashlight shadow map: packed linear distance from the lamp, its view-projection, on/off, texel size
   uShMap:{value:null},uShM:{value:new THREE.Matrix4()},uShOn:{value:0},uShTexel:{value:new THREE.Vector2(1/1024,1/1024)},
 };
@@ -47,9 +47,9 @@ vCol=color;
 vCol=vec3(1.);
 #endif
 vec4 wp=modelMatrix*vec4(position,1.);vPos=wp.xyz;vN=normalize(mat3(modelMatrix)*normal);gl_Position=projectionMatrix*viewMatrix*wp;}`;
-const FS_WORLD=GLSL_DYN+`uniform sampler2D map;uniform float uEmis;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
+const FS_WORLD=GLSL_DYN+`uniform sampler2D map;uniform float uEmis;uniform float uLamp;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
 void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;vec3 n=normalize(vN);vec3 lig=vCol*uAmb+dynLight(vPos,n);
-  vec3 c=t.rgb*lig+t.rgb*uEmis;gl_FragColor=vec4(applyFog(c,vPos),1.);}`;
+  vec3 c=t.rgb*lig+t.rgb*uEmis*uLamp;gl_FragColor=vec4(applyFog(c,vPos),1.);}`;
 function matWorld(tex,o){o=o||{};return new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uEmis:{value:o.emis||0}},LU),vertexShader:VS_WORLD,fragmentShader:FS_WORLD,vertexColors:o.vc!==false,side:o.side||THREE.FrontSide,transparent:false})}
 // characters / props: light probe (sampled from the baked light grid) instead of vertex light, hit flash and status tint
 const FS_CHAR=GLSL_DYN+GLSL_BUMP+`uniform sampler2D map;uniform vec3 uProbe;uniform float uFlash;uniform vec4 uTint;uniform float uEmisA;uniform vec2 uTexel;uniform float uBump;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
@@ -114,6 +114,7 @@ vec3 fxaa(vec2 uv,vec2 px){vec3 nw=texture2D(tDiffuse,uv+vec2(-1.,-1.)*px).rgb,n
   vec3 A=.5*(texture2D(tDiffuse,uv+dir*(1./3.-.5)).rgb+texture2D(tDiffuse,uv+dir*(2./3.-.5)).rgb);vec3 B=A*.5+.25*(texture2D(tDiffuse,uv-dir*.5).rgb+texture2D(tDiffuse,uv+dir*.5).rgb);
   float lB=dot(B,LW);return (lB<lMin||lB>lMax)?A:B;}
 void main(){vec2 uv=vUv;vec3 c=uFxaa>.5?fxaa(uv,1./uRes):texture2D(tDiffuse,uv).rgb;
+  if(uInfect>0.){vec2 o=(uv-.5)*.03*uInfect*uInfect;c.r=texture2D(tDiffuse,uv+o).r;c.b=texture2D(tDiffuse,uv-o).b;}// infection: the picture tears apart
   vec3 bl=texture2D(tBloom,uv).rgb*.75+texture2D(tBloom2,uv).rgb*.9;c+=bl*uBloom;
   // flashlight haze: a cone of lit air from the lamp (bottom right) toward the aim point, softer and wider near the eye
   if(uBeam>0.){vec2 a=vec2(.78,-.25),b=vec2(.5,.5);vec2 ab=b-a;float t=clamp(dot(uv-a,ab)/dot(ab,ab),0.,1.);vec2 d=(uv-(a+ab*t))*vec2(uRes.x/uRes.y,1.);
@@ -127,7 +128,14 @@ void main(){vec2 uv=vUv;vec3 c=uFxaa>.5?fxaa(uv,1./uRes):texture2D(tDiffuse,uv).
   vec2 q=uv-.5;float r=dot(q,q);c*=1.-r*.9;
   c=mix(c,vec3(.55,0.,0.),uDmg*smoothstep(.08,.5,r));
   c=mix(c,vec3(.75,.9,1.),uFrost*smoothstep(.05,.45,r)*.8);
-  if(uInfect>0.){c=mix(c,vec3(.45,.02,.02)+c*.3,uInfect);}
+  // infection: a red flash, then the colour drains to blood red while dark veins creep in from the edges, pulsing with the heartbeat
+  if(uInfect>0.){float k=uInfect;vec2 p=q*vec2(uRes.x/uRes.y,1.);float an=atan(p.y,p.x),rd=length(p);
+    float v1=sin(an*9.+sin(an*23.+rd*14.)*1.4+rd*7.)*.5+.5,v2=sin(an*17.-rd*22.+sin(an*5.+rd*9.)*3.)*.5+.5;
+    float vein=smoothstep(.9,.995,v1)+smoothstep(.93,.998,v2)*.75;float reach=smoothstep(.95-.55*k,1.05-.3*k,rd*1.35);float beat=.7+.3*sin(uTime*8.5);
+    c=mix(c,vec3(dot(c,LW))*vec3(1.15,.32,.28),.65*k);
+    c=mix(c,vec3(.22,0.,.02),clamp(vein*reach,0.,1.)*k*beat);
+    c=mix(c,vec3(.42,.01,.01),smoothstep(.12,.55,r)*.75*k*beat);
+    c=mix(c,vec3(.65,.06,.03)+c*.3,smoothstep(.8,1.,k)*.85);}
   c=mix(c,vec3(1.),uWhite);
   c*=1.-uDeath*.75;
   c+=(h(uv*uRes+fract(uTime)*7.)-.5)/80.;

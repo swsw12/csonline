@@ -232,3 +232,16 @@
 - touch.js: fixed stick (no follow); a press within 2.2 R of its centre steers, farther away on the left = look. Moved right (left: bs*.4+9vw).
 - ROT (ui.js): fullscreen then screen.orientation.lock('landscape'); no API (iPhone) → 6 s toast explaining rotation lock / home-screen app.
   Buttons: rotate-your-phone overlay (.trotb), lobby top bar and pause menu (.rotbtn, hidden unless html.touch).
+
+## v6.3 — Air Burster, blackout, infection effects, round result card
+- WPN.airb (weapons.js, special, $3300, 100/200, 600 rpm, quiet): air:{r:8,a:.42,kb:7.5,up:2.2,cap:12}. airBlast(): white ring + mist particles,
+  cone hit with LOS, dmg 8×f, kb ×(.6+.4f), hop every 4th shot on grounded targets. damageActor caps horizontal knock at air.cap for air weapons.
+  Model GUNS.airb (gunart.js): air tank tagged 'mag' (swapped on reload), bell nozzle, gauge, hose. VM pose in vm.js. Sound 'airb' (audio.js), design.js entry.
+  Test (static zombie 4 m): pushed to ~10 m in 1 s; a chasing rager is held at ~7–8 m (range edge).
+- BO (game.js): host rolls once per round (45 %, 25 s..roundTime-45 s into the fight), 18–26 s; flicker 1.3 s → uAmb .2, uLamp 0 (new LU uniform
+  multiplying FS_WORLD uEmis), DL.lamp 0 (map lights flagged map:1). Fires/flares/muzzle/flashlights unaffected; VM uAmbV ≥ .3. Net event 'bo'.
+  Stopped silently at round end; reset each round. Sounds 'blackout', 'powerup'. Human bots force flashlight on.
+- Infection: FS_POST uInfect now does chromatic split + red desaturation + vein pattern from the edges pulsing; decay .36/s. infectFx(t,big):
+  blood mist, green spores, red ring, red DL, delayed 'zroar'. Player also hears two heartbeats.
+- HUD.roundResult(win) (ui.js, element #hRRes — note #hRes is the ammo reserve): per-round deltas from a.r0 snapshot taken in startRound,
+  human MVP (dmg + 400·kills), zombie MVP (infects), top-8 table with fate, round bonus (a.rBonus). Hides the big banner; hidden when st≠'end'.

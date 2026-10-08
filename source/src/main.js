@@ -149,9 +149,9 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     // air in the beam: a soft haze toward the aim point, stronger the more open air the light crosses
     PU.uBeam.value=approach(PU.uBeam.value,beam*(FX.rain&&FX.rain.on?1:.6),dt*6);
     const zt=P&&P.team===TZ&&G.st!=='menu';PU.uZ.value=approach(PU.uZ.value,zt&&!P.nv?.35:0,dt*2);PU.uNV.value=approach(PU.uNV.value,zt&&P.nv&&P.alive?.88:0,dt*4);
-    PU.uDmg.value=Math.max(0,PU.uDmg.value-dt*1.3);PU.uInfect.value=Math.max(0,PU.uInfect.value-dt*.6);PU.uFrost.value=approach(PU.uFrost.value,P&&P.frozen>0&&P.isPlayer?.8:P&&P.shriekT>0?.35:0,dt*3);
+    PU.uDmg.value=Math.max(0,PU.uDmg.value-dt*1.3);PU.uInfect.value=Math.max(0,PU.uInfect.value-dt*.36);PU.uFrost.value=approach(PU.uFrost.value,P&&P.frozen>0&&P.isPlayer?.8:P&&P.shriekT>0?.35:0,dt*3);
     PU.uWhite.value=Math.max(0,PU.uWhite.value-dt*3);
-    LU.uTime.value+=dt;const fl=MAP.skyU;if(this.lightning>0){this.lightning-=dt;const k=Math.max(0,Math.sin(this.lightning*30))*this.lightning;fl.uFlashSky.value=k*1.5;LU.uAmb.value=1+k*1.2}else{fl.uFlashSky.value=0;LU.uAmb.value=1}
+    LU.uTime.value+=dt;const fl=MAP.skyU;const BOa=G.st==='menu'?1:BO.amb;if(this.lightning>0){this.lightning-=dt;const k=Math.max(0,Math.sin(this.lightning*30))*this.lightning;fl.uFlashSky.value=k*1.5;LU.uAmb.value=BOa*(1+k*1.2)}else{fl.uFlashSky.value=0;LU.uAmb.value=BOa}LU.uLamp.value=DL.lamp=G.st==='menu'?1:BO.lamp;VM.U.uAmbV.value=Math.max(.3,BOa);
     const ps=R.rt.height/2/Math.tan(R.cam.fov*Math.PI/360);FX.A.pts.material.uniforms.uScale.value=ps;FX.B.pts.material.uniforms.uScale.value=ps},
   frame(t){requestAnimationFrame(tt=>this.frame(tt));this.lastRaf=performance.now();this.step(t,true)},
   // one simulation step; a hidden tab in a multiplayer game keeps stepping (without drawing) so friends do not freeze

@@ -8,6 +8,11 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.3','2026-10-08',[
+ ['NEW','넉백 무기 「에어 버스터」 (특수 · $3300) — 압축공기를 부채꼴로 초당 10번 뿜어 좀비를 뒤로 날려버림. 피해는 약하지만 사거리 8m 안의 여러 마리를 한꺼번에 밀어내고, 4발마다 살짝 띄워 올림. 재장전은 등에 멘 공기탱크 교체','Knockback gun "Air Burster" (Special · $3300) — blasts a cone of compressed air 10 times a second: weak damage, but shoves every zombie within 8 m back and lifts them every fourth blast. Reload swaps the air tank.'],
+ ['NEW','정전 이벤트 — 라운드 중 가끔(약 45%) 전기가 나가 20초쯤 맵 조명·간판·창문 불빛이 꺼짐. 불·조명탄·총구 섬광·손전등만 빛남. 인간 봇은 손전등을 켬','Blackout — now and then (about 45 % of rounds) the power fails for ~20 s: lamps, signs and windows go dark; only fires, flares, muzzle flashes and flashlights light the map. Human bots switch their flashlights on.'],
+ ['NEW','감염 연출 — 감염되는 순간 붉은 섬광, 화면이 찢어지듯 갈라지고 핏줄이 가장자리부터 번지며 심장박동에 맞춰 맥동. 주변에서 누가 감염되면 피 안개·초록 포자·붉은 고리가 터지고 변이가 끝나면 포효','Infection effects — a red flash, the picture tearing apart and dark veins creeping in from the edges with the heartbeat. Anyone who turns bursts into blood mist, green spores and a red ring, and roars once the change is done.'],
+ ['UP','라운드 결과 화면 — 라운드가 끝나면 승리 팀, 인간 MVP·좀비 MVP, 이번 라운드의 킬·감염·피해량과 각자 결과(생존·감염·숙주·사망), 내 라운드 보상을 카드로 보여줌','Round result card — the winner, the round\'s human and zombie MVPs, everyone\'s kills, infections and damage this round with what became of them, and your round bonus.']]],
 ['v6.2.1','2026-10-08',[
  ['NEW','좀비 탑쌓기 — 발코니·담 위·지붕 끝처럼 길로는 못 가는 높은 곳에 사람이 있으면, 좀비 하나가 그 아래(하늘이 트인 가장자리 밑)에 웅크리고 다른 좀비가 머리를 밟고 올라감. 2단이면 약 4m까지. 같은 팀끼리는 머리 위에 설 수 있음','Zombie stacking — when someone stands where no path leads (a balcony, a wall top, a roof edge), one zombie crouches under the edge and the next climbs on its head; two high reaches about 4 m. Teammates can stand on each other\'s heads.'],
  ['FIX','발코니 위 사람을 좀비가 바로 밑 길바닥으로 착각해 그 밑에 몰려만 있던 문제','Zombies no longer mistake someone on a balcony for the street right under it and crowd beneath.'],
@@ -131,7 +136,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.2.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.3 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

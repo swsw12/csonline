@@ -1,7 +1,7 @@
 'use strict';
 // ============ Effects: dynamic light pool, point-sprite particles, tracers, decals, rain ============
 // ---- dynamic lights: up to 4 reach the shader each frame (closest/brightest to the camera win) ----
-const DL={list:[],
+const DL={list:[],lamp:1,
   add(x,y,z,col,range,int,life,o){const L=Object.assign({x,y,z,c:new THREE.Color(col),r:range,i:int,life,t:0,flick:0},o||{});this.list.push(L);return L},
   update(dt,cam){const L=this.list;for(let i=L.length-1;i>=0;i--){const l=L[i];l.t+=dt;if(l.life>0&&l.t>=l.life||l.dead)L.splice(i,1)}
     const cx=cam.position.x,cy=cam.position.y,cz=cam.position.z;
@@ -9,7 +9,7 @@ const DL={list:[],
     const s=L.slice().sort((a,b)=>sc(b)-sc(a));
     for(let i=0;i<4;i++){const l=s[i];const P=LU.uPL.value[i],C=LU.uPLc.value[i];
       if(!l){P.set(0,-99,0,1);C.setRGB(0,0,0);continue}
-      let k=l.i;if(l.life>0){const f=1-l.t/l.life;k*=l.fade==='lin'?f:f*f}if(l.flick)k*=1-l.flick*Math.random();
+      let k=l.i;if(l.life>0){const f=1-l.t/l.life;k*=l.fade==='lin'?f:f*f}if(l.flick)k*=1-l.flick*Math.random();if(l.map)k*=DL.lamp;
       P.set(l.x,l.y,l.z,l.r);C.copy(l.c).multiplyScalar(k)}}};
 // ---- particle atlas: 4x4 frames of 32px (shapes are designed on a 16-unit grid and sampled twice as finely) ----
 // 0 spark 1 glow 2 smoke 3 smoke2 4 drop 5 mist 6 dust 7 chunk 8 star 9 star2 10 shard 11 flame 12 splash 13 spore 14 ring 15 square

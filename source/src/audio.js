@@ -169,6 +169,21 @@ const SFX={
   dm14:{n:3,dur:1.6,ch:2,peak:.95,gain:.95,rev:.17,poly:4,pj:.02,fn:B=>gunshot(B,GUNDEF.dm14())},
   mg6:{n:3,dur:1.2,ch:2,peak:.93,gain:.84,rev:.12,poly:8,pj:.025,fn:B=>gunshot(B,GUNDEF.mg6())},
   gx6:{n:4,dur:.9,ch:2,peak:.9,gain:.72,rev:.1,poly:10,pj:.03,fn:B=>gunshot(B,GUNDEF.gx6())},
+  // Air Burster: a short pressurised 'pshh' — a falling band of hiss over a soft low thump, a little valve click on top
+  airb:{n:3,dur:.4,ch:2,peak:.8,gain:.62,rev:.06,poly:6,pj:.06,fn:B=>{const out=B.comp(-12,4,.002,.1,B.g(.9));
+    {const e=B.env(0,.003,1,.2,out);const f=B.f('bandpass',rr(2200,2800),.9,e);f.frequency.setValueAtTime(rr(3200,3800),0);f.frequency.exponentialRampToValueAtTime(rr(900,1200),.22);B.nz('white',0,.3,f)}
+    {const e=B.env(0,.004,.7,.09,out);B.osc('sine',rr(95,115),48,0,.12,e)}
+    {const e=B.env(0,.001,.25,.012,out);B.nz('white',0,.02,B.f('highpass',4500,.7,e))}}},
+  // power cut: a heavy relay clunk, the hum of the lights sagging away, a long electric whine dropping off
+  blackout:{n:1,dur:2.6,ch:2,peak:.85,gain:.75,rev:.35,poly:1,fn:B=>{const out=B.g(.9);
+    {const e=B.env(0,.002,1,.25,out);B.osc('sine',70,38,0,.3,e);B.nz('brown',0,.25,B.f('lowpass',400,.8,B.env(0,.001,.8,.12,out)))}
+    {const e=B.env(.02,.05,.5,1.6,out);const o=B.f('lowpass',1800,.7,e);for(const [f,l] of [[120,1],[240,.5],[360,.25]])B.osc('sawtooth',f,f*.35,.02,2,B.g(l*.35,o))}
+    {const e=B.env(.05,.1,.25,2.2,out);B.osc('sine',2400,300,.05,2.3,e)}
+    for(let i=0;i<5;i++){const t=rr(.05,.9);const e=B.env(t,.001,rr(.15,.4),.03,B.pan(rr(-.7,.7),out));B.nz('white',t,.05,B.f('bandpass',rr(2000,5000),2,e))}}},
+  // power back: a generator spinning up and the lights buzzing on in a row
+  powerup:{n:1,dur:2.2,ch:2,peak:.8,gain:.7,rev:.3,poly:1,fn:B=>{const out=B.g(.9);
+    {const e=B.env(0,.6,.5,1.2,out);const o=B.f('lowpass',1600,.7,e);for(const [f,l] of [[40,1],[80,.5],[120,.25]])B.osc('sawtooth',f,f*3,0,1.8,B.g(l*.3,o))}
+    for(let i=0;i<4;i++){const t=.5+i*.22;const e=B.env(t,.002,.5,.25,B.pan(rr(-.6,.6),out));B.osc('square',120,120,t,.3,B.f('bandpass',240,3,e));B.nz('white',t,.04,B.f('bandpass',3000,2,B.env(t,.001,.3,.02,out)))}}},
   gl40:{n:2,dur:1.1,ch:2,peak:.9,gain:.8,rev:.12,poly:3,pj:.04,fn:glFn},
   spinloop:{n:1,dur:1.4,peak:.7,gain:.5,loop:.25,fn:B=>{const out=B.g(.9);
     for(const [f,l] of [[180,.5],[360,.3],[540,.16],[1260,.07]]){const g=B.g(l,out);B.osc('sawtooth',f,f,0,1.4,B.f('lowpass',2400,.7,g))}
@@ -264,7 +279,7 @@ const SFX={
 };
 const SFX_ORDER=['ui','uiok','buy','beep','beep2','countdown','hit','hsding','p9','ar7','claw','clawhit','clawarmor','zgrowl','zpain','zdie','zatk','step_conc','step_dirt','step_metal','step_wood','zstep','land','magout','magin','rack','dry','draw','kdraw','kswing','khit','hamhit','kwall',
   'imp_conc','imp_metal','imp_wood','imp_dirt','imp_flesh','headshot','casing','shellcase','k5','kv47','hmg','sg8','as12','r700','d50','pump','shellin','bolt','slide','zinfect','zscream','zroar','zleap','zharden','zrevive','hurt','hdie','hscream',
-  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','spinloop','brk','gib'];
+  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','airb','blackout','powerup','spinloop','brk','gib'];
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 // ---- live score: minor-key pulse that tightens with the round ----
 const CHORDS=[{n:[48,51,55,58],b:36},{n:[44,48,51,55],b:32},{n:[46,50,53,58],b:34},{n:[43,47,50,55],b:31}];

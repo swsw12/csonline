@@ -38,6 +38,8 @@ const WPN={
   mg6:{slot:1,kind:'mg',n:['MG3','MG3'],cost:5000,mag:100,res:300,dmg:38,rpm:600,spread:[.014,.06,.16],rec:[.013,.014],kb:3.3,stag:.32,hs:3,reload:4.8,draw:1,speed:.8,snd:'mg6',model:'mg6',hold:'rifle',shell:1},
   gx6:{slot:1,kind:'mg',n:['M134 미니건','M134 Minigun'],cost:7500,mag:200,res:400,dmg:26,rpm:1500,spin:.55,spread:[.02,.045,.12],rec:[.005,.009],kb:2.1,stag:.3,hs:3,reload:5.2,draw:1.2,speed:.72,snd:'gx6',model:'gx6',hold:'rifle',shell:1},
   // special
+  // knockback gun: a cone of compressed air that barely hurts but shoves zombies back (and off ledges), 10 blasts a second
+  airb:{slot:1,kind:'special',n:['에어 버스터','Air Burster'],cost:3300,mag:100,res:200,dmg:8,rpm:600,quiet:1,air:{r:8,a:.42,kb:7.5,up:2.2,cap:12},spread:[0,0,0],rec:[.004,.005],kb:3.4,stag:.3,hs:1,reload:2.6,draw:.8,speed:.92,snd:'airb',model:'airb',hold:'rifle'},
   gl40:{slot:1,kind:'special',n:['M79','M79'],cost:4500,mag:1,res:18,dmg:380,rpm:70,semi:1,proj:'gl',spread:[.004,.02,.06],rec:[.09,.02],kb:16,stag:.8,hs:1,reload:1.9,brk:1,draw:.9,speed:.9,snd:'gl40',model:'gl40',hold:'rifle'},
   // throwables and zombie kit
   he:{slot:4,kind:'nade',n:['HE 수류탄','HE Grenade'],cost:300,model:'he',hold:'nade',draw:.5,speed:1},
@@ -53,7 +55,7 @@ const BUY_MENU=[
   {k:'rifle',n:['소총','Rifles'],items:['g35','kv47','br3','ar7','ar5c','hr17']},
   {k:'sniper',n:['저격총','Snipers'],items:['sr8','r700','dm14']},
   {k:'mg',n:['기관총','Machine Guns'],items:['mg6','hmg','gx6']},
-  {k:'special',n:['특수 · 근접','Special · Melee'],items:['gl40','axe','hammer']},
+  {k:'special',n:['특수 · 근접','Special · Melee'],items:['airb','gl40','axe','hammer']},
   {k:'equip',n:['장비','Equipment'],items:['armor','he','frost','flare','ammo']},
 ];
 const EQUIP={armor:{n:['방탄복 + 헬멧','Kevlar + Helmet'],cost:1000},ammo:{n:['탄약 보충','Refill Ammo'],cost:200}};
@@ -77,6 +79,18 @@ function rayActors(src,ox,oy,oz,dx,dy,dz,tmax,teamMask){let best=null,bt=tmax,pa
 // ---------- firing ----------
 const _dv=new THREE.Vector3(),_rv=new THREE.Vector3(),_uv=new THREE.Vector3();
 function aimDir(yaw,pitch,out){const cp=Math.cos(pitch);out.set(-Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp);return out}
+// air burst: white rings and mist out of the bell; everything in the cone with a clear line is shoved away from the gun
+// (weak damage, strong push, a hop every fourth blast so a crowd gets lifted and pushed back over and over)
+function airBlast(a,W,eye,dir){const C=W.air;const mz=muzzleWorld(a);const ox=mz.x,oy=mz.y,oz=mz.z,_d=new THREE.Vector3();
+  FX.spawn({x:ox+dir.x*.4,y:oy+dir.y*.4,z:oz+dir.z*.4,vx:dir.x*9,vy:dir.y*9,vz:dir.z*9,life:.28,s0:.25,s1:1.6,r:.85,g:.92,b:1,a:.35,f:14,drag:3});
+  for(let i=0;i<(a.isPlayer?7:4);i++){spreadDir(dir,C.a*.7,_d);const sp=C.r*rr(1.2,2.2);FX.spawn({x:ox,y:oy,z:oz,vx:_d.x*sp,vy:_d.y*sp,vz:_d.z*sp,life:rr(.25,.45),s0:rr(.1,.2),s1:rr(.6,1.2),r:.82,g:.88,b:.95,a:.22,f:5,drag:3.2})}
+  const cosA=Math.cos(C.a);let n=0;const hop=a.shots%4===0;
+  for(const t of G.actors){if(!t.alive||t.team===a.team)continue;const tx=t.c.x,ty=t.c.y+t.c.h*.55,tz=t.c.z;const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z,d=Math.hypot(dx,dy,dz);if(d>C.r+t.c.hw)continue;
+    const cs=(dx*dir.x+dy*dir.y+dz*dir.z)/(d||1);if(cs<cosA&&d>1.2)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;n++;
+    const f=clamp(1-d/(C.r*1.25),.3,1),hd=Math.hypot(dx,dz)||1;
+    damageActor(t,W.dmg*f,a,{w:a.cur,dir:[dx/hd,.15,dz/hd],kb:C.kb*(.6+.4*f),stag:W.stag,x:tx,y:ty,z:tz,up:hop&&t.c.onGround?C.up*f:0});
+    FX.spawn({x:tx-dx/d*.3,y:ty,z:tz-dz/d*.3,vx:dx/d*3,vy:.5,vz:dz/d*3,life:.3,s0:.3,s1:.9,r:.85,g:.9,b:1,a:.3,f:6,drag:2})}
+  if(n&&a.isPlayer)HUD.hitmark(false)}
 function spreadDir(base,ang,out){if(ang<=0)return out.copy(base);
   _rv.set(0,1,0);if(Math.abs(base.y)>.95)_rv.set(1,0,0);_uv.crossVectors(base,_rv).normalize();_rv.crossVectors(_uv,base).normalize();
   const r=ang*Math.sqrt(Math.random()),th=Math.random()*TAU;out.copy(base).addScaledVector(_uv,Math.cos(th)*r).addScaledVector(_rv,Math.sin(th)*r).normalize();return out}
@@ -89,6 +103,7 @@ function fireGun(a,W){const am=a.ammo[a.cur];
   const n=W.pellets||1,sp=curSpread(a,W);const dir=new THREE.Vector3();
   let hitAny=false,hsAny=false,dmgTotal=0;
   if(W.cone){coneBlast(a,W,eye.clone(),base)}
+  else if(W.air){airBlast(a,W,eye.clone(),base)}
   else if(W.proj){spreadDir(base,sp,dir);launchProj(a,W,eye,dir)}
   else if(W.fan){for(let i=0;i<W.fan;i++){const off=(i-(W.fan-1)/2)/((W.fan-1)/2)*W.fanA,c=Math.cos(off),s=Math.sin(off);dir.set(base.x*c+base.z*s,base.y,-base.x*s+base.z*c).normalize();spreadDir(dir,sp,dir);
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}}

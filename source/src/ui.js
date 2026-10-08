@@ -75,7 +75,26 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
       d.el.style.transform=`translate(${sx.toFixed(1)}px,${sy.toFixed(1)}px) translate(-50%,-50%) scale(${sc.toFixed(3)})`;d.el.style.opacity=Math.min(1,(life-d.age)/.35).toFixed(3)}},
   clearDmg(){for(const d of this.dmgL){d.el.remove();this.dmgPool.push(d.el)}this.dmgL=[]},
   show(on){this.el.hud.classList.toggle('off',!on)},
-  roundStart(){this.feedL=[];this.el.hFeed.innerHTML='';this.clearDmg();this.announce(T('round')+' '+G.round,'w',2.2);this.note(T('prepHint'),4)},
+  roundStart(){this.resOff();this.feedL=[];this.el.hFeed.innerHTML='';this.clearDmg();this.announce(T('round')+' '+G.round,'w',2.2);this.note(T('prepHint'),4)},
+  // end-of-round card (the 6 s between rounds): who won, the human and zombie MVPs of the round, and a short table of what
+  // everyone did this round (kills, infections, damage) with what became of them (survived / infected / host)
+  roundResult(win){const L=LI(),A=G.actors.filter(a=>a.r0);if(!A.length)return;
+    const D=a=>({a,k:a.kills-a.r0.k,i:a.infects-a.r0.i,dm:Math.max(0,a.dmgDealt-a.r0.dm)});const R=A.map(D);
+    const hs=r=>r.dm+r.k*400,zs=r=>r.i*1000+r.k*300+r.dm*.2;
+    const hm=R.filter(r=>!(r.a.team===TZ&&r.a.host)).sort((p,q)=>hs(q)-hs(p))[0],zm=R.filter(r=>r.a.team===TZ&&r.i>0).sort((p,q)=>zs(q)-zs(p))[0];
+    const fate=a=>a.team===TH?(a.alive?['h',L?'Survived':'생존']:['d',L?'Dead':'사망']):a.host?['z',L?'Host':'숙주']:['z',L?'Infected':'감염'];
+    const pic=a=>{try{return portrait(a.team===TZ?'z_'+a.zc:'h_'+a.skin,44)}catch(_){return ''}};
+    const card=(r,cls,lbl,txt)=>r?`<div class="rmvp ${cls}"><img src="${pic(r.a)}"><div><small>${lbl}</small><b>${esc(r.a.name)}</b><span>${txt}</span></div></div>`:'';
+    const n=v=>Math.round(v).toLocaleString('en-US');
+    const rows=R.sort((p,q)=>(hs(q)+zs(q))-(hs(p)+zs(p))).slice(0,8);const P=G.player;
+    let el=$('hRRes');if(!el){el=document.createElement('div');el.id='hRRes';$('hud').appendChild(el)}
+    el.innerHTML=`<div class="rhd ${win===TH?'h':'z'}"><b>${T('round')} ${G.round} · ${win===TH?T('winH'):T('winZ')}</b><span>${T('human')} ${G.score[TH]} : ${G.score[TZ]} ${T('zombie')}</span></div>
+      <div class="rmvps">${card(hm&&(hm.dm>0||hm.k>0)?hm:null,'h',L?'Human MVP':'인간 MVP',`${T('kills')} ${hm?hm.k:0} · ${T('dmg')} ${hm?n(hm.dm):0}`)}${card(zm,'z',L?'Zombie MVP':'좀비 MVP',`${T('infects')} ${zm?zm.i:0} · ${T('kills')} ${zm?zm.k:0}`)}</div>
+      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('infects')}</th><th>${T('dmg')}</th></tr>${rows.map(r=>{const f=fate(r.a);return `<tr class="${r.a===P?'me':''}"><td>${esc(r.a.name)}</td><td class="f ${f[0]}">${f[1]}</td><td>${r.k}</td><td>${r.i}</td><td>${n(r.dm)}</td></tr>`}).join('')}</table>
+      ${P&&P.rBonus?`<div class="rbonus">${L?'Round bonus':'라운드 보상'} <b>+$${n(P.rBonus)}</b></div>`:''}`;
+    this.annT=0;this.ann=null;$('hBig').className='a off';// the card carries the result itself
+    el.classList.remove('off');el.style.animation='none';void el.offsetWidth;el.style.animation=''},
+  resOff(){const el=$('hRRes');if(el)el.classList.add('off')},
   announce(t,cls,dur){this.ann={t,cls};this.annT=dur||3;const b=this.el.hBig;b.textContent=t;b.className='a '+(cls||'w');b.style.animation='none';void b.offsetWidth;b.style.animation=''},
   countdown(s){if(G.st!=='prep')return;this.cd=s},
   note(t,dur){this.el.hNote.textContent=t;this.noteT=dur||2.5;this.el.hNote.classList.add('on')},
@@ -88,7 +107,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
   feed(src,w,t,f){const row={k:src?src.name:'',kt:src?src.team:-1,v:t.name,vt:f.infect?TH:t.team,w,hs:f.hs,inf:f.infect,perma:f.perma,me:(src&&src.isPlayer)||t.isPlayer,t:G.t};
     this.feedL.push(row);if(this.feedL.length>6)this.feedL.shift();this.renderFeed()},
   renderFeed(){const h=this.feedL.map(r=>`<div class="fr${r.me?' me':''}">${r.k?`<span class="${r.kt===TZ?'z':'h'}">${esc(r.k)}</span>`:''}<img src="${r.inf?miniIcon('claw'):weaponIcon(r.w,14)}">${r.inf?`<img src="${miniIcon('bio')}">`:''}${r.hs?`<img src="${miniIcon('skull')}">`:''}${r.perma&&!r.hs?`<img src="${miniIcon('lock')}">`:''}<span class="${r.vt===TZ?'z':'h'}">${esc(r.v)}</span></div>`).join('');this.el.hFeed.innerHTML=h},
-  update(dt){const P=G.player;if(!P)return;const e=this.el;RADAR.update(dt);
+  update(dt){const P=G.player;if(!P)return;const e=this.el;RADAR.update(dt);if(G.st!=='end'&&$('hRRes'))this.resOff();
     // timers
     if(this.annT>0){this.annT-=dt;if(this.annT<=0){e.hBig.className='a off'}}
     if(this.noteT>0){this.noteT-=dt;if(this.noteT<=0)e.hNote.classList.remove('on')}

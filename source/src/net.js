@@ -361,6 +361,7 @@ const CLIH={
   rv(L,m){const a=byId(m.i);if(!a)return;if(!a.isPlayer)a.zpick=m.z;a.nb=null;netWithEv(()=>reviveZombie(a,m.at?[m.at[0]/100,m.at[1]/100,m.at[2]/100]:null,m.rs))},
   end(L,m){netWithEv(()=>endRound(m.w));G.score=m.sc.slice(0,2);G.st='end';G.endT=6},
   over(){G.st='over';UI.showResults()},
+  bo(L,m){if(m.on)BO.start(m.d||20,true);else BO.stop(true)},
   tolobby(){netToLobby()},
   buyok(L,m){const P=G.player;if(P&&buy(P,m.w,true)&&Main.overlay==='buy')UI.renderBuy()},
   buyno(){HUD.note(T('noMoney'),1.2);AU.play('dry',{vol:.5})},

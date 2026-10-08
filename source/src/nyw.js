@@ -380,7 +380,7 @@ const NY_SW=[[0,[0,0,0,0,0,0]],[.25,[.12,.08,.04,.25,-.6,.5]],[.45,[-.08,.02,-.1
 // ---------- buy-menu text ----------
 function nyTags(W,L){const t=[];
   if(W.proj==='bolt')t.push(L?(W.pierce?'Piercing bolts':'Silent bolts'):(W.pierce?'관통 볼트':'저소음 볼트'));if(W.zoom)t.push(L?'Scope':'조준경');
-  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 적룡 소환');
+  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.air)t.push(L?'Air blast cone · huge knockback':'압축공기 분사 · 강한 넉백');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 적룡 소환');
   if(W.kind==='saw')t.push(L?'Hold to grind · RMB swing':'갈아버리기 · 우클릭 휘두르기');if(W.proj==='harpoon')t.push(L?'Sticky harpoon · RMB detonate':'작살 1초 뒤 폭발 · 우클릭 즉시 폭발');
   if(W.proj==='disc')t.push(L?'Returning blade · pierces':'관통 후 되돌아오는 칼날');if(W.alt==='drill')t.push(L?'RMB: drill':'우클릭: 드릴');if(W.proj==='slug')t.push(L?'3 explosive slugs':'폭발탄 3발');
   if(W.spin)t.push(L?'Rotary barrels':'회전 총열');if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.fan)t.push(L?'4-barrel volley':'4연장 일제사격');if(W.alt==='bayonet')t.push(L?'RMB: bayonet':'우클릭: 대검');

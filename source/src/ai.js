@@ -24,7 +24,7 @@ const AI={
       let zd=40;for(const z of Zs)zd=Math.min(zd,Math.hypot(z.c.x-n.x,z.c.z-n.z)+Math.abs(z.c.y-n.y)*2);
       const sc=Math.random()*10+Math.min(zd,25)*.6-Math.abs(n.y-c.y)*.4;if(sc>bs){bs=sc;best=n}}
     if(!best)return false;B.spot=[best.x+rr(-.25,.25),best.y,best.z+rr(-.25,.25)];B.camp=null;B.path=null;B.repath=0;B.scanY=null;return true},
-  buy(a){const m=()=>a.money;const prim=[['hmg',.24],['mg6',.16],['gx6',.12],['ar7',.24],['kv47',.2],['g35',.12],['br3',.1],['ar5c',.12],['hr17',.1],['as12',.18],['m14',.12],['sg8',.13],['db2',.06],['k5',.06],['k9',.05],['um45',.05],['pd50',.07],['r700',.04],['sr8',.03],['dm14',.05],['gl40',.04],['volc',.05],['xbow',.04],['xbowa',.03],['bdc',.05],['rdc',.03],['mdrill',.04],['mlaunch',.03],['xdz',.03],['gaebolg',.03],['sterling',.05]];
+  buy(a){const m=()=>a.money;const prim=[['hmg',.24],['mg6',.16],['gx6',.12],['ar7',.24],['kv47',.2],['g35',.12],['br3',.1],['ar5c',.12],['hr17',.1],['as12',.18],['m14',.12],['sg8',.13],['db2',.06],['k5',.06],['k9',.05],['um45',.05],['pd50',.07],['r700',.04],['sr8',.03],['dm14',.05],['gl40',.04],['airb',.05],['volc',.05],['xbow',.04],['xbowa',.03],['bdc',.05],['rdc',.03],['mdrill',.04],['mlaunch',.03],['xdz',.03],['gaebolg',.03],['sterling',.05]];
     if(!a.inv[1]){const ok=prim.filter(p=>WPN[p[0]].cost<=m()-(a.armor<100?600:0));if(ok.length){let t=0;for(const p of ok)t+=p[1]*(1+WPN[p[0]].cost/3000);let r=Math.random()*t;for(const p of ok){r-=p[1]*(1+WPN[p[0]].cost/3000);if(r<=0){buy(a,p[0]);break}}}}
     if(a.armor<100&&m()>=1000&&Math.random()<.85)buy(a,'armor');
     if(!a.inv.he&&m()>=300&&Math.random()<.65)buy(a,'he');if(!a.inv.frost&&m()>=250&&Math.random()<.4)buy(a,'frost');if(!a.inv.flare&&m()>=150&&Math.random()<.15)buy(a,'flare');
@@ -62,7 +62,7 @@ const AI={
   // ---------- human bots ----------
   human(a,dt){const B=a.bot,cmd=a.cmd,c=a.c,D=DIFF[G.diff];cmd.duck=false;
     if(G.st==='prep'||G.st==='fight'){if(B.buyT>0){B.buyT-=dt;if(B.buyT<=0)this.buy(a)}}
-    if(G.st==='fight'&&B.flashOn)a.flash=true;
+    if(G.st==='fight'&&(B.flashOn||BO.on))a.flash=true;
     // perception at ~8 Hz
     if(B.think<=0){B.think=.12+Math.random()*.05;const e=actorEye(a);let best=null,bd=1e9;
       for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>48)continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;
