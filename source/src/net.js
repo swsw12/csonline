@@ -376,11 +376,15 @@ function netHandle(L,m){const H=NET.host?HOSTH:CLIH;const f=H[m.t];if(f)f(L,m)}
 function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=CFG.mpName;me.s=CFG.skin;me.z=CFG.zclass}
   for(const p of NET.lob.pl){const L=NET.links.get(p.k);p.p=L?Math.round(L.rtt):0;p.r=L&&L.kind==='relay'?1:0}
   netAll({t:'lobby',lob:NET.lob});UI.mpRender&&UI.mpRender()}
+const NET_FIXED_CODE='1234';
 NET.create=async function(){netTables();const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
   NET.on=true;NET.host=true;NET.cli=false;NET.ui='lobby';NET.links.clear();NET.out.clear();NET.inQ=[];NET.msg=T('mpConnecting');
   NET.lob={cfg:Object.assign({mode:CFG.mode,bots:8,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time},CFG.mpCfg||{}),pl:[]};if(!MAPDEFS[NET.lob.cfg.map])NET.lob.cfg.map=MAPDEFS[CFG.map]?CFG.map:'q7';if(MAP.id!==NET.lob.cfg.map)loadMapUI(NET.lob.cfg.map);
-  for(let tries=0;tries<4;tries++){NET.code=netKey(4);try{if(kind==='room'){NET.me='k'+netKey(9);await RSIG.open()}else await PJ.host();break}
-    catch(e){PJ.close();if(!(e&&e.type==='unavailable-id')||tries===3){NET.on=false;NET.ui='';NET.msg=T('mpFail')+(e&&e.type?' ('+e.type+')':'');UI.mpRender();return}}}
+  // the room code is always the same (NET_FIXED_CODE): friends just press create / join. If a room with it is already open, join that one instead.
+  NET.code=NET_FIXED_CODE;try{if(kind==='room'){NET.me='k'+netKey(9);await RSIG.open()}else await PJ.host()}
+  catch(e){PJ.close();NET.on=false;NET.ui='';
+    if(e&&e.type==='unavailable-id'){NET.msg=LI()?'Room '+NET_FIXED_CODE+' is already open — joining it':NET_FIXED_CODE+' 방이 이미 열려 있어서 그 방에 참가합니다';UI.mpRender();setTimeout(()=>NET.join(NET_FIXED_CODE),600);return}
+    NET.msg=T('mpFail')+(e&&e.type?' ('+e.type+')':'');UI.mpRender();return}
   NET.lob.pl=[{k:NET.me,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,h:1}];NET.msg='';UI.mpLobby()};
 NET.join=async function(code){netTables();code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){NET.msg=T('mpBad');UI.mpRender();return}
   const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
@@ -413,7 +417,7 @@ UI.mpMenu=function(){const L=LI();const inC=NET.kind==='room',inP=NET.kind==='pe
   $('mp').innerHTML=`<h2>${T('mp')}</h2><div class="mpbox">
     <label>${T('mpName')}</label><input id="mpName" maxlength="14" value="${esc(CFG.mpName||'')}" autocomplete="off" spellcheck="false">
     <button data-act="mpcreate" class="big">${T('mpCreate')}</button>
-    <label>${T('mpCode')}</label><div class="mprow"><input id="mpCode" maxlength="4" placeholder="${T('mpCodePh')}" autocomplete="off" spellcheck="false"><button data-act="mpjoin">${T('mpJoin')}</button></div>
+    <label>${T('mpCode')}</label><div class="mprow"><input id="mpCode" maxlength="4" value="${NET_FIXED_CODE}" placeholder="${T('mpCodePh')}" autocomplete="off" spellcheck="false"><button data-act="mpjoin">${T('mpJoin')}</button></div>
     ${inC?`<label class="ck${CFG.p2pOnly?' on':''}" data-act="mpp2p"><i></i>${T('mpP2POnly')}</label>`:''}
     <p class="mpmsg" id="mpMsg">${esc(NET.msg||'')}</p>
     <p class="hint">${inC?T('mpViaRoom'):inP?T('mpViaPJ'):NET.detecting?T('mpChecking'):NET.detected?T('mpNone'):''}</p></div>

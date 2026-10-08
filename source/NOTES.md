@@ -186,3 +186,4 @@
 - Italy load 7.5 → 4.4 s headless: bakeItTex paints only the textures the rebuilt town uses; wall/roof/kerb materials light in 1–2 m cells (MATS cs) — 846k → 329k vertices.
 - Big zombies squeeze: a heavy/giant bot wedged for 0.45 s crouches and takes a 0.3 m hull for 1.6 s (game.js widens it again once it fits). Italy reach 15/16.
 - Big Tree keep: stepped solid rail on the stair's open side (steps 2–10) and a rail round the roof stairwell (exit at the north end).
+- v6.1.1: room code fixed to NET_FIXED_CODE '1234' (net.js NET.create). PeerJS: host id qzg-1234; if it is taken ('unavailable-id') the creator joins that room instead. The join box is pre-filled with 1234. Only one 1234 room can exist on the public PeerJS server at a time.

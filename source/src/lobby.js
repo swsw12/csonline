@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.1.1','2026-10-08',[
+ ['UP','멀티 방 코드가 항상 1234 — 방 만들기만 누르면 1234 방이 열리고, 참가 칸에도 1234가 미리 들어가 있음 (이미 열려 있으면 그 방으로 자동 참가)','The room code is always 1234: create opens room 1234, join is pre-filled (if it is already open you join it)']]],
 ['v6.1','2026-10-08',[
  ['NEW','무기 버리기·줍기 — G(모바일: 들고 있는 무기 슬롯 길게 누르기)로 버리고, 그 슬롯이 비어 있으면 바닥의 무기를 밟기만 해도 주움. 죽거나 감염되면 주무기를 떨어뜨림','Drop and pick up guns: G (phone: hold the weapon in hand) drops it, walk over a gun to take it into an empty slot; the fallen drop their primary'],
  ['NEW','그래픽 프리셋 — 옵션 › 비디오에 고화질·균형·저사양 원터치 버튼, 렌더 해상도 150%·200% (폰·고해상도 화면에서 실제 화소로 선명하게)','Graphics presets (high / balanced / low) and 150% / 200% render resolution for sharp phone and retina screens'],
