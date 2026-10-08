@@ -358,7 +358,7 @@ const CLIH={
   infect(L,m){const t=byId(m.i);if(!t||t.team!==TH)return;if(!t.isPlayer)t.zpick=m.z;netWithEv(()=>infect(t,byId(m.s)))},
   kill(L,m){const t=byId(m.i);if(!t||!t.alive)return;netWithEv(()=>killZombie(t,byId(m.s),{w:m.w,hs:!!m.hs,dir:m.d?[m.d[0]/100,m.d[1]/100,m.d[2]/100]:null,knife:!!m.k,heavy:!!m.h,he:!!m.he}))},
   hdie(L,m){const t=byId(m.i);if(!t||!t.alive||t.team!==TH)return;netWithEv(()=>hurtHuman(t,1e6,byId(m.s),{}))},
-  rv(L,m){const a=byId(m.i);if(!a)return;if(!a.isPlayer)a.zpick=m.z;a.nb=null;netWithEv(()=>reviveZombie(a,m.at?[m.at[0]/100,m.at[1]/100,m.at[2]/100]:null))},
+  rv(L,m){const a=byId(m.i);if(!a)return;if(!a.isPlayer)a.zpick=m.z;a.nb=null;netWithEv(()=>reviveZombie(a,m.at?[m.at[0]/100,m.at[1]/100,m.at[2]/100]:null,m.rs))},
   end(L,m){netWithEv(()=>endRound(m.w));G.score=m.sc.slice(0,2);G.st='end';G.endT=6},
   over(){G.st='over';UI.showResults()},
   tolobby(){netToLobby()},

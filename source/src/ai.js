@@ -11,7 +11,7 @@ const AI={
   mk(a){return {path:null,pi:0,goal:null,repath:0,stuckT:0,lx:0,lz:0,think:Math.random()*.2,target:null,tgtT:0,seen:null,react:0,aimX:0,aimY:0,strafe:0,strafeT:0,nadeCD:rr(4,9),
     camp:null,spot:null,buyT:0,crouchT:0,jumpT:0,lastHp:0,hurtAcc:0,skillT:rr(1,3),bombT:rr(6,14),detour:0,wander:null,fireHold:0,flashOn:Math.random()<.85,growlT:rr(2,8),avoidT:0,roam:Math.random()<.75,roamT:0,scanY:null,seenT:-99}},
   onRound(a){const B=a.bot;B.path=null;B.target=null;B.seen=null;B.buyT=rr(.4,3);B.stuckT=0;B.goal=null;B.roamT=rr(.5,2.5);B.scanY=null;this.pickCamp(a);a.flash=false},
-  onTeam(a){const B=a.bot;B.path=null;B.partial=false;B.target=null;B.seen=null;B.goal=null;B.repath=0;B.stuckT=0;B.wasDirect=0;B.straight=false;B.unreach=0;B.lastHp=a.hp;B.skillT=rr(1,3);a.cmd.fire=a.cmd.alt=false},
+  onTeam(a){const B=a.bot;B.spot=B.spotC=B.gT=null;B.path=null;B.partial=false;B.target=null;B.seen=null;B.goal=null;B.repath=0;B.stuckT=0;B.wasDirect=0;B.straight=false;B.unreach=0;B.lastHp=a.hp;B.skillT=rr(1,3);a.cmd.fire=a.cmd.alt=false},
   onHurt(a,src){const B=a.bot;if(src&&a.team===TZ&&src.alive&&(!B.target||Math.random()<.25)){B.target=src;B.repath=0}},
   pickCamp(a){const B=a.bot;const C=MAP.camps;const used={};for(const o of G.actors)if(o.bot&&o!==a&&o.bot.spot)used[o.bot.spot.join(',')]=1;
     const cw=c=>c.w||CAMP_W[c.k]||.1;let tot=0;for(const c of C)tot+=cw(c);let r=Math.random()*tot,camp=C[0];for(const c of C){r-=cw(c);if(r<=0){camp=c;break}}
@@ -58,7 +58,7 @@ const AI={
   moveDir(a,dx,dz,run){const fx=-Math.sin(a.yaw),fz=-Math.cos(a.yaw),rx=Math.cos(a.yaw),rz=-Math.sin(a.yaw);a.cmd.f=dx*fx+dz*fz;a.cmd.s=dx*rx+dz*rz},
   turnTo(a,yaw,pitch,dt,rate){const d=wrapA(yaw-a.yaw);const m=rate*dt;a.yaw=wrapA(a.yaw+clamp(d,-m,m));a.pitch+=clamp(pitch-a.pitch,-m*.7,m*.7)},
   goTo(a,x,y,z,maxJ,partial){const B=a.bot;const s=navNode(a.c.x,a.c.y,a.c.z),t=navNode(x,y,z);B.path=navPath(s,t,maxJ,0,a.team===TH?4.3:0,partial);
-    B.partial=!!(B.path&&B.path.partial);B.pi=0;B.goal=[x,y,z];return !!B.path},
+    B.partial=!!(B.path&&B.path.partial);B.pi=0;B.goal=[x,y,z];B.gT=null;return !!B.path},
   // ---------- human bots ----------
   human(a,dt){const B=a.bot,cmd=a.cmd,c=a.c,D=DIFF[G.diff];cmd.duck=false;
     if(G.st==='prep'||G.st==='fight'){if(B.buyT>0){B.buyT-=dt;if(B.buyT<=0)this.buy(a)}}
@@ -149,10 +149,13 @@ const AI={
     if(see&&B.straight){B.wasDirect=1;if(dh>.9){this.moveDir(a,dx/dh,dz/dh);moving=true}}// open ground: straight at them
     else{// otherwise the way round: the path (fresh when the straight run just ended)
       if(B.wasDirect){B.wasDirect=0;B.repath=0;B.path=null}
-      B.repath-=dt;const moved=B.goal?Math.hypot(B.goal[0]-t.c.x,B.goal[2]-t.c.z)+Math.abs(B.goal[1]-t.c.y):99;
+      B.repath-=dt;const gq=B.gT||B.goal,moved=gq?Math.hypot(gq[0]-t.c.x,gq[2]-t.c.z)+Math.abs(gq[1]-t.c.y):99;
       if((!B.path||moved>2||B.pi>=B.path.length)&&B.repath<=0){B.repath=rr(.7,1.2);
-        if(!this.goTo(a,t.c.x,t.c.y,t.c.z,cap,true)){B.path=null;B.offGrid=1;B.repath=rr(1.5,2.5);B.tgtT=Math.min(B.tgtT,.3)}
-        else{B.offGrid=0;if(B.partial)B.repath=rr(1.8,2.8)}}
+        // out of reach and well above: head for the spot under the edge of their ledge with open sky above (to climb on each other there)
+        const tn=navNode(t.c.x,t.c.y,t.c.z),perch=!tn||tn.y<t.c.y-.6;// perch: standing somewhere the grid has no node for (a wall top, a railing)
+        const sp=(B.partial||B.unreach||B.spot||perch)&&t.c.y-c.y>cap+.3?this.stackSpot(a,t,cap):null;B.spot=sp;
+        if(!(sp?this.goTo(a,sp.x,sp.y,sp.z,cap,true):this.goTo(a,t.c.x,t.c.y,t.c.z,cap,true))){B.path=null;B.offGrid=1;B.repath=rr(1.5,2.5);B.tgtT=Math.min(B.tgtT,.3)}
+        else{B.offGrid=0;B.gT=[t.c.x,t.c.y,t.c.z];if(B.partial||sp)B.repath=rr(1.8,2.8)}}
       moving=this.follow(a,dt,true);
       // off the walkable grid altogether (knocked somewhere odd): head straight for the target as before
       if(!moving){if(B.offGrid&&dh>1){this.moveDir(a,dx/dh,dz/dh);moving=true}else moving=this.prowl(a,dt,t,dx,dz,dh,dy,see,cap)}}
@@ -181,13 +184,35 @@ const AI={
   // end of the path and the target still out of reach (up on a roof, behind a fence): stay under it and keep at it —
   // a step straight in when that is walkable, a running jump when it is only a little above (the grid does not know every ledge
   // a zombie can claw onto), otherwise pacing side to side without walking off any edge
-  prowl(a,dt,t,dx,dz,dh,dy,see,cap){const B=a.bot,c=a.c;if(dh<.9)return false;const ux=dx/dh,uz=dz/dh;
+  prowl(a,dt,t,dx,dz,dh,dy,see,cap){const B=a.bot,c=a.c;const hi=!window.__noStack&&dy>=cap+.3&&dy<5.5&&dh<4.5;if(dh<.9&&!hi)return false;const ux=dx/(dh||1),uz=dz/(dh||1);
     if(see&&Math.abs(dy)<.6&&dh<4&&navStraight(c.x,c.y,c.z,t.c.x,t.c.z,Math.min(.3,c.hw*.9))){this.moveDir(a,ux,uz);return true}
-    if(dy>.5&&dy<cap+.3&&dh<3){this.moveDir(a,ux,uz);if(c.onGround&&B.jumpT<=0&&dh<2.2){a.cmd.jump=true;B.jumpT=rr(.7,1.3)}return true}
+    if(dy>.5&&dy<cap+.3&&dh<(a.onHead?4.5:3)){this.moveDir(a,ux,uz);if(c.onGround&&B.jumpT<=0&&dh<2.2){a.cmd.jump=true;B.jumpT=rr(.7,1.3)}return true}
+    if(hi)return this.stack(a,dt,t,ux,uz,dh,dy,cap);
     B.prowlT=(B.prowlT||0)-dt;if(B.prowlT<=0){B.prowlT=rr(.7,1.6);B.prowlS=Math.random()<.35?0:rpick([-1,1])}if(!B.prowlS)return false;
     const px=-uz*B.prowlS,pz=ux*B.prowlS,ax=c.x+px*.7,az=c.z+pz*.7;
     if(floorBelow(ax,c.y+.45,az,.15)<c.y-.5||!charFits(c,ax,c.y+.05,az)){B.prowlS=-B.prowlS;return false}
     this.moveDir(a,px*.7,pz*.7);return true},
+  // too high to jump to: climb on each other. A teammate whose head is within a jump and no farther from the target is a step —
+  // run at it and jump on; nobody like that → be the step: get right under the target, hold still and crouch for the next one.
+  // On a crouching zombie's head the next jump reaches about 3 m; a second zombie crouching on top of that, about 4.3 m.
+  stack(a,dt,t,ux,uz,dh,dy,cap){const B=a.bot,c=a.c,sp=B.spot;let best=null,bs=1e9;
+    if(sp&&!a.onHead){const ex=sp.x-c.x,ez=sp.z-c.z,ed=Math.hypot(ex,ez);if(ed>.8&&ed<6){this.moveDir(a,ex/ed,ez/ed);return true}}
+    for(const b of G.actors){if(b===a||!b.alive||b.team!==a.team||b===a.onHead||b.onHead===a)continue;const rise=b.c.y+b.c.h-c.y;if(rise<.3||rise>cap-.1)continue;
+      const bd=Math.hypot(b.c.x-c.x,b.c.z-c.z);if(bd>5)continue;const bt=Math.hypot(t.c.x-b.c.x,t.c.z-b.c.z);if(sp?Math.hypot(b.c.x-sp.x,b.c.z-sp.z)>1.4:bt>dh+.6)continue;const sc=bd+bt*.5;if(sc<bs){bs=sc;best=b}}
+    if(best){const bx=best.c.x-c.x,bz=best.c.z-c.z,bd=Math.hypot(bx,bz)||.01;this.moveDir(a,bx/bd,bz/bd);
+      if(c.onGround&&B.jumpT<=0&&bd<1.3){a.cmd.jump=true;B.jumpT=rr(.5,.9)}return true}
+    a.cmd.duck=true;if(!a.onHead&&!sp&&dh>.9){const ax=c.x+ux*.5,az=c.z+uz*.5;if(floorBelow(ax,c.y+.45,az,.15)>=c.y-.5&&charFits(c,ax,c.y+.05,az)){this.moveDir(a,ux*.6,uz*.6);return true}}
+    a.cmd.f=a.cmd.s=0;return true},
+  // where to build the stack under someone out of reach: a reachable spot on the ground within ~4 m of them, open to the sky up to
+  // their level (not under the balcony they stand on) and with their floor a step away toward them (the ledge is right there)
+  stackSpot(a,t,cap){const B=a.bot,K=B.spotC;if(K&&K.t===t&&G.t<K.until&&Math.hypot(K.p[0]-t.c.x,K.p[2]-t.c.z)+Math.abs(K.p[1]-t.c.y)<1.5)return K.n;
+    const N=NAV,ty=t.c.y,i0=Math.floor((t.c.x-N.X0)/N.S),j0=Math.floor((t.c.z-N.Z0)/N.S),C=[];
+    for(let j=j0-4;j<=j0+4;j++)for(let i=i0-4;i<=i0+4;i++){if(i<0||j<0||i>=N.NX||j>=N.NZ)continue;for(const n of N.col[j*N.NX+i]){if(n.y>ty-cap-.3||n.y<ty-5.5)continue;
+      const d=Math.hypot(n.x-t.c.x,n.z-t.c.z);if(d>4.2||d<.3)continue;if(overlapAny(n.x-.3,n.y+.1,n.z-.3,n.x+.3,ty+1.9,n.z+.3))continue;
+      const mx=n.x+(t.c.x-n.x)/d,mz=n.z+(t.c.z-n.z)/d;if(floorBelow(mx,ty+.3,mz,.1)<ty-.45||overlapAny(mx-.25,ty+.05,mz-.25,mx+.25,ty+1.7,mz+.25))continue;C.push([d,n])}}
+    C.sort((p,q)=>p[0]-q[0]);const s0=navNode(a.c.x,a.c.y,a.c.z);let r=null;
+    for(let k=0;k<C.length&&k<5&&!r;k++)if(navPath(s0,C[k][1],cap,4000))r=C[k][1];
+    B.spotC={t,p:[t.c.x,t.c.y,t.c.z],n:r,until:G.t+3};return r},
   wander(a,dt){const B=a.bot;B.repath-=dt;if(!B.wander||Math.hypot(B.wander[0]-a.c.x,B.wander[2]-a.c.z)<1.5||(!B.path&&B.repath<=0)){B.repath=2;const n=NAV.nodes[(Math.random()*NAV.nodes.length)|0];B.wander=[n.x,n.y,n.z];this.goTo(a,n.x,n.y,n.z,jumpCap(a))}
     if(this.follow(a,dt,false)){const v=Math.hypot(a.c.vx,a.c.vz);if(v>.3)this.turnTo(a,Math.atan2(-a.c.vx,-a.c.vz),0,dt,4)}},
 };

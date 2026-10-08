@@ -1,6 +1,6 @@
 'use strict';
 // ============ Mobile play (v2): a thumb-first layout like mobile shooters ============
-// Left: a movement stick (rests in a fixed spot, follows the thumb inside the left zone). Right: drag anywhere to look, a big
+// Left: a fixed movement stick (touch on or near it). Right: drag anywhere to look, a big
 // fire button you can also drag to aim, jump / crouch / scope / reload around it. Bottom centre: weapon slots with ammo.
 // Top right: buy / light / score / pause. Aim assist pulls gently toward the target under the crosshair and auto-fire shoots
 // when it sits on one, so phones are playable without pixel-perfect thumbs. Everything writes the same commands the
@@ -34,7 +34,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
       <div class="ttop">${this.B('buy',I.buy,'tBuy',L?'BUY':'구매')}${this.B('zsel',I.buy,'tZsel',L?'CLASS':'클래스')}${this.B('light',I.light,'tLight')}${this.B('nv',L?'NV':'NV','tNV')}${this.B('score',I.score,'tScore')}${this.B('pause',I.menu,'tPause')}</div>
       <div class="tlock"></div>
       ${this.B('close','✕','tClose')}
-      <div class="trot">${L?'Turn your phone sideways':'휴대폰을 가로로 돌려 주세요'}</div>`;
+      <div class="trot"><p>${L?'Turn your phone sideways':'휴대폰을 가로로 돌려 주세요'}</p><button data-act="rot" class="trotb">${L?'Switch to landscape & lock':'가로모드로 전환 · 고정'}</button></div>`;
     $('app').appendChild(el);this.el=el;this.stick=el.querySelector('.tstick');this.bar=el.querySelector('.tbar');this.lockEl=el.querySelector('.tlock');
     const opt={passive:false};
     el.addEventListener('touchstart',e=>e.preventDefault(),opt);el.addEventListener('touchmove',e=>e.preventDefault(),opt);
@@ -68,15 +68,15 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
   down(e){const t=e.target.closest('[data-t]'),z=e.target.closest('.tzone');AU.init();
     if(t){e.preventDefault();try{t.setPointerCapture(e.pointerId)}catch(_){}t.classList.add('on');const id=t.dataset.t;this.btn.set(e.pointerId,{id,el:t,x:e.clientX,y:e.clientY,v:t.dataset.v});this.press(id,true,t.dataset.v);return}
     if(!z)return;try{z.setPointerCapture(e.pointerId)}catch(_){}
-    if(z.classList.contains('tzL')&&!this.stickId){this.stickId=e.pointerId;this.sx=e.clientX;this.sy=e.clientY;const s=this.stick;s.classList.add('act');s.style.left=e.clientX+'px';s.style.top=e.clientY+'px';s.style.bottom='auto';s.firstChild.style.transform='';return}
+    // fixed stick: it stays where it is drawn; a thumb landing on or near it steers from its centre (far away on the left = look)
+    if(z.classList.contains('tzL')&&!this.stickId){const r=this.stick.getBoundingClientRect(),R=r.width*.5||60,cx=r.left+R,cy=r.top+R;
+      if(Math.hypot(e.clientX-cx,e.clientY-cy)<R*2.2){this.stickId=e.pointerId;this.sx=cx;this.sy=cy;this.stick.classList.add('held');this.move(e);return}}
     this.look.set(e.pointerId,{x:e.clientX,y:e.clientY})},
   move(e){if(e.pointerId===this.stickId){const R=this.stick.offsetWidth*.5||60;let dx=e.clientX-this.sx,dy=e.clientY-this.sy;const l=Math.hypot(dx,dy);
-      // the base follows a thumb that runs past the rim, so the stick never "sticks" at the edge
-      if(l>R*1.25){const f=(l-R*1.25)/l;this.sx+=dx*f;this.sy+=dy*f;this.stick.style.left=this.sx+'px';this.stick.style.top=this.sy+'px';dx=e.clientX-this.sx;dy=e.clientY-this.sy}
       const l2=Math.hypot(dx,dy);if(l2>R){dx*=R/l2;dy*=R/l2}this.mv.x=dx/R;this.mv.y=dy/R;this.stick.firstChild.style.transform=`translate(${dx}px,${dy}px)`;return}
     const lk=this.look.get(e.pointerId)||((b=>b&&(b.id==='fire'||b.id==='alt'||b.id==='skill')?b:null)(this.btn.get(e.pointerId)));if(!lk)return;
     const dx=e.clientX-lk.x,dy=e.clientY-lk.y;lk.x=e.clientX;lk.y=e.clientY;this.turn(dx,dy)},
-  up(e){if(e.pointerId===this.stickId){this.stickId=null;this.mv.x=this.mv.y=0;const s=this.stick;s.classList.remove('act');s.style.left='';s.style.top='';s.style.bottom='';s.firstChild.style.transform='';return}
+  up(e){if(e.pointerId===this.stickId){this.stickId=null;this.mv.x=this.mv.y=0;const s=this.stick;s.classList.remove('act','held');s.firstChild.style.transform='';return}
     this.look.delete(e.pointerId);const b=this.btn.get(e.pointerId);if(b){this.btn.delete(e.pointerId);b.el.classList.remove('on');this.press(b.id,false,b.v)}},
   turn(dx,dy){const P=G.player;if(!P||!P.alive||Main.paused||Main.overlay||G.st==='menu'||G.st==='over')return;this.lastLook=performance.now();
     // a little acceleration: slow drags are precise, fast flicks turn far
@@ -133,7 +133,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     if(this.lockEl){const on=!!(this.tgt&&play);if(on!==this.lockOn){this.lockOn=on;this.lockEl.classList.toggle('on',on)}}
     const st=(play?1:0)|(M.overlay?2:0)|(P&&P.team===TZ?4:0)|(P&&P.alive?8:0);if(st===this.st)return;this.st=st;
     const el=this.el;el.classList.toggle('off',!play);el.classList.toggle('ov',!!M.overlay);el.classList.toggle('zt',!!(st&4));el.classList.toggle('dead',!(st&8));
-    if(!play||M.overlay){for(const [pid,b] of this.btn){b.el.classList.remove('on');this.press(b.id,false,b.v)}this.btn.clear();this.look.clear();this.stickId=null;this.mv.x=this.mv.y=0;this.stick.classList.remove('act');this.stick.style.left=this.stick.style.top='';this.duck=false;el.querySelector('.tDuck').classList.remove('lat');M.ml=M.mr=false}}};
+    if(!play||M.overlay){for(const [pid,b] of this.btn){b.el.classList.remove('on');this.press(b.id,false,b.v)}this.btn.clear();this.look.clear();this.stickId=null;this.mv.x=this.mv.y=0;this.stick.classList.remove('act','held');this.stick.style.left=this.stick.style.top='';this.duck=false;el.querySelector('.tDuck').classList.remove('lat');M.ml=M.mr=false}}};
 const _tdir=new THREE.Vector3();
 (function(){
   const hu=HUD.update.bind(HUD);HUD.update=function(dt){hu(dt);TOUCH.update()};

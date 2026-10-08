@@ -90,6 +90,12 @@ function setHull(a){const c=a.c;if(a.team===TZ){const Z=ZCLASS[a.zc];c.hw=Z.hw;c
 function placeAt(a,x,y,z,yaw){const c=a.c;c.x=x;c.y=y;c.z=z;c.vx=c.vy=c.vz=0;c.onGround=false;a.mvx=a.mvz=a.kvx=a.kvz=0;a.yaw=yaw||0;a.pitch=0;a.duck=false;setHull(a);
   // nudge out of anything we overlap
   if(!charFits(c,c.x,c.y,c.z)){for(let r=.4;r<4;r+=.4){let ok=false;for(let k=0;k<12;k++){const an=k/12*TAU;if(charFits(c,x+Math.cos(an)*r,y,z+Math.sin(an)*r)){c.x=x+Math.cos(an)*r;c.z=z+Math.sin(an)*r;ok=true;break}}if(ok)break}}}
+// a dead zombie comes back somewhere random on the map: any open walkable spot well away from every human
+// (12 m, then 8 m when the map is crowded), else the zombie spawn farthest from them
+function zRandomSpawn(){const H=G.actors.filter(t=>t.alive&&t.team===TH),N=NAV.nodes;
+  if(N.length)for(const lim of [12,8])for(let k=0;k<60;k++){const n=N[(Math.random()*N.length)|0];if(n.e.length<15)continue;let ok=true;
+    for(const h of H)if(dist2(n.x,n.z,h.c.x,h.c.z)+Math.abs(n.y-h.c.y)*2<lim){ok=false;break}if(ok)return [n.x,n.y+.02,n.z]}
+  const p=zSpawnPoint();return [p[0],p[2]||0,p[1]]}
 function zSpawnPoint(){const H=G.actors.filter(t=>t.alive&&t.team===TH);let best=null,bd=-1;
   const pts=MAP.zspawns.length?MAP.zspawns:MAP.spawns;
   for(const p of pts){let md=1e9;for(const h of H)md=Math.min(md,dist2(p[0],p[1],h.c.x,h.c.z)+Math.abs((p[2]||0)-h.c.y)*2);if(md>bd){bd=md;best=p}}return best||MAP.spawns[0]}
@@ -179,7 +185,7 @@ function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy
   // jump
   if(cmd.jump&&!a.pc.jump&&c.onGround&&a.frozen<=0&&!(a.rootT>0)){c.vy=jumpV(a);c.onGround=false;c.jumped=true;if(a.isPlayer){VM.jumped();if(a.team===TH)AU.play('step_conc',{vol:.35})}}
   c.vx=a.mvx+a.kvx;c.vz=a.mvz+a.kvz;const ox=c.x,oz=c.z;
-  moveChar(c,dt);
+  moveChar(c,dt);headStand(a);
   // blocked axes lose their velocity
   const ddx=c.x-ox,ddz=c.z-oz;if(Math.abs(ddx)<Math.abs(c.vx*dt)*.4){a.kvx*=.2;a.mvx*=.6}if(Math.abs(ddz)<Math.abs(c.vz*dt)*.4){a.kvz*=.2;a.mvz*=.6}
   c.vx=ddx/Math.max(dt,1e-4);c.vz=ddz/Math.max(dt,1e-4);
@@ -189,6 +195,12 @@ function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy
   if(c.y<-20){c.y=2;c.x=0;c.z=5}
   // footsteps
   const hs=Math.hypot(c.vx,c.vz);if(c.onGround&&hs>1.5){a.stepAcc+=hs*dt;const stride=a.team===TZ?1.7:1.9;if(a.stepAcc>stride){a.stepAcc=0;footstep(a)}}}
+// standing on a teammate's head (zombies climbing on each other to reach a roof, humans boosting each other):
+// a body is ground for whoever comes down on top of it from the same team
+function headStand(a){const c=a.c;a.onHead=null;if(c.vy>.5||window.__noStack)return;let top=-1e9,sb=null;
+  for(const b of G.actors){if(b===a||!b.alive||b.team!==a.team||b.onHead===a)continue;const r=(c.hw+b.c.hw)*.8;if(Math.abs(b.c.x-c.x)>r||Math.abs(b.c.z-c.z)>r)continue;
+    const t=b.c.y+b.c.h;if(c.y<t-.45||c.y>t+.02||t<=top)continue;top=t;sb=b}
+  if(!sb||!charFits(c,c.x,top,c.z))return;c.y=top;c.vy=0;c.onGround=true;c.jumped=false;a.onHead=sb}
 function footstep(a){const c=a.c;if(a.team===TH&&a.cmd.walk||a.duck)return;const s=surfaceAt(c.x,c.y,c.z);
   if(a.team===TZ){if(a.isPlayer)AU.play('zstep',{vol:.35});else AU.at('zstep',c.x,c.y,c.z,{vol:.9,range:30});return}
   const nm=s==='metal'?'step_metal':s==='dirt'?'step_dirt':s==='wood'?'step_wood':'step_conc';if(a.isPlayer)AU.play(nm,{vol:.4});else AU.at(nm,c.x,c.y,c.z,{vol:.8,range:28})}
@@ -363,14 +375,14 @@ function becomeZombie(a,host){if(a.team===TH)dropDeath(a);const nh=G.actors.filt
   a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.an.skill=1;a.permaDead=false;a.alive=true;a.turning=host?2:1.4;
   if(a.isPlayer){a.nv=false;VM.set('claw','z_'+a.zc);VM.draw(.9)}
   if(a.bot)AI.onTeam(a)}
-function reviveZombie(a,at){if(NET.cli&&!NET.ev)return;
+function reviveZombie(a,at,rise){if(NET.cli&&!NET.ev)return;
   // a class picked in the menu takes effect on revival (hosts keep theirs)
   if(!a.host&&a.zpick&&a.zpick!==a.zc){a.zc=a.zpick;const Z=ZCLASS[a.zc];const mult=a.lvl>=3?1.5:a.lvl>=2?1.25:1;a.maxHp=Math.round(Z.hp*mult);setHull(a);ensureRig(a);if(a.isPlayer)VM.set('claw','z_'+a.zc)}
   a.alive=true;a.reviving=1.2;a.hp=Math.round(a.maxHp*.6);a.armor=0;a.frozen=0;a.staggerT=0;a.kvx=a.kvz=0;a.mvx=a.mvz=0;
-  if(at){placeAt(a,at[0],at[1],at[2],a.yaw);a.reviving=0;a.hp=a.maxHp;a.armor=Math.round(ZCLASS[a.zc].armor*.5)}else{a.c.vx=a.c.vz=0;setHull(a)}
+  if(at){placeAt(a,at[0],at[1],at[2],Math.random()*TAU);if(!rise){a.reviving=0;a.hp=a.maxHp;a.armor=Math.round(ZCLASS[a.zc].armor*.5)}}else{a.c.vx=a.c.vz=0;setHull(a)}
   equip(a,'claw',true);if(G.mode!=='scen'&&a.bombs<1)a.bombs=1;// a fresh spore bomb with every life
   AU.at('zrevive',a.c.x,a.c.y+1,a.c.z,{vol:1});if(a.isPlayer){G.spec=null;VM.set('claw','z_'+a.zc);VM.draw(1);HUD.note(T('revived'))}if(a.bot)AI.onTeam(a);
-  if(NET.host)netEv('rv',{i:a.id,at:at?[r2(a.c.x),r2(a.c.y),r2(a.c.z)]:0,z:a.zc})}
+  if(NET.host)netEv('rv',{i:a.id,at:at?[r2(a.c.x),r2(a.c.y),r2(a.c.z)]:0,rs:rise?1:0,z:a.zc})}
 function onPlayerDeath(src){G.deathCam=3;G.killer=src||null;if(G.player)G.player.zoom=0}
 // ---------- round flow ----------
 function startMatch(cfg){G.cfg=cfg;G.mode=cfg.mode;G.rounds=cfg.rounds;G.roundTime=cfg.time;G.prepTime=20;G.diff=cfg.diff;G.round=0;G.score=[0,0];G.t=0;
@@ -429,7 +441,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       Object.assign(a.pc,a.cmd)}
     else{a.deadT+=dt;
       if(a.poolT>0){a.poolT-=dt;if(a.poolT<=0&&a.poolN<2){aimDir(a.yaw,0,_dv);const k=(a.deadDir>0?-.6:.6);FX.pool(a.c.x+_dv.x*k,a.c.y,a.c.z+_dv.z*k,a.poolN?rr(1.05,1.35):rr(.6,.85));a.poolN++;a.poolT=a.poolN<2?1.6:0}}
-      if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){a.reviveT-=dt;if(a.reviveT<=0)reviveZombie(a,null)}else{a.respawnT-=dt;if(a.respawnT<=0){const p=zSpawnPoint();reviveZombie(a,[p[0],p[2]||0,p[1]])}}}}
+      if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){a.reviveT-=dt;if(a.reviveT<=0)reviveZombie(a,zRandomSpawn(),true)}else{a.respawnT-=dt;if(a.respawnT<=0)reviveZombie(a,zRandomSpawn())}}}
     // dead bodies still settle under gravity
     if(!a.alive&&a.deadT<3){a.c.vy-=GRAV*dt;a.c.vx*=.9;a.c.vz*=.9;a.c.vx+=a.kvx*.3;a.c.vz+=a.kvz*.3;a.kvx*=.8;a.kvz*=.8;moveChar(a.c,dt)}}
   separate(dt);updateNades(dt);nyUpdate(dt);dropsUpdate(dt);

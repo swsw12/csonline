@@ -336,8 +336,9 @@ html.touch{--bs:calc(clamp(46px,14vh,70px)*var(--tsz,1));--gap:clamp(6px,2vh,12p
 #touch.off{display:none}
 #touch .tzone{position:absolute;top:0;bottom:0;pointer-events:auto;touch-action:none}
 #touch .tzL{left:0;width:40%;top:22%}#touch .tzR{right:0;width:60%}
-.tstick{position:absolute;left:calc(var(--bs)*.4 + 3vw);bottom:calc(var(--bs)*.4 + 6vh);width:calc(var(--bs)*1.9);height:calc(var(--bs)*1.9);transform:translate(0,0);border-radius:50%;
+.tstick{position:absolute;left:calc(var(--bs)*.4 + 9vw);bottom:calc(var(--bs)*.4 + 6vh);width:calc(var(--bs)*1.9);height:calc(var(--bs)*1.9);transform:translate(0,0);border-radius:50%;
   border:2px solid rgba(255,255,255,.28);background:radial-gradient(circle,rgba(255,255,255,.06),rgba(10,12,16,.28));pointer-events:none;opacity:calc(var(--tal,.75)*.8)}
+.tstick.held{opacity:var(--tal,.75)}
 .tstick.act{margin:calc(var(--bs)*-.95) 0 0 calc(var(--bs)*-.95);opacity:var(--tal,.75)}
 .tstick i{position:absolute;left:50%;top:50%;width:44%;height:44%;margin:-22% 0 0 -22%;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .tb{position:absolute;pointer-events:auto;touch-action:none;min-width:0!important;padding:0!important;border-radius:50%;width:var(--bs);height:var(--bs);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
@@ -373,7 +374,8 @@ html.touch{--bs:calc(clamp(46px,14vh,70px)*var(--tsz,1));--gap:clamp(6px,2vh,12p
 #touch.ov{z-index:20}#touch.ov>*{display:none!important}#touch.ov .tClose{display:flex!important}
 #touch.dead>.tb:not(.tFire),#touch.dead .tbar{display:none!important}#touch.dead .ttop{display:flex}#touch.dead .ttop .tb{display:none!important}#touch.dead .ttop .tScore,#touch.dead .ttop .tPause{display:flex!important}
 .trot{display:none}
-@media (orientation:portrait){html.touch .trot{display:flex;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(5,6,9,.94);color:#ffd890;font-size:16px;pointer-events:auto;text-align:center;padding:20px}}
+@media (orientation:portrait){html.touch .trot{display:flex;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(5,6,9,.94);color:#ffd890;font-size:16px;pointer-events:auto;text-align:center;padding:20px;flex-direction:column;gap:18px}}
+.trot p{margin:0}.trotb{pointer-events:auto;font:inherit;font-weight:700;font-size:16px;padding:14px 22px;border-radius:10px;border:2px solid #ffd890;background:#3a2a10;color:#ffd890}.trotb:active{background:#5a4318}
 /* touch HUD: status top-left beside the radar, kill feed under the top buttons, ammo lives in the weapon bar */
 html.touch #hMap{width:clamp(80px,24vh,120px);height:clamp(80px,24vh,120px);top:6px;left:6px}
 html.touch #hBL{left:calc(clamp(80px,24vh,120px) + 14px);top:6px;bottom:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;transform:scale(.8);transform-origin:top left;max-width:46vw}
@@ -497,3 +499,6 @@ html.touch .rng::-webkit-slider-thumb{margin-top:0}
 
 /* graphics presets */
 .gpre{display:flex;align-items:center;gap:8px;margin:10px 0 2px;flex-wrap:wrap}.gpre span{opacity:.75;font-size:12px;margin-right:4px}.gpre button{min-width:84px}.gpre button.on{border-color:#e8a33a;color:#ffd890}
+
+/* landscape-lock button: phones (touch layout) only */
+html:not(.touch) .rotbtn{display:none!important}

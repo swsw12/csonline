@@ -35,12 +35,26 @@ const FS={
   // iPhone Safari has no fullscreen API for pages: the only way is installing the page to the home screen
   noApi(){const L=LI();FS.toast(this.standalone()?(L?'Already full screen.':'이미 전체화면으로 실행 중이에요.'):(L?'This browser has no fullscreen for web pages. Share → Add to Home Screen, then open it from the home screen.':'이 브라우저는 웹 전체화면을 지원하지 않아요. 공유 버튼 → 「홈 화면에 추가」 후 홈 화면 아이콘으로 열면 전체화면이에요.'))},
   fail(){const L=LI();FS.toast(L?'Fullscreen is blocked on this page — open the game in its own tab (or use F11).':'이 화면에서는 전체화면이 막혀 있어요 — 게임을 새 탭에서 열거나 F11을 눌러 주세요.')},
-  toast(msg){let t=$('fsToast');if(!t){t=document.createElement('div');t.id='fsToast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('on');clearTimeout(this.tt);this.tt=setTimeout(()=>t.classList.remove('on'),3200)},
+  toast(msg,ms){let t=$('fsToast');if(!t){t=document.createElement('div');t.id='fsToast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('on');clearTimeout(this.tt);this.tt=setTimeout(()=>t.classList.remove('on'),ms||3200)},
   label(){const L=LI();return this.on()?(L?'Windowed':'창 모드'):(L?'Fullscreen':'전체화면')},
 };
 // keep every fullscreen button's label in step (screens rebuilt by the resize that fullscreen causes are caught by the later passes)
 FS.sync=()=>{for(const b of document.querySelectorAll('[data-act="full"] span,[data-act="full"].fslbl'))b.textContent=FS.label()};
 for(const ev of ['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,()=>{FS.sync();setTimeout(FS.sync,120);setTimeout(FS.sync,500)});
+// ---------- phone: switch to landscape and lock it (for players who keep the phone's auto-rotate off) ----------
+// Android Chrome only allows screen.orientation.lock() while fullscreen, so: fullscreen first, then lock.
+// iPhone Safari has neither, so there the button explains the two ways (Control Center rotation lock / home-screen app).
+const ROT={
+  can(){try{return !!(screen.orientation&&screen.orientation.lock)}catch(_){return false}},
+  go(){const L=LI(),d=document.documentElement;
+    const lock=()=>{try{return screen.orientation.lock('landscape').then(()=>true,()=>false)}catch(_){return Promise.resolve(false)}};
+    const hint=()=>FS.toast(L?'Your phone will not rotate by itself. Turn off Portrait Orientation Lock in Control Center (iPhone) or switch Auto-rotate on, or use Share → Add to Home Screen.':'이 브라우저는 화면 방향을 직접 바꿀 수 없어요. 아이폰은 제어센터에서 「세로 방향 잠금」을 끄고, 안드로이드는 「자동 회전」을 켠 뒤 가로로 돌려 주세요. (또는 홈 화면에 추가해서 실행)',6000);
+    if(!this.can()){hint();return}
+    const rq=d.requestFullscreen||d.webkitRequestFullscreen;
+    const run=()=>lock().then(ok=>{if(!ok)hint()});
+    if(FS.on()||!rq){run();return}
+    try{const p=rq.call(d,{navigationUI:'hide'});if(p&&p.then)p.then(run,()=>lock().then(ok=>{if(!ok)hint()}));else setTimeout(run,100)}catch(_){run()}},
+};
 const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0,last:0,dmgL:[],dmgPool:[],wIcon:null,
   init(){RADAR.init();for(const id of ['aimInfo','hud','hRound','hTime','hSH','hSZ','hAH','hAZ','hMorale','hFeed','hBig','hSub','hNote','hHPv','hARv','hMoney','hLvl','hWName','hMag','hRes','hNades','hSkill','cross','hit','scope','hSpec','hAR','hAmmo','hBR','hBL','hDaze','dmgLayer','hDmg','hWIcon','hRel'])this.el[id]=$(id)},
   // floating damage numbers: one per target, hits landing in quick succession add up into the same number
@@ -132,7 +146,7 @@ const UI={open:null,
   init(){this.buildTitle();document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;AU.init();AU.play('ui',{vol:.5});this.act(t.dataset.act,t.dataset.v,t)})},
   show(id){for(const s of ['menu','setup','opts','help','pause','results','mp','lobby'])$(s).classList.toggle('off',s!==id);this.open=id;$('menuBg').classList.toggle('off',!id||id==='pause'&&G.st!=='menu')},
   hideAll(){for(const s of ['menu','setup','opts','help','pause','results','mp','lobby'])$(s).classList.add('off');this.open=null;$('menuBg').classList.add('off')},
-  act(a,v,el){if(a==='full'){FS.toggle();return}if(UI.mpAct&&UI.mpAct(a,v))return;
+  act(a,v,el){if(a==='full'){FS.toggle();return}if(a==='rot'){ROT.go();return}if(UI.mpAct&&UI.mpAct(a,v))return;
     if(a==='start'){this.buildSetup();this.show('setup')}
     else if(a==='opts'){this.ret=this.open;this.buildOpts();this.show('opts')}
     else if(a==='help'){this.ret=this.open;this.buildHelp();this.show('help')}
@@ -195,7 +209,7 @@ const UI={open:null,
     <div class="mbtns row"><button data-act="back">${T('back')}</button></div>`},
   buildHelp(){$('help').innerHTML=`<h2>${T('controls')}</h2><div class="keys">${T('keys').map(([k,d])=>`<div><kbd>${k}</kbd><span>${d}</span></div>`).join('')}</div>
     <div class="rules"><b>${T('rulesT')}</b><ul>${T('rules').map(r=>`<li>${r}</li>`).join('')}</ul></div><div class="mbtns row"><button data-act="back">${T('back')}</button></div>`},
-  buildPause(){$('pause').innerHTML=`<h2>${T('paused')}</h2>${NET.on?`<p class="hint">${T('mpPaused')}</p>`:''}<div class="mbtns"><button data-act="resume" class="big">${T('resume')}</button><button data-act="opts">${T('settings')}</button><button data-act="help">${T('controls')}</button>${true?`<button data-act="full" class="fslbl">${FS.label()}</button>`:''}<button data-act="quit">${T('quit')}</button></div>`},
+  buildPause(){$('pause').innerHTML=`<h2>${T('paused')}</h2>${NET.on?`<p class="hint">${T('mpPaused')}</p>`:''}<div class="mbtns"><button data-act="resume" class="big">${T('resume')}</button><button data-act="opts">${T('settings')}</button><button data-act="help">${T('controls')}</button>${true?`<button data-act="full" class="fslbl">${FS.label()}</button>`:''}<button data-act="rot" class="rotbtn">${LI()?'Landscape lock':'가로모드 고정'}</button><button data-act="quit">${T('quit')}</button></div>`},
   showResults(){const A=G.actors.slice().sort((a,b)=>b.score-a.score);const mvp=A[0];const L=LI();
     $('results').innerHTML=`<h2>${T('results')}</h2><div class="finalScore"><span class="h">${T('humanWins')} ${G.score[TH]}</span> : <span class="z">${G.score[TZ]} ${T('zombieWins')}</span></div>
       <div class="mvp"><img src="${portrait('h_'+mvp.skin,56)}"><div><small>${T('mvp')}</small><b>${esc(mvp.name)}</b><span>${T('kills')} ${mvp.kills} · ${T('infects')} ${mvp.infects} · ${T('dmg')} ${Math.round(mvp.dmgDealt).toLocaleString('en-US')} · ${T('score')} ${Math.round(mvp.score)}</span></div></div>

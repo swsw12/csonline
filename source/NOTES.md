@@ -216,3 +216,19 @@
   none of them is reachable; nobody reachable → nearest with a partial path, rechecked every 2.2–3.4 s. scenario climb-leap also fires on partial paths.
 - Tests (scratchpad zai/): obstacle chase (LOS but no walkable line) fails 4→1 of ~74, wall-push time q7 4.2→1.6 %, italy 23→3.5 %, bigtree 4.1→1.1 %;
   unreachable targets wall-push 14–16 %→1–3 %; human bots cover ~2× the ground; zombie AI cost per call went down.
+
+## v6.2.1 — zombie stacking, random zombie respawn, fixed joystick, landscape-lock button
+- headStand(a) (game.js, after moveChar): a falling/standing actor whose feet are within .45 below a same-team actor's head top (footprint overlap
+  .8×(hw sum)) is snapped onto it (onGround, a.onHead). Teammates can stand on heads.
+- navNode(): a match in the first ring with score ≥1.2 (a node far below — the street under a balcony) no longer ends the search; a node a ring or two
+  over at the right height wins. Fixes zombies crowding under a balcony because the target mapped to the ground node beneath.
+- AI.stackSpot(a,t,cap): reachable ground node within 4.2 m of the target, open to the sky up to target.y+1.9, with the target's floor 1 m toward them;
+  cached 3 s. Used as the path goal when the target is out of reach / partial / on a perch (no node at their height) and > cap+.3 above.
+  AI.stack(): walk to the spot; a teammate whose head top is .3..cap-.1 above my feet near the spot = step → run at it and jump; none → be the step
+  (crouch, hold still). From a head prowl's jump rule fires with dh<4.5. window.__noStack disables both (A/B tests).
+  Test (scratchpad stack/st.js, 6 ragers, ledges 1.9–3.2 m out of nav reach, 30 s): reached 21/24 (was 1/16 without stacking).
+- zRandomSpawn(): a dead zombie revives on a random open nav node (≥15 edge entries) ≥12 m (then 8 m) from every human, else zSpawnPoint().
+  Mutation too (reviveZombie(a,at,rise): rise keeps the 60 % hp rise-up); net 'rv' carries rs.
+- touch.js: fixed stick (no follow); a press within 2.2 R of its centre steers, farther away on the left = look. Moved right (left: bs*.4+9vw).
+- ROT (ui.js): fullscreen then screen.orientation.lock('landscape'); no API (iPhone) → 6 s toast explaining rotation lock / home-screen app.
+  Buttons: rotate-your-phone overlay (.trotb), lobby top bar and pause menu (.rotbtn, hidden unless html.touch).

@@ -22,9 +22,10 @@ function buildNav(){const N=NAV;N.nodes=[];N.col=new Array(N.NX*N.NZ);
         else if(!diag&&dy<-.6&&dy>=-8.5){if(dropClear(n,m))n.e.push(m.id,dh+.3-dy*.2,dy)}}}}
   const L=N.nodes.length;N.g=new Float32Array(L);N.f=new Float32Array(L);N.came=new Int32Array(L);N.mark=new Int32Array(L);N.heap=new Int32Array(L*8+16);N.hf=new Float32Array(L*8+16);
   return L}
-// node under/near a position
+// node under/near a position (a node far below in the same cell — the street under a balcony — does not end the search:
+// one a cell or two over at the right height is the better match)
 function navNode(x,y,z){const N=NAV;const i=Math.floor((x-N.X0)/N.S),j=Math.floor((z-N.Z0)/N.S);let best=null,bd=1e9;
-  for(let r=0;r<=2&&!best;r++)for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++){if(Math.max(Math.abs(di),Math.abs(dj))!==r)continue;const i2=i+di,j2=j+dj;if(i2<0||j2<0||i2>=N.NX||j2>=N.NZ)continue;
+  for(let r=0;r<=2&&!(best&&bd<1.2);r++)for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++){if(Math.max(Math.abs(di),Math.abs(dj))!==r)continue;const i2=i+di,j2=j+dj;if(i2<0||j2<0||i2>=N.NX||j2>=N.NZ)continue;
     for(const n of N.col[j2*N.NX+i2]){if(n.y>y+.75)continue;const d=Math.hypot(n.x-x,n.z-z)+Math.abs(n.y-y)*(n.y<y-.3?1.5:3);if(d<bd){bd=d;best=n}}}
   return best}
 // A*: returns array of node ids (start excluded) or null. maxJump limits jump links, maxDrop (if set) the height of drops.

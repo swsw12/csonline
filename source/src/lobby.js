@@ -8,6 +8,12 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.2.1','2026-10-08',[
+ ['NEW','좀비 탑쌓기 — 발코니·담 위·지붕 끝처럼 길로는 못 가는 높은 곳에 사람이 있으면, 좀비 하나가 그 아래(하늘이 트인 가장자리 밑)에 웅크리고 다른 좀비가 머리를 밟고 올라감. 2단이면 약 4m까지. 같은 팀끼리는 머리 위에 설 수 있음','Zombie stacking — when someone stands where no path leads (a balcony, a wall top, a roof edge), one zombie crouches under the edge and the next climbs on its head; two high reaches about 4 m. Teammates can stand on each other\'s heads.'],
+ ['FIX','발코니 위 사람을 좀비가 바로 밑 길바닥으로 착각해 그 밑에 몰려만 있던 문제','Zombies no longer mistake someone on a balcony for the street right under it and crowd beneath.'],
+ ['UP','죽은 좀비가 맵의 무작위 장소(사람에게서 떨어진 곳)에서 부활 — 뮤테이션도 쓰러진 자리 대신 랜덤 위치','Dead zombies come back at a random spot on the map away from humans — in Mutation too, instead of where they fell.'],
+ ['UP','모바일 조이스틱 고정형 — 손가락을 따라다니지 않고 제자리(조금 더 오른쪽)에 고정','Mobile joystick is fixed in place (a little further right) instead of following the thumb.'],
+ ['NEW','폰 세로 고정 사용자용 「가로모드로 전환 · 고정」 버튼 — 세로로 들고 있으면 뜨는 안내 화면과 로비 상단(폰에서만)에 있음. 누르면 전체화면 + 가로 고정(안드로이드). 아이폰은 브라우저가 막고 있어서 제어센터의 세로 방향 잠금을 끄는 방법을 안내해 줌','Phone landscape button for players who keep portrait lock on — on the rotate-your-phone screen and in the lobby top bar (phones only). Goes fullscreen and locks landscape (Android); on iPhone, where the browser forbids it, it explains how to turn off the rotation lock.']]],
 ['v6.2','2026-10-08',[
  ['NEW','모든 좀비가 포자탄을 가짐 — 오리지널·뮤테이션 둘 다 감염되거나 부활할 때마다 포자탄 1개 (시나리오 제외). 좀비 봇도 무리 지은 인간, 높은 곳·닿지 않는 곳의 인간, 자기를 쏘는 인간에게 던짐','Every zombie carries a spore bomb: in Original and Mutation, one with every infection and revival (not in the scenario). Zombie bots throw it at groups, at humans up high or out of reach, and at whoever is shooting them'],
  ['UP','인간 봇이 한자리에 박혀 있지 않고 맵을 돌아다님 — 대부분은 잠깐 머물렀다가 다른 캠프나 좀비가 없는 빈 공간으로 이동, 좀비가 보이면 멈춰서 사격하고 조용해지면 다시 이동 (일부는 캠프를 지킴)','Human bots no longer sit in one spot all round: most hold briefly, then move on to another camp or open ground away from the zombies, stop to shoot when a zombie shows up and move again once it is quiet (a few still hold their camp)'],
@@ -116,7 +122,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
-      <div class="tbtns"><button data-act="opts">${ICO.gear}<span>${T('settings')}</span></button><button data-act="help">${ICO.keys}<span>${T('controls')}</span></button><button data-act="patch" class="tpatch"><b class="pb">+</b><span>${L?'Patches':'패치노트'}</span></button>${true?`<button data-act="full">${ICO.full}<span>${FS.label()}</span></button>`:''}<button data-act="lang">${ICO.globe}<span>${L?'한국어':'English'}</span></button></div></div>
+      <div class="tbtns"><button data-act="opts">${ICO.gear}<span>${T('settings')}</span></button><button data-act="help">${ICO.keys}<span>${T('controls')}</span></button><button data-act="patch" class="tpatch"><b class="pb">+</b><span>${L?'Patches':'패치노트'}</span></button>${true?`<button data-act="full">${ICO.full}<span>${FS.label()}</span></button>`:''}<button data-act="rot" class="rotbtn">${ICO.full}<span>${L?'Landscape':'가로 고정'}</span></button><button data-act="lang">${ICO.globe}<span>${L?'한국어':'English'}</span></button></div></div>
     <div class="mcards">${cards.map(c=>`<div class="mc ${c.cls}" data-act="${c.act}"><div class="art">${c.art}</div><div class="mtag">${esc(c.tag)}</div><div class="mbar"><b>${c.t}</b><span>${c.s}</span></div></div>`).join('')}</div>
     <div class="lobBot">
       <div class="lp"><div class="lpt"><b class="on">${L?'NOTICE':'공지사항'}</b><button class="pplus" data-act="patch" title="${L?'Patch notes':'패치노트'}">+</button></div><ul class="news">${news.slice(0,5).map(([k,t])=>`<li><em class="${k==='NEW'?'n':'u'}">${k}</em>${t}</li>`).join('')}</ul></div>
@@ -125,7 +131,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.2 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.2.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
