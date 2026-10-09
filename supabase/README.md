@@ -10,14 +10,26 @@
    - **v6.7에서 이미 실행했다면 v6.8 `schema.sql`을 한 번 더 실행**하세요. 복주머니 테이블과 함수가 추가되고, 근하신년 무기가 판매 목록에서 빠집니다(이미 산 사람은 계속 보유).
 
 ## 2. 게임에 키 넣기
-**Project Settings → API**에서 두 값을 복사해 `source/src/account.js` 맨 위에 넣습니다.
+필요한 건 두 개: **Project URL**과 **Publishable key**(공개 키).
+- 프로젝트 화면 맨 위 **Connect** 버튼 → 나오는 창에 `Project URL`(`https://xxxx.supabase.co`)과 publishable key가 같이 보입니다.
+- 또는 왼쪽 아래 톱니바퀴 **Project Settings → API Keys**
+  - **Publishable key**: `sb_publishable_...` 로 시작 → 이걸 쓰면 됨
+  - 옛날 키를 쓰려면 같은 페이지의 **Legacy** 탭(anon / service_role) → `anon` `public` (`eyJ...` 로 시작)도 됩니다. 단 Supabase가 2026년 말까지 이 옛 키를 없앨 예정이라 publishable key 권장
+  - Project URL은 `https://<Project ID>.supabase.co` (Project ID는 **Project Settings → General**)
+
+`source/src/account.js` 맨 위 줄을 이렇게 바꾸고 빌드(`python3 build.py`)합니다.
 
 ```js
-const SB={url:'https://xxxx.supabase.co',key:'eyJhbGciOi...(anon public key)',oauth:[]};
+const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
 ```
 
-- anon key는 원래 공개용입니다. 테이블은 RLS로 막혀 있어서 자기 데이터 읽기만 되고, 코인·구매는 서버 함수에서만 바뀝니다.
-- `service_role` 키는 절대 넣지 마세요.
+- publishable(anon) 키는 원래 공개용입니다. 테이블은 RLS로 막혀 있어서 자기 데이터 읽기만 되고, 코인·구매·뽑기는 서버 함수에서만 바뀝니다.
+- **Secret key(`sb_secret_...`) / `service_role` 키는 절대 넣지 마세요.** 이건 DB를 통째로 쓸 수 있는 관리자 키입니다.
+
+### SQL Editor에서 `unterminated dollar-quoted string` 오류가 나면
+옛 `schema.sql`(v6.8 첫 버전까지)은 함수 안에 `select … into 변수` 꼴이 있어서, SQL Editor의 "새 테이블에 RLS 자동 켜기" 기능이
+그걸 테이블 만들기로 착각하고 함수 중간에 `ALTER TABLE … ENABLE ROW LEVEL SECURITY`를 끼워 넣다가 깨집니다.
+지금 파일은 그 꼴을 전부 `변수 := (select …)`로 바꿔서 그대로 붙여넣고 Run 하면 됩니다. 오류가 났던 실행은 통째로 취소되니(아무것도 안 만들어짐) 새 파일로 다시 실행하세요.
 
 ## 3. 로그인 설정 (Authentication)
 - **URL Configuration → Site URL**: 배포 주소 (예: `https://내프로젝트.vercel.app`)

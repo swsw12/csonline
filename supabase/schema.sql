@@ -9,6 +9,8 @@
 --   * 판 보상은 서버가 계산합니다: 판당 최대 900, 지난 보상 뒤 1분당 80까지, 하루(한국 시간) 8,000까지,
 --     그날 첫 판 +200. 가입하면 3,000 코인.
 --   * 복주머니 숫자(가격 · 확률 · 천장 · 교환 가격)는 gacha_config 테이블 한 줄에 있습니다. 거기서 바꾸면 바로 적용.
+--   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
+--     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
 
 -- ---------- tables ----------
@@ -185,11 +187,11 @@ declare
   today date := (now() at time zone 'Asia/Seoul')::date;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
-  select * into p from public.profiles where id = uid;
-  if not found then
+  p := (select t from public.profiles t where t.id = uid);
+  if p.id is null then
     perform public.qz_new_profile(uid, (select coalesce(u.raw_user_meta_data ->> 'nickname', u.raw_user_meta_data ->> 'name',
       split_part(coalesce(u.email, ''), '@', 1)) from auth.users u where u.id = uid));
-    select * into p from public.profiles where id = uid;
+    p := (select t from public.profiles t where t.id = uid);
   end if;
   return jsonb_build_object('nickname', p.nickname, 'coins', p.coins, 'earned', p.earned_total, 'matches', p.matches,
     'day_left', 8000 - case when p.day = today then p.day_earned else 0 end,
@@ -203,8 +205,9 @@ language plpgsql security definer set search_path = '' as $$
 declare r text;
 begin
   if auth.uid() is null then raise exception 'not_signed_in'; end if;
-  update public.profiles set nickname = public.qz_clean_nick(p_nick) where id = auth.uid() returning nickname into r;
-  if r is null then raise exception 'no_profile'; end if;
+  update public.profiles set nickname = public.qz_clean_nick(p_nick) where id = auth.uid();
+  if not found then raise exception 'no_profile'; end if;
+  r := (select t.nickname from public.profiles t where t.id = auth.uid());
   return r;
 end $$;
 
@@ -217,15 +220,17 @@ declare
   c integer;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
-  select * into pr from public.gun_prices where gun_id = p_gun;
-  if found and pr.tier is not null then raise exception 'gacha_only'; end if;
-  if not found or not pr.sold then raise exception 'not_for_sale'; end if;
+  pr := (select g from public.gun_prices g where g.gun_id = p_gun);
+  if pr.tier is not null then raise exception 'gacha_only'; end if;
+  if pr.gun_id is null or not pr.sold then raise exception 'not_for_sale'; end if;
   if pr.free then raise exception 'already_owned'; end if;
-  select coins into c from public.profiles where id = uid for update;
-  if c is null then raise exception 'no_profile'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  c := (select t.coins from public.profiles t where t.id = uid);
   if exists (select 1 from public.owned_guns where user_id = uid and gun_id = p_gun) then raise exception 'already_owned'; end if;
   if c < pr.price then raise exception 'not_enough_coins'; end if;
-  update public.profiles set coins = coins - pr.price where id = uid returning coins into c;
+  update public.profiles set coins = coins - pr.price where id = uid;
+  c := (select t.coins from public.profiles t where t.id = uid);
   insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, p_gun, pr.price);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, -pr.price, 'buy', jsonb_build_object('gun', p_gun));
   return jsonb_build_object('coins', c, 'gun', p_gun);
@@ -247,8 +252,9 @@ declare
   k integer := least(greatest(coalesce(p_kills, 0), 0), 80);
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
-  select * into p from public.profiles where id = uid for update;
+  perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
   if p_mode = 'scen' then
@@ -264,7 +270,8 @@ begin
   if p.day is distinct from today then bonus := 200; end if;
   got := greatest(0, least(raw + bonus, 8000 - day0));
   update public.profiles set coins = coins + got, earned_total = earned_total + got, matches = matches + 1,
-    last_claim = now(), day = today, day_earned = day0 + got where id = uid returning * into p;
+    last_claim = now(), day = today, day_earned = day0 + got where id = uid;
+  p := (select t from public.profiles t where t.id = uid);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', p_mode,
     'rounds', p_rounds, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'mvp', p_mvp,
     'stage', p_stage, 'cleared', p_cleared, 'raw', raw, 'bonus', bonus));
@@ -294,10 +301,11 @@ declare
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   if n not in (1, 10) then raise exception 'bad_count'; end if;
-  select * into cfg from public.gacha_config where id = 1;
-  if not found then raise exception 'no_config'; end if;
-  select * into p from public.profiles where id = uid for update;
+  cfg := (select g from public.gacha_config g where g.id = 1);
+  if cfg.id is null then raise exception 'no_config'; end if;
+  perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
   if p_free then
     if n <> 1 or not cfg.daily_free then raise exception 'bad_count'; end if;
     if p.free_day = today then raise exception 'free_used'; end if;
@@ -305,8 +313,8 @@ begin
     v_cost := case when n = 10 then cfg.cost10 else cfg.cost1 end;
     if p.coins < v_cost then raise exception 'not_enough_coins'; end if;
   end if;
-  select coalesce(array_agg(o.gun_id), '{}') into v_owned from public.owned_guns o where o.user_id = uid;
-  select coalesce(sum((x.value ->> 1)::integer), 0) into tot from jsonb_array_elements(cfg.coin_table) as x(value);
+  v_owned := (select coalesce(array_agg(o.gun_id), '{}') from public.owned_guns o where o.user_id = uid);
+  tot := (select coalesce(sum((x.value ->> 1)::integer), 0) from jsonb_array_elements(cfg.coin_table) as x(value));
   v_pity := p.pity;
   for i in 1..n loop
     v_pity := v_pity + 1; r := random(); v_tier := null; v_gun := null; v_amt := 0; v_hit := false;
@@ -319,7 +327,7 @@ begin
     end if;
     if v_tier is not null then
       got_sa := true;
-      select gp.gun_id into v_gun from public.gun_prices gp where gp.tier = v_tier and not (gp.gun_id = any(v_owned)) order by random() limit 1;
+      v_gun := (select gp.gun_id from public.gun_prices gp where gp.tier = v_tier and not (gp.gun_id = any(v_owned)) order by random() limit 1);
       if v_gun is not null then
         v_kind := 'gun'; v_owned := v_owned || v_gun;
         insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, v_gun, 0);
@@ -342,7 +350,8 @@ begin
     v_res := v_res || jsonb_build_array(jsonb_build_object('kind', v_kind, 'tier', v_tier, 'gun', v_gun, 'amount', v_amt, 'pity', v_hit));
   end loop;
   update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, pity = v_pity,
-    free_day = case when p_free then today else free_day end where id = uid returning * into p;
+    free_day = case when p_free then today else free_day end where id = uid;
+  p := (select t from public.profiles t where t.id = uid);
   if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'pouch', jsonb_build_object('pulls', n)); end if;
   if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'pouch_win'); end if;
   return jsonb_build_object('results', v_res, 'coins', p.coins, 'fragments', p.fragments, 'pity', p.pity, 'cost', v_cost,
@@ -360,15 +369,17 @@ declare
   f integer;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
-  select gp.tier into v_tier from public.gun_prices gp where gp.gun_id = p_gun;
+  v_tier := (select gp.tier from public.gun_prices gp where gp.gun_id = p_gun);
   if v_tier is null then raise exception 'not_for_exchange'; end if;
-  select * into cfg from public.gacha_config where id = 1;
+  cfg := (select g from public.gacha_config g where g.id = 1);
   v_price := case when v_tier = 'S' then cfg.ex_s else cfg.ex_a end;
-  select fragments into f from public.profiles where id = uid for update;
-  if f is null then raise exception 'no_profile'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  f := (select t.fragments from public.profiles t where t.id = uid);
   if exists (select 1 from public.owned_guns where user_id = uid and gun_id = p_gun) then raise exception 'already_owned'; end if;
   if f < v_price then raise exception 'not_enough_frags'; end if;
-  update public.profiles set fragments = fragments - v_price where id = uid returning fragments into f;
+  update public.profiles set fragments = fragments - v_price where id = uid;
+  f := (select t.fragments from public.profiles t where t.id = uid);
   insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, p_gun, 0);
   insert into public.gacha_log (user_id, src, kind, tier, gun_id, amount) values (uid, 'exchange', 'gun', v_tier, p_gun, -v_price);
   return jsonb_build_object('gun', p_gun, 'fragments', f);

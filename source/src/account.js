@@ -1,9 +1,11 @@
 'use strict';
 // ============ Accounts (Supabase): sign-in, coins, the guns you own ============
 // No library: Supabase's auth (GoTrue, /auth/v1) and data (PostgREST, /rest/v1) endpoints are called with fetch.
-// Fill in SB.url and SB.key from the Supabase dashboard (Project Settings → API: "Project URL" and the "anon public" key —
-// the anon key is meant to be public; the tables are guarded by row level security and every coin change happens inside
-// the database functions in supabase/schema.sql). Left empty, accounts are off and every gun stays open as before.
+// Fill in SB.url and SB.key from the Supabase dashboard: the project's Connect button (or Project Settings → API Keys) shows the
+// Project URL (https://<ref>.supabase.co) and the publishable key (sb_publishable_…; the legacy "anon public" eyJ… key works too).
+// Both are meant to be public: the tables are guarded by row level security and every coin change happens inside the database
+// functions in supabase/schema.sql. Never put the secret / service_role key here. Left empty, accounts are off and every gun
+// stays open as before.
 // SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
 const SB={url:'',key:'',oauth:[]};
 if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
@@ -12,7 +14,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,gcfg:null,ready:fa
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
   sub(fn){this.subs.push(fn)},
   emit(){for(const f of this.subs)try{f()}catch(e){console.error(e)}},
-  async req(method,path,body,auth){const h={apikey:SB.key,'Content-Type':'application/json'};h.Authorization='Bearer '+(auth&&this.ses?this.ses.access_token:SB.key);
+  async req(method,path,body,auth){const h={apikey:SB.key,'Content-Type':'application/json'};if(auth&&this.ses)h.Authorization='Bearer '+this.ses.access_token;// the key itself only rides on apikey (publishable keys are not JWTs)
     let r;try{r=await fetch(SB.url.replace(/\/+$/,'')+path,{method,headers:h,body:body==null?undefined:JSON.stringify(body)})}catch(e){const er=new Error('network');er.net=1;throw er}
     const tx=await r.text();let j=null;try{j=tx?JSON.parse(tx):null}catch(e){j=null}
     if(!r.ok){const er=new Error((j&&(j.msg||j.error_description||j.message||j.error))||('HTTP '+r.status));er.status=r.status;er.code=j&&(j.error_code||j.code);throw er}

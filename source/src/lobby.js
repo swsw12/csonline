@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.8.1','2026-10-09',[
+ ['FIX','Supabase SQL Editor에서 schema.sql 실행 시 "unterminated dollar-quoted string" 오류 수정 (에디터의 RLS 자동 켜기가 함수 안 조회문을 테이블 만들기로 착각하던 문제). 공개 키는 새 publishable key(sb_publishable_…)도 지원','Fixed "unterminated dollar-quoted string" when running schema.sql in the Supabase SQL Editor (its auto-RLS helper mistook lookups inside functions for table creation). The new publishable keys (sb_publishable_…) work as the public key.']]],
 ['v6.8','2026-10-09',[
  ['NEW','근하신년 복주머니 — 근하신년 무기 12종은 이제 상점에서 못 사고 복주머니로만 얻음. S등급 6종(적룡포 · 매그넘 드릴 · 매그넘 런처 · 볼케이노 · 흑룡포 · 게이볼그), A등급 6종(혈적자 · 리퍼 · 크로스보우 어드밴스 · 크로스보우 · 스털링 바요넷 · 스페셜 덕 풋 건). 1회 500 코인, 10회 4,500 코인(A 이상 1개 보장), 하루 1번 무료. 확률: S 2% · A 8% · 코인 30%(100~1,000) · 복 조각 60%(2~5개). S가 안 나오면 60번째에 S 확정(천장, 남은 횟수는 복주머니 아래 표시). 이미 가진 무기는 안 나오고 그 확률은 같은 등급의 남은 무기로 나뉨, 한 등급을 다 모으면 S 자리는 3,000 코인, A 자리는 조각 30개','근하신년 lucky pouch: the twelve 근하신년 guns are no longer sold; they only come out of the pouch. Six S (Red Dragon Cannon, Magnum Drill, Magnum Launcher, Volcano, Black Dragon Cannon, Gae Bolg) and six A (Blood Dripper, Ripper, Crossbow Advance, Crossbow, Sterling Bayonet, Special Duck Foot Gun). One pull 500 coins, ten 4,500 (at least one A or better), one free pull a day. Odds: S 2 %, A 8 %, coins 30 % (100-1,000), fragments 60 % (2-5). No S in 59 pulls makes the 60th an S (the count shows under the pouch). Guns you own never come up and their share goes to the rest of the grade; with a whole grade owned an S pays 3,000 coins and an A 30 fragments.'],
  ['NEW','조각 교환 — 복 조각 200개로 원하는 S등급, 80개로 원하는 A등급 무기를 골라서 받음. 상점의 세 번째 탭','Fragment exchange: 200 fragments for the S gun of your choice, 80 for an A. The shop\'s third tab.'],
@@ -165,7 +167,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.8 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.8.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

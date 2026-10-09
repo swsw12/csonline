@@ -378,4 +378,11 @@
 - Tests (scratch shop/): gt1 (free pull, forced ten, exchange, NY buy refused), gt2 (buy-menu NY locks, owned volc buyable), gt3/gt5 phone
   844×390 (pouch page, ten grid 5×2, single card), gt6 accounts off (pouch page says the server isn't connected), gt7/gt8 desktop ten +
   again + skip. Headless screenshots lag the DOM by ~1-2 s under swiftshader — check DOM state, not only pixels.
-
+- v6.8.1 fix (user ran schema.sql in the Supabase SQL Editor → "unterminated dollar-quoted string", the editor appended
+  "-- Added by Supabase: enable Row Level Security on newly created tables / ALTER TABLE p ENABLE ROW LEVEL SECURITY"): the editor's
+  auto-RLS helper reads `select … into var` inside plpgsql bodies as a table creation and breaks the $$ body. schema.sql now has no
+  select-into / returning-into anywhere: reads are `var := (select …)`, row locks are `perform 1 from … for update` + `if not found`,
+  updates re-read the row. Keep it that way (no `select` + `into` in one statement, no `$$` in comments). Re-tested on local PG 16
+  (fresh, twice in a row, v6.7 → new upgrade, t1 / g1 suites). A failed editor run is one parse error → nothing was created.
+- account.js: the key only goes on `apikey`; `Authorization: Bearer` only carries a user access token (new sb_publishable_ keys are
+  not JWTs). Keys: project Connect button or Project Settings → API Keys (publishable sb_publishable_…, legacy anon eyJ… also works).
