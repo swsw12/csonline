@@ -281,7 +281,7 @@ function matGun(){return new THREE.ShaderMaterial({uniforms:Object.assign({map:{
 const ICONS={};
 function gunIcon(id,h){h=h||22;const key=id+':'+h;if(ICONS[key])return ICONS[key];const G=GUNS[id];if(!G)return null;
   let z0=1e9,z1=-1e9,y0=1e9,y1=-1e9;const quads=[];
-  for(const p of G.parts){if(p.c[0]<-.01&&G.parts.some(q=>q!==p&&Math.abs(q.c[0]+p.c[0])<.002&&q.c[2]===p.c[2]))continue;const c=Math.cos(p.rx||0),s=Math.sin(p.rx||0);const pts=[];for(const a of [-1,1])for(const b of [-1,1]){const dy=a*p.s[1]/2,dz=b*p.s[2]/2;const yy=p.c[1]+dy*c-dz*s,zz=p.c[2]+dy*s+dz*c;pts.push([zz,yy]);z0=Math.min(z0,zz);z1=Math.max(z1,zz);y0=Math.min(y0,yy);y1=Math.max(y1,yy)}quads.push(pts)}
+  for(const p of G.parts){if(p.c[0]<-.01&&G.parts.some(q=>q!==p&&Math.abs(q.c[0]+p.c[0])<.002&&q.c[2]===p.c[2]))continue;const c=Math.cos(p.rx||0),s=Math.sin(p.rx||0),dz2=p.ry?Math.abs(p.s[0]/2*Math.sin(p.ry))+Math.abs(p.s[2]/2*Math.cos(p.ry)):p.s[2]/2;const pts=[];for(const a of [-1,1])for(const b of [-1,1]){const dy=a*p.s[1]/2,dz=b*dz2;const yy=p.c[1]+dy*c-dz*s,zz=p.c[2]+dy*s+dz*c;pts.push([zz,yy]);z0=Math.min(z0,zz);z1=Math.max(z1,zz);y0=Math.min(y0,yy);y1=Math.max(y1,yy)}quads.push(pts)}
   const sc=(h-4)/Math.max(.05,y1-y0);const w=Math.ceil((z1-z0)*sc)+4;const [cv,x]=mkCanvas(w,h);
   for(const pass of [0,1]){x.fillStyle=pass?'#e8e4d8':'#000';for(const q of quads){x.beginPath();const o=[q[0],q[1],q[3],q[2]];o.forEach((p,i)=>{const px=2+(z1-p[0])*sc+(pass?0:1),py=2+(y1-p[1])*sc+(pass?0:1);i?x.lineTo(px,py):x.moveTo(px,py)});x.closePath();x.fill()}}
   return ICONS[key]=cv.toDataURL()}

@@ -355,3 +355,27 @@
 - Tests (scratch shop/): mock.js (a fetch stand-in for auth + qz_* with the same rules) via play.py INIT — sign-up validation, sign-up,
   buy / not enough / already owned, buy-menu locks + blocked buy + NY free pick, results +622 (first of the day), no double pay, reload
   keeps the session, sign-out → guest; accounts off: no locks, no reward box; phone 844×390 layouts.
+
+## v6.8 — 근하신년 복주머니 (gacha): pouch-only NY guns, fragments, exchange
+- User asked: NY guns not buyable, only from a gacha item; plan shown first and approved ("ㄱㄱ").
+- Pool: S rdc mdrill mlaunch volc bdc gaebolg; A xdz ripper xbowa xbow sterling duckfoot (SHOP_GACHA in shop.js = gun_prices.tier in
+  schema.sql, both generated from scratch shop/prices.py). price 0, sold false, tier S/A; qz_buy raises gacha_only for tier guns.
+- Server (schema.sql, re-run on top of v6.7 keeps owned guns): profiles + fragments, pity, free_day; gacha_config (one row: cost1 500,
+  cost10 4500, rate_s .02, rate_a .08, rate_coin .30 — rest fragments, pity 60, coin_table [[100,30],[200,30],[300,20],[500,15],[1000,5]],
+  frag 2-5, full_s_coins 3000, full_a_frags 30, ex_s 200, ex_a 80, daily_free) — public read; gacha_log (one row per result, src pull/free/
+  exchange, pity_hit). qz_pull(p_count 1|10, p_free): server random(), pity counter (S forced when it reaches 60, reset on any S), owned
+  guns skipped (grade fully owned → S pays 3000 coins, A 30 fragments), 10th of ten forced A if no S/A yet, free pull once per KST day.
+  qz_exchange(p_gun). qz_me also returns fragments, pity, free_today. Validated on local Postgres (400 ten-pulls: S ≈ 2.6 % with pity,
+  max gap 60, every ten has S/A, all 12 owned after 28 tens then substitutes; v6.7 → v6.8 upgrade keeps owned NY guns).
+- Client: ACC.pull / exchange / history / gc() (gacha_config merged over GACHA_DEF), ACC.price falls back for tier guns; SHOP pages
+  'shop' | 'gacha' | 'ex' (tabs; red dot when the free pull is up); pouchSvg (drawn red silk pouch, gold cord, 복 emblem); GFX (#gFx):
+  shake ≥ 750 ms → burst + flash in the best grade's colour → cards slide in and flip (ten: 170 ms apart; the flip waits for the slide-in —
+  overlapping them left a card unpainted in phone emulation) → OK / again / skip (skip kills the slide-in animations); S glow sits on .gfront
+  (not the card) so the card's own animation can be cleared. gPopRates (each gun's real share, owned → '—'), gPopHist (last 50).
+  Buy menu: tier gun not owned → lock + 'pouch' label, buylk note says pouch. First-visit sign-in prompt skips when a session exists or
+  the shop is open.
+- gunIcon now widens yawed parts (p.ry) in the side silhouette: duckfoot barrels were missing; the xbow icons change slightly.
+- Tests (scratch shop/): gt1 (free pull, forced ten, exchange, NY buy refused), gt2 (buy-menu NY locks, owned volc buyable), gt3/gt5 phone
+  844×390 (pouch page, ten grid 5×2, single card), gt6 accounts off (pouch page says the server isn't connected), gt7/gt8 desktop ten +
+  again + skip. Headless screenshots lag the DOM by ~1-2 s under swiftshader — check DOM state, not only pixels.
+

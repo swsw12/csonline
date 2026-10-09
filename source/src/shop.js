@@ -5,8 +5,11 @@
 // 근하신년 free pick still hand out any gun. With accounts off (no Supabase settings in account.js) every gun stays open.
 // Prices: the database table gun_prices is the truth; this copy (same numbers as schema.sql) is shown until it has loaded.
 const SHOP_FREE=['knife','p9','sg8','k5','g35'];
-const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,duckfoot:6000,db2:1500,m14:3500,as12:4500,volc:12000,mdrill:14000,k9:1200,um45:1800,pd50:3000,sterling:6500,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,xbow:7000,xbowa:9000,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000,bdc:11000,rdc:16000,ripper:9000,gaebolg:10000,xdz:9500,mlaunch:13000};
+const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000};
 const SHOP_NOTSOLD=['bhole'];
+const SHOP_GACHA={S:['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],A:['xdz','ripper','xbowa','xbow','sterling','duckfoot']};
+// the pouch's numbers until gacha_config has loaded (same defaults as schema.sql)
+const GACHA_DEF={cost1:500,cost10:4500,rate_s:.02,rate_a:.08,rate_coin:.3,pity:60,coin_table:[[100,30],[200,30],[300,20],[500,15],[1000,5]],frag_min:2,frag_max:5,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true};
 const COIN='<i class="ci"></i>';
 const fmtC=n=>Math.round(n||0).toLocaleString('en-US');
 const KIND_N={pistol:['권총','Pistol'],smg:['기관단총','SMG'],shotgun:['산탄총','Shotgun'],rifle:['소총','Rifle'],sniper:['저격총','Sniper'],mg:['기관총','Machine gun'],
@@ -20,42 +23,61 @@ function shopCats(){const L=LI();const cats=BUY_MENU.filter(c=>c.k!=='equip').ma
   const sp=cats.find(c=>c.k==='special');if(sp)sp.items=['knife',...sp.items.filter(i=>i!=='knife'),'bhole'].filter(id=>WPN[id]);
   const seen=new Set(),all=[];for(const c of cats)for(const id of c.items)if(!seen.has(id)){seen.add(id);all.push(id)}
   return [{k:'all',n:L?'All':'전체',items:all},...cats]}
-// free / own / buy / crate
-function shopState(id){const p=ACC.price(id);if(!p)return 'free';if(p.free)return 'free';if(!p.sold)return 'crate';if(ACC.me&&ACC.me.owned&&ACC.me.owned.has(id))return 'own';return 'buy'}
-// free ones first, then by price; crate-only ones last
-function shopOrder(ids){const grp=s=>s==='free'?0:s==='crate'?2:1;return ids.slice().sort((a,b)=>{const sa=shopState(a),sb=shopState(b);
-  return grp(sa)-grp(sb)||((ACC.price(a)||{}).price||0)-((ACC.price(b)||{}).price||0)})}
+// free / own / buy / crate / gacha (근하신년: pouch or exchange only)
+function shopState(id){const p=ACC.price(id);if(!p||p.free)return 'free';if(ACC.me&&ACC.me.owned&&ACC.me.owned.has(id))return 'own';if(p.tier)return 'gacha';if(!p.sold)return 'crate';return 'buy'}
+// free ones first, then by price; pouch guns after them (S first), crate-only last
+function shopOrder(ids){const grp=id=>{const s=shopState(id),t=ACC.tier(id);return s==='free'?0:t?(t==='S'?2:3):s==='crate'?4:1};
+  return ids.slice().sort((a,b)=>grp(a)-grp(b)||((ACC.price(a)||{}).price||0)-((ACC.price(b)||{}).price||0))}
+const FRAG='<i class="fi"></i>';
+// the lucky pouch drawn in SVG (red silk, a gold cord and tassels, the 복 emblem)
+function pouchSvg(cls){return `<svg class="${cls||''}" viewBox="0 0 120 150" aria-hidden="true"><defs>
+  <radialGradient id="pgR" cx="40%" cy="40%" r="70%"><stop offset="0" stop-color="#f0584a"/><stop offset=".55" stop-color="#c2241c"/><stop offset="1" stop-color="#6e0c08"/></radialGradient>
+  <linearGradient id="pgG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a8"/><stop offset=".5" stop-color="#f2c230"/><stop offset="1" stop-color="#a87408"/></linearGradient></defs>
+  <path d="M34 44 C28 30 40 18 50 26 C54 14 66 14 70 26 C80 18 92 30 86 44 Z" fill="#a8180f" stroke="#5a0804" stroke-width="1.5"/>
+  <path d="M36 50 C10 66 6 112 30 132 C48 146 72 146 90 132 C114 112 110 66 84 50 Z" fill="url(#pgR)" stroke="#5a0804" stroke-width="2"/>
+  <path d="M30 70 C40 64 80 64 90 70 M24 96 C44 90 76 90 96 96 M28 120 C46 114 74 114 92 120" stroke="#e8a030" stroke-width="1.4" fill="none" opacity=".55"/>
+  <rect x="32" y="42" width="56" height="9" rx="4" fill="url(#pgG)" stroke="#7a5404" stroke-width="1"/>
+  <path d="M60 51 C56 60 50 66 46 76 M60 51 C64 60 70 66 74 76" stroke="url(#pgG)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M42 76 h8 l-1 14 h-6z M70 76 h8 l-1 14 h-6z" fill="url(#pgG)"/>
+  <circle cx="60" cy="100" r="17" fill="none" stroke="url(#pgG)" stroke-width="3"/><text x="60" y="108" text-anchor="middle" font-size="22" font-weight="bold" fill="url(#pgG)" font-family="Galmuri11,sans-serif">복</text>
+</svg>`}
 
-// ---------- the shop window ----------
-const SHOP={cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msgOk:false,busy:false,
-  open(id){let o=$('shopWin');if(!o){o=document.createElement('div');o.id='shopWin';document.body.appendChild(o);
+// ---------- the shop window: the gun shop, the 근하신년 lucky pouch, the fragment exchange ----------
+const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msgOk:false,busy:false,exSel:null,
+  open(id,page){let o=$('shopWin');if(!o){o=document.createElement('div');o.id='shopWin';document.body.appendChild(o);
       o.addEventListener('click',e=>{if(e.target===o){this.close();return}const t=e.target.closest('[data-sa]');if(t)this.act(t.dataset.sa,t.dataset.v)});
       o.addEventListener('change',e=>{if(e.target.dataset.sa==='own'){this.onlyOwn=e.target.checked;this.render()}})}
-    if(id){this.sel=id;this.cat='all'}this.confirm=null;this.msg='';this.scrollSel=true;this.render();AU.play('ui',{vol:.35})},
-  close(){const o=$('shopWin');if(o)o.remove();this.confirm=null},
+    if(page)this.page=page;if(id){this.sel=id;this.cat='all';this.page='shop'}this.confirm=null;this.msg='';this.scrollSel=true;this.render();AU.play('ui',{vol:.35})},
+  close(){const o=$('shopWin');if(o)o.remove();this.confirm=null;const p=$('gPop');if(p)p.remove()},
   list(){const C=shopCats(),c=C.find(x=>x.k===this.cat)||C[0];let ids=c.items;if(this.onlyOwn)ids=ids.filter(id=>{const s=shopState(id);return s==='free'||s==='own'});return {C,c,ids:shopOrder(ids)}},
-  render(){const o=$('shopWin');if(!o)return;const L=LI(),{C,ids}=this.list();if(!ids.includes(this.sel))this.sel=ids[0]||null;
-    const signed=ACC.signed(),coins=signed?ACC.me.coins:0,me=ACC.me;
-    const head=!ACC.on?`<span class="soff">${L?'Accounts not set up — every gun is open':'계정 서버 연결 전 — 지금은 모든 총 사용 가능'}</span>`
-      :signed?`<span class="scoin">${COIN}<b>${fmtC(coins)}</b></span><button class="sacc" data-sa="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`
-      :`<button class="sacc hl" data-sa="login">${SVG_USER}<span>${L?'Sign in':'로그인'}</span></button>`;
-    const cards=ids.map(id=>{const W=WPN[id],st=shopState(id),p=ACC.price(id)||{price:0};
+  head(){const L=LI(),signed=ACC.signed(),me=ACC.me;
+    if(!ACC.on)return `<span class="soff">${L?'Accounts not set up — every gun is open':'계정 서버 연결 전 — 지금은 모든 총 사용 가능'}</span>`;
+    if(signed)return `<span class="scoin">${COIN}<b>${fmtC(me.coins)}</b></span><span class="scoin frg" title="${L?'Fragments':'복 조각'}">${FRAG}<b>${fmtC(me.frags||0)}</b></span><button class="sacc" data-sa="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`;
+    return `<button class="sacc hl" data-sa="login">${SVG_USER}<span>${L?'Sign in':'로그인'}</span></button>`},
+  render(){const o=$('shopWin');if(!o)return;const L=LI(),pg=this.page,free=ACC.signed()&&ACC.me.freeToday&&ACC.gc().daily_free;
+    const ptabs=`<div class="spages"><button class="${pg==='shop'?'on':''}" data-sa="page" data-v="shop">${L?'Gun shop':'총기 상점'}</button><button class="${pg==='gacha'?'on':''} gp" data-sa="page" data-v="gacha">${L?'Lucky pouch':'근하신년 복주머니'}${free?'<i class="dot"></i>':''}</button><button class="${pg==='ex'?'on':''}" data-sa="page" data-v="ex">${L?'Fragment exchange':'조각 교환'}</button></div>`;
+    const body=pg==='gacha'?this.gachaPage():pg==='ex'?this.exPage():this.shopPage();
+    o.innerHTML=`<div class="swin"><div class="swh"><b>${L?'Shop':'상점'}</b><small>SHOP</small><span class="sgap"></span>${this.head()}<button class="sx" data-sa="x" aria-label="close">×</button></div>${ptabs}${body}</div>`;
+    if(this.scrollSel){this.scrollSel=false;const c=o.querySelector('.sc.on');if(c&&c.scrollIntoView)c.scrollIntoView({block:'nearest'})}},
+  // ---- the gun shop ----
+  shopPage(){const L=LI(),{C,ids}=this.list();if(!ids.includes(this.sel))this.sel=ids[0]||null;const signed=ACC.signed(),coins=signed?ACC.me.coins:0;
+    const cards=ids.map(id=>{const W=WPN[id],st=shopState(id),p=ACC.price(id)||{price:0},t=ACC.tier(id);
       const tag=st==='free'?`<em class="bf">${L?'FREE':'기본'}</em>`:st==='own'?`<em class="bo">${L?'OWNED':'보유'}</em>`:st==='crate'?`<em class="bc">${L?'CRATE ONLY':'보급 전용'}</em>`
-        :`<span class="pr${signed&&coins<p.price?' poor':''}">${COIN}${fmtC(p.price)}</span>`;
-      return `<div class="sc ${st}${id===this.sel?' on':''}" data-sa="sel" data-v="${id}">${W.ny?'<i class="nyb">NY</i>':''}<div class="sci"><img src="${gunIcon(W.model,30)}" alt=""></div><b>${esc(W.n[L])}</b><span class="scp">${tag}</span></div>`}).join('')
+        :st==='gacha'?`<em class="bg${t}">${t} · ${L?'POUCH':'뽑기 전용'}</em>`:`<span class="pr${signed&&coins<p.price?' poor':''}">${COIN}${fmtC(p.price)}</span>`;
+      return `<div class="sc ${st}${t?' t'+t:''}${id===this.sel?' on':''}" data-sa="sel" data-v="${id}">${W.ny?'<i class="nyb">NY</i>':''}<div class="sci"><img src="${gunIcon(W.model,30)}" alt=""></div><b>${esc(W.n[L])}</b><span class="scp">${tag}</span></div>`}).join('')
       ||`<div class="sempty">${L?'Nothing here yet':'아직 없어요'}</div>`;
-    o.innerHTML=`<div class="swin"><div class="swh"><b>${L?'Shop':'상점'}</b><small>SHOP</small><span class="sgap"></span>${head}<button class="sx" data-sa="x" aria-label="close">×</button></div>
-      <div class="stabs"><div class="stl">${C.map(c=>`<button class="${c.k===this.cat?'on':''}" data-sa="cat" data-v="${c.k}">${esc(c.n)}</button>`).join('')}</div>
+    return `<div class="stabs"><div class="stl">${C.map(c=>`<button class="${c.k===this.cat?'on':''}" data-sa="cat" data-v="${c.k}">${esc(c.n)}</button>`).join('')}</div>
         <label class="sfil"><input type="checkbox" data-sa="own"${this.onlyOwn?' checked':''}><span>${L?'Mine only':'보유한 총만'}</span></label></div>
       <div class="sbody"><div class="sgrid">${cards}</div>${this.detail()}</div>
-      <div class="sfoot">${L?'Coins come from finished matches — rounds, kills, infections, damage and wins. In a match, round money ($) only buys guns you own; floor pick-ups, supply crates and the 근하신년 free pick still give any gun. The shooting range lends you every gun to try.'
-        :'코인은 매치를 끝까지 하면 라운드·킬·감염·피해량·승리에 따라 들어와요. 매치 안에서 판돈($)으로는 보유한 총만 살 수 있고, 바닥에 떨어진 총·보급상자·근하신년 무료 교환은 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요.'}</div></div>`;
-    if(this.scrollSel){this.scrollSel=false;const c=o.querySelector('.sc.on');if(c&&c.scrollIntoView)c.scrollIntoView({block:'nearest'})}},
-  detail(){const L=LI(),id=this.sel,W=id&&WPN[id];if(!W)return '<div class="sdet"></div>';const st=shopState(id),p=ACC.price(id)||{price:0},signed=ACC.signed(),coins=signed?ACC.me.coins:0;
+      <div class="sfoot">${L?'Coins come from finished matches — rounds, kills, infections, damage and wins. In a match, round money ($) only buys guns you own; floor pick-ups, supply crates and the 근하신년 free pick still give any gun. The shooting range lends you every gun to try. 근하신년 guns come from the lucky pouch.'
+        :'코인은 매치를 끝까지 하면 라운드·킬·감염·피해량·승리에 따라 들어와요. 매치 안에서 판돈($)으로는 보유한 총만 살 수 있고, 바닥에 떨어진 총·보급상자·근하신년 무료 교환은 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 근하신년 무기는 복주머니에서만 나와요.'}</div>`},
+  detail(){const L=LI(),id=this.sel,W=id&&WPN[id];if(!W)return '<div class="sdet"></div>';const st=shopState(id),p=ACC.price(id)||{price:0},signed=ACC.signed(),coins=signed?ACC.me.coins:0,t=ACC.tier(id),g=ACC.gc();
     const kn=(KIND_N[W.kind]||KIND_N.special)[L?1:0];
-    const info=[kn,W.cost!=null&&W.cost>0?(L?'round $':'판돈 $')+fmtC(W.cost):null,W.mag?W.mag+(L?' rds':'발'):null,W.rpm?W.rpm+' RPM':null].filter(Boolean).join(' · ');
+    const info=[kn,t?t+(L?' grade':'등급'):null,W.cost!=null&&W.cost>0?(L?'round $':'판돈 $')+fmtC(W.cost):null,W.mag?W.mag+(L?' rds':'발'):null,W.rpm?W.rpm+' RPM':null].filter(Boolean).join(' · ');
     let buy;
-    if(!ACC.on)buy=`<div class="sbn">${L?'Accounts are not set up yet, so every gun is open for now.':'계정 서버가 연결되기 전이라 지금은 모든 총을 쓸 수 있어요.'}</div>${st==='buy'?`<div class="sbp">${COIN}${fmtC(p.price)}</div>`:''}`;
+    if(st==='gacha')buy=`<div class="sbn">${L?'Only from the 근하신년 lucky pouch, or the fragment exchange.':'근하신년 복주머니나 조각 교환으로만 얻을 수 있어요.'}</div>
+      <button class="sbb red" data-sa="page" data-v="gacha">${L?'Open the lucky pouch':'복주머니 열기'}</button><button class="sbx2" data-sa="exsel" data-v="${id}">${FRAG}${fmtC(t==='S'?g.ex_s:g.ex_a)} ${L?'fragments — exchange':'조각으로 교환'}</button>`;
+    else if(!ACC.on)buy=`<div class="sbn">${L?'Accounts are not set up yet, so every gun is open for now.':'계정 서버가 연결되기 전이라 지금은 모든 총을 쓸 수 있어요.'}</div>${st==='buy'?`<div class="sbp">${COIN}${fmtC(p.price)}</div>`:''}`;
     else if(st==='free')buy=`<div class="sbn ok">${L?'Free for everyone.':'기본 지급 — 누구나 쓸 수 있어요.'}</div>`;
     else if(st==='own')buy=`<div class="sbn ok">${L?'Yours. Buy it with round money in a match.':'보유 중 — 매치에서 판돈($)으로 살 수 있어요.'}</div>`;
     else if(st==='crate')buy=`<div class="sbn">${L?'Only from supply crates.':'보급상자에서만 얻을 수 있어요.'}</div>`;
@@ -65,21 +87,125 @@ const SHOP={cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msgOk:false,bus
     else if(coins>=p.price)buy=`<button class="sbb" data-sa="buy" data-v="${id}">${COIN}${fmtC(p.price)} <span>${L?'Buy':'구매'}</span></button>`;
     else buy=`<button class="sbb" disabled>${COIN}${fmtC(p.price)}</button><div class="sbn bad">${L?fmtC(p.price-coins)+' coins short':'코인 '+fmtC(p.price-coins)+' 부족'}</div>`;
     if(this.msg)buy+=`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`;
-    return `<div class="sdet"><div class="sdi"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${esc(W.n[L?0:1])}</small></h4><div class="sinfo">${info}</div>
+    return `<div class="sdet"><div class="sdi${t?' t'+t:''}"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${esc(W.n[L?0:1])}</small></h4><div class="sinfo">${info}</div>
       ${UI.statBars(W)}<p class="sdesc">${UI.wTags(W,id)||''}</p><div class="sbuy">${buy}</div></div>`},
+  // ---- the lucky pouch ----
+  gachaPage(){const L=LI(),g=ACC.gc(),signed=ACC.signed(),me=ACC.me,coins=signed?me.coins:0,pity=signed?me.pity:0,left=Math.max(1,g.pity-pity);
+    const pool=t=>{const ids=SHOP_GACHA[t].filter(id=>WPN[id]),un=ids.filter(id=>!(me&&me.owned&&me.owned.has(id))).length,rate=t==='S'?g.rate_s:g.rate_a;
+      return `<div class="gpool t${t}"><h5><span class="gt t${t}">${t}</span>${t==='S'?(L?'Top grade':'상급'):(L?'Grade A':'A 등급')}<small>${(rate*100).toFixed(rate*100%1?1:0)}%${un?` · ${L?'each':'각'} ${(rate*100/un).toFixed(2)}%`:''}</small></h5>
+        <div class="gpl">${ids.map(id=>{const W=WPN[id],own=me&&me.owned&&me.owned.has(id);return `<div class="gpi${own?' own':''}" data-sa="sel2" data-v="${id}" title="${esc(W.n[L])}"><img src="${gunIcon(W.model,22)}" alt=""><span>${esc(W.n[L])}</span>${own?'<em>✔</em>':''}</div>`}).join('')}</div></div>`};
+    const can1=signed&&coins>=g.cost1,can10=signed&&coins>=g.cost10,free=signed&&me.freeToday&&g.daily_free;
+    const btns=!ACC.on?`<div class="sbn">${L?'The pouch opens once accounts are set up.':'계정 서버가 연결되면 복주머니를 열 수 있어요.'}</div>`
+      :!signed?`<button class="gbtn big" data-sa="login">${L?'Sign in to open the pouch':'로그인하고 복주머니 열기'}</button>`
+      :`${free?`<button class="gbtn free" data-sa="pull" data-v="free"${this.busy?' disabled':''}>${L?'Today\'s free pull':'오늘의 무료 1회'}</button>`:''}
+        <div class="gbr"><button class="gbtn" data-sa="pull" data-v="1"${can1&&!this.busy?'':' disabled'}><b>${L?'1 pull':'1회'}</b><span>${COIN}${fmtC(g.cost1)}</span></button>
+        <button class="gbtn ten" data-sa="pull" data-v="10"${can10&&!this.busy?'':' disabled'}><b>${L?'10 pulls':'10회'}</b><span>${COIN}${fmtC(g.cost10)}</span><small>${L?'A or better ×1 sure':'A 이상 1개 보장'}</small></button></div>`;
+    return `<div class="gwrap"><div class="gleft"><div class="gpouch">${pouchSvg('pz')}</div>
+        <div class="gpity"><span>${L?'S guaranteed in':'S 확정까지'} <b>${signed?left:g.pity}</b>${L?' pulls':'회'}</span><i><u style="width:${Math.round(Math.min(1,pity/g.pity)*100)}%"></u></i></div>
+        <div class="gbtns">${btns}</div>${this.msg?`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`:''}
+        <div class="glinks"><button data-sa="rates">${L?'Odds':'확률 정보'}</button>${signed?`<button data-sa="hist">${L?'History':'뽑기 기록'}</button>`:''}</div></div>
+      <div class="gright">${pool('S')}${pool('A')}
+        <div class="gnote">${L?`Coins ${Math.round(g.rate_coin*100)}% (100–1,000) · fragments ${Math.round((1-g.rate_s-g.rate_a-g.rate_coin)*100)}% (${g.frag_min}–${g.frag_max}). Guns you own never come up again; with a whole grade owned, an S pays ${fmtC(g.full_s_coins)} coins and an A ${g.full_a_frags} fragments. Fragments buy the gun of your choice in the exchange.`
+          :`코인 ${Math.round(g.rate_coin*100)}% (100~1,000) · 복 조각 ${Math.round((1-g.rate_s-g.rate_a-g.rate_coin)*100)}% (${g.frag_min}~${g.frag_max}개). 이미 가진 무기는 다시 안 나오고, 한 등급을 다 모으면 S는 ${fmtC(g.full_s_coins)} 코인, A는 조각 ${g.full_a_frags}개로 바뀌어요. 조각은 조각 교환에서 원하는 무기로 바꿀 수 있어요.`}</div></div></div>`},
+  // ---- the fragment exchange ----
+  exPage(){const L=LI(),g=ACC.gc(),signed=ACC.signed(),me=ACC.me,fr=signed?me.frags||0:0;
+    const ids=[...SHOP_GACHA.S,...SHOP_GACHA.A].filter(id=>WPN[id]);if(!ids.includes(this.exSel))this.exSel=ids.find(id=>!(me&&me.owned&&me.owned.has(id)))||ids[0];
+    const cards=ids.map(id=>{const W=WPN[id],t=ACC.tier(id),own=me&&me.owned&&me.owned.has(id),cost=t==='S'?g.ex_s:g.ex_a;
+      return `<div class="sc ${own?'own':'gacha'} t${t}${id===this.exSel?' on':''}" data-sa="exsel" data-v="${id}"><div class="sci"><img src="${gunIcon(W.model,30)}" alt=""></div><b>${esc(W.n[L])}</b>
+        <span class="scp">${own?`<em class="bo">${L?'OWNED':'보유'}</em>`:`<span class="pr fr${signed&&fr<cost?' poor':''}">${FRAG}${fmtC(cost)}</span>`}<em class="bg${t} sm">${t}</em></span></div>`}).join('');
+    const id=this.exSel,W=WPN[id],t=ACC.tier(id),own=me&&me.owned&&me.owned.has(id),cost=t==='S'?g.ex_s:g.ex_a;
+    let act;
+    if(!ACC.on)act=`<div class="sbn">${L?'The exchange opens once accounts are set up.':'계정 서버가 연결되면 교환할 수 있어요.'}</div>`;
+    else if(!signed)act=`<button class="sbb" data-sa="login">${L?'Sign in to exchange':'로그인하고 교환'}</button>`;
+    else if(own)act=`<div class="sbn ok">${L?'Already yours.':'이미 보유 중이에요.'}</div>`;
+    else if(this.confirm==='ex:'+id)act=`<div class="sbq">${L?`Exchange ${fmtC(cost)} fragments for ${esc(W.n[1])}?`:`조각 ${fmtC(cost)}개로 ${esc(W.n[0])}을(를) 받을까요?`}</div>
+      <div class="sbr"><button class="sbb" data-sa="exok" data-v="${id}"${this.busy?' disabled':''}>${L?'Exchange':'교환'}</button><button class="sbx2" data-sa="buyno">${L?'Cancel':'취소'}</button></div>`;
+    else if(fr>=cost)act=`<button class="sbb" data-sa="ex" data-v="${id}">${FRAG}${fmtC(cost)} <span>${L?'Exchange':'교환'}</span></button>`;
+    else act=`<button class="sbb" disabled>${FRAG}${fmtC(cost)}</button><div class="sbn bad">${L?fmtC(cost-fr)+' fragments short':'조각 '+fmtC(cost-fr)+'개 부족'}</div>`;
+    if(this.msg)act+=`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`;
+    return `<div class="sbody"><div class="sgrid">${cards}</div><div class="sdet"><div class="sdi t${t}"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${t}${L?' grade':'등급'} · ${esc(W.n[L?0:1])}</small></h4>
+      ${UI.statBars(W)}<p class="sdesc">${UI.wTags(W,id)||''}</p><div class="sbn">${L?`You have ${fmtC(fr)} fragments. They come from the pouch (2–5 at a time, ${g.full_a_frags} for an A when every A is owned).`:`보유 조각 ${fmtC(fr)}개 — 복주머니에서 2~5개씩 나오고, A를 다 모은 뒤엔 A 자리에서 ${g.full_a_frags}개씩 나와요.`}</div><div class="sbuy">${act}</div></div></div>
+      <div class="sfoot">${L?`An S of your choice for ${g.ex_s} fragments, an A for ${g.ex_a}.`:`원하는 S 무기는 조각 ${g.ex_s}개, A 무기는 ${g.ex_a}개로 바꿀 수 있어요.`}</div>`},
   act(a,v){const L=LI();
     if(a==='x'){this.close();return}
+    if(a==='page'){if(this.page!==v){this.page=v;this.confirm=null;this.msg='';this.scrollSel=true;this.render();AU.play('ui',{vol:.3})}return}
     if(a==='cat'){this.cat=v;this.confirm=null;this.msg='';this.scrollSel=true;this.render();const g=document.querySelector('#shopWin .sgrid');if(g)g.scrollTop=0;return}
     if(a==='sel'){if(this.sel!==v){this.sel=v;this.confirm=null;this.msg='';this.render();AU.play('ui',{vol:.25})}return}
+    if(a==='sel2'){this.page='shop';this.cat='all';this.sel=v;this.confirm=null;this.msg='';this.scrollSel=true;this.render();return}
+    if(a==='exsel'){this.page='ex';if(this.exSel!==v){this.exSel=v;this.confirm=null;this.msg=''}this.render();return}
     if(a==='login'){ACCW.open('in');return}
     if(a==='acc'){ACCW.open('me');return}
     if(a==='buy'){this.confirm=v;this.msg='';this.render();return}
     if(a==='buyno'){this.confirm=null;this.render();return}
-    if(a==='buyok'){this.buy(v);return}},
+    if(a==='buyok'){this.buy(v);return}
+    if(a==='ex'){this.confirm='ex:'+v;this.msg='';this.render();return}
+    if(a==='exok'){this.exchange(v);return}
+    if(a==='pull'){this.pull(v==='free'?1:+v,v==='free');return}
+    if(a==='rates'){gPopRates();return}
+    if(a==='hist'){gPopHist();return}},
   async buy(id){if(this.busy)return;const L=LI(),W=WPN[id];this.busy=true;this.render();
     try{await ACC.buy(id);this.msg=(L?'Bought: ':'구매 완료 — ')+W.n[L];this.msgOk=true;AU.play('buy',{vol:.8})}
     catch(e){this.msg=ACC.errText(e);this.msgOk=false;AU.play('dry',{vol:.5});if(/not_signed_in|JWT/i.test(String(e.message)))ACCW.open('in')}
-    this.busy=false;this.confirm=null;this.render()}};
+    this.busy=false;this.confirm=null;this.render()},
+  async exchange(id){if(this.busy)return;const L=LI(),W=WPN[id];this.busy=true;this.render();
+    try{await ACC.exchange(id);this.msg=(L?'Exchanged: ':'교환 완료 — ')+W.n[L];this.msgOk=true;AU.play('lvlup',{vol:.7})}
+    catch(e){this.msg=ACC.errText(e);this.msgOk=false;AU.play('dry',{vol:.5})}
+    this.busy=false;this.confirm=null;this.render()},
+  async pull(n,free){if(this.busy)return;this.busy=true;this.msg='';this.render();let r=null;
+    GFX.start(n);
+    try{r=await ACC.pull(n,free)}catch(e){this.msg=ACC.errText(e);this.msgOk=false;GFX.fail(this.msg);AU.play('dry',{vol:.5})}
+    this.busy=false;if(r)GFX.show(r.results||[],n);this.render()}};
+
+// ---------- the pull: the pouch shakes, bursts open in the colour of the best grade, the cards turn over one by one ----------
+const GFX={res:null,n:1,step:0,timers:[],
+  el(){let o=$('gFx');if(!o){o=document.createElement('div');o.id='gFx';document.body.appendChild(o);o.addEventListener('click',e=>{const t=e.target.closest('[data-gx]');if(t)this.act(t.dataset.gx);else if(this.done)this.close()})}return o},
+  clear(){for(const t of this.timers)clearTimeout(t);this.timers=[]},
+  later(ms,fn){this.timers.push(setTimeout(fn,ms))},
+  start(n){this.clear();this.res=null;this.n=n;this.done=false;this.waitT=performance.now();const o=this.el(),L=LI();
+    o.className='on';o.innerHTML=`<div class="gstage"><div class="gpz shake">${pouchSvg('pz')}</div><div class="gcap">${L?'Opening the pouch…':'복주머니를 여는 중…'}</div></div>`;AU.play('cylspin',{vol:.35,rate:1.4})},
+  fail(msg){const o=this.el();this.done=true;o.innerHTML=`<div class="gstage"><div class="gpz">${pouchSvg('pz')}</div><div class="gcap bad">${esc(msg)}</div><button class="gok" data-gx="close">${LI()?'OK':'확인'}</button></div>`},
+  show(res,n){this.res=res;const o=this.el(),L=LI(),best=res.some(x=>x.tier==='S'&&x.kind==='gun')?'S':res.some(x=>x.tier==='S')?'S':res.some(x=>x.tier==='A')?'A':'';
+    const wait=Math.max(0,750-(performance.now()-this.waitT));// the shake plays at least this long
+    this.later(wait,()=>{o.querySelector('.gpz')&&o.querySelector('.gpz').classList.add('burst');const fl=document.createElement('div');fl.className='gflash '+(best?'t'+best:'');o.appendChild(fl);
+      AU.play(best==='S'?'stingH':best==='A'?'lvlup':'pickup',{vol:best?.8:.5});
+      this.later(520,()=>this.cards(res,n,best))})},
+  card(x,i){const L=LI();let face='',cls='';
+    if(x.kind==='gun'){const W=WPN[x.gun]||{n:[x.gun,x.gun]};cls='t'+x.tier;face=`<div class="gci"><img src="${W.model?gunIcon(W.model,n10(this.n)?30:48):''}" alt=""></div><b>${esc(W.n[L])}</b><span class="gtg t${x.tier}">${x.tier}</span><i class="gnew">NEW</i>${x.pity?`<i class="gpit">${L?'PITY':'천장'}</i>`:''}`}
+    else if(x.kind==='coins'){cls=x.tier?'t'+x.tier+' cv':'cv';face=`<div class="gci big">${COIN}</div><b>${fmtC(x.amount)}</b><span>${L?'coins':'코인'}${x.tier?` <small>(${x.tier}${L?' — all owned':' 다 모음'})</small>`:''}</span>`}
+    else{cls=x.tier?'t'+x.tier+' fv':'fv';face=`<div class="gci big">${FRAG}</div><b>×${x.amount}</b><span>${L?'fragments':'복 조각'}${x.tier?` <small>(${x.tier}${L?' — all owned':' 다 모음'})</small>`:''}</span>`}
+    return `<div class="gcard ${cls}" style="--i:${i}"><div class="gin"><div class="gback">${pouchSvg('mini')}</div><div class="gfront">${face}</div></div></div>`},
+  cards(res,n,best){const o=this.el(),L=LI();
+    o.innerHTML=`<div class="gstage res${n10(n)?' ten':''}"><div class="gcards">${res.map((x,i)=>this.card(x,i)).join('')}</div>
+      <div class="gbar"><button class="gskip" data-gx="skip">${L?'Skip':'건너뛰기'}</button></div></div>`;
+    const cs=o.querySelectorAll('.gcard');cs.forEach((c,i)=>this.later(Math.max(260+i*(n10(n)?170:0),420+i*40),()=>{// flip only once the card has slid in (a flip during the slide-in can leave the card unpainted on some phones)
+      c.classList.add('open');const x=res[i];
+      if(x.kind==='gun')AU.play(x.tier==='S'?'lvlup':'hsding',{vol:x.tier==='S'?.9:.6});else AU.play('ui',{vol:.25,rate:1.2})}));
+    this.later(Math.max(260+cs.length*(n10(n)?170:0),420+cs.length*40)+500,()=>this.finish())},
+  finish(){this.clear();const o=this.el(),L=LI();if(!o.querySelector('.gcards'))return;o.querySelectorAll('.gcard').forEach(c=>{c.style.animation='none';c.classList.add('open')});this.done=true;
+    const bar=o.querySelector('.gbar');if(bar){const g=ACC.gc(),me=ACC.me,again=this.n===10?g.cost10:g.cost1,can=me&&me.coins>=again;
+      bar.innerHTML=`<button class="gok" data-gx="close">${L?'OK':'확인'}</button>${can?`<button class="gagain" data-gx="again">${L?'Again':'한 번 더'} · ${COIN}${fmtC(again)}</button>`:''}`}},
+  act(a){if(a==='skip'){this.finish();return}if(a==='close'){this.close();return}if(a==='again'){const n=this.n;this.close();SHOP.pull(n,false);return}},
+  close(){this.clear();const o=$('gFx');if(o)o.remove();this.done=false}};
+function n10(n){return n>=10}
+// odds and history windows over the shop
+function gPop(title,html){let o=$('gPop');if(o)o.remove();o=document.createElement('div');o.id='gPop';o.innerHTML=`<div class="gpw"><div class="awh"><b>${title}</b><button data-gp="x">×</button></div><div class="gpb">${html}</div></div>`;
+  o.addEventListener('click',e=>{if(e.target===o||e.target.dataset.gp==='x')o.remove()});document.body.appendChild(o)}
+function gPopRates(){const L=LI(),g=ACC.gc(),me=ACC.me,frag=1-g.rate_s-g.rate_a-g.rate_coin,tot=g.coin_table.reduce((a,c)=>a+c[1],0),pct=v=>(v*100).toFixed(v*100<1?3:2).replace(/\.?0+$/,'')+'%';
+  const rows=[];for(const t of ['S','A']){const ids=SHOP_GACHA[t].filter(id=>WPN[id]),un=ids.filter(id=>!(me&&me.owned&&me.owned.has(id))),r=t==='S'?g.rate_s:g.rate_a;
+    rows.push(`<tr class="h t${t}"><td>${t} ${L?'grade':'등급'}</td><td>${pct(r)}</td></tr>`);for(const id of ids){const own=me&&me.owned&&me.owned.has(id);rows.push(`<tr${own?' class="own"':''}><td>${esc(WPN[id].n[L])}${own?` <small>(${L?'owned — skipped':'보유 — 안 나옴'})</small>`:''}</td><td>${own?'—':pct(un.length?r/un.length:0)}</td></tr>`)}}
+  rows.push(`<tr class="h"><td>${L?'Coins':'코인'}</td><td>${pct(g.rate_coin)}</td></tr>`);for(const [c,w] of g.coin_table)rows.push(`<tr><td>${fmtC(c)} ${L?'coins':'코인'}</td><td>${pct(g.rate_coin*w/tot)}</td></tr>`);
+  const fn=g.frag_max-g.frag_min+1;rows.push(`<tr class="h"><td>${L?'Fragments':'복 조각'}</td><td>${pct(frag)}</td></tr>`);for(let k=g.frag_min;k<=g.frag_max;k++)rows.push(`<tr><td>${L?'Fragments':'조각'} ×${k}</td><td>${pct(frag/fn)}</td></tr>`);
+  gPop(L?'Odds':'확률 정보',`<table class="grt">${rows.join('')}</table><ul class="grl">
+    <li>${L?`S at the latest on the ${g.pity}th pull without one (the count shows on the pouch).`:`S가 안 나오면 ${g.pity}번째 뽑기에서 S 확정 (복주머니 아래 남은 횟수 표시).`}</li>
+    <li>${L?'Ten pulls hold at least one A or better.':'10회 뽑기는 A 이상이 1개 이상 나와요.'}</li>
+    <li>${L?`Guns you own never come up; their share goes to the ones you don't. A whole grade owned: an S pays ${fmtC(g.full_s_coins)} coins, an A ${g.full_a_frags} fragments.`:`이미 가진 무기는 나오지 않고 그 확률은 같은 등급의 남은 무기로 나뉘어요. 한 등급을 다 모으면 S는 ${fmtC(g.full_s_coins)} 코인, A는 조각 ${g.full_a_frags}개.`}</li>
+    <li>${L?'Every draw happens on the server; the game only shows the result.':'모든 결과는 서버에서 정해지고, 게임 화면은 결과만 보여줘요.'}</li></ul>`)}
+async function gPopHist(){const L=LI();gPop(L?'History':'뽑기 기록',`<div class="gload">${L?'Loading…':'불러오는 중…'}</div>`);let rows;
+  try{rows=await ACC.history()}catch(e){const b=document.querySelector('#gPop .gpb');if(b)b.innerHTML=`<div class="sbm bad">${esc(ACC.errText(e))}</div>`;return}
+  const b=document.querySelector('#gPop .gpb');if(!b)return;if(!rows||!rows.length){b.innerHTML=`<div class="gload">${L?'No pulls yet':'아직 뽑은 기록이 없어요'}</div>`;return}
+  b.innerHTML=`<table class="grt hist">${rows.map(x=>{const d=new Date(x.at),t=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const what=x.kind==='gun'?`<b class="t${x.tier}">[${x.tier}] ${esc((WPN[x.gun_id]||{n:[x.gun_id,x.gun_id]}).n[L])}</b>`:x.kind==='coins'?`${COIN}${fmtC(x.amount)}`:`${FRAG}×${x.amount}`;
+    const src=x.src==='free'?(L?'free':'무료'):x.src==='exchange'?(L?'exchange':'교환'):'';return `<tr${x.tier?' class="t'+x.tier+'"':''}><td>${t}</td><td>${what}${x.pity_hit?` <small>${L?'pity':'천장'}</small>`:''}</td><td><small>${src}</small></td></tr>`}).join('')}</table>`}
 
 // ---------- the account window: sign in / sign up / password / my account ----------
 const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
@@ -106,7 +232,7 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
       <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Save':'저장')}</button>`;
     else if(m==='sent')body=`<p class="anote big">${this.msg?esc(this.msg):''}</p><button class="ago" data-aa="mode" data-v="in">${L?'OK':'확인'}</button>`;
     else if(m==='me'&&me)body=`<div class="ame"><div class="amc">${COIN}<b>${fmtC(me.coins)}</b><small>${L?'coins':'코인'}</small></div>
-        <div class="ams"><span>${L?'Earned':'모은 코인'} <b>${fmtC(me.earned||0)}</b></span><span>${L?'Matches':'정산한 판'} <b>${fmtC(me.matches||0)}</b></span><span>${L?'Left today':'오늘 남은 보상'} <b>${fmtC(me.dayLeft==null?8000:me.dayLeft)}</b></span><span>${L?'Guns owned':'보유 총'} <b>${(me.owned?me.owned.size:0)+SHOP_FREE.length}</b></span></div>
+        <div class="ams"><span>${L?'Earned':'모은 코인'} <b>${fmtC(me.earned||0)}</b></span><span>${L?'Matches':'정산한 판'} <b>${fmtC(me.matches||0)}</b></span><span>${L?'Left today':'오늘 남은 보상'} <b>${fmtC(me.dayLeft==null?8000:me.dayLeft)}</b></span><span>${L?'Guns owned':'보유 총'} <b>${(me.owned?me.owned.size:0)+SHOP_FREE.length}</b></span><span>${L?'Fragments':'복 조각'} <b>${fmtC(me.frags||0)}</b></span><span>${L?'Pouch: S in':'S 확정까지'} <b>${Math.max(1,ACC.gc().pity-(me.pity||0))}</b></span></div>
         ${me.email?`<p class="anote">${esc(me.email)}</p>`:''}</div>
       <label>${L?'Nickname':'닉네임'}${inp('nick','text',esc(me.nickname),'nickname')}</label><button class="ago" data-aa="nick"${this.busy?' disabled':''}>${L?'Change nickname':'닉네임 바꾸기'}</button>
       <div class="arow"><button class="alink" data-aa="shop">${L?'Open the shop':'상점 열기'}</button><button class="alink red" data-aa="out">${L?'Sign out':'로그아웃'}</button></div>`;
@@ -138,7 +264,8 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
 // a short line on screen: in a match the HUD's note, in the lobby a toast
 function shopToast(t){if(G.st!=='menu'&&HUD.note){HUD.note(t,2.4);return}let el=$('qzToast');if(!el){el=document.createElement('div');el.id='qzToast';document.body.appendChild(el)}
   el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2600)}
-addEventListener('keydown',e=>{if(e.code!=='Escape')return;if($('accWin')){ACCW.close();e.stopPropagation();e.preventDefault()}else if($('shopWin')){SHOP.close();e.stopPropagation();e.preventDefault()}},true);
+addEventListener('keydown',e=>{if(e.code!=='Escape')return;const stop=()=>{e.stopPropagation();e.preventDefault()};
+  if($('gFx')){if(GFX.done)GFX.close();else GFX.finish();stop()}else if($('gPop')){$('gPop').remove();stop()}else if($('accWin')){ACCW.close();stop()}else if($('shopWin')){SHOP.close();stop()}},true);
 
 // ---------- the lobby: coins, sign-in and the shop button ----------
 function shopLobby(){const top=document.querySelector('#menu .lobTop');if(!top)return;const L=LI(),me=ACC.me,signed=ACC.signed();
@@ -148,7 +275,8 @@ function shopLobby(){const top=document.querySelector('#menu .lobTop');if(!top)r
     ch.innerHTML=signed||(me&&me.cached)?`<button class="acoin" data-act="shop" title="${L?'Coins':'코인'}">${COIN}<b>${fmtC(me.coins)}</b></button><button class="aname" data-act="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`
       :`<button class="alog" data-act="acc">${SVG_USER}<span>${L?'Sign in':'로그인'}</span></button>`;
     const pf=top.querySelector('.prof');if(pf)pf.after(ch);else top.prepend(ch)}
-  const tb=top.querySelector('.tbtns');if(tb&&!tb.querySelector('.tshop')){const b=document.createElement('button');b.className='tshop';b.dataset.act='shop';b.innerHTML=SVG_CART+`<span>${L?'Shop':'상점'}</span>`;tb.prepend(b)}}
+  const tb=top.querySelector('.tbtns');if(tb&&!tb.querySelector('.tshop')){const b=document.createElement('button');b.className='tshop';b.dataset.act='shop';b.innerHTML=SVG_CART+`<span>${L?'Shop':'상점'}</span>`;tb.prepend(b)}
+  const sb=tb&&tb.querySelector('.tshop');if(sb){const dot=sb.querySelector('.dot'),want=signed&&me.freeToday&&ACC.gc().daily_free;if(want&&!dot){const d=document.createElement('i');d.className='dot';d.title=L?'Free pull today':'오늘의 무료 뽑기';sb.appendChild(d)}else if(!want&&dot)dot.remove()}}
 
 // ---------- in a match: round money only buys guns you own ----------
 // (the shooting range lends every gun: try before you buy)
@@ -176,11 +304,11 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
   const act0=UI.act;UI.act=function(a,v,el){
     if(a==='shop'){SHOP.open();return}
     if(a==='acc'){ACCW.open(ACC.signed()?'me':'in');return}
-    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI();HUD.note(`${W?W.n[L]:''}: ${L?'buy it in the shop first':'상점에서 먼저 사야 해요'} (${fmtC(p&&p.price)} ${L?'coins':'코인'})`,2);AU.play('dry',{vol:.5});return}
+    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI();HUD.note(p&&p.tier?`${W?W.n[L]:''}: ${L?'only from the 근하신년 lucky pouch (lobby shop)':'근하신년 복주머니에서만 얻을 수 있어요 (로비 상점)'}`:`${W?W.n[L]:''}: ${L?'buy it in the shop first':'상점에서 먼저 사야 해요'} (${fmtC(p&&p.price)} ${L?'coins':'코인'})`,2.2);AU.play('dry',{vol:.5});return}
     return act0.call(this,a,v,el)};
   const rb=UI.renderBuy;UI.renderBuy=function(){const r=rb.apply(this,arguments);const P=G.player;if(!ACC.on||!P)return r;const L=LI();
     for(const el of document.querySelectorAll('#buy .bi[data-v]')){const id=el.dataset.v;if(!shopLocked(P,id))continue;const p=ACC.price(id);
-      el.classList.add('lk','na');el.dataset.act='buylk';const c=el.querySelector('.c');if(c)c.innerHTML=SVG_LOCK+`<small>${COIN}${fmtC(p&&p.price)}</small>`}
+      el.classList.add('lk','na');el.dataset.act='buylk';const c=el.querySelector('.c');if(c)c.innerHTML=SVG_LOCK+(p&&p.tier?`<small class="gb">${L?'pouch':'복주머니'}</small>`:`<small>${COIN}${fmtC(p&&p.price)}</small>`)}
     const h=document.querySelector('#buy h3');if(h&&!h.querySelector('.bcoin')){const s=document.createElement('span');s.className='bcoin';s.innerHTML=ACC.signed()?`${COIN}${fmtC(ACC.me.coins)} · ${L?'locked guns are bought in the lobby shop':'잠긴 총은 로비 상점에서 구매'}`:(L?'Guest: free guns only — sign in to unlock more':'게스트: 기본 총만 — 로그인하면 더 많은 총');h.appendChild(s)}
     return r};
   const bi=Main.buyItem;Main.buyItem=function(id){const P=G.player;if(shopLocked(P,id)){UI.act('buylk',id);return}return bi.call(this,id)};
@@ -195,6 +323,6 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
     if(ACC.signed()&&kind){shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname);return}
     // first visit: offer to sign in once the lobby is on screen (the boot can still be painting characters)
     let seen=null;try{seen=LS.get('accSeen',null)}catch(e){}
-    const ask=n=>{if(ACC.signed()||$('accWin')||G.st!=='menu')return;if(UI.open==='menu')ACCW.open('in');else if(n<60)setTimeout(()=>ask(n+1),700)};
+    const ask=n=>{if(ACC.ses||ACC.signed()||$('accWin')||$('shopWin')||G.st!=='menu')return;if(UI.open==='menu')ACCW.open('in');else if(n<60)setTimeout(()=>ask(n+1),700)};
     if(ACC.on&&!ACC.signed()&&!seen)setTimeout(()=>ask(0),700)}).catch(e=>console.error(e));
 })();

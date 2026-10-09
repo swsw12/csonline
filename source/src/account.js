@@ -7,7 +7,7 @@
 // SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
 const SB={url:'',key:'',oauth:[]};
 if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
-const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,ready:false,busy:false,subs:[],lastErr:'',
+const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
   sub(fn){this.subs.push(fn)},
@@ -35,13 +35,14 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,ready:false,busy:f
       else{this.setSes({access_token:q.get('access_token'),refresh_token:q.get('refresh_token'),expires_at:+q.get('expires_at')||0,expires_in:q.get('expires_in')});kind=q.get('type')}
       try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
     else this.ses=this.ls('qz_ses');
-    this.loadPrices();
+    this.loadPrices();this.loadGacha();
     if(this.ses){try{await this.fresh();if(!this.ses.user)this.ses.user=await this.req('GET','/auth/v1/user',null,true);await this.loadMe()}catch(e){if(!e.net){this.setSes(null);this.me=null}}}
     else this.me=null;
     this.ready=true;this.emit();return kind},
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
+  async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      email:this.ses&&this.ses.user&&this.ses.user.email||''};
+      frags:r.fragments|0,pity:r.pity|0,freeToday:!!r.free_today,email:this.ses&&this.ses.user&&this.ses.user.email||''};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();return this.me},
   // ---- the player's actions ----
   async signIn(email,pw){const s=await this.req('POST','/auth/v1/token?grant_type=password',{email,password:pw},false);this.setSes(s);await this.loadMe();return this.me},
@@ -54,13 +55,23 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,ready:false,busy:f
   async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.ls('qz_me',null);this.emit()},
   async setNick(n){const r=await this.rpc('qz_set_nickname',{p_nick:n});if(this.me){this.me.nickname=r;this.ls('qz_me',{...this.ls('qz_me'),nickname:r})}this.emit();return r},
   async buy(id){const r=await this.rpc('qz_buy',{p_gun:id});if(this.me){this.me.coins=r.coins;this.me.owned.add(id);this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,owned:[...this.me.owned]})}this.emit();return r},
+  // the lucky pouch: n = 1 or 10, free = today's free pull. Returns {results:[{kind,tier,gun,amount,pity}],coins,fragments,pity,free_today}
+  async pull(n,free){const r=await this.rpc('qz_pull',{p_count:n,p_free:!!free});const me=this.me;
+    if(me){me.coins=r.coins;me.frags=r.fragments;me.pity=r.pity;me.freeToday=!!r.free_today;for(const x of r.results||[])if(x.kind==='gun'&&x.gun)me.owned.add(x.gun);this.saveMe()}
+    this.emit();return r},
+  async exchange(id){const r=await this.rpc('qz_exchange',{p_gun:id});const me=this.me;if(me){me.frags=r.fragments;me.owned.add(id);this.saveMe()}this.emit();return r},
+  async history(){return await this.call('GET','/rest/v1/gacha_log?select=at,src,kind,tier,gun_id,amount,pity_hit&order=id.desc&limit=50',null)},
+  saveMe(){const me=this.me;if(!me)return;this.ls('qz_me',{...this.ls('qz_me'),coins:me.coins,owned:[...me.owned],nickname:me.nickname})},
+  gc(){return Object.assign({},GACHA_DEF,this.gcfg||{})},
   async claim(st){const r=await this.rpc('qz_claim',{p_mode:st.mode,p_rounds:st.rounds|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
       p_won:!!st.won,p_mvp:!!st.mvp,p_stage:st.stage|0,p_cleared:!!st.cleared});
     if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins})}this.emit();return r},
   // ---- questions the game asks ----
   signed(){return !!(this.on&&this.ses&&this.me&&!this.me.cached)},
   price(id){const P=this.prices&&this.prices[id];if(P)return P;if(SHOP_FREE.includes(id))return {gun_id:id,price:0,free:true,sold:true};
-    if(SHOP_NOTSOLD.includes(id))return {gun_id:id,price:0,free:false,sold:false};const p=SHOP_PRICE[id];return p==null?null:{gun_id:id,price:p,free:false,sold:true}},
+    if(SHOP_NOTSOLD.includes(id))return {gun_id:id,price:0,free:false,sold:false};for(const t of ['S','A'])if(SHOP_GACHA[t].includes(id))return {gun_id:id,price:0,free:false,sold:false,tier:t};
+    const p=SHOP_PRICE[id];return p==null?null:{gun_id:id,price:p,free:false,sold:true}},
+  tier(id){const p=this.price(id);return p&&p.tier||null},
   isFree(id){const p=this.price(id);return !!(p&&p.free)},
   // may this player use (buy with round money) this gun? With accounts off, everything is open
   owns(id){if(!this.on)return true;const W=WPN[id];if(!W||W.kind==='nade'||!W.model)return true;const p=this.price(id);if(!p)return true;if(p.free)return true;
@@ -77,6 +88,11 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,ready:false,busy:f
     if(/rate limit|over_email_send_rate_limit|too many/i.test(c+m))return T2('요청이 너무 많아요. 잠시 후 다시 해 주세요','Too many tries. Wait a moment and try again');
     if(/signup_disabled|Signups not allowed/i.test(c+m))return T2('지금은 가입을 받지 않아요','Sign-ups are closed right now');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
+    if(/not_enough_frags/.test(m))return T2('복 조각이 부족해요','Not enough fragments');
+    if(/gacha_only/.test(m))return T2('근하신년 무기는 복주머니에서만 얻을 수 있어요','근하신년 guns only come from the lucky pouch');
+    if(/free_used/.test(m))return T2('오늘 무료 뽑기는 이미 했어요','Today\'s free pull is used');
+    if(/not_for_exchange/.test(m))return T2('교환할 수 없는 총이에요','That gun cannot be exchanged');
+    if(/bad_count|no_config/.test(m))return T2('복주머니 설정을 확인해 주세요','Pouch settings are off');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');
