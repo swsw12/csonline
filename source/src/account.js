@@ -7,7 +7,7 @@
 // functions in supabase/schema.sql. Never put the secret / service_role key here. Left empty, accounts are off and every gun
 // stays open as before.
 // SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
-const SB={url:'',key:'',oauth:[]};
+const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
 if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
 const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
