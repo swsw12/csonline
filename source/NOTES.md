@@ -397,3 +397,17 @@
   already_imported). Results box shows "+N XP". Tests: scratch shop/rc1 (import, match +956 xp, local untouched, sign-out → guest
   record, second account not imported); local PG r1.sql (claims, too_soon, caps, import once, anon denied, 6.8.1 upgrade).
 
+## v6.10 — 근하신년 decoder bingo replaces the lucky pouch
+- User chose numbers 0-49 and 600 coins (10 for 5,400); kept defaults: 1-3 fragments per decoder, shuffle 3/day free, reset free,
+  1 free decoder a day. Sim (20k cards): first line ≈ 29 decoders, 6 lines ≈ 43, all 12 ≈ 49 (max 50).
+- Server: gacha_config + dec_cost1/dec_cost10/bingo_hi/dec_frag_min/dec_frag_max/shuffle_free (old pouch columns unused);
+  profiles + shuffle_day/shuffles; bingo_boards(user_id, nums[25], marked[25], drawn[], rewards[12], done[12], boards) read-own RLS.
+  qz_bingo_new(uid) (internal), qz_bingo_json(uid) (internal), qz_bingo(), qz_decode(p_count 1|10, p_free), qz_bingo_reset(),
+  qz_bingo_shuffle(); qz_pull dropped. Lines: rows 0-4, cols 5-9, diag TL 10, diag TR 11. A full card → new card mid-batch
+  (draw.card counts cards in the batch). Tested on local PG (30 cards: 12 lines each, all 12 guns once, then substitutes).
+- Client: ACC.loadBingo/decode/bingoReset/bingoShuffle, ACC.bingo. SHOP.bingoPage (decoderSvg, read-out #bNum, buttons, stats,
+  reset confirm, shuffle, rules/history), boardHtml = 7×6 grid: row rewards left, column rewards bottom, TR diagonal bottom-left,
+  TL diagonal bottom-right. decode → anim {view, draws}: roll 560 ms (ten 300), stamp, gold line flash, then GFX.show(lines) cards
+  (BINGO!, NEW, line label) with again. Skip button. Hover a reward → .hl on its cells. Mock: __MOCK_SEQ / __MOCK_CARD.
+  Test: scratch shop/bt1.json (free + forced ten finishing row 1 + col 1, shuffle, NY buy refused), bt2 phone.
+

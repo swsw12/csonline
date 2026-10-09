@@ -1,14 +1,14 @@
 -- ============================================================================================================
--- QUARANTINE Z — accounts, coins, the gun shop and the 근하신년 lucky pouch (Supabase)
+-- QUARANTINE Z — accounts, coins, the gun shop and the 근하신년 decoder bingo (Supabase)
 -- Supabase 대시보드 → SQL Editor → New query → 이 파일 전체를 붙여넣고 Run. 여러 번 실행해도 안전합니다.
 --
 -- 규칙
 --   * 코인 · 조각 · 보유 총은 테이블에 직접 쓸 수 없고(RLS: 자기 것 읽기만), 아래 함수로만 바뀝니다.
 --   * 총 가격은 gun_prices 테이블이 기준입니다 (게임 화면도 그 값을 씀). tier = 'S' / 'A' 는 근하신년 무기:
---     상점에서 팔지 않고 복주머니(뽑기)와 조각 교환으로만 얻습니다.
+--     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다.
 --   * 판 보상은 서버가 계산합니다: 판당 최대 900, 지난 보상 뒤 1분당 80까지, 하루(한국 시간) 8,000까지,
 --     그날 첫 판 +200. 가입하면 3,000 코인.
---   * 복주머니 숫자(가격 · 확률 · 천장 · 교환 가격)는 gacha_config 테이블 한 줄에 있습니다. 거기서 바꾸면 바로 적용.
+--   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에 있습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -76,6 +76,27 @@ create table if not exists public.gacha_config (
   ex_a         integer not null default 80,
   daily_free   boolean not null default true
 );
+-- the decoder bingo (v6.10): what the pouch columns above became
+alter table public.gacha_config add column if not exists dec_cost1    integer not null default 600;   -- one decoder
+alter table public.gacha_config add column if not exists dec_cost10   integer not null default 5400;  -- ten
+alter table public.gacha_config add column if not exists bingo_hi     integer not null default 49;    -- numbers 0 .. this (24 at least)
+alter table public.gacha_config add column if not exists dec_frag_min integer not null default 1;     -- fragments every decoder gives
+alter table public.gacha_config add column if not exists dec_frag_max integer not null default 3;
+alter table public.gacha_config add column if not exists shuffle_free integer not null default 3;     -- shuffles a day
+alter table public.profiles add column if not exists shuffle_day date;
+alter table public.profiles add column if not exists shuffles integer not null default 0;
+-- one bingo card per player: 25 numbers (cells 0..24, row by row), the numbers drawn so far, a 근하신년 gun on each of the 12 lines
+-- (rows 1-5, columns 6-10, the diagonal from the top left 11, from the top right 12)
+create table if not exists public.bingo_boards (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  nums       integer[] not null,
+  marked     boolean[] not null,
+  drawn      integer[] not null default '{}',
+  rewards    text[]    not null,
+  done       boolean[] not null,
+  boards     integer   not null default 1,   -- how many cards this player has had
+  updated_at timestamptz not null default now()
+);
 insert into public.gacha_config (id) values (1) on conflict (id) do nothing;
 create table if not exists public.gacha_log (
   id       bigint generated always as identity primary key,
@@ -97,6 +118,7 @@ alter table public.owned_guns   enable row level security;
 alter table public.coin_log     enable row level security;
 alter table public.gacha_config enable row level security;
 alter table public.gacha_log    enable row level security;
+alter table public.bingo_boards enable row level security;
 drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile" on public.profiles for select to authenticated using ((select auth.uid()) = id);
 drop policy if exists "read prices" on public.gun_prices;
@@ -109,6 +131,8 @@ drop policy if exists "read pouch numbers" on public.gacha_config;
 create policy "read pouch numbers" on public.gacha_config for select to anon, authenticated using (true);
 drop policy if exists "read own pulls" on public.gacha_log;
 create policy "read own pulls" on public.gacha_log for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists "read own card" on public.bingo_boards;
+create policy "read own card" on public.bingo_boards for select to authenticated using ((select auth.uid()) = user_id);
 
 -- ---------- price list (re-running updates it; tier S / A = pouch only) ----------
 insert into public.gun_prices (gun_id, price, free, sold, tier) values
@@ -324,11 +348,45 @@ begin
   return jsonb_build_object('rec', public.qz_rec(p));
 end $$;
 
--- ---------- the 근하신년 lucky pouch ----------
--- one or ten pulls (or today's free one). Everything is drawn here: S / A / coins / fragments by gacha_config's rates,
--- an S on the pity-th pull at the latest, guns you own never come up again (a full tier pays coins or fragments instead),
--- and ten pulls hold at least one S or A.
-create or replace function public.qz_pull(p_count integer, p_free boolean default false) returns jsonb
+-- ---------- the 근하신년 decoder bingo ----------
+drop function if exists public.qz_pull(integer, boolean);   -- the old lucky pouch
+-- a new card: 25 different numbers from 0..bingo_hi, the 근하신년 guns shuffled onto the 12 lines
+create or replace function public.qz_bingo_new(uid uuid) returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  hi integer := greatest(coalesce((select c.bingo_hi from public.gacha_config c where c.id = 1), 49), 24);
+  v_nums integer[];
+  v_rw text[];
+begin
+  v_nums := (select array_agg(s.x) from (select x from generate_series(0, hi) x order by random() limit 25) s);
+  v_rw := coalesce((select array_agg(g.gun_id order by random()) from public.gun_prices g where g.tier is not null), '{}');
+  insert into public.bingo_boards (user_id, nums, marked, drawn, rewards, done, boards, updated_at)
+  values (uid, v_nums, array_fill(false, array[25]), '{}', v_rw[1:12], array_fill(false, array[12]), 1, now())
+  on conflict (user_id) do update set nums = excluded.nums, marked = excluded.marked, drawn = excluded.drawn, rewards = excluded.rewards,
+    done = excluded.done, boards = public.bingo_boards.boards + 1, updated_at = now();
+end $$;
+-- the card as the game reads it
+create or replace function public.qz_bingo_json(uid uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('nums', b.nums, 'marked', b.marked, 'drawn', b.drawn, 'rewards', b.rewards, 'done', b.done, 'boards', b.boards,
+    'shuffles_left', greatest(0, coalesce((select c.shuffle_free from public.gacha_config c where c.id = 1), 3)
+      - (select case when p.shuffle_day = (now() at time zone 'Asia/Seoul')::date then p.shuffles else 0 end from public.profiles p where p.id = uid)))
+  from public.bingo_boards b where b.user_id = uid
+$$;
+-- my card (a first one is made on the spot)
+create or replace function public.qz_bingo() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.bingo_boards where user_id = uid;
+  if not found then perform public.qz_bingo_new(uid); end if;
+  return public.qz_bingo_json(uid);
+end $$;
+-- open one or ten decoders (or today's free one). Each shows a number nobody has drawn on this card yet; a number on the card is
+-- stamped, and every line it completes pays its gun (owned already: an S line pays full_s_coins, an A line full_a_frags fragments).
+-- Every decoder also gives dec_frag_min..dec_frag_max fragments. A full card (all 25 stamped) is replaced by a new one at once.
+create or replace function public.qz_decode(p_count integer, p_free boolean default false) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
@@ -336,19 +394,24 @@ declare
   p public.profiles;
   today date := (now() at time zone 'Asia/Seoul')::date;
   n integer := coalesce(p_count, 1);
-  v_src text := case when p_free then 'free' else 'pull' end;
+  v_src text := case when p_free then 'free' else 'decode' end;
   v_cost integer := 0;
+  hi integer;
+  lines integer[] := array[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+                           [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+                           [0,6,12,18,24],[4,8,12,16,20]];
+  v_nums integer[]; v_marked boolean[]; v_drawn integer[]; v_rw text[]; v_done boolean[];
   v_owned text[];
-  v_pity integer;
-  v_res jsonb := '[]'::jsonb;
-  v_tier text; v_gun text; v_kind text; v_amt integer; v_hit boolean;
-  r double precision; w integer; acc integer; tot integer; e jsonb;
-  coins_won integer := 0; frags_won integer := 0; got_sa boolean := false;
+  v_res jsonb := '[]'::jsonb; v_new jsonb;
+  v_num integer; v_pos integer; v_full boolean; v_gun text; v_tier text; v_kind text; v_amt integer; f integer;
+  v_card integer := 0;
+  coins_won integer := 0; frags_won integer := 0;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   if n not in (1, 10) then raise exception 'bad_count'; end if;
   cfg := (select g from public.gacha_config g where g.id = 1);
   if cfg.id is null then raise exception 'no_config'; end if;
+  hi := greatest(cfg.bingo_hi, 24);
   perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
   p := (select t from public.profiles t where t.id = uid);
@@ -356,52 +419,110 @@ begin
     if n <> 1 or not cfg.daily_free then raise exception 'bad_count'; end if;
     if p.free_day = today then raise exception 'free_used'; end if;
   else
-    v_cost := case when n = 10 then cfg.cost10 else cfg.cost1 end;
+    v_cost := case when n = 10 then cfg.dec_cost10 else cfg.dec_cost1 end;
     if p.coins < v_cost then raise exception 'not_enough_coins'; end if;
   end if;
+  perform 1 from public.bingo_boards where user_id = uid for update;
+  if not found then perform public.qz_bingo_new(uid); end if;
+  v_nums := (select b.nums from public.bingo_boards b where b.user_id = uid);
+  v_marked := (select b.marked from public.bingo_boards b where b.user_id = uid);
+  v_drawn := (select b.drawn from public.bingo_boards b where b.user_id = uid);
+  v_rw := (select b.rewards from public.bingo_boards b where b.user_id = uid);
+  v_done := (select b.done from public.bingo_boards b where b.user_id = uid);
   v_owned := (select coalesce(array_agg(o.gun_id), '{}') from public.owned_guns o where o.user_id = uid);
-  tot := (select coalesce(sum((x.value ->> 1)::integer), 0) from jsonb_array_elements(cfg.coin_table) as x(value));
-  v_pity := p.pity;
   for i in 1..n loop
-    v_pity := v_pity + 1; r := random(); v_tier := null; v_gun := null; v_amt := 0; v_hit := false;
-    if r < cfg.rate_s or v_pity >= cfg.pity then
-      v_tier := 'S'; v_hit := r >= cfg.rate_s; v_pity := 0;
-    elsif r < cfg.rate_s + cfg.rate_a then
-      v_tier := 'A';
-    elsif n = 10 and i = 10 and not got_sa then
-      v_tier := 'A';  -- ten pulls hold at least one S or A
-    end if;
-    if v_tier is not null then
-      got_sa := true;
-      v_gun := (select gp.gun_id from public.gun_prices gp where gp.tier = v_tier and not (gp.gun_id = any(v_owned)) order by random() limit 1);
-      if v_gun is not null then
-        v_kind := 'gun'; v_owned := v_owned || v_gun;
-        insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, v_gun, 0);
-      elsif v_tier = 'S' then
-        v_kind := 'coins'; v_amt := cfg.full_s_coins;
-      else
-        v_kind := 'frags'; v_amt := cfg.full_a_frags;
-      end if;
-    elsif r < cfg.rate_s + cfg.rate_a + cfg.rate_coin then
-      v_kind := 'coins'; w := floor(random() * greatest(tot, 1))::integer; acc := 0; v_amt := 100;
-      for e in select x.value from jsonb_array_elements(cfg.coin_table) as x(value) loop
-        acc := acc + (e ->> 1)::integer;
-        if w < acc then v_amt := (e ->> 0)::integer; exit; end if;
+    v_num := (select x from generate_series(0, hi) x where not (x = any(v_drawn)) order by random() limit 1);
+    v_drawn := v_drawn || v_num;
+    v_pos := array_position(v_nums, v_num);
+    v_new := '[]'::jsonb;
+    if v_pos is not null then
+      v_marked[v_pos] := true;
+      for k in 1..12 loop
+        if not v_done[k] then
+          v_full := true;
+          for j in 1..5 loop
+            if not v_marked[lines[k][j] + 1] then v_full := false; exit; end if;
+          end loop;
+          if v_full then
+            v_done[k] := true; v_gun := v_rw[k];
+            v_tier := (select g.tier from public.gun_prices g where g.gun_id = v_gun);
+            v_amt := 0;
+            if v_gun is not null and not (v_gun = any(v_owned)) then
+              v_kind := 'gun'; v_owned := v_owned || v_gun;
+              insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, v_gun, 0);
+            elsif v_tier = 'S' or v_gun is null then
+              v_kind := 'coins'; v_amt := cfg.full_s_coins; coins_won := coins_won + v_amt;
+            else
+              v_kind := 'frags'; v_amt := cfg.full_a_frags; frags_won := frags_won + v_amt;
+            end if;
+            insert into public.gacha_log (user_id, src, kind, tier, gun_id, amount) values (uid, v_src, v_kind, v_tier, v_gun, v_amt);
+            v_new := v_new || jsonb_build_array(jsonb_build_object('line', k - 1, 'kind', v_kind, 'gun', v_gun, 'tier', v_tier, 'amount', v_amt));
+          end if;
+        end if;
       end loop;
-    else
-      v_kind := 'frags'; v_amt := cfg.frag_min + floor(random() * (cfg.frag_max - cfg.frag_min + 1))::integer;
     end if;
-    if v_kind = 'coins' then coins_won := coins_won + v_amt; elsif v_kind = 'frags' then frags_won := frags_won + v_amt; end if;
-    insert into public.gacha_log (user_id, src, kind, tier, gun_id, amount, pity_hit) values (uid, v_src, v_kind, v_tier, v_gun, v_amt, v_hit);
-    v_res := v_res || jsonb_build_array(jsonb_build_object('kind', v_kind, 'tier', v_tier, 'gun', v_gun, 'amount', v_amt, 'pity', v_hit));
+    f := cfg.dec_frag_min + floor(random() * (cfg.dec_frag_max - cfg.dec_frag_min + 1))::integer;
+    frags_won := frags_won + f;
+    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'card', v_card));
+    -- a full card makes way for a new one (the rest of a ten goes on the new card)
+    if not (false = any(v_marked)) or array_length(v_drawn, 1) > hi then
+      update public.bingo_boards set marked = v_marked, drawn = v_drawn, done = v_done where user_id = uid;
+      perform public.qz_bingo_new(uid);
+      v_card := v_card + 1;
+      v_nums := (select b.nums from public.bingo_boards b where b.user_id = uid);
+      v_marked := (select b.marked from public.bingo_boards b where b.user_id = uid);
+      v_drawn := '{}'; v_rw := (select b.rewards from public.bingo_boards b where b.user_id = uid);
+      v_done := (select b.done from public.bingo_boards b where b.user_id = uid);
+    end if;
   end loop;
-  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, pity = v_pity,
+  update public.bingo_boards set marked = v_marked, drawn = v_drawn, done = v_done, updated_at = now() where user_id = uid;
+  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won,
     free_day = case when p_free then today else free_day end where id = uid;
   p := (select t from public.profiles t where t.id = uid);
-  if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'pouch', jsonb_build_object('pulls', n)); end if;
-  if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'pouch_win'); end if;
-  return jsonb_build_object('results', v_res, 'coins', p.coins, 'fragments', p.fragments, 'pity', p.pity, 'cost', v_cost,
+  if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'decoder', jsonb_build_object('count', n)); end if;
+  if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'bingo_win'); end if;
+  return jsonb_build_object('draws', v_res, 'card', public.qz_bingo_json(uid), 'coins', p.coins, 'fragments', p.fragments, 'cost', v_cost,
     'free_today', cfg.daily_free and p.free_day is distinct from today);
+end $$;
+-- a fresh card (what was stamped on this one is gone)
+create or replace function public.qz_bingo_reset() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  perform public.qz_bingo_new(uid);
+  return public.qz_bingo_json(uid);
+end $$;
+-- move the numbers not stamped yet to other unstamped cells (shuffle_free times a day)
+create or replace function public.qz_bingo_shuffle() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  p public.profiles;
+  today date := (now() at time zone 'Asia/Seoul')::date;
+  used integer;
+  v_nums integer[]; v_marked boolean[]; v_idx integer[]; v_vals integer[];
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
+  used := case when p.shuffle_day = today then p.shuffles else 0 end;
+  if used >= coalesce((select c.shuffle_free from public.gacha_config c where c.id = 1), 3) then raise exception 'no_shuffles'; end if;
+  perform 1 from public.bingo_boards where user_id = uid for update;
+  if not found then perform public.qz_bingo_new(uid); end if;
+  v_nums := (select b.nums from public.bingo_boards b where b.user_id = uid);
+  v_marked := (select b.marked from public.bingo_boards b where b.user_id = uid);
+  v_idx := (select array_agg(i) from generate_subscripts(v_marked, 1) i where not v_marked[i]);
+  if v_idx is not null then
+    v_vals := (select array_agg(v_nums[i] order by random()) from unnest(v_idx) i);
+    for j in 1..array_length(v_idx, 1) loop v_nums[v_idx[j]] := v_vals[j]; end loop;
+  end if;
+  update public.bingo_boards set nums = v_nums, updated_at = now() where user_id = uid;
+  update public.profiles set shuffle_day = today, shuffles = used + 1 where id = uid;
+  return public.qz_bingo_json(uid);
 end $$;
 
 -- a pouch gun of your choice for fragments
@@ -438,7 +559,12 @@ revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
 revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer) from public, anon;
-revoke all on function public.qz_pull(integer, boolean) from public, anon;
+revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;
+revoke all on function public.qz_bingo_json(uuid) from public, anon, authenticated;
+revoke all on function public.qz_bingo() from public, anon;
+revoke all on function public.qz_decode(integer, boolean) from public, anon;
+revoke all on function public.qz_bingo_reset() from public, anon;
+revoke all on function public.qz_bingo_shuffle() from public, anon;
 revoke all on function public.qz_exchange(text) from public, anon;
 revoke all on function public.qz_import_rec(integer, integer, integer, integer, integer) from public, anon;
 revoke all on function public.qz_rec(public.profiles) from public, anon, authenticated;
@@ -446,6 +572,9 @@ grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
 grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer) to authenticated;
-grant execute on function public.qz_pull(integer, boolean) to authenticated;
+grant execute on function public.qz_bingo() to authenticated;
+grant execute on function public.qz_decode(integer, boolean) to authenticated;
+grant execute on function public.qz_bingo_reset() to authenticated;
+grant execute on function public.qz_bingo_shuffle() to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;
 grant execute on function public.qz_import_rec(integer, integer, integer, integer, integer) to authenticated;
