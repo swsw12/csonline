@@ -279,3 +279,26 @@
 - Sounds: chg, hkslap, cylspin, sawpull, spinup, xbowcock, hiss (audio.js), entries in design.js.
 - Tests: logic (AK first draw 1.4 s with action, second draw quick; reload 10→31, empty→30; MAC-10 30; dual 32); contact sheets of all 40
   first-draw actions (scratchpad fd/); bot matches on 4 maps without errors.
+
+## v6.5.1 — first-draw motions rebuilt (vmdraw.js v2)
+- Clips instead of formulas: FDS[act](P,G,m,L) returns {G gun pose track, H/R hand tracks, parts, spins, E timed events, C camera, vib,
+  D/DP dual}. L = clip seconds; the clip runs from raise*.62 (overlapping the raise) to raise+fd.x (gun ready). Tracks are monotone cubic
+  (fdSlopes/fdHerm, PCHIP: flat ends, no overshoot between keys); part keys can carry a mode (1 = accelerate into a dead stop, 2 = snap away).
+- Parts: keyed while held, released at `rel` to fly home under constant acceleration A with restitution e (4 substeps); the first impact
+  fires `home` [sound, vol, rate, gun impulse [py,rx,rz,pz], camera impulse] — sounds are synced to impacts, so new SFX start at t=0
+  (fdslam, fdhome, pumpf; pumpb knocks at .055 s; fdgrab).
+- Spins: kick + friction or a motor track, `stop`+`snap` index onto a chamber; the gun twists against the (smoothed) acceleration and buzzes,
+  both fading over the last 14 %.
+- Hands: anchors {sup}/{grip}/{p}/{tag,at,ride} (riding applies the tag's current transform); key HK(u, anchor, offset, w, back, curl).
+  fdArm: the wrist sits .045 behind the palm point toward an elbow anchor in camera space (FD_ELB, a clip may set H.elb/R.elb), lookAt with
+  the back of the hand as up. The back vectors become rolls about the forearm, unwrapped key to key once (S._a0) and eased — no flips when the
+  palm turns over (route through a sideways key to choose the wrist's direction). Blend from the rest quaternion q0 by w with a sign-continuous
+  target and a raw slerp (THREE's shortest-path slerp jumped when the hand passed half a turn from rest). VM.actArms runs after the root
+  transform is written (vm.js); vm.js resets arm position/quaternion/finger curl and tag scale every frame.
+- Jointed gun hands (gunart.js armMesh): palm + one knuckle-row group (prox) + middle-joint group (dist) + two-part thumb; vmHandCurl(g,c)
+  (0 open .. 1 fist; rest .95 right / .82 left). Left arm built with o.left (thumb on +x).
+- Models: pistols (p9, f7, d50, tw9/tw9b) have a fixed barrel under the slide's nose (crown moved out of the slide tag) so racking shows it;
+  sr8/r700 bolt pivot on the bore (piv.bolt) — the after-shot bolt cycle was turning about the grip.
+- Ripper: VMX.ripper keeps the engine loop silent until the clip's 'eng' event (second pull catches).
+- Tests: scratch fd3/ — var.js variant/contact sheets (bright neutral background, crop), pops.js (every clip at 120 Hz: no NaN, no frame
+  jumps, max wrist roll ~20°/step), smoke runs (buy, first draw, fire, reload, switch) for 14 guns without errors, logic test unchanged.

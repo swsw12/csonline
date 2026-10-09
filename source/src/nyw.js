@@ -367,7 +367,8 @@ const VMX={
   ripper(V,a,dt,o,m){const rev=a.sawRev||0;const j=.0012+rev*.0035+(a.sawBite||0)*.004;a.sawBite=Math.max(0,(a.sawBite||0)-dt*6);o[0]+=rr(-j,j);o[1]+=rr(-j,j);o[3]+=rr(-j,j)*3;
     if(a.sawCut){o[2]-=.05;o[3]+=.04}const T=m.tags.spin;if(T){T.rotation.set(0,0,0);T.position.z+=Math.sin(V.t*90*(.3+rev))*.004}
     if(V.nySwing>0){V.nySwing=Math.max(0,V.nySwing-dt);const p=1-V.nySwing/.55;kfv(NY_SW,p,_vk);for(let i=0;i<6;i++)o[i]+=_vk[i];V.camRoll+=_vk[5]*.05;V.camYaw+=_vk[4]*.03}
-    AU.saw&&AU.saw(a.alive?Math.max(.25,rev):0,a.sawCut)},
+    // first draw: the engine stays dead until the starter cord catches (vmdraw.js saw clip)
+    const eng=V.act&&V.act.P&&V.act.P.act==='saw'?V.act.eng:1;AU.saw&&AU.saw(a.alive?Math.max(.25,rev)*eng:0,a.sawCut)},
   sterling(V,a,dt,o){if(V.nyStab>0){V.nyStab=Math.max(0,V.nyStab-dt);const p=1-V.nyStab/.38;const s=p<.35?smooth(p/.35):1-smooth((p-.35)/.65);o[2]-=s*.2;o[1]+=s*.03;o[3]-=s*.08}},
   mdrill(V,a,dt,o,m){const T=m.tags.spin;V.nyDrA=(V.nyDrA||0)+dt*((V.nyDrill>0?60:0)+(a.cmd.fire&&a.lastFire>G.t-.2?25:0));if(T)T.rotation.z=V.nyDrA;
     if(V.nyDrill>0){V.nyDrill=Math.max(0,V.nyDrill-dt);const p=1-V.nyDrill/1.1;const s=p<.12?smooth(p/.12):p>.86?1-smooth((p-.86)/.14):1;o[2]-=s*.16;o[0]-=s*.04;o[0]+=rr(-.004,.004)*s;o[1]+=rr(-.004,.004)*s}},

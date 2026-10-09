@@ -131,21 +131,21 @@ const GUNS={
   hammer:{parts:[Pt(0,0,-.36,.032,.034,.98,'wood3'),Pt(0,0,.05,.038,.04,.16,'rub'),Pt(0,0,.135,.042,.046,.014,'blk'),Pt(0,0,-.3,.037,.039,.15,'grip2'),Pt(0,0,-.715,.044,.048,.07,'blk'),
     Pt(0,0,-.81,.09,.25,.1,'forged'),Pt(0,.137,-.81,.098,.024,.108,'chrome'),Pt(0,-.137,-.81,.098,.024,.108,'chrome'),Pt(0,0,-.81,.094,.05,.104,'bluesteel'),Pt(0,0,-.866,.03,.03,.012,'blk')],
     grip:[0,0,0],sup:[0,0,-.3],muzzle:[0,.14,-.81],armR:[.29,.06,.96],armL:[-.08,.66,.74]},
-  p9:{parts:[...TAG('slide',[Pt(0,.045,-.06,.03,.034,.19,'blk'),Pt(0,.047,-.155,.012,.012,.008,'muzzle'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.14,.006,.008,.006,'steel'),
+  p9:{parts:[Pt(0,.047,-.155,.012,.012,.008,'muzzle'),Pt(0,.047,-.124,.013,.013,.058,'steel'),...TAG('slide',[Pt(0,.045,-.06,.03,.034,.19,'blk'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.14,.006,.008,.006,'steel'),
       Pt(.0152,.05,-.02,.002,.018,.05,'muzzle'),Pt(.0152,.044,.02,.002,.026,.004,'blk2'),Pt(.0152,.044,.012,.002,.026,.004,'blk2'),Pt(.0152,.044,.004,.002,.026,.004,'blk2'),Pt(-.0152,.044,.02,.002,.026,.004,'blk2'),Pt(-.0152,.044,.012,.002,.026,.004,'blk2')]),
     Pt(0,.02,-.06,.028,.02,.17,'blk2'),Pt(0,.009,-.11,.024,.008,.06,'rail'),...pGrip('grip2',-.035,.012,.22),...TAG('mag',[Pt(0,-.087,.024,.031,.012,.048,'blk',{rx:.22})]),...tGuard(-.035),Pt(.0145,.022,-.03,.004,.006,.012,'steel')],
     grip:[0,-.02,.005],sup:[-.012,-.045,.01],muzzle:[0,.047,-.16],mag:[0,-.07,.02],eject:[.02,.05,-.03]},
   // Dual Berettas: right hand deep red (black-clouded), left hand deep yellow; alt = the left-hand twin
-  tw9:{parts:[...TAG('slide',[Pt(0,.045,-.065,.03,.034,.2,'dred'),Pt(0,.047,-.165,.012,.012,.008,'muzzle'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.15,.006,.008,.006,'steel'),Pt(.0152,.05,-.02,.002,.018,.05,'muzzle')]),
+  tw9:{parts:[Pt(0,.047,-.165,.012,.012,.008,'muzzle'),Pt(0,.047,-.134,.013,.013,.058,'steel'),...TAG('slide',[Pt(0,.045,-.065,.03,.034,.2,'dred'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.15,.006,.008,.006,'steel'),Pt(.0152,.05,-.02,.002,.018,.05,'muzzle')]),
     Pt(0,.02,-.06,.028,.02,.17,'dred'),...pGrip('grip2',-.035,.012,.2),...TAG('mag',[Pt(0,-.087,.024,.031,.012,.048,'blk',{rx:.2})]),...tGuard(-.035)],
     grip:[0,-.02,.005],sup:null,muzzle:[0,.047,-.17],mag:[0,-.07,.02],eject:[.02,.05,-.03],alt:'tw9b'},
-  tw9b:{parts:[...TAG('slide',[Pt(0,.045,-.065,.03,.034,.2,'dyel'),Pt(0,.047,-.165,.012,.012,.008,'muzzle'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.15,.006,.008,.006,'steel'),Pt(.0152,.05,-.02,.002,.018,.05,'muzzle')]),
+  tw9b:{parts:[Pt(0,.047,-.165,.012,.012,.008,'muzzle'),Pt(0,.047,-.134,.013,.013,.058,'steel'),...TAG('slide',[Pt(0,.045,-.065,.03,.034,.2,'dyel'),Pt(0,.066,.025,.022,.008,.008,'blk'),Pt(0,.066,-.15,.006,.008,.006,'steel'),Pt(.0152,.05,-.02,.002,.018,.05,'muzzle')]),
     Pt(0,.02,-.06,.028,.02,.17,'dyel'),...pGrip('grip2',-.035,.012,.2),...TAG('mag',[Pt(0,-.087,.024,.031,.012,.048,'blk',{rx:.2})]),...tGuard(-.035)],
     grip:[0,-.02,.005],sup:null,muzzle:[0,.047,-.17],mag:[0,-.07,.02],eject:[.02,.05,-.03]},
-  f7:{parts:[...TAG('slide',[Pt(0,.045,-.055,.03,.034,.17,'blk'),Pt(0,.046,-.16,.034,.03,.04,'blk2'),Pt(.017,.05,-.16,.002,.014,.026,'muzzle'),Pt(-.017,.05,-.16,.002,.014,.026,'muzzle'),Pt(0,.047,-.181,.012,.012,.004,'muzzle'),Pt(0,.066,.02,.022,.008,.008,'blk')]),
+  f7:{parts:[...TAG('slide',[Pt(0,.045,-.055,.03,.034,.17,'blk'),Pt(0,.046,-.16,.034,.03,.04,'blk2'),Pt(.017,.05,-.16,.002,.014,.026,'muzzle'),Pt(-.017,.05,-.16,.002,.014,.026,'muzzle'),Pt(0,.066,.02,.022,.008,.008,'blk')]),Pt(0,.047,-.181,.012,.012,.004,'muzzle'),Pt(0,.047,-.15,.013,.013,.058,'steel'),
     Pt(0,.02,-.055,.028,.02,.16,'blk2'),Pt(0,-.02,-.115,.02,.05,.02,'blk2',{rx:-.2}),...pGrip('rub',-.035,.012,.22),...TAG('mag',[Pt(0,-.11,.03,.026,.15,.04,'blk',{rx:.22}),Pt(0,-.19,.05,.03,.012,.046,'blk2',{rx:.22})]),...tGuard(-.035),Pt(.016,.028,-.01,.006,.01,.02,'orange')],
     grip:[0,-.02,.005],sup:[0,-.04,-.115],muzzle:[0,.047,-.185],mag:[0,-.09,.03],eject:[.02,.05,-.03]},
-  d50:{parts:[...TAG('slide',[Pt(0,.05,-.07,.036,.044,.25,'gunmetal'),Pt(0,.053,-.195,.016,.016,.008,'muzzle'),Pt(0,.076,.04,.024,.01,.01,'blk'),Pt(0,.076,-.18,.008,.01,.008,'blk'),
+  d50:{parts:[Pt(0,.053,-.195,.016,.016,.008,'muzzle'),Pt(0,.053,-.158,.018,.018,.07,'steel'),...TAG('slide',[Pt(0,.05,-.07,.036,.044,.25,'gunmetal'),Pt(0,.076,.04,.024,.01,.01,'blk'),Pt(0,.076,-.18,.008,.01,.008,'blk'),
       Pt(.0182,.055,-.03,.002,.022,.06,'muzzle'),Pt(.0182,.05,.03,.002,.03,.004,'blk'),Pt(.0182,.05,.02,.002,.03,.004,'blk'),Pt(-.0182,.05,.03,.002,.03,.004,'blk')]),
     Pt(0,.02,-.07,.034,.024,.23,'gunmetal'),Pt(0,.03,-.17,.03,.018,.06,'gunmetal'),...pGrip('wood2',-.04,.014,.2),...TAG('mag',[Pt(0,-.097,.026,.036,.012,.054,'blk',{rx:.2})]),...tGuard(-.045),Pt(.0175,.03,-.02,.004,.008,.016,'steel'),Pt(0,.066,.045,.012,.012,.012,'steel')],
     grip:[0,-.02,.005],sup:[-.012,-.05,.01],muzzle:[0,.053,-.205],mag:[0,-.08,.02],eject:[.022,.06,-.04]},
@@ -227,11 +227,11 @@ const GUNS={
     Pt(0,.068,-.12,.02,.03,.02,'blk'),Pt(0,.068,.0,.02,.03,.02,'blk'),...TAG('bolt',[Pt(.045,.04,.035,.04,.012,.012,'steel'),Pt(.065,.04,.035,.016,.016,.016,'blk')]),
     ...TAG('mag',[Pt(0,-.035,-.06,.034,.05,.07,'blk')]),...pGrip('tan',-.06,.04,.25),Pt(0,.0,-.3,.05,.06,.34,'tan'),Pt(0,.0,.2,.05,.11,.3,'tan',{rx:-.06}),Pt(0,.04,.15,.044,.03,.1,'tan'),Pt(0,-.005,.36,.054,.14,.02,'rub',{rx:-.06}),
     Pt(0,-.035,-.38,.012,.01,.12,'blk'),...tGuard(-.005)],
-    grip:[0,-.03,.02],sup:[0,-.01,-.32],muzzle:[0,.04,-.775],mag:[0,-.06,-.06],eject:[.03,.05,-.04],scope:[0,.105,-.06]},
+    grip:[0,-.03,.02],sup:[0,-.01,-.32],muzzle:[0,.04,-.775],mag:[0,-.06,-.06],eject:[.03,.05,-.04],scope:[0,.105,-.06],piv:{bolt:[0,.04,.035]}},
   sr8:{parts:[Pt(0,.02,-.06,.04,.05,.24,'blk'),Pt(0,.04,-.42,.02,.02,.48,'steel'),Pt(0,.04,-.6625,.014,.014,.003,'muzzle'),...scope(.095,-.2,.06,.03,'bluesteel'),
     ...TAG('bolt',[Pt(.04,.04,.03,.036,.01,.01,'steel'),Pt(.058,.04,.03,.014,.014,.014,'blk')]),...TAG('mag',[Pt(0,-.03,-.06,.03,.04,.06,'blk')]),
     ...pGrip('olive',-.055,.04,.25),Pt(0,.0,-.27,.044,.05,.3,'olive'),Pt(0,.0,.19,.044,.1,.28,'olive',{rx:-.06}),Pt(0,-.005,.335,.048,.12,.02,'rub',{rx:-.06}),...tGuard(-.005)],
-    grip:[0,-.03,.02],sup:[0,-.01,-.28],muzzle:[0,.04,-.665],mag:[0,-.05,-.06],eject:[.03,.05,-.04],scope:[0,.095,-.07]},
+    grip:[0,-.03,.02],sup:[0,-.01,-.28],muzzle:[0,.04,-.665],mag:[0,-.05,-.06],eject:[.03,.05,-.04],scope:[0,.095,-.07],piv:{bolt:[0,.04,.03]}},
   dm14:{parts:[Pt(0,.025,-.06,.048,.06,.3,'gunmetal'),Pt(0,.05,-.5,.024,.024,.5,'steel'),Pt(0,.05,-.76,.034,.03,.04,'gunmetal'),Pt(0,.05,-.7815,.016,.016,.003,'muzzle'),...scope(.115,-.2,.07,.034),
     Pt(.028,.035,-.2,.008,.01,.24,'steel'),...TAG('chg',[Pt(-.032,.052,-.3,.014,.01,.04,'blk')]),Pt(0,.07,-.12,.02,.03,.02,'blk'),Pt(0,.07,.02,.02,.03,.02,'blk'),...TAG('mag',[Pt(0,-.06,-.08,.04,.09,.08,'blk'),Pt(0,-.105,-.08,.044,.012,.084,'blk2')]),
     Pt(0,.01,-.36,.05,.06,.3,'wood'),...pGrip('wood',-.045,.04,.3),Pt(0,.0,.2,.048,.1,.3,'wood',{rx:-.08}),Pt(0,-.01,.35,.052,.13,.02,'rub',{rx:-.08}),...tGuard(-.01)],
@@ -287,13 +287,29 @@ function gunIcon(id,h){h=h||22;const key=id+':'+h;if(ICONS[key])return ICONS[key
   return ICONS[key]=cv.toDataURL()}
 // ---------- first-person view models ----------
 // arm: a sleeve box ending at the wrist + glove/hand with fingers; built along -Z from the wrist, oriented with lookAt
-function armMesh(sleeve,hand,mat,o){o=o||{};const g=new THREE.Group();
-  // rounded sleeve and cuff, a padded palm, knuckle row, two-segment fingers and a thumb
-  const parts=[Pt(0,0,.21,.066,.066,.38,sleeve,{r:.03}),Pt(0,.0,.3,.07,.07,.02,sleeve,{r:.009}),Pt(0,0,.035,.074,.074,.05,o.cuff||sleeve,{r:.028}),Pt(0,-.004,-.04,.058,.07,.085,hand,{r:.02}),Pt(0,.028,-.04,.05,.012,.07,hand,{r:.005})];
-  if(o.claws){for(let i=0;i<4;i++){const x=-.022+i*.015;parts.push(Pt(x,-.022,-.1,.012,.016,.05,hand,{rx:.25,r:.005}));parts.push(Pt(x,-.03+Math.abs(i-1.5)*.004,-.15-(i===1||i===2?.012:0),.009,.012,.1,'claw',{rx:.32,r:.003}))}}
-  else{for(let i=0;i<4;i++){const x=-.021+i*.014;parts.push(Pt(x,-.03,-.088,.013,.02,.03,hand,{r:.005}));parts.push(Pt(x,-.045,-.1,.012,.03,.016,hand,{r:.005}))}}
-  if(o.thumb)parts.push(Pt(-.035,.01,-.05,.022,.022,.05,hand,{ry:.4,r:.008}));
-  const m=new THREE.Mesh(partGeo(parts),mat);m.frustumCulled=false;g.add(m);return g}
+// (+Z toward the elbow, the palm faces -Y). A gun hand is jointed: the four fingers bend at the knuckles and the middle joints,
+// the thumb at its root and its joint (vmHandCurl), so a hand can open, close round a part and fly open when it lets go.
+function armMesh(sleeve,hand,mat,o){o=o||{};const g=new THREE.Group();const mk=ps=>{const m=new THREE.Mesh(partGeo(ps),mat);m.frustumCulled=false;return m};
+  if(o.claws){// zombie arms: rounded sleeve, padded palm, claws
+    const parts=[Pt(0,0,.21,.066,.066,.38,sleeve,{r:.03}),Pt(0,.0,.3,.07,.07,.02,sleeve,{r:.009}),Pt(0,0,.035,.074,.074,.05,o.cuff||sleeve,{r:.028}),Pt(0,-.004,-.04,.058,.07,.085,hand,{r:.02}),Pt(0,.028,-.04,.05,.012,.07,hand,{r:.005})];
+    for(let i=0;i<4;i++){const x=-.022+i*.015;parts.push(Pt(x,-.022,-.1,.012,.016,.05,hand,{rx:.25,r:.005}));parts.push(Pt(x,-.03+Math.abs(i-1.5)*.004,-.15-(i===1||i===2?.012:0),.009,.012,.1,'claw',{rx:.32,r:.003}))}
+    g.add(mk(parts));return g}
+  const sd=o.left?1:-1;// the thumb's side (a left hand has it on +x)
+  // sleeve, cuff, wrist, palm, the padded back of the glove and the ball of the thumb
+  g.add(mk([Pt(0,0,.21,.066,.066,.38,sleeve,{r:.03}),Pt(0,.0,.3,.07,.07,.02,sleeve,{r:.009}),Pt(0,0,.035,.074,.074,.05,o.cuff||sleeve,{r:.028}),
+    Pt(0,-.003,.004,.058,.044,.032,hand,{r:.016}),Pt(0,-.004,-.038,.07,.038,.076,hand,{r:.014}),Pt(0,.0155,-.044,.058,.01,.05,hand,{r:.004}),
+    Pt(sd*.025,-.013,-.022,.026,.032,.042,hand,{r:.011})]));
+  // fingers: one group bends at the knuckle row, a child group at the middle joints; the little finger is the short one
+  const fx=[-.0255,-.0085,.0085,.0255],pk=sd>0?0:3;
+  const prox=new THREE.Group();prox.position.set(0,-.004,-.073);prox.add(mk(fx.map((x,i)=>Pt(x,0,i===pk?-.015:-.018,.0165,.019,i===pk?.03:.036,hand,{r:.006}))));
+  const dist=new THREE.Group();dist.position.set(0,0,-.034);prox.add(dist);dist.add(mk(fx.map((x,i)=>Pt(x,-.001,i===pk?-.012:-.016,.0155,.017,i===pk?.024:.032,hand,{r:.006}))));g.add(prox);
+  // thumb: root on the side of the palm pointing forward, inward and down; one joint
+  const th=new THREE.Group();th.position.set(sd*.031,-.014,-.026);const th2=new THREE.Group();th2.position.set(0,0,-.033);
+  th.add(mk([Pt(0,0,-.017,.021,.02,.034,hand,{r:.008})]));th2.add(mk([Pt(0,0,-.013,.019,.018,.026,hand,{r:.007})]));th.add(th2);g.add(th);
+  g.userData.hand={prox,dist,th,th2,sd,rest:o.left?.82:.95};vmHandCurl(g,g.userData.hand.rest);return g}
+// bend a gun hand: c 0 = flat open hand, 1 = a closed fist round a grip (negative spreads it past flat); tc the thumb (default c)
+function vmHandCurl(g,c,tc){const H=g&&g.userData.hand;if(!H)return;if(tc==null)tc=c;
+  H.prox.rotation.x=-c*1.15;H.dist.rotation.x=-Math.max(-.2,c)*1.35;H.th.rotation.set(-.3-tc*.35,H.sd*(.5+tc*.45),H.sd*-tc*.4);H.th2.rotation.x=-Math.max(0,tc)*.7}
 function lookArm(arm,hand,dir){arm.position.set(hand[0],hand[1],hand[2]);arm.lookAt(hand[0]+dir[0],hand[1]+dir[1],hand[2]+dir[2])}
 // one gun (statics + animated tag groups) under a group
 function vmGun(G,mat){const gun=new THREE.Group();const statics=G.parts.filter(p=>!p.tag),tags={};
@@ -312,7 +328,7 @@ function buildVM(id,skinKey,U,dual){const G=GUNS[id];const mat=matVM(GA.texVM,U)
   const A=vmGun(G,mat);const gun=A.gun;root.add(gun);
   const zs=skinKey&&skinKey.startsWith('z');
   const sleeve=zs?'zs_'+skinKey.slice(2):'sl_'+(skinKey||'guard'),hand=zs?'zs_'+skinKey.slice(2):(skinKey==='medic'?'hglove':'glove');
-  const armR=armMesh(sleeve,hand,mat,{cuff:zs?null:'cuff',thumb:1}),armL=armMesh(sleeve,hand,mat,{cuff:zs?null:'cuff',thumb:1});
+  const armR=armMesh(sleeve,hand,mat,{cuff:zs?null:'cuff',thumb:1}),armL=armMesh(sleeve,hand,mat,{cuff:zs?null:'cuff',thumb:1,left:1});
   gun.add(armR);
   const gr=G.grip||[0,0,0];lookArm(armR,[gr[0]+.012,gr[1]-.02,gr[2]+.02],G.armR||[.35,-.42,1]);
   let gun2=null,tags2=null;

@@ -240,6 +240,21 @@ const SFX={
   // crossbow: the string creaking back under the cocking slide, then the latch
   xbowcock:{n:2,dur:.55,peak:.8,gain:.55,fn:B=>{const g=B.g(1);const e=B.env(0,.04,.4,.3,g);B.nz('white',0,.36,B.f('bandpass',900,8,e));B.am(g,0,.34,45,.6);
     B.osc('triangle',140,260,0,.34,B.env(0,.05,.12,.28));const t=.36;B.grain(t,5000,1.5,.006,.7);B.grain(t,1900,2,.014,.5)}},
+  // first draw v2 — these all hit at t=0 so they land exactly on the part's impact
+  // pistol slide slamming home: a bright clack, a thunk through the frame, a short ring and a tiny rattle
+  fdslam:{n:2,dur:.35,peak:.9,gain:.62,fn:B=>{B.grain(0,7800,.8,.004,1);B.grain(0,2600,2,.014,.75);B.osc('sine',300,170,0,.06,B.env(0,.001,.55,.05));
+    B.ring(.002,rr(3300,3700),[1,1.43,2.3],[.06,.045,.03],[.14,.08,.04]);B.grain(.018,4200,3,.006,.3)}},
+  // rifle bolt carrier slamming home: a heavier clack and body thump, the receiver ringing, the recoil spring humming down
+  fdhome:{n:2,dur:.5,peak:.95,gain:.72,fn:B=>{B.nz('pink',0,.03,B.f('lowpass',1800,.7,B.env(0,.001,.7,.025)));B.grain(.002,6800,.8,.005,1);B.grain(.002,2000,2,.02,.85);
+    B.osc('sine',210,120,.002,.09,B.env(.002,.001,.75,.08));B.ring(.004,rr(2300,2700),[1,1.37,2.05,2.9],[.12,.08,.05,.03],[.12,.08,.05,.025]);B.osc('triangle',520,560,.01,.18,B.env(.01,.01,.03,.16))}},
+  // shotgun pump torn back: a scrape and a knock at the rear stop (.055 s in)
+  pumpb:{n:2,dur:.3,peak:.85,gain:.62,fn:B=>{const se=B.env(0,.008,.4,.05);B.nz('white',0,.07,B.sweep(B.f('bandpass',900,2.5,se),900,2400,0,.06));
+    const t=.055;B.grain(t,2800,2,.012,.75);B.osc('sine',190,120,t,.06,B.env(t,.001,.5,.05));B.grain(t+.004,6000,1,.004,.5)}},
+  // ... and slammed forward: the big one
+  pumpf:{n:2,dur:.4,peak:.92,gain:.72,fn:B=>{B.grain(0,6500,1,.005,.9);B.grain(0,2300,2,.016,.85);B.osc('sine',170,100,0,.08,B.env(0,.001,.65,.07));
+    B.ring(.003,rr(1900,2200),[1,1.5,2.4],[.08,.05,.03],[.1,.06,.03]);B.nz('white',.012,.05,B.f('bandpass',3500,2,B.env(.012,.006,.12,.04)))}},
+  // a gloved hand closing on metal
+  fdgrab:{n:2,dur:.2,peak:.5,gain:.28,fn:B=>{B.nz('pink',0,.06,B.f('bandpass',1200,.8,B.env(0,.004,.4,.04)));B.grain(.004,3200,2,.006,.35)}},
   // air: a valve hiss, loud then thinning out
   hiss:{n:2,dur:.8,peak:.75,gain:.55,fn:B=>{B.nz('white',0,.7,B.f('highpass',2800,.7,B.envT(0,.02,.9,.22)));B.nz('white',0,.5,B.f('bandpass',6000,1.5,B.envT(0,.01,.4,.15)))}},
   draw:{n:2,dur:.35,peak:.6,gain:.4,fn:B=>{const fl=B.g(1);const e=B.env(0,.02,.35,.12,fl);B.nz('pink',0,.16,B.f('bandpass',1500,.7,e));B.am(fl,0,.15,60,.7);B.ring(.1,rr(2600,2900),[1,1.52],[.04,.03],[.12,.06])}},
@@ -316,7 +331,7 @@ const SFX={
 };
 const SFX_ORDER=['ui','uiok','buy','beep','beep2','countdown','hit','hsding','p9','ar7','claw','clawhit','clawarmor','zgrowl','zpain','zdie','zatk','step_conc','step_dirt','step_metal','step_wood','zstep','land','magout','magin','rack','dry','draw','kdraw','kswing','khit','hamhit','kwall',
   'imp_conc','imp_metal','imp_wood','imp_dirt','imp_flesh','headshot','casing','shellcase','k5','kv47','hmg','sg8','as12','r700','d50','pump','shellin','bolt','slide','zinfect','zscream','zroar','zleap','zharden','zrevive','hurt','hdie','hscream',
-  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','airb','blackout','powerup','bhole','vortex','supply','chg','hkslap','cylspin','sawpull','spinup','xbowcock','hiss','spinloop','brk','gib'];
+  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','airb','blackout','powerup','bhole','vortex','supply','chg','hkslap','cylspin','sawpull','spinup','xbowcock','hiss','fdslam','fdhome','pumpb','pumpf','fdgrab','spinloop','brk','gib'];
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 // ---- live score: minor-key pulse that tightens with the round ----
 const CHORDS=[{n:[48,51,55,58],b:36},{n:[44,48,51,55],b:32},{n:[46,50,53,58],b:34},{n:[43,47,50,55],b:31}];

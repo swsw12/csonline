@@ -80,7 +80,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
   set(id,skin){if(this.id===id&&this.skin===skin&&this.cur)return;const key=id+'|'+skin;
     if(this.cur)R.vmScene.remove(this.cur.root);
     let m=this.cache[key];if(!m){const W=WPN[id];m=id==='claw'?buildClaws(skin.slice(2),this.U):buildVM(W.model,skin,this.U,!!W.dual);this.cache[key]=m;
-      for(const T of [m.tags,m.tags2])if(T)for(const t in T)T[t].userData.base=T[t].position.clone();if(m.armL)m.armL.userData.base=m.armL.position.clone()}
+      for(const T of [m.tags,m.tags2])if(T)for(const t in T)T[t].userData.base=T[t].position.clone();for(const A of [m.armL,m.armR])if(A){A.userData.base=A.position.clone();A.userData.q0=A.quaternion.clone()}}
     this.cur=m;this.id=id;this.skin=skin;this.spinA=0;R.vmScene.add(m.root);this.trail.S.length=0;
     if(this.flash.parent)this.flash.parent.remove(this.flash);const W=WPN[id];
     if(id!=='claw'&&W.kind!=='melee'&&W.kind!=='nade'){m.gun.add(this.flash);const mz=GUNS[W.model].muzzle;this.flash.position.set(mz[0],mz[1],mz[2]-.06)}
@@ -133,8 +133,9 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     let drY=0,drX=0;if(this.drawT>0){this.drawT=Math.max(0,this.drawT-dt);const p=1-this.drawT/this.drawD;const D=kind==='knife'?VMK.drK:kind==='axe'?VMK.drA:kind==='hammer'?VMK.drH:kind==='claw'?VMK.drC:(kind==='pistol'||kind==='dual')?VMK.drP:VMK.drR;
       kfv(D,p,_vk);x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];drY=_vk[1];drX=_vk[3]}
     // reset animated parts
-    const tags=m.tags;for(const T of [tags,m.tags2])if(T)for(const t in T){const b=T[t].userData.base;T[t].position.copy(b);T[t].rotation.set(0,0,0)}
+    const tags=m.tags;for(const T of [tags,m.tags2])if(T)for(const t in T){const b=T[t].userData.base;T[t].position.copy(b);T[t].rotation.set(0,0,0);T[t].scale.set(1,1,1)}
     if(m.armL&&m.armL.userData.base)m.armL.position.copy(m.armL.userData.base);
+    if(kind!=='claw')for(const A of [m.armL,m.armR])if(A&&A.userData.q0){A.position.copy(A.userData.base);A.quaternion.copy(A.userData.q0);if(A.userData.hand)vmHandCurl(A,A.userData.hand.rest)}// a first-draw clip may have moved the hands
     this.kick=Math.max(0,(this.kick||0)-dt*10);this.kick2=Math.max(0,(this.kick2||0)-dt*10);
     if(m.gun2){const k=this.kick*this.kick,k2=this.kick2*this.kick2;m.gun.position.set(.13,0,k*.035-.02);m.gun.rotation.set(k*.14,.05,0);m.gun2.position.set(-.13,0,k2*.035-.02);m.gun2.rotation.set(k2*.14,-.05,0);
       // Dual Berettas: an X-cross flourish while drawing; the aim key toggles stance B (wide apart, rolled outward on their sides)
@@ -185,6 +186,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     // ---- the gun's own first-draw action (vmdraw.js) ----
     if(this.act&&kind!=='claw'){_vkA.fill(0);this.actFrame(dt,m,W,_vkA);x+=_vkA[0];y+=_vkA[1];z+=_vkA[2];rx+=_vkA[3];ry+=_vkA[4];rz+=_vkA[5]}
     m.root.position.set(x,y,z);m.root.rotation.set(rx,ry,rz);
+    if(this.act&&kind!=='claw')this.actArms(m);
     // ---- zombie claws: two arms with their own strokes ----
     if(kind==='claw'){const R_=m.armR,L_=m.armL;const A=_vca;A[0].set(CLAW_REST);A[1].set(CLAW_REST);A[1][0]=-A[1][0];A[1][3]=-A[1][3];
       if(m.vd)trailOn=this.vdPose(A,dt,m);
