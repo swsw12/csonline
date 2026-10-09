@@ -35,16 +35,19 @@ function mkActor(name,isPlayer,skin){const a={id:ACTOR_ID++,name,isPlayer,skin,z
   return a}
 // ---------- inventory ----------
 function fillAmmo(a,id){const W=WPN[id];if(!W||!W.mag)return;a.ammo[id]={mag:W.mag,res:W.res}}
-function giveDefault(a){a.inv={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0};a.ammo={};fillAmmo(a,'p9');a.cur='p9';a.prev='knife'}
+function giveDefault(a){a.inv={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0};a.ammo={};fillAmmo(a,'p9');a.cur='p9';a.prev='knife';gunFresh(a,'p9')}
+// a gun that just came into someone's hands: its first draw plays the gun's own ready action (GUN_DESIGN, vmdraw.js)
+function gunFresh(a,id){const W=WPN[id];if(W&&W.fd&&W.fd.act)(a.fresh||(a.fresh={}))[id]=1}
 function hasWeapon(a,id){const W=WPN[id];if(!W)return false;if(W.kind==='nade')return id==='zbomb'?a.bombs>0:a.inv[id]>0;return a.inv[W.slot]===id}
 // 챈샷 (quick switch): flicking back to the gun you put away a moment ago (Q twice) brings it up in under half its draw time.
 // Switching already drops the bolt/pump cycle and the shot delay, so a sniper or pump gun fires again sooner than by waiting.
 const QUICK_BACK=1.2,QUICK_DRAW=.45;
 function equip(a,id,instant){if(!id||a.cur===id&&!instant)return;const W=WPN[id];if(!W)return;
-  const quick=!instant&&id===a.awayId&&G.t-(a.awayT==null?-9:a.awayT)<QUICK_BACK;
+  const fd=!instant&&a.fresh&&a.fresh[id]&&W.fd&&W.fd.act?W.fd:null;if(fd)delete a.fresh[id];
+  const quick=!fd&&!instant&&id===a.awayId&&G.t-(a.awayT==null?-9:a.awayT)<QUICK_BACK;
   if(a.cur&&a.cur!==id){a.prev=a.cur;a.awayId=a.cur;a.awayT=G.t;if(!instant)a.swapT=G.t}
-  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.dualB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
-  if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.kind==='melee'?'kdraw':'draw',{vol:.5,rate:(id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
+  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1)+(fd?fd.x||.5:0);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.dualB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
+  if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(fd)VM.firstDraw(W.draw||.5,fd.x||.5,fd);else if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.kind==='melee'?'kdraw':'draw',{vol:.5,rate:(id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
   // 칼 챈샷 (draw cut): a blade drawn within a second of a gunshot, with an enemy in reach in front, comes out as an instant heavy cut —
   // full heavy damage and knockback on top of the shot that was just fired
   if(!instant&&W.kind==='melee'&&a.team===TH&&a.alive&&G.t-(a.lastFire==null?-9:a.lastFire)<DRAW_CUT_WIN){const r=meleeHit(a,W.range[1],.8);
@@ -73,7 +76,7 @@ function buy(a,id,force){if(a.team!==TH||!a.alive||G.st==='end'||G.st==='over')r
   if(W.kind==='nade'){if(a.inv[id]>=1)return false;a.inv[id]=1;pay(W.cost);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
   if(W.kind==='melee'){if(a.inv[3]===id)return false;a.inv[3]=id;pay(W.cost);equip(a,id);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
   if(a.inv[W.slot]===id){if(!a.ammo[id])fillAmmo(a,id);if(a.ammo[id].res>=W.res)return false;a.ammo[id].res=W.res;pay(Math.round(W.cost*.1));return true}
-  a.inv[W.slot]=id;fillAmmo(a,id);if(free)a.nyFree--;else pay(W.cost);equip(a,id);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
+  a.inv[W.slot]=id;fillAmmo(a,id);gunFresh(a,id);if(free)a.nyFree--;else pay(W.cost);equip(a,id);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
 // ---------- geometry helpers ----------
 const _eye=new THREE.Vector3(),_mz=new THREE.Vector3();
 function eyeH(a){if(a.team===TZ){const Z=ZCLASS[a.zc];return a.duck?Z.eye*.68:Z.eye}return a.duck?1.1:1.64}
@@ -248,12 +251,12 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
     if(W.shellRel){if(cmd.fire&&!pc.fire&&am.mag>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload()}
       else if(a.reloadT<=0){if(am.mag<W.mag&&am.res>0){am.mag++;am.res--;if(a.isPlayer){AU.play('shellin',{vol:.6});VM.shellIn()}}
         if(am.mag<W.mag&&am.res>0){a.reloadT=W.shellRel;a.relKind='shell'}else{a.relKind=null;if(a.isPlayer&&W.pump){AU.play('pump',{vol:.6});VM.pumpT=.62}else if(a.isPlayer)AU.play('rack',{vol:.5})}}}
-    else if(a.reloadT<=0){const need=W.mag-am.mag,take=Math.min(need,am.res);am.mag+=take;am.res-=take;a.relKind=null;if(a.isPlayer&&W.kind==='pistol')AU.play('slide',{vol:.55})}
+    else if(a.reloadT<=0){const cap=W.mag+(W.ch&&a.relCh?(W.dual?2:1):0),need=cap-am.mag,take=Math.min(Math.max(0,need),am.res);am.mag+=take;am.res-=take;a.relKind=null;if(a.isPlayer&&W.kind==='pistol')AU.play('slide',{vol:.55})}
     return}
   const wantReload=(cmd.reload&&!pc.reload)||(am.mag===0&&(cmd.fire||!a.isPlayer));
   if(wantReload&&am.mag<W.mag&&am.res>0&&a.drawT<=0&&a.boltT<=0){a.zoom=0;a.burstN=0;
     if(W.shellRel){a.reloadT=W.relStart;a.relKind='shell';if(a.isPlayer)VM.reload(W,W.relStart,'start')}
-    else{a.reloadT=W.reload;a.relKind='mag';if(a.isPlayer){const wid=a.cur;VM.reload(W,W.reload,'mag');
+    else{a.reloadT=W.reload;a.relKind='mag';a.relCh=am.mag>0;if(a.isPlayer){const wid=a.cur;VM.reload(W,W.reload,'mag');
         if(W.brk){AU.play('brk',{vol:.6});setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('shellin',{vol:.6})},W.reload*.45*1000);setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('brk',{vol:.65,rate:1.15})},W.reload*.8*1000)}
         else{AU.play('magout',{vol:.6});setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('magin',{vol:.6})},W.reload*.62*1000);if(W.dual)setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('magin',{vol:.55,rate:1.05})},W.reload*.8*1000)}}
       else AU.at('magout',a.c.x,a.c.y+1.2,a.c.z,{vol:.4,range:15})}return}

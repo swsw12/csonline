@@ -220,6 +220,28 @@ const SFX={
   shellin:{n:3,dur:.3,peak:.8,gain:.5,fn:B=>{const se=B.env(0,.01,.3,.05);B.nz('white',0,.07,B.sweep(B.f('bandpass',1500,2,se),1500,3000,0,.06));B.grain(.06,3500,2,.01,.6);const k=B.env(.06,.001,.35,.04);B.osc('sine',300,180,.06,.05,k)}},
   bolt:{n:2,dur:.7,peak:.8,gain:.55,fn:B=>{for(const [t,f] of [[0,3000],[.12,2200],[.3,2600],[.45,3400]]){B.grain(t,f,2.5,.012,.7);const se=B.env(t,.006,.25,.05);B.nz('white',t,.07,B.f('bandpass',f*.6,2,se))}}},
   slide:{n:2,dur:.3,peak:.8,gain:.5,fn:B=>{const se=B.env(0,.01,.3,.05);B.nz('white',0,.07,B.sweep(B.f('bandpass',2500,2,se),2500,4500,0,.06));B.grain(.07,6000,1,.005,.8);B.grain(.07,2000,2,.012,.5)}},
+  // ---- first-draw mechanics (vmdraw.js) ----
+  // rifle charging handle: a long scrape of the carrier going back against its spring, a knock at the stop
+  chg:{n:2,dur:.4,peak:.85,gain:.6,fn:B=>{const se=B.env(0,.02,.32,.11);B.nz('white',0,.15,B.sweep(B.f('bandpass',1200,2.4,se),1200,3000,0,.14));
+    B.osc('triangle',380,470,0,.15,B.env(0,.01,.05,.13));const t=rr(.14,.16);B.grain(t,5200,1.5,.006,.6);B.grain(t,1700,2,.014,.45);B.osc('sine',210,150,t,.05,B.env(t,.001,.3,.04))}},
+  // HK slap: the palm hits the lever and the bolt slams home
+  hkslap:{n:2,dur:.4,peak:.95,gain:.8,fn:B=>{B.nz('pink',0,.04,B.f('lowpass',1600,.7,B.env(0,.001,.9,.03)));const t=.012;B.grain(t,7500,.8,.005,1);B.grain(t,2400,2,.016,.8);
+    B.osc('sine',260,150,t,.08,B.env(t,.001,.7,.07));B.ring(t,2900,[1,1.37,2.2],[.09,.06,.04],[.12,.07,.04])}},
+  // revolver cylinder spinning free: a run of ratchet clicks slowing down
+  cylspin:{n:2,dur:.8,peak:.75,gain:.5,fn:B=>{let t=0;for(let i=0;i<16;i++){t+=.022+i*.0045;B.grain(t,rr(3800,4600),3,.004,.7-i*.03)}
+    B.nz('white',0,.6,B.f('bandpass',2600,4,B.env(0,.02,.12,.5)))}},
+  // chainsaw starter: the cord whirring out of the drum, the engine coughing
+  sawpull:{n:2,dur:.7,peak:.85,gain:.7,fn:B=>{const se=B.env(0,.03,.5,.18);B.nz('white',0,.24,B.sweep(B.f('bandpass',500,3,se),500,2200,0,.22));
+    for(const t of [.24,.31,.4]){const e=B.env(t,.004,rr(.4,.7),.05);B.nz('brown',t,.08,B.f('lowpass',380,.8,e));B.osc('sawtooth',rr(55,75),40,t,.06,B.f('lowpass',500,.7,B.env(t,.003,.25,.05)))}}},
+  // minigun motor winding up and coasting down
+  spinup:{n:1,dur:1.1,ch:2,peak:.8,gain:.6,rev:.1,fn:B=>{const e=B.env(0,.25,.7,.6,null,.25);const o=B.f('lowpass',2400,.8,e);
+    B.osc('sawtooth',90,700,0,.5,B.g(.35,o));B.osc('sawtooth',700,240,.5,.55,B.g(.35,o));B.osc('square',180,1400,0,.5,B.g(.08,o));
+    B.nz('white',0,1,B.f('bandpass',3000,2,B.env(.1,.2,.18,.5)))}},
+  // crossbow: the string creaking back under the cocking slide, then the latch
+  xbowcock:{n:2,dur:.55,peak:.8,gain:.55,fn:B=>{const g=B.g(1);const e=B.env(0,.04,.4,.3,g);B.nz('white',0,.36,B.f('bandpass',900,8,e));B.am(g,0,.34,45,.6);
+    B.osc('triangle',140,260,0,.34,B.env(0,.05,.12,.28));const t=.36;B.grain(t,5000,1.5,.006,.7);B.grain(t,1900,2,.014,.5)}},
+  // air: a valve hiss, loud then thinning out
+  hiss:{n:2,dur:.8,peak:.75,gain:.55,fn:B=>{B.nz('white',0,.7,B.f('highpass',2800,.7,B.envT(0,.02,.9,.22)));B.nz('white',0,.5,B.f('bandpass',6000,1.5,B.envT(0,.01,.4,.15)))}},
   draw:{n:2,dur:.35,peak:.6,gain:.4,fn:B=>{const fl=B.g(1);const e=B.env(0,.02,.35,.12,fl);B.nz('pink',0,.16,B.f('bandpass',1500,.7,e));B.am(fl,0,.15,60,.7);B.ring(.1,rr(2600,2900),[1,1.52],[.04,.03],[.12,.06])}},
   kdraw:{n:1,dur:.6,peak:.7,gain:.5,rev:.2,fn:B=>{const e=B.env(0,.05,.4,.25);B.nz('white',0,.32,B.sweep(B.f('bandpass',3000,6,e),3000,7000,0,.3));B.ring(.05,rr(3800,4200),[1,1.33,2.1],[.4,.3,.2],[.12,.07,.04])}},
   kswing:{n:3,dur:.3,peak:.7,gain:.45,pj:.08,fn:B=>whoosh(B,600,2400,.16,.6)},
@@ -294,7 +316,7 @@ const SFX={
 };
 const SFX_ORDER=['ui','uiok','buy','beep','beep2','countdown','hit','hsding','p9','ar7','claw','clawhit','clawarmor','zgrowl','zpain','zdie','zatk','step_conc','step_dirt','step_metal','step_wood','zstep','land','magout','magin','rack','dry','draw','kdraw','kswing','khit','hamhit','kwall',
   'imp_conc','imp_metal','imp_wood','imp_dirt','imp_flesh','headshot','casing','shellcase','k5','kv47','hmg','sg8','as12','r700','d50','pump','shellin','bolt','slide','zinfect','zscream','zroar','zleap','zharden','zrevive','hurt','hdie','hscream',
-  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','airb','blackout','powerup','bhole','vortex','supply','spinloop','brk','gib'];
+  'pin','throw','bounce','explode','frostx','zbombx','flare','whiz','armor','pickup','heart','lvlup','morale','siren','stingZ','stingH','stingL','thunder','f7','tw9','r6','k9','um45','pd50','db2','m14','g35','br3','ar5c','hr17','sr8','dm14','mg6','gx6','gl40','airb','blackout','powerup','bhole','vortex','supply','chg','hkslap','cylspin','sawpull','spinup','xbowcock','hiss','spinloop','brk','gib'];
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 // ---- live score: minor-key pulse that tightens with the round ----
 const CHORDS=[{n:[48,51,55,58],b:36},{n:[44,48,51,55],b:32},{n:[46,50,53,58],b:34},{n:[43,47,50,55],b:31}];

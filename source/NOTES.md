@@ -259,3 +259,23 @@
 - Ripper pin: damageActor gives saw hits t.holdT (.32 s, swing .7 s; not a hardened Heavy) → maxSpeed ×.12 (hosts ×.3), no jump, non-host zombies
   can't claw/skill (actorWeapons). holdT is in EFF_T ('hd') so client-owned zombies get it. Grind stag .9, staggerT .6, range 2.2.
   Test: a rager run into the saw was pinned 93 % of 3 s, 0 claw attempts.
+
+## v6.5 — gun identity: first-draw ready actions, chamber +1, real magazines
+- design.js 4부 GUN_DESIGN: per gun real model (comment), mag/res overrides, ch (closed bolt → +1 in the chamber), act (first-draw action) and its
+  parameters (x extra seconds, d pull distance, roll, side, heavy, ob open bolt, rps/axis/snd for spin, open/lift for break). applyGunDesign()
+  runs at the end of supply.js (after every WPN file) and sets W.mag/W.res/W.ch/W.fd.
+- Fresh guns: gunFresh(a,id) on buy(), giveDefault (USP), dropGive (pick-ups), SUP.give (crates). equip(): a fresh gun's draw is
+  W.draw + fd.x (no quick-draw) and VM.firstDraw(raise, extra, fd); the flag clears on that draw.
+- vmdraw.js (build order after vm): FD[type](V,q,m,G,W,P,K,dt) for slide, revolver, charge, hk, ar, pump, bolt, break, belt, spin, saw, xbow,
+  harpoon, tank, orb, dragon, cock, barrel — a whole-gun pose, tag motion, the free hand (armL) lerped to the part (G._tc tag centres) and riding
+  along, and cues (fdCues: sound, rate, spring kick, 'flame' muzzle glow). VM.actFrame runs last in VM.update (after VMX) so it can add to the
+  tags VMX sets. Pistols/revolver turn muzzle-left (ry ≈ .85) so the slide/cylinder is seen side-on.
+- Model tags: vmGun animates 'chg','aux','cover' as well and supports G.piv[tag] pivots. New/tagged parts: charging handles on MP5, MAC-10 (new
+  knob), UMP, P90, M4 (+forward assist 'aux'), SG552, AK, Galil, SCAR, FAMAS, USAS-12 (+20-round drum mag), XM1014 (new), G3 (new), M249/MG3
+  (top cover 'cover' + handle), crossbows (nock slide), Ripper (starter grip), Sterling (new, right side); r6 cylinder pivot + hammer 'aux';
+  db2 top lever; duckfoot hammer; mlaunch barrels as 'spin'; airb tank and bhole orb pivots.
+- Chamber: reload start stores a.relCh=(mag>0); completion fills to W.mag+(W.ch&&relCh ? (dual?2:1) : 0).
+- Mag changes: M134 200→500 (res 500). Everything else already matched the real gun (see the table).
+- Sounds: chg, hkslap, cylspin, sawpull, spinup, xbowcock, hiss (audio.js), entries in design.js.
+- Tests: logic (AK first draw 1.4 s with action, second draw quick; reload 10→31, empty→30; MAC-10 30; dual 32); contact sheets of all 40
+  first-draw actions (scratchpad fd/); bot matches on 4 maps without errors.

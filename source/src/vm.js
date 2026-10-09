@@ -45,7 +45,7 @@ const VMK={
   rel:[[0,[0,0,0,0,0,0]],[.12,[-.04,-.02,.02,.14,.06,-.42]],[.6,[-.04,-.025,.02,.16,.07,-.46]],[.74,[-.03,-.015,.01,.1,.05,-.32]],[.84,[-.01,-.01,0,.05,-.04,-.1]],[.93,[.01,0,0,-.04,-.06,.06]],[1,[0,0,0,0,0,0]]],
   relB:[[0,[0,0,0,0,0,0]],[.12,[0,-.02,.02,-.45,.08,.2]],[.72,[0,-.03,.02,-.5,.1,.22]],[.8,[0,.01,0,.22,0,0]],[.9,[0,0,0,-.04,0,0]],[1,[0,0,0,0,0,0]]],
 };
-const _vv=new THREE.Vector3(),_vw=new THREE.Vector3(),_vk=[0,0,0,0,0,0],_vk2=[0,0,0,0,0,0],_vd=new THREE.Vector3(),_vb=new THREE.Vector3(),_vq=new THREE.Quaternion();
+const _vkA=[0,0,0,0,0,0],_vv=new THREE.Vector3(),_vw=new THREE.Vector3(),_vk=[0,0,0,0,0,0],_vk2=[0,0,0,0,0,0],_vd=new THREE.Vector3(),_vb=new THREE.Vector3(),_vq=new THREE.Quaternion();
 // [hand x,y,z, toward-elbow x,y,z, wrist flick of the doll (+ = doll tipped up/back, - = chopped down)]
 const VD_REST=[.09,-.2,-.36,.3,-.55,.78,.25],_vdk=[0,0,0,0,0,0,0];
 VMK.vdA=[[0,VD_REST],[.22,[.17,0,-.4,.3,-.7,.65,1.3]],[.32,[.17,.01,-.4,.3,-.7,.65,1.35]],[.46,[.03,-.1,-.52,.15,-.45,.88,-.65]],[.6,[.05,-.18,-.46,.2,-.6,.78,-.55]],[.82,[.08,-.23,-.38,.28,-.55,.8,0]],[1,VD_REST]];
@@ -81,18 +81,18 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     if(this.cur)R.vmScene.remove(this.cur.root);
     let m=this.cache[key];if(!m){const W=WPN[id];m=id==='claw'?buildClaws(skin.slice(2),this.U):buildVM(W.model,skin,this.U,!!W.dual);this.cache[key]=m;
       for(const T of [m.tags,m.tags2])if(T)for(const t in T)T[t].userData.base=T[t].position.clone();if(m.armL)m.armL.userData.base=m.armL.position.clone()}
-    this.cur=m;this.id=id;this.skin=skin;R.vmScene.add(m.root);this.trail.S.length=0;
+    this.cur=m;this.id=id;this.skin=skin;this.spinA=0;R.vmScene.add(m.root);this.trail.S.length=0;
     if(this.flash.parent)this.flash.parent.remove(this.flash);const W=WPN[id];
     if(id!=='claw'&&W.kind!=='melee'&&W.kind!=='nade'){m.gun.add(this.flash);const mz=GUNS[W.model].muzzle;this.flash.position.set(mz[0],mz[1],mz[2]-.06)}
     this.draw(W.draw||.5)},
-  draw(d){this.drawT=d;this.drawD=d;this.rel=null;this.mel=null;this.throwT=0;this.pull=null;this.pinOut=false;this.pumpT=0;this.boltT=0},
+  draw(d){this.drawT=d;this.drawD=d;this.act=null;this.rel=null;this.mel=null;this.throwT=0;this.pull=null;this.pinOut=false;this.pumpT=0;this.boltT=0},
   fire(W,side){const m=this.cur,S=this.sp,K=vmKick(W);
     if(m&&m.gun2){const g=side<0?m.gun2:m.gun;if(this.flash.parent!==g){if(this.flash.parent)this.flash.parent.remove(this.flash);g.add(this.flash);const mz=GUNS[W.model].muzzle;this.flash.position.set(mz[0],mz[1],mz[2]-.06)}
       if(side<0)this.kick2=1;else this.kick=1;S.px.v+=side<0?-.15:.15}
     S.pz.v+=K[0];S.rx.v+=K[1]*rr(.85,1.15);S.rz.v+=(Math.random()*2-1)*K[2];S.ry.v+=(Math.random()*2-1)*K[2]*.4;S.py.v+=K[0]*.15;
     this.flashT=W.quiet||W.cone?0:W.spin?.03:.045;this.flash.rotation.z=Math.random()*TAU;const s=W.kind==='shotgun'||W.kind==='mg'||W.kind==='special'?1.35:W.kind==='pistol'?.75:W.kind==='sniper'?1.2:1;this.flash.scale.setScalar(s*rr(.8,1.2));
     if(!W.quiet)this.U.uMuzzle.value.setRGB(W.cone?1.6:1.2,W.cone?.7:.8,W.cone?.3:.45);if(W.pump)this.pumpT=.62;if(W.bolt)this.boltT=.95},
-  reload(W,dur,kind){this.rel={t:0,d:dur,kind:kind||'mag'};this.slapped=false},
+  reload(W,dur,kind){this.rel={t:0,d:dur,kind:kind||'mag'};this.slapped=false;this.act=null},
   shellIn(){this.rel={t:0,d:.4,kind:'shell'};this.sp.py.v+=.12},
   stopReload(){this.rel=null},
   stance(b){this.sp.py.v-=.2;this.sp.rx.v+=b?.8:-.6},
@@ -182,6 +182,8 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     // grenade throw
     if(this.throwT>0){this.throwT=Math.max(0,this.throwT-dt);const p=1-this.throwT/.5;kfv(this.soft?VMK.lob:VMK.nade,p,_vk);x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];this.camPitch=_vk[3]*.015}
     if(VMX[this.id]){_vk2.fill(0);VMX[this.id](this,a,dt,_vk2,m);x+=_vk2[0];y+=_vk2[1];z+=_vk2[2];rx+=_vk2[3];ry+=_vk2[4];rz+=_vk2[5]}
+    // ---- the gun's own first-draw action (vmdraw.js) ----
+    if(this.act&&kind!=='claw'){_vkA.fill(0);this.actFrame(dt,m,W,_vkA);x+=_vkA[0];y+=_vkA[1];z+=_vkA[2];rx+=_vkA[3];ry+=_vkA[4];rz+=_vkA[5]}
     m.root.position.set(x,y,z);m.root.rotation.set(rx,ry,rz);
     // ---- zombie claws: two arms with their own strokes ----
     if(kind==='claw'){const R_=m.armR,L_=m.armL;const A=_vca;A[0].set(CLAW_REST);A[1].set(CLAW_REST);A[1][0]=-A[1][0];A[1][3]=-A[1][3];

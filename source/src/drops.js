@@ -27,7 +27,7 @@ function playerDrop(a){if(!a||!a.alive||a.team!==TH||G.st==='end'||G.st==='over'
 // a human going down (killed, or turned into a zombie) lets his primary fall
 function dropDeath(a){if(NET.cli||a.team!==TH)return;const w=a.inv&&a.inv[1];if(w&&dropOk(w))dropFrom(a,w,false)}
 // a gun goes into the hands of whoever walked over it
-function dropGive(a,w,mag,res){const W=WPN[w];if(!W)return;a.inv[W.slot]=w;a.ammo[w]={mag,res};
+function dropGive(a,w,mag,res){const W=WPN[w];if(!W)return;a.inv[W.slot]=w;a.ammo[w]={mag,res};gunFresh(a,w);
   if(WPN[a.cur]&&WPN[a.cur].kind==='melee')equip(a,w);
   if(a.isPlayer){AU.play('draw',{vol:.6});HUD.note(W.n[LI()]+(LI()?' picked up':' 획득'),1.4)}}
 function dropTake(a,d){dropRemove(d);dropGive(a,d.w,d.mag,d.res);if(NET.host)netEv('wp',{d:d.id,i:a.id,w:d.w,mg:d.mag,rs:d.res})}
