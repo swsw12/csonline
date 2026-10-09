@@ -33,9 +33,10 @@ function fdHerm(t,v,m,n,u,md){if(u<=t[0])return v[0];if(u>=t[n-1])return v[n-1];
   const k=md&&md[i];if(k===1)return v[i-1]+(v[i]-v[i-1])*s*s;if(k===2)return v[i-1]+(v[i]-v[i-1])*(1-(1-s)*(1-s));
   const s2=s*s,s3=s2*s;return (2*s3-3*s2+1)*v[i-1]+(s3-2*s2+s)*h*m[i-1]+(-2*s3+3*s2)*v[i]+(s3-s2)*h*m[i]}
 // a track of rows [u, v0, v1, ...] (all rows the same length)
-function fdTrack(K,u,out){const n=K.length;if(!K._t){const d=K._d=K[0].length-1;K._t=K.map(k=>k[0]);K._v=[];K._m=[];
+// (a row one longer than the first carries a mode in its last place, as fdKey1's: 1 = driven into this key and stopped dead)
+function fdTrack(K,u,out){const n=K.length;if(!K._t){const d=K._d=K[0].length-1;K._t=K.map(k=>k[0]);K._v=[];K._m=[];K._md=K.some(k=>k.length>d+1)?K.map(k=>k[d+1]||0):null;
     for(let c=0;c<d;c++){const v=K.map(k=>k[c+1]||0),m=new Array(n);fdSlopes(K._t,v,n,m);K._v.push(v);K._m.push(m)}}
-  for(let c=0;c<K._d;c++)out[c]=fdHerm(K._t,K._v[c],K._m[c],n,u);return out}
+  for(let c=0;c<K._d;c++)out[c]=fdHerm(K._t,K._v[c],K._m[c],n,u,K._md);return out}
 // a single-value track of rows [u, v, mode?]
 function fdKey1(K,u){const n=K.length;if(!K._t){K._t=K.map(k=>k[0]);K._v=K.map(k=>k[1]);K._md=K.map(k=>k[2]||0);K._m=new Array(n);fdSlopes(K._t,K._v,n,K._m)}
   return fdHerm(K._t,K._v,K._m,n,u,K._md)}
@@ -62,12 +63,21 @@ const _fr=new THREE.Vector3(),_fs=new THREE.Vector3();
 function fdArm(arm,P,w,S,u,elb){if(!arm||!arm.visible)return;const q0=arm.userData.q0;if(w<=.001||!q0){arm.position.copy(P);return}
   _fe.copy(elb);arm.parent.worldToLocal(_fe);_fa.copy(_fe).sub(P).normalize();_fb.copy(P).addScaledVector(_fa,.045*Math.min(1,w));arm.position.copy(_fb);
   const H=S.k,n=H.length;if(!S._b)S._b=H.map(k=>{const v=new THREE.Vector3(k[6],k[7],k[8]);return v.lengthSq()<1e-8?v.set(0,1,0):v.normalize()});
-  _fr.set(0,1,0).addScaledVector(_fa,-_fa.y);if(_fr.lengthSq()<1e-6)_fr.set(1,0,0).addScaledVector(_fa,-_fa.x);_fr.normalize();_fs.crossVectors(_fa,_fr);
-  // the branch of each key's roll is settled once, on the first frame, by unwrapping key to key; later frames keep to it
-  let prev=0;const A0=S._a0;for(let i=0;i<n;i++){const b=S._b[i],x=b.dot(_fr),y=b.dot(_fs);let a=x*x+y*y<1e-8?(A0?A0[i]:prev):Math.atan2(y,x);const ref=A0?A0[i]:prev;
-    while(a-ref>Math.PI)a-=TAU;while(a-ref<-Math.PI)a+=TAU;_fT[i]=H[i][0];_fV[i]=a;prev=a}
-  if(!A0)S._a0=Array.from(_fV.subarray(0,n));
-  fdSlopes(_fT,_fV,n,_fM);const th=fdHerm(_fT,_fV,_fM,n,u);_fUp.copy(_fr).multiplyScalar(Math.cos(th)).addScaledVector(_fs,Math.sin(th));
+  // the roll is measured from a reference that is carried along with the forearm from frame to frame (world up on the first
+  // frame), so it never flips when the forearm swings through vertical
+  const pr=arm.userData.fdr;if(pr)_fr.copy(pr).addScaledVector(_fa,-pr.dot(_fa));
+  if(!pr||_fr.lengthSq()<1e-6){_fr.set(0,1,0).addScaledVector(_fa,-_fa.y);if(_fr.lengthSq()<1e-6)_fr.set(1,0,0).addScaledVector(_fa,-_fa.x)}
+  _fr.normalize();if(pr)pr.copy(_fr);else arm.userData.fdr=_fr.clone();_fs.crossVectors(_fa,_fr);
+  // the branch of each key's roll is settled on the first frame by unwrapping key to key; after that each key's roll is
+  // followed from frame to frame
+  // (a key whose back-of-hand direction lies along the forearm has no roll to speak of: it keeps the roll it had until the
+  // forearm turns away from it again, instead of spinning round)
+  let prev=0;const A0=S._a0;for(let i=0;i<n;i++){const b=S._b[i],x=b.dot(_fr),y=b.dot(_fs),r2=x*x+y*y;const ref=A0?A0[i]:prev;let a=r2<1e-8?ref:Math.atan2(y,x);
+    while(a-ref>Math.PI)a-=TAU;while(a-ref<-Math.PI)a+=TAU;if(A0)a=ref+(a-ref)*smooth(clamp((Math.sqrt(r2)-.15)/.3,0,1));_fT[i]=H[i][0];_fV[i]=a;prev=a}
+  if(!A0)S._a0=new Float64Array(n);for(let i=0;i<n;i++)S._a0[i]=_fV[i];
+  // (the slopes are taken on the first frame and kept: recomputed every frame they can switch between the monotone cases as
+  // the keys' rolls drift with the forearm, and the hand would twitch)
+  if(!S._rm){fdSlopes(_fT,_fV,n,_fM);S._rm=Float64Array.from(_fM.subarray(0,n))}const th=fdHerm(_fT,_fV,S._rm,n,u);_fUp.copy(_fr).multiplyScalar(Math.cos(th)).addScaledVector(_fs,Math.sin(th));
   _fm.lookAt(_fe,_fb,_fUp);_fq.setFromRotationMatrix(_fm);
   // blend from the rest pose along a path that stays continuous: the target keeps its sign from frame to frame (a plain slerp
   // would jump to the other way round the moment the hand passes half a turn from its rest pose)
@@ -330,27 +340,34 @@ const FDS={
       C:[[0,0,0,0],[.2,.006,.004,.01],[.86,0,0,0],[1,0,0,0]]}}};
 
 // ---- running a clip (VM side) ----
-VM.firstDraw=function(raise,extra,P){this.draw(raise);const m=this.cur,W=WPN[this.id];const f=FDS[P.act];if(!f||!m||!W)return;for(const a of [m.armL,m.armR])if(a)a.userData.fdq=null;
-  const st=raise*.62,d=raise+extra,L=d-st,S=f(P,GUNS[W.model],m,L);
-  this.act={P,S,t:0,st,d,L,u:0,ev:(S.E||[]).slice().sort((a,b)=>a[0]-b[0]),ei:0,ps:(S.parts||[]).map(()=>({x:0,v:0,free:false,hits:0,done:false,sd:1,v1:0})),
-    ss:(S.spins||[]).map(()=>({a:0,w:0,ki:0,wp:0})),cam:{p:{x:0,v:0},y:{x:0,v:0},r:{x:0,v:0}},hp:new THREE.Vector3(),hpR:new THREE.Vector3(),hw:null,hwR:null,eng:S.eng0==null?1:S.eng0}};
+VM.firstDraw=function(raise,extra,P){this.draw(raise);const m=this.cur,W=WPN[this.id];const f=FDS[P.act];if(!f||!m||!W)return;
+  const st=raise*.62,d=raise+extra;this.playClip(f(P,GUNS[W.model],m,d-st),st,d,'draw',P)};
+// run a clip: it starts st seconds from now and ends at d (both from now); tag says what it is (draw / rl / shell / mel)
+VM.playClip=function(S,st,d,tag,P){const m=this.cur;if(!m||!S)return null;for(const a of [m.armL,m.armR])if(a){a.userData.fdq=null;a.userData.fdr=null}
+  return this.act={tag,P:P||{},S,t:0,st,d,L:Math.max(.05,d-st),u:0,ev:(S.E||[]).slice().sort((a,b)=>a[0]-b[0]),ei:0,ps:(S.parts||[]).map(()=>({x:0,v:0,free:false,hits:0,done:false,sd:1,v1:0})),
+    ss:(S.spins||[]).map(()=>({a:0,w:0,ki:0,wp:0})),cam:{p:{x:0,v:0},y:{x:0,v:0},r:{x:0,v:0}},hp:new THREE.Vector3(),hpR:new THREE.Vector3(),hw:null,hwR:null,eng:S.eng0==null?1:S.eng0,fade:null,hold:0}};
+// let a clip go: everything it adds eases back to the plain pose over d seconds (a reload cut short, a swing interrupted)
+VM.fadeClip=function(d){const A=this.act;if(A&&!A.fade)A.fade={t:0,d:d||.14}};
 // a sound / kick / effect: [sound, vol, rate, [push up, pitch, roll, push back] gun kick, [pitch, yaw, roll] camera kick, effect]
 VM.fdHit=function(h){const A=this.act,S=this.sp;if(h[0])AU.play(h[0],{vol:h[1],rate:h[2]});
   if(h[3]){S.py.v+=h[3][0];S.rx.v+=h[3][1];S.rz.v+=h[3][2]||0;S.pz.v+=h[3][3]||0}
   if(h[4]&&A){A.cam.p.v+=h[4][0]*30;A.cam.y.v+=(h[4][1]||0)*30;A.cam.r.v+=(h[4][2]||0)*30}
   const fx=h[5];if(fx==='flame'){this.flashT=.32;this.U.uMuzzle.value.setRGB(1.8,.7,.25);this.flash.scale.setScalar(2.2)}else if(fx==='eng'&&A)A.eng=1};
 // one frame, after every other layer and before the view model's transform is written: the gun pose into K, parts, hand targets
-VM.actFrame=function(dt,m,W,K){const A=this.act;if(!A)return;A.t+=dt;if(A.t<A.st)return;const S=A.S,G=GUNS[W.model];const u=A.u=clamp((A.t-A.st)/A.L,0,1);
-  if(S.G){fdTrack(S.G,u,_fo);for(let i=0;i<6;i++)K[i]+=_fo[i]}
+VM.actFrame=function(dt,m,W,K){const A=this.act;if(!A)return;
+  // a hit-stop holds the clip still for a moment; a fade lets it go
+  let fk=0;if(A.fade){A.fade.t+=dt;fk=smooth(clamp(A.fade.t/A.fade.d,0,1));if(fk>=1){this.act=null;return}}else if(A.hold>0)A.hold-=dt;else A.t+=dt;
+  if(A.t<A.st)return;const S=A.S,G=GUNS[W.model];const u=A.u=clamp((A.t-A.st)/A.L,0,1),gk=1-fk;A.fk=fk;
+  if(S.G){fdTrack(S.G,u,_fo);for(let i=0;i<6;i++)K[i]+=_fo[i]*gk}
   // the two guns of a pair (mirrored)
-  if(S.D&&m.gun2){const k=fdKey1(S.D,u),Q=S.DP;for(const [g,sd] of [[m.gun,1],[m.gun2,-1]]){g.position.x+=sd*Q[0]*k;g.position.y+=Q[1]*k;g.position.z+=Q[2]*k;g.rotation.x+=Q[3]*k;g.rotation.y+=sd*Q[4]*k;g.rotation.z+=sd*Q[5]*k}}
+  if(S.D&&m.gun2){const k=fdKey1(S.D,u)*gk,Q=S.DP;for(const [g,sd] of [[m.gun,1],[m.gun2,-1]]){g.position.x+=sd*Q[0]*k;g.position.y+=Q[1]*k;g.position.z+=Q[2]*k;g.rotation.x+=Q[3]*k;g.rotation.y+=sd*Q[4]*k;g.rotation.z+=sd*Q[5]*k}}
   // moving parts: keyed, then free under their spring
   if(S.parts)for(let i=0;i<S.parts.length;i++){const p=S.parts[i],s=A.ps[i],TT=p.two?m.tags2:m.tags,T=TT&&TT[p.tag],home=p.at||0;
     if(!s.free){s.x=p.k?fdKey1(p.k,u):0;if(p.rel!=null&&u>=p.rel){s.free=true;s.v=0;s.sd=Math.sign(s.x-home)||1}}
     else if(!s.done){const n=4,h=dt/n;for(let j=0;j<n;j++){s.v-=s.sd*p.A*h;s.x+=s.v*h;
         if(s.sd*(s.x-home)<=0){s.x=home;const sp=Math.abs(s.v);if(!s.hits){s.v1=sp;if(p.home)this.fdHit(p.home)}s.hits++;s.v=-s.v*(p.e||0);
           if(s.hits>3||Math.abs(s.v)<s.v1*.08){s.v=0;s.done=true;break}}}}
-    if(T)fdApply(T,p.ch,s.x)}
+    if(T)fdApply(T,p.ch,s.x*gk)}
   // turning parts
   if(S.spins)for(let i=0;i<S.spins.length;i++){const p=S.spins[i],s=A.ss[i],T=m.tags[p.tag];
     while(p.kick&&s.ki<p.kick.length&&u>=p.kick[s.ki][0]){s.w=p.kick[s.ki][1];s.ki++}
@@ -358,20 +375,38 @@ VM.actFrame=function(dt,m,W,K){const A=this.act;if(!A)return;A.t+=dt;if(A.t<A.st
     if(p.stop!=null&&u>=p.stop){const q=p.snap||TAU;if(s.tg==null)s.tg=(s.w>=0?Math.ceil(s.a/q-.02):Math.floor(s.a/q+.02))*q;s.a+=(s.tg-s.a)*Math.min(1,dt*24);s.w=0}
     else s.a+=s.w*dt;
     // the gun twists against the motor's acceleration (smoothed) and buzzes with its speed; both fade out as the clip ends
-    const al=(s.w-s.wp)/Math.max(dt,1e-3);s.wp=s.w;s.al=(s.al||0)+(al-(s.al||0))*Math.min(1,dt*8);if(T)fdApply(T,p.ch||'rz',s.a);const fo=1-smooth(clamp((u-.86)/.14,0,1));
+    const al=(s.w-s.wp)/Math.max(dt,1e-3);s.wp=s.w;s.al=(s.al||0)+(al-(s.al||0))*Math.min(1,dt*8);if(T)fdApply(T,p.ch||'rz',s.a);const fo=(1-smooth(clamp((u-.86)/.14,0,1)))*gk;
     if(p.torque)K[5]-=clamp(s.al*p.torque,-.07,.07)*fo;if(p.shake)fdJit(K,Math.min(1,Math.abs(s.w)/(p.wmax||60))*p.shake*fo)}
   // hands (posed after the root transform, in actArms)
   A.hw=null;A.hwR=null;
   const rh=(g,d)=>g&&g.userData.hand?g.userData.hand.rest:d;
-  if(S.H&&m.armL&&m.armL.visible){A.hw=fdHandAt(m,G,S.H,u,A.hp,rh(m.armL,.82)).slice()}
-  if(S.R&&m.armR){A.hwR=fdHandAt(m,G,S.R,u,A.hpR,rh(m.armR,.95)).slice()}
-  if(S.vib){const j=fdKey1(S.vib,u);if(j>0)fdJit(K,j)}
+  if(S.H&&m.armL&&m.armL.visible){A.hw=fdHandAt(m,G,S.H,u,A.hp,rh(m.armL,.82)).slice();if(fk){A.hp.lerp(m.armL.userData.base,fk);A.hw[0]*=gk;A.hw[1]+=(rh(m.armL,.82)-A.hw[1])*fk}}
+  if(S.R&&m.armR){A.hwR=fdHandAt(m,G,S.R,u,A.hpR,rh(m.armR,.95)).slice();if(fk){A.hpR.lerp(m.armR.userData.base,fk);A.hwR[0]*=gk;A.hwR[1]+=(rh(m.armR,.95)-A.hwR[1])*fk}}
+  if(S.vib){const j=fdKey1(S.vib,u)*gk;if(j>0)fdJit(K,j)}
   // camera: keyed sway plus kicks ringing out
   const C=A.cam;vspr(C.p,0,260,dt);vspr(C.y,0,260,dt);vspr(C.r,0,260,dt);let cp=C.p.x,cy=C.y.x,cr=C.r.x;
-  if(S.C){fdTrack(S.C,u,_fo);cp+=_fo[0];cy+=_fo[1];cr+=_fo[2]}this.camPitch+=cp;this.camYaw+=cy;this.camRoll+=cr;
-  while(A.ei<A.ev.length&&u>=A.ev[A.ei][0]){const e=A.ev[A.ei++];this.fdHit(e.slice(1))}
-  if(A.t>=A.d)this.act=null};
+  if(S.C){fdTrack(S.C,u,_fo);cp+=_fo[0]*gk;cy+=_fo[1]*gk;cr+=_fo[2]*gk}this.camPitch+=cp;this.camYaw+=cy;this.camRoll+=cr;
+  if(!fk)while(A.ei<A.ev.length&&u>=A.ev[A.ei][0]){const e=A.ev[A.ei++];this.fdHit(e.slice(1))}
+  if(A.t>=A.d&&!A.fade){if(S.hold){if(A.t>=A.d+S.hold)this.fadeClip(.15)}else A.end=1}};
 // the hands, once the view model's transform is in place (the elbows live in camera space)
-VM.actArms=function(m){const A=this.act;if(!A||(!A.hw&&!A.hwR))return;m.root.updateMatrixWorld(true);
-  const S=A.S,eL=S.H&&S.H.elb?_fEL.set(...S.H.elb):FD_ELB[0],eR=S.R&&S.R.elb?_fER.set(...S.R.elb):FD_ELB[1];
-  for(const [arm,P,o,e,H] of [[m.armL,A.hp,A.hw,eL,S.H],[m.armR,A.hpR,A.hwR,eR,S.R]])if(o){fdArm(arm,P,o[0],H,A.u,e);vmHandCurl(arm,o[1])}};
+// a clip may move an elbow for a stretch of it: H.elbs = [[u0,u1,[x,y,z]], ...] (the hand is back at rest at the joins),
+// or carry it along a track, H.elbT = [[u,x,y,z], ...] (a swing: the elbow travels with the stroke)
+const _fEo=[0,0,0];
+function fdElb(H,u,def,out){if(!H)return def;if(H.elbT){fdTrack(H.elbT,u,_fEo);return out.set(_fEo[0],_fEo[1],_fEo[2])}if(H.elbs){for(const e of H.elbs)if(u>=e[0]&&u<=e[1])return e[2]?out.set(e[2][0],e[2][1],e[2][2]):def;return def}return H.elb?out.set(H.elb[0],H.elb[1],H.elb[2]):def}
+VM.actArms=function(m){const A=this.act;if(!A)return;const S=A.S;
+  if(A.hw||A.hwR){m.root.updateMatrixWorld(true);const eL=fdElb(S.H,A.u,FD_ELB[0],_fEL),eR=fdElb(S.R,A.u,FD_ELB[1],_fER);
+    for(const [arm,P,o,e,H] of [[m.armL,A.hp,A.hw,eL,S.H],[m.armR,A.hpR,A.hwR,eR,S.R]])if(o){fdArm(arm,P,o[0],H,A.u,e);vmHandCurl(arm,o[1])}}
+  // things held in a hand for part of the clip (a shell, a speed loader)
+  if(S.props&&!A.fk)for(const pr of S.props){const arm=pr.arm==='R'?m.armR:m.armL;if(!arm)continue;const g=fdProp(arm,pr.kind,m.mat);let on=false;for(const r of pr.on)if(A.u>=r[0]&&A.u<=r[1])on=true;
+    g.visible=on;if(pr.pos)g.position.set(pr.pos[0],pr.pos[1],pr.pos[2]);if(pr.rot)g.rotation.set(pr.rot[0],pr.rot[1],pr.rot[2])}
+  if(A.end)this.act=null};
+// small props a hand can carry; built once per arm, hidden every frame by vm.js unless a clip shows them
+const FD_PROPS={
+  shell:()=>[Pt(0,0,-.006,.02,.02,.054,'red',{r:.008}),Pt(0,0,.027,.021,.021,.012,'gold',{r:.004})],
+  shell2:()=>[Pt(-.011,0,-.006,.02,.02,.054,'red',{r:.008}),Pt(-.011,0,.027,.021,.021,.012,'gold',{r:.004}),Pt(.011,0,-.006,.02,.02,.054,'red',{r:.008}),Pt(.011,0,.027,.021,.021,.012,'gold',{r:.004})],
+  loader:()=>{const p=[Pt(0,0,.012,.05,.05,.022,'blk',{r:.012}),Pt(0,0,.03,.018,.018,.016,'steel')];for(let i=0;i<6;i++){const a=i/6*TAU;p.push(Pt(Math.cos(a)*.015,Math.sin(a)*.015,-.012,.009,.009,.028,'gold',{r:.004}))}return p},
+  bolt:()=>[Pt(0,0,0,.008,.008,.2,'steel'),Pt(0,0,-.105,.014,.004,.026,'gold'),Pt(0,0,.1,.016,.002,.02,'red')],
+  can:()=>[Pt(0,0,0,.05,.07,.035,'red',{r:.01}),Pt(0,.042,0,.016,.014,.016,'blk')]};
+function fdProp(arm,kind,mat){const P=arm.userData.props||(arm.userData.props={});if(P[kind])return P[kind];
+  const g=new THREE.Group();const mesh=new THREE.Mesh(partGeo(FD_PROPS[kind]()),mat);mesh.frustumCulled=false;g.add(mesh);g.position.set(0,-.03,-.075);g.visible=false;arm.add(g);return P[kind]=g}
+function fdPropsHide(arm){const P=arm&&arm.userData.props;if(P)for(const k in P)P[k].visible=false}

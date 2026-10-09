@@ -342,7 +342,7 @@ const MAPDEFS={
   q7:{n:['격리구역 Q-7','Quarantine Zone Q-7'],d:['비 내리는 밤의 격리시설. 창고 중2층·사무동 2층·펌프장 옥상·감시탑과 넓은 마당.','A rainy night at the quarantine facility: warehouse mezzanine, two-storey office, pump-house roof, a watchtower and a wide yard.'],
     env:{sky:1,rain:1,storm:1,fog:'#0a0c12',fogD:.045},build:buildQ7},
 };
-const MAPLIST=()=>Object.keys(MAPDEFS);
+const MAPLIST=()=>Object.keys(MAPDEFS).filter(k=>!MAPDEFS[k].practice);// (the shooting range is not a match map)
 function buildMapData(id){const D=MAPDEFS[id];
   Object.assign(MAP,{id,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fires:[],smoke:[],spray:[],dyn:[],moon:null,probe:null,probeY:D.probeY||null,env:D.env,cam:null,spawnYaw:null,
     ambIn:D.env.ambIn?new THREE.Color(D.env.ambIn):null,ambOut:D.env.ambOut?new THREE.Color(D.env.ambOut):null,bounds:D.bounds||[-30,-30,30,30],miniCut:D.mini||null});

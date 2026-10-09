@@ -554,7 +554,7 @@ const GUN_DESIGN={
   // ── 샷건 ─────────────────────────────────────────────────────────────────────────────────────
   sg8:     {mag:8,  ch:0, act:'pump', x:.45},                                // 베넬리 M3 슈퍼90 — 군용 튜브 7+약실 1 = 8발. 펌프 척-척
   m14:     {mag:7,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 베넬리 M4 (XM1014) — 튜브 6+약실 1 = 7발. 오른쪽 장전손잡이
-  as12:    {mag:20, ch:0, act:'charge', x:.6,  side:'r', d:.055, roll:.32, heavy:.6}, // 대우 USAS-12 — 10발 박스 / 20발 드럼 → 드럼. 묵직한 오른쪽 손잡이
+  as12:    {mag:20, ch:0, act:'charge', x:.6,  side:'r', d:.055, roll:.32, heavy:.6, rl:'mag', reload:3.2}, // 대우 USAS-12 — 10발 박스 / 20발 드럼 → 드럼. 묵직한 오른쪽 손잡이. 재장전은 드럼 통째로 교체(3.2초)
   db2:     {mag:2,  ch:0, act:'break', x:.85},                               // 더블 배럴 — 2발. 꺾어 열어 약실 확인, 손목으로 탁 닫기
   volc:    {         ch:0, act:'spin', x:.7, rps:2.2, axis:'z', snd:['cylspin',.85,.7], shake:.002}, // 볼케이노 (CSO) — 6연장 회전 드럼을 드르륵 한 바퀴
   mdrill:  {         ch:0, act:'spin', x:.6, rps:16, axis:'z', snd:['drill',.45,1.2], shake:.004},   // 매그넘 드릴 (CSO) — 드릴 비트를 위잉
@@ -593,4 +593,6 @@ const GUN_DESIGN={
   bhole:   {         ch:0, act:'orb', x:.8},                                 // 이벤트 호라이즌 (보급상자 전용) — 구체가 돌며 빛이 차오름
 };
 // (게임이 읽는 부분) 무기 표에 위 값을 덮어쓴다 — 모든 무기 파일이 읽힌 뒤 supply.js 끝에서 한 번 부른다
-function applyGunDesign(){for(const id in GUN_DESIGN){const W=WPN[id],g=GUN_DESIGN[id];if(!W)continue;if(g.mag)W.mag=g.mag;if(g.res)W.res=g.res;W.ch=g.ch?1:0;W.fd=g}}
+// rl:'mag' = 탄창(드럼)째 갈아 끼우는 재장전으로 바꿈 (한 발씩 넣기 없앰), reload = 재장전 시간(초)
+function applyGunDesign(){for(const id in GUN_DESIGN){const W=WPN[id],g=GUN_DESIGN[id];if(!W)continue;if(g.mag)W.mag=g.mag;if(g.res)W.res=g.res;W.ch=g.ch?1:0;W.fd=g;
+  if(g.rl==='mag'){delete W.shellRel;delete W.relStart}if(g.reload)W.reload=g.reload}}

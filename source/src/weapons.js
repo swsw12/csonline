@@ -165,8 +165,8 @@ function meleeStrike(a,heavy,w){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;const
       damageActor(t,W.dmg[hi]*(hs?2:1),a,{w,hs,dir:[_dv.x,0,_dv.z],kb:W.kb[hi],stag:W.stag?W.stag[hi]:.5,up:W.up?W.up[hi]:0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
       FX.blood(t.c.x,t.c.y+1.2,t.c.z,_dv.x,0,_dv.z,1.6*(W.sw<1?1.6:1),false)}
     const snd=W.blunt?'hamhit':'khit',t0=list[0];
-    if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt?1:W.sw||1});HUD.hitmark(hsAny);if(W.sw<1)FX.shake=Math.max(FX.shake,W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}
-  else if(r&&r.wall){if(r.wall.box&&r.wall.box.coffin&&a.team===TH)COFF.hurt(r.wall.box.coffin,W.dmg[hi]*1.5,a);FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer)AU.play('kwall',{vol:.6,rate:W.sw||1});else AU.at('kwall',r.x,r.y,r.z,{vol:.5})}}
+    if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt?1:W.sw||1});HUD.hitmark(hsAny);VM.meleeHit&&VM.meleeHit(heavy,1);if(W.sw<1)FX.shake=Math.max(FX.shake,W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}
+  else if(r&&r.wall){if(r.wall.box&&r.wall.box.coffin&&a.team===TH)COFF.hurt(r.wall.box.coffin,W.dmg[hi]*1.5,a);FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer){AU.play('kwall',{vol:.6,rate:W.sw||1});VM.meleeHit&&VM.meleeHit(heavy,2)}else AU.at('kwall',r.x,r.y,r.z,{vol:.5})}}
 function knifeAttack(a,heavy){meleeSwing(a,heavy);meleeStrike(a,heavy)}
 // ---------- grenades ----------
 const NADES=[];

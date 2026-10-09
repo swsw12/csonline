@@ -178,6 +178,7 @@ const UI={open:null,
     else if(a==='set'){const [k,val]=v.split(':');CFG[k]=isNaN(+val)?val:+val;saveCfg();this.buildSetup()}
     else if(a==='opt'){const [k,val]=v.split(':');CFG[k]=val==='true'?true:val==='false'?false:isNaN(+val)?val:+val;saveCfg();applyCfg();this.buildOpts()}
     else if(a==='go'){this.hideAll();Main.startGame()}
+    else if(a==='range'){this.hideAll();Main.startRange()}
     else if(a==='resume'){Main.resume()}
     else if(a==='quit'){Main.toTitle()}
     else if(a==='again'){this.hideAll();Main.startGame()}

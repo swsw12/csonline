@@ -524,3 +524,17 @@ html:not(.touch) .rotbtn{display:none!important}
 /* supply crate marker on screen */
 .supMk{position:absolute;transform:translate(-50%,-100%);padding:1px 6px;font-size:11px;font-weight:bold;color:#ffd04a;background:rgba(10,8,4,.55);border:1px solid rgba(255,208,74,.6);border-radius:3px;pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px #000}
 .supMk::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-4px;border:4px solid transparent;border-top-color:rgba(255,208,74,.8)}
+/* shooting range record (range.js) */
+#hRange{position:absolute;left:14px;top:254px;width:214px;background:rgba(8,10,14,.62);border-left:3px solid #e8c21a;padding:8px 10px 7px;font-size:12px;color:#d8d6ce;pointer-events:none;display:none}
+#hRange .rgT{font-weight:700;color:#e8c21a;letter-spacing:.06em;margin-bottom:5px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+#hRange .rgT small{color:#b8b6ae;font-weight:400;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:116px}
+#hRange .rgR{display:flex;align-items:baseline;gap:6px;padding:2px 0;border-top:1px solid rgba(255,255,255,.06)}
+#hRange .rgR span{flex:0 0 66px;color:#8f8d86}
+#hRange .rgR b{color:#f0eee6;font-weight:700;white-space:nowrap}
+#hRange .rgR b.big{font-size:20px;color:#ffd9a0}
+#hRange .rgR small{margin-left:auto;color:#8f8d86;white-space:nowrap}
+#hRange .rgK{margin-top:6px;color:#8f8d86;font-size:11px}
+#hRange kbd{display:inline-block;min-width:14px;padding:0 3px;margin:0 2px 0 6px;border:1px solid #6a6860;border-radius:3px;color:#e8e4d8;font:11px/14px monospace;text-align:center}
+#hRange .rgK kbd:first-child{margin-left:0}
+html.touch #hRange{top:calc(var(--bs)*.72 + 14px);transform:scale(.82);transform-origin:top left}
+html.touch #hRange .rgK{display:none}

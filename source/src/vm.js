@@ -96,7 +96,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
   shellIn(){this.rel={t:0,d:.4,kind:'shell'};this.sp.py.v+=.12},
   stopReload(){this.rel=null},
   stance(b){this.sp.py.v-=.2;this.sp.rx.v+=b?.8:-.6},
-  melee(heavy){const W=WPN[this.id];this.mel={t:0,d:W&&W.anD?W.anD[heavy?1:0]:(heavy?.75:.42),heavy,side:this.mel&&this.mel.side>0?-1:1};this.trail.S.length=0},
+  melee(heavy){if(this.id==='knife'&&this.knSwing&&this.knSwing(heavy))return;const W=WPN[this.id];/* the knife swings on a clip (vmknife.js) */this.mel={t:0,d:W&&W.anD?W.anD[heavy?1:0]:(heavy?.75:.42),heavy,side:this.mel&&this.mel.side>0?-1:1};this.trail.S.length=0},
   claw(heavy,side){this.mel={t:0,d:heavy?.75:.46,heavy,side:side||1};this.trail.S.length=0},
   // voodoo zombie: the right fist holds the doll, the left fist sits just behind it on the doll's legs; light = overhead bash, heavy = bigger slam
   vdPose(A,dt,m){const M=this.mel;let tr=false;const K=_vdk;
@@ -135,7 +135,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     // reset animated parts
     const tags=m.tags;for(const T of [tags,m.tags2])if(T)for(const t in T){const b=T[t].userData.base;T[t].position.copy(b);T[t].rotation.set(0,0,0);T[t].scale.set(1,1,1)}
     if(m.armL&&m.armL.userData.base)m.armL.position.copy(m.armL.userData.base);
-    if(kind!=='claw')for(const A of [m.armL,m.armR])if(A&&A.userData.q0){A.position.copy(A.userData.base);A.quaternion.copy(A.userData.q0);if(A.userData.hand)vmHandCurl(A,A.userData.hand.rest)}// a first-draw clip may have moved the hands
+    if(kind!=='claw')for(const A of [m.armL,m.armR])if(A&&A.userData.q0){A.position.copy(A.userData.base);A.quaternion.copy(A.userData.q0);if(A.userData.hand)vmHandCurl(A,A.userData.hand.rest);fdPropsHide(A)}// a clip may have moved the hands
     this.kick=Math.max(0,(this.kick||0)-dt*10);this.kick2=Math.max(0,(this.kick2||0)-dt*10);
     if(m.gun2){const k=this.kick*this.kick,k2=this.kick2*this.kick2;m.gun.position.set(.13,0,k*.035-.02);m.gun.rotation.set(k*.14,.05,0);m.gun2.position.set(-.13,0,k2*.035-.02);m.gun2.rotation.set(k2*.14,-.05,0);
       // Dual Berettas: an X-cross flourish while drawing; the aim key toggles stance B (wide apart, rolled outward on their sides)
@@ -145,9 +145,12 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
         g.position.x+=sd*P.bX*kB;g.position.y+=P.bY*kB;g.position.z+=P.bZ*kB;g.rotation.z-=sd*P.bRoll*kB;g.rotation.y+=sd*P.bYaw*kB;g.rotation.x+=P.bPitch*kB;
         g.position.x-=sd*P.xX*kX;g.position.y+=P.xY*kX;g.position.z+=(P.xZ-sd*.012)*kX;g.rotation.x+=P.xPitch*kX;g.rotation.y+=sd*P.xYaw*kX;g.rotation.z+=sd*P.xRoll*kX}}
     if(tags.spin){this.spinA+=dt*(a.spinV||0)*40;tags.spin.rotation.z=this.spinA}
+    // slide lock: an empty pistol's slide stays back after the last shot (a reload from empty releases it)
+    if(W.fd&&W.fd.act==='slide'&&!(this.act&&this.act.rl)){const am=a.ammo&&a.ammo[this.id];if(am&&am.mag===0)for(const T of [tags,m.tags2])if(T&&T.slide)T.slide.position.z+=W.fd.d||.045}
     // ---- reload choreography ----
-    if(this.rel){const R0=this.rel;R0.t+=dt;const p=clamp(R0.t/R0.d,0,1);
-      if(R0.kind==='mag'){
+    // (a v2 reload clip from vmrel.js does the work; this older choreography only runs if no clip could be built)
+    if(this.rel){const R0=this.rel;R0.t+=dt;const p=clamp(R0.t/R0.d,0,1),v2=this.act&&this.act.rl;
+      if(v2){}else if(R0.kind==='mag'){
         if(W.brk&&tags.mag){// break the action open on its hinge, feed, snap shut
           kfv(VMK.relB,p,_vk);x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];
           const open=p<.12?smooth(p/.12):p<.72?1:p<.8?1-smooth((p-.72)/.08):0;tags.mag.rotation.x=-open*.62+(p>.8&&p<.86?-Math.sin((p-.8)/.06*Math.PI)*.04:0);
@@ -164,8 +167,8 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
               if(m.armL&&m.armL.visible&&p>.28&&p<.8){const g=GUNS[W.model];const w=Math.sin((p-.28)/.52*Math.PI);m.armL.position.lerp(_vv.set(g.mag[0]-.02,g.mag[1]-.05+Math.min(0,off)*.9,g.mag[2]),w*.88)}}
             if(tags.slide&&p>.82){const s=p<.88?smooth((p-.82)/.06):1-smooth((p-.88)/.08);tags.slide.position.z+=s*.045}
             if(tags.bolt&&p>.8){const s=p<.88?smooth((p-.8)/.08):1-smooth((p-.88)/.1);tags.bolt.position.z+=s*.055;tags.bolt.rotation.z=s*.8;if(m.armL&&m.armL.visible)m.armL.position.lerp(_vv.set(.03,.06,.03),Math.sin(clamp((p-.8)/.2,0,1)*Math.PI)*.6)}}}}
-      else if(R0.kind==='shell'){const s=Math.sin(p*Math.PI);rz+=.25;rx+=.12;y-=.02;if(m.armL&&m.armL.visible){m.armL.position.y-=s*.07;m.armL.position.z+=s*.05;m.armL.position.x-=s*.01}}
-      else if(R0.kind==='start'){const s=smooth(p);rz+=.25*s;rx+=.12*s;y-=.02*s}
+      else if(R0.kind==='shell'&&!v2){const s=Math.sin(p*Math.PI);rz+=.25;rx+=.12;y-=.02;if(m.armL&&m.armL.visible){m.armL.position.y-=s*.07;m.armL.position.z+=s*.05;m.armL.position.x-=s*.01}}
+      else if(R0.kind==='start'&&!v2){const s=smooth(p);rz+=.25*s;rx+=.12*s;y-=.02*s}
       if(R0.t>=R0.d&&R0.kind!=='start')this.rel=null}
     // pump / bolt after a shot
     if(this.pumpT>0){this.pumpT=Math.max(0,this.pumpT-dt);const p=1-this.pumpT/.62;if(p>.2&&tags.pump){const q=clamp((p-.2)/.8,0,1);const s=q<.45?smooth(q/.45):1-smooth((q-.45)/.55);tags.pump.position.z+=s*.095;if(m.armL)m.armL.position.z+=s*.095;rx-=s*.035;rz+=s*.03}}
@@ -185,6 +188,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     if(VMX[this.id]){_vk2.fill(0);VMX[this.id](this,a,dt,_vk2,m);x+=_vk2[0];y+=_vk2[1];z+=_vk2[2];rx+=_vk2[3];ry+=_vk2[4];rz+=_vk2[5]}
     // ---- the gun's own first-draw action (vmdraw.js) ----
     if(this.act&&kind!=='claw'){_vkA.fill(0);this.actFrame(dt,m,W,_vkA);x+=_vkA[0];y+=_vkA[1];z+=_vkA[2];rx+=_vkA[3];ry+=_vkA[4];rz+=_vkA[5]}
+    if(this.act&&this.act.mel){const A=this.act,tr=A.S.trail;trailOn=!!tr&&A.u>tr[0]&&A.u<tr[1]}
     m.root.position.set(x,y,z);m.root.rotation.set(rx,ry,rz);
     if(this.act&&kind!=='claw')this.actArms(m);
     // ---- zombie claws: two arms with their own strokes ----

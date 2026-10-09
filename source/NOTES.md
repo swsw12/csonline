@@ -302,3 +302,35 @@
 - Ripper: VMX.ripper keeps the engine loop silent until the clip's 'eng' event (second pull catches).
 - Tests: scratch fd3/ — var.js variant/contact sheets (bright neutral background, crop), pops.js (every clip at 120 Hz: no NaN, no frame
   jumps, max wrist roll ~20°/step), smoke runs (buy, first draw, fire, reload, switch) for 14 guns without errors, logic test unchanged.
+
+## v6.6 — reloads v2 (vmrel.js), knife swings v2 (vmknife.js), shooting range (range.js)
+- Reloads are clips on the vmdraw engine. VM.reload(W,dur,kind,empty) builds rlBuild (mag) or rlShellSpec('start'); VM.shellIn(last,next)
+  plays one shell ('shell' / 'last', the last one merged with FDS.pump/charge when loaded from empty); VM.stopReload fades (fadeClip .12).
+  Kinds (rlKind): dual, rev (crane + speed loader prop), brk (two shells), belt (rlMag box swap merged with FDS.belt), rail (crossbows),
+  top (P90, air tank), side (Sterling), gen (no mag part: Ripper can, orb shrink), mag. From empty: pistols 'release' (slide held back
+  through the change, released at .78), M4 'catch' (palm on the bolt catch), charge/hk/bolt = mag change [0,.6] + first-draw rack [.6,1].
+- Poses: rlPose (pistol / mg / rifle) + RL_POSE per model for the big guns (mdrill, volc, gx6); shells: raised and canted -.55 so the port
+  and the hand are on screen; fast feeders (shellRel < .4) keep the pouch close. window.__RLT {pose, spose} overrides for the sheets.
+- Engine changes (vmdraw.js): fdRemap / fdMerge compose clips; props held in a hand (FD_PROPS shell/shell2/loader/bolt/can);
+  playClip(S,st,d,tag) + fadeClip + A.hold (hit-stop); a clip's last frame is now posed (act cleared in actArms via A.end — it used to end
+  before the hands were placed, one frame at rest); S.hold keeps a clip that ends away from rest (one shell of several) on its last frame
+  until the next takes over (fades after it); fdTrack rows may carry a mode in an extra last element (1 = driven into the key, dead stop);
+  H.elbT = elbow track [[u,x,y,z]] (fdElb). Hand roll: the reference axis is carried from frame to frame (arm.userData.fdr, reset in
+  playClip) instead of world-up projection (flipped when the forearm passed vertical); key rolls are followed frame to frame and freeze while
+  the key's back-of-hand direction lies along the forearm; roll slopes are kept from the first frame (S._rm).
+- rlMag: a still key at the pouch (pk+.035) so the hand curve doesn't feel the old magazine being swapped out of sight; the fresh one comes
+  up to an approach point (a*.15 along the well) by ap = max(up0+.06, en-.13) and goes in; a magazine carried by its body is let go and
+  its base slapped later (slap .705 instead of .665).
+- Knife v2 (vmknife.js): VM.knSwing(heavy) from VM.melee for the knife; R hand on a fixed palm point of the grip (knGrip from the arm's rest
+  wrist + q0) with w=1 and an elbow track; light A forehand / B backhand alternate (VM.knSide), heavy stab (impact key mode 1); S.trail
+  window; d = min(.4, rate-.06) so a hit-stop never runs into the next swing. VM.meleeHit(heavy, 1 body / 2 wall) from meleeStrike:
+  A.hold .055 / .085 / .035 + camera and pz kick. Axe and hammer keep the v1 keyframes.
+- Shooting range (range.js, built after scenario): MAPDEFS.range (practice:1 → left out of MAPLIST), buildRange (6 stalls, 60 m, boards at
+  10–50 m, daylight), RG_DUMMIES (6 static + 2 walkers), RANGE {begin, update, hit, shot, kill, reset, toggleMove, draw}. Hooks: startRound
+  (range instead of a round), fireGun (shots / hit shots), damageActor (record + money stays 999999), killZombie (no respawn timer: up again
+  in 2 s at its mark), HUD.update (top bar: range time), Main.toTitle (panel off), keys K / J. gameUpdate runs RANGE.update instead of the
+  round flow (no rounds, infection, blackout, supply). Lobby: the 4th card (act 'range') → Main.startRange(). Panel #hRange (style.css).
+- Tests (scratch fd3/, rng/): reload sheets for all 40 guns (rel.js / mkr.py, pose variants via __RLT), rpops.js (every reload at 120 Hz:
+  only the intended slaps remain), ammo logic (AK 10→31, empty→30, MAC-10 30, dual 32, M134 500, USAS 20, M3 shells, cut by firing → fade),
+  knife sheets (kn.js) and step scan, first-draw pops unchanged, range: start, shots, kill / TTK / respawn / heal / walkers / reset, and a
+  normal match → range → title → normal match round trip without console errors.

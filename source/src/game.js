@@ -249,16 +249,16 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   // reloading
   if(a.reloadT>0){a.reloadT-=dt;
     if(W.shellRel){if(cmd.fire&&!pc.fire&&am.mag>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload()}
-      else if(a.reloadT<=0){if(am.mag<W.mag&&am.res>0){am.mag++;am.res--;if(a.isPlayer){AU.play('shellin',{vol:.6});VM.shellIn()}}
-        if(am.mag<W.mag&&am.res>0){a.reloadT=W.shellRel;a.relKind='shell'}else{a.relKind=null;if(a.isPlayer&&W.pump){AU.play('pump',{vol:.6});VM.pumpT=.62}else if(a.isPlayer)AU.play('rack',{vol:.5})}}}
-    else if(a.reloadT<=0){const cap=W.mag+(W.ch&&a.relCh?(W.dual?2:1):0),need=cap-am.mag,take=Math.min(Math.max(0,need),am.res);am.mag+=take;am.res-=take;a.relKind=null;if(a.isPlayer&&W.kind==='pistol')AU.play('slide',{vol:.55})}
+      else if(a.reloadT<=0){// one shell in; the view model's clip plays the push and its click, and racks the gun after the last one if it was loaded from empty
+        if(am.mag<W.mag&&am.res>0){am.mag++;am.res--;if(a.isPlayer)VM.shellIn(!(am.mag<W.mag&&am.res>0),W.shellRel)}
+        if(am.mag<W.mag&&am.res>0){a.reloadT=W.shellRel;a.relKind='shell'}else a.relKind=null}}
+    else if(a.reloadT<=0){const cap=W.mag+(W.ch&&a.relCh?(W.dual?2:1):0),need=cap-am.mag,take=Math.min(Math.max(0,need),am.res);am.mag+=take;am.res-=take;a.relKind=null}
     return}
   const wantReload=(cmd.reload&&!pc.reload)||(am.mag===0&&(cmd.fire||!a.isPlayer));
   if(wantReload&&am.mag<W.mag&&am.res>0&&a.drawT<=0&&a.boltT<=0){a.zoom=0;a.burstN=0;
-    if(W.shellRel){a.reloadT=W.relStart;a.relKind='shell';if(a.isPlayer)VM.reload(W,W.relStart,'start')}
-    else{a.reloadT=W.reload;a.relKind='mag';a.relCh=am.mag>0;if(a.isPlayer){const wid=a.cur;VM.reload(W,W.reload,'mag');
-        if(W.brk){AU.play('brk',{vol:.6});setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('shellin',{vol:.6})},W.reload*.45*1000);setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('brk',{vol:.65,rate:1.15})},W.reload*.8*1000)}
-        else{AU.play('magout',{vol:.6});setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('magin',{vol:.6})},W.reload*.62*1000);if(W.dual)setTimeout(()=>{if(a.reloadT>0&&a.cur===wid)AU.play('magin',{vol:.55,rate:1.05})},W.reload*.8*1000)}}
+    // the player's reload sounds come from the view model's clip (vmrel.js), in step with the hands
+    if(W.shellRel){a.reloadT=W.relStart;a.relKind='shell';if(a.isPlayer)VM.reload(W,W.relStart,'start',am.mag===0)}
+    else{a.reloadT=W.reload;a.relKind='mag';a.relCh=am.mag>0;if(a.isPlayer)VM.reload(W,W.reload,'mag',am.mag===0);
       else AU.at('magout',a.c.x,a.c.y+1.2,a.c.z,{vol:.4,range:15})}return}
   if(W.kind==='saw'){sawUpdate(a,W,dt);return}
   const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;
@@ -450,6 +450,7 @@ const BO={on:false,t:0,dur:0,amb:1,lamp:1,next:1e9,out:0,
 function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors)updateVisual(a,dt);return}
   G.t+=dt;
   if(G.mode==='scen')SCEN.update(dt);// the scenario runs its own stage / wave flow
+  else if(G.mode==='range'){if(typeof RANGE!=='undefined')RANGE.update(dt)}// the shooting range: no rounds at all (range.js)
   else if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=10){const rec=AU.fromFile.countdown;if(s===10&&rec)AU.play('countdown',{vol:1,rev:0});if(!rec)AU.play(s<=3?'beep2':'beep',{vol:.5});HUD.countdown(s)}}
     if(G.time<=0){if(NET.cli)G.time=0;else{selectHosts();G.st='fight';G.time=G.roundTime}}}
   else if(G.st==='fight'){G.time-=dt;const h=humansAlive();BO.update(dt);SUP.update(dt);

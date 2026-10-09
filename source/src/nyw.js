@@ -374,7 +374,7 @@ const VMX={
     if(V.nyDrill>0){V.nyDrill=Math.max(0,V.nyDrill-dt);const p=1-V.nyDrill/1.1;const s=p<.12?smooth(p/.12):p>.86?1-smooth((p-.86)/.14):1;o[2]-=s*.16;o[0]-=s*.04;o[0]+=rr(-.004,.004)*s;o[1]+=rr(-.004,.004)*s}},
   xdz(V,a,dt,o,m){const T=m.tags.spin;V.nyDiscA=(V.nyDiscA||0)+dt*(a.cmd.fire?40:8);if(T)T.rotation.set(V.nyDiscA,0,0)},
   gaebolg(V,a,dt,o,m){const T=m.tags.mag,am=a.ammo.gaebolg;if(T)T.visible=!!am&&(am.mag>0||(a.reloadT>0&&V.rel&&V.rel.t/V.rel.d>.5))},
-  xbow(V,a,dt,o,m){const T=m.tags.mag,am=a.ammo[V.id];if(T)T.visible=!!am&&(am.mag>0||(a.reloadT>0&&V.rel&&V.rel.t/V.rel.d>.5))}};
+  xbow(V,a,dt,o,m){const T=m.tags.mag,am=a.ammo[V.id];if(T)T.visible=!!am&&(am.mag>0||(a.reloadT>0&&V.rel&&V.rel.t/V.rel.d>(V.act&&V.act.rl?.08:.5)))}};
 VMX.xbowa=VMX.xbow;
 const NY_SW=[[0,[0,0,0,0,0,0]],[.25,[.12,.08,.04,.25,-.6,.5]],[.45,[-.08,.02,-.18,-.1,.7,-.6]],[.7,[-.06,-.02,-.06,-.05,.3,-.25]],[1,[0,0,0,0,0,0]]];
 
