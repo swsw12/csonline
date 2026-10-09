@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.9','2026-10-10',[
+ ['NEW','레벨 · 경험치 · 전적이 계정에 저장 — 로그인하면 로비의 레벨과 내 전적(플레이 · 킬 · 감염 · 최고 점수)이 계정 것으로 바뀌고, 다른 PC나 폰에서 로그인해도 그대로. 경험치는 판이 끝날 때 코인과 같이 서버가 계산(판당 최대 3,000). 처음 로그인할 때 이 브라우저에 쌓여 있던 레벨 · 전적을 그 계정으로 한 번 옮겨 줌. 로그아웃하면 게스트용 브라우저 기록이 보임','Level, XP and record saved to your account: signed in, the lobby level and record (games, kills, infections, best score) are the account\'s, on any PC or phone. XP is worked out on the server with the coins when a match ends (3,000 at most per match). The first sign-in on a browser brings the level and record it kept into that account, once. Signed out, the browser\'s guest record shows.']]],
 ['v6.8.1','2026-10-09',[
  ['FIX','Supabase SQL Editor에서 schema.sql 실행 시 "unterminated dollar-quoted string" 오류 수정 (에디터의 RLS 자동 켜기가 함수 안 조회문을 테이블 만들기로 착각하던 문제). 공개 키는 새 publishable key(sb_publishable_…)도 지원','Fixed "unterminated dollar-quoted string" when running schema.sql in the Supabase SQL Editor (its auto-RLS helper mistook lookups inside functions for table creation). The new publishable keys (sb_publishable_…) work as the public key.']]],
 ['v6.8','2026-10-09',[
@@ -127,9 +129,11 @@ const ICO={
   door:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M3 1h9v14H3zm6.5 7a.9.9 0 100 1.8.9.9 0 000-1.8z"/></svg>',
   net:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M5 2a2 2 0 110 4 2 2 0 010-4zm6 0a2 2 0 110 4 2 2 0 010-4zM1 11c0-2.2 1.8-4 4-4s4 1.8 4 4v1H1zm8.7-3.6A4 4 0 0115 11v1h-4.6v-1a5 5 0 00-.7-3.6z"/></svg>'};
 // player record: kept across visits, fed by finished matches
-function recGet(){return Object.assign({g:0,k:0,inf:0,best:0,xp:0},LS.get('rec',{}))}
+// signed in: the account's record (counted on the server from each match); a guest keeps this browser's own
+function recSrv(){return typeof ACC!=='undefined'&&ACC.on&&ACC.ses&&ACC.me&&ACC.me.rec}
+function recGet(){const m=recSrv();return Object.assign({g:0,k:0,inf:0,best:0,xp:0},m||LS.get('rec',{}))}
 function recLevel(xp){let l=1,need=300,acc=0;while(xp>=acc+need&&l<99){acc+=need;l++;need=Math.round(need*1.18)}return {l,cur:xp-acc,need}}
-function recMatch(){const P=G.player;if(!P||G.recDone)return;G.recDone=true;const r=recGet();r.g++;r.k+=P.kills||0;r.inf+=P.infects||0;r.best=Math.max(r.best,Math.round(P.score||0));r.xp+=Math.max(20,Math.round((P.score||0)*.6+(P.kills||0)*8+(P.infects||0)*12));LS.set('rec',r)}
+function recMatch(){const P=G.player;if(!P||G.recDone)return;G.recDone=true;if(recSrv())return;const r=recGet();r.g++;r.k+=P.kills||0;r.inf+=P.infects||0;r.best=Math.max(r.best,Math.round(P.score||0));r.xp+=Math.max(20,Math.round((P.score||0)*.6+(P.kills||0)*8+(P.infects||0)*12));LS.set('rec',r)}
 function myName(){return CFG.mpName||(LI()?'Survivor':'생존자')}
 const relayWhyT=w=>({nat:LI()?'router blocked a direct link':'공유기가 직접 연결을 막음',timeout:LI()?'direct link timed out':'직접 연결 시간 초과',nortc:LI()?'no WebRTC here':'이 화면은 P2P 미지원',err:LI()?'P2P error':'P2P 오류',sdp:LI()?'P2P handshake failed':'P2P 협상 실패',peer:LI()?'peer asked for relay':'상대가 중계 요청',forced:LI()?'forced':'강제'})[w]||w;
 const mapName=id=>(MAPDEFS[id]||MAPDEFS.q7).n[LI()];
@@ -167,7 +171,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.8.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.9 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

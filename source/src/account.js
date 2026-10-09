@@ -44,8 +44,14 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,gcfg:null,ready:fa
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,pity:r.pity|0,freeToday:!!r.free_today,email:this.ses&&this.ses.user&&this.ses.user.email||''};
-    this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();return this.me},
+      frags:r.fragments|0,pity:r.pity|0,freeToday:!!r.free_today,rec:r.rec||null,email:this.ses&&this.ses.user&&this.ses.user.email||''};
+    this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
+    this.importRec();return this.me},
+  // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
+  async importRec(){const me=this.me,uid=this.ses&&this.ses.user&&this.ses.user.id;if(!me||!me.rec||me.rec.imported||!uid||this.ls('qz_recFor'))return;
+    const L=this.ls('qz_rec');if(!L||!(L.g>0))return;this.ls('qz_recFor',uid);
+    try{const r=await this.rpc('qz_import_rec',{p_games:L.g|0,p_kills:L.k|0,p_infects:L.inf|0,p_best:L.best|0,p_xp:L.xp|0});me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),rec:me.rec});this.emit()}
+    catch(e){if(!/already_imported/.test(e.message))this.ls('qz_recFor',null)}},// not done (offline, or the database not updated yet): try again next time
   // ---- the player's actions ----
   async signIn(email,pw){const s=await this.req('POST','/auth/v1/token?grant_type=password',{email,password:pw},false);this.setSes(s);await this.loadMe();return this.me},
   async signUp(email,pw,nick){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';
@@ -66,8 +72,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,prices:null,gcfg:null,ready:fa
   saveMe(){const me=this.me;if(!me)return;this.ls('qz_me',{...this.ls('qz_me'),coins:me.coins,owned:[...me.owned],nickname:me.nickname})},
   gc(){return Object.assign({},GACHA_DEF,this.gcfg||{})},
   async claim(st){const r=await this.rpc('qz_claim',{p_mode:st.mode,p_rounds:st.rounds|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
-      p_won:!!st.won,p_mvp:!!st.mvp,p_stage:st.stage|0,p_cleared:!!st.cleared});
-    if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins})}this.emit();return r},
+      p_won:!!st.won,p_mvp:!!st.mvp,p_stage:st.stage|0,p_cleared:!!st.cleared,p_score:st.score|0});
+    if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;if(r.rec)this.me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:this.me.rec})}this.emit();return r},
   // ---- questions the game asks ----
   signed(){return !!(this.on&&this.ses&&this.me&&!this.me.cached)},
   price(id){const P=this.prices&&this.prices[id];if(P)return P;if(SHOP_FREE.includes(id))return {gun_id:id,price:0,free:true,sold:true};

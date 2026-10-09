@@ -386,3 +386,14 @@
   (fresh, twice in a row, v6.7 → new upgrade, t1 / g1 suites). A failed editor run is one parse error → nothing was created.
 - account.js: the key only goes on `apikey`; `Authorization: Bearer` only carries a user access token (new sb_publishable_ keys are
   not JWTs). Keys: project Connect button or Project Settings → API Keys (publishable sb_publishable_…, legacy anon eyJ… also works).
+
+## v6.9 — level / record on the account
+- profiles + xp, rec_games, rec_kills, rec_infects, rec_best, rec_imported; qz_rec(profiles) → {g,k,inf,best,xp,imported}; qz_me returns rec.
+- qz_claim gained p_score (default 0; the old 9-arg signature is dropped first): xp = clamp(20..3000, score*.6 + kills*8 + infects*12)
+  with score ≤ 30000, kills ≤ 80, infects ≤ 30; returns xp_got + rec. qz_import_rec(games,kills,infects,best,xp): once per account,
+  clamped (games ≤ 5000, per game 80 kills / 30 infects / 3000 xp, xp ≤ 300000).
+- Client: recGet() = ACC.me.rec when a session exists (cached too), else LS 'rec'; recMatch skips the local record when signed in.
+  ACC.importRec after loadMe: localStorage qz_rec → first account on this browser (qz_recFor = uid; reset on failure unless
+  already_imported). Results box shows "+N XP". Tests: scratch shop/rc1 (import, match +956 xp, local untouched, sign-out → guest
+  record, second account not imported); local PG r1.sql (claims, too_soon, caps, import once, anon denied, 6.8.1 upgrade).
+

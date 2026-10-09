@@ -28,6 +28,13 @@ create table if not exists public.profiles (
 alter table public.profiles add column if not exists fragments integer not null default 0 check (fragments >= 0);
 alter table public.profiles add column if not exists pity integer not null default 0;   -- pouch pulls since the last S
 alter table public.profiles add column if not exists free_day date;                     -- the day the free pull was used
+-- the player record shown in the lobby (level = xp): games, kills, infections, best score — counted here from each match
+alter table public.profiles add column if not exists rec_games    integer not null default 0;
+alter table public.profiles add column if not exists rec_kills    integer not null default 0;
+alter table public.profiles add column if not exists rec_infects  integer not null default 0;
+alter table public.profiles add column if not exists rec_best     integer not null default 0;
+alter table public.profiles add column if not exists xp           integer not null default 0;
+alter table public.profiles add column if not exists rec_imported boolean not null default false;  -- the browser's old record was brought in
 create table if not exists public.gun_prices (
   gun_id text primary key,
   price  integer not null check (price >= 0),
@@ -177,6 +184,12 @@ end $$;
 drop trigger if exists qz_on_signup on auth.users;
 create trigger qz_on_signup after insert on auth.users for each row execute function public.qz_on_signup();
 
+-- the record as the game reads it
+create or replace function public.qz_rec(p public.profiles) returns jsonb
+language sql stable set search_path = '' as $$
+  select jsonb_build_object('g', p.rec_games, 'k', p.rec_kills, 'inf', p.rec_infects, 'best', p.rec_best, 'xp', p.xp, 'imported', p.rec_imported)
+$$;
+
 -- ---------- what the game calls (POST /rest/v1/rpc/<name>) ----------
 -- me: nickname, coins, fragments, pouch pity, the free pull, owned guns (creates the profile if the account is older than this file)
 create or replace function public.qz_me() returns jsonb
@@ -197,6 +210,7 @@ begin
     'day_left', 8000 - case when p.day = today then p.day_earned else 0 end,
     'fragments', p.fragments, 'pity', p.pity,
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
+    'rec', public.qz_rec(p),
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
 
@@ -237,8 +251,9 @@ begin
 end $$;
 
 -- the coins for a finished match: worked out here from the match's numbers, every one of them capped
+drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean);
 create or replace function public.qz_claim(p_mode text, p_rounds integer, p_kills integer, p_infects integer, p_damage integer,
-  p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean) returns jsonb
+  p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
@@ -250,6 +265,9 @@ declare
   day0 integer;
   got integer;
   k integer := least(greatest(coalesce(p_kills, 0), 0), 80);
+  inf integer := least(greatest(coalesce(p_infects, 0), 0), 30);
+  sc integer := least(greatest(coalesce(p_score, 0), 0), 30000);
+  gx integer;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform 1 from public.profiles where id = uid for update;
@@ -269,13 +287,41 @@ begin
   day0 := case when p.day = today then p.day_earned else 0 end;
   if p.day is distinct from today then bonus := 200; end if;
   got := greatest(0, least(raw + bonus, 8000 - day0));
+  gx := least(3000, greatest(20, round(sc * 0.6 + k * 8 + inf * 12)::integer));  -- the same xp the game showed before accounts
   update public.profiles set coins = coins + got, earned_total = earned_total + got, matches = matches + 1,
-    last_claim = now(), day = today, day_earned = day0 + got where id = uid;
+    last_claim = now(), day = today, day_earned = day0 + got,
+    rec_games = rec_games + 1, rec_kills = rec_kills + k, rec_infects = rec_infects + inf, rec_best = greatest(rec_best, sc), xp = xp + gx
+  where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', p_mode,
     'rounds', p_rounds, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'mvp', p_mvp,
-    'stage', p_stage, 'cleared', p_cleared, 'raw', raw, 'bonus', bonus));
-  return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 8000 - p.day_earned);
+    'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'raw', raw, 'bonus', bonus, 'xp', gx));
+  return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 8000 - p.day_earned,
+    'xp_got', gx, 'rec', public.qz_rec(p));
+end $$;
+
+-- once per account: the record this browser kept before accounts (games, kills, ...) is added in, within sane limits
+create or replace function public.qz_import_rec(p_games integer, p_kills integer, p_infects integer, p_best integer, p_xp integer) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  p public.profiles;
+  g integer := least(greatest(coalesce(p_games, 0), 0), 5000);
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
+  if p.rec_imported then raise exception 'already_imported'; end if;
+  update public.profiles set rec_imported = true,
+    rec_games   = rec_games + g,
+    rec_kills   = rec_kills + least(greatest(coalesce(p_kills, 0), 0), g * 80),
+    rec_infects = rec_infects + least(greatest(coalesce(p_infects, 0), 0), g * 30),
+    rec_best    = greatest(rec_best, least(greatest(coalesce(p_best, 0), 0), 30000)),
+    xp          = xp + least(greatest(coalesce(p_xp, 0), 0), g * 3000, 300000)
+  where id = uid;
+  p := (select t from public.profiles t where t.id = uid);
+  return jsonb_build_object('rec', public.qz_rec(p));
 end $$;
 
 -- ---------- the 근하신년 lucky pouch ----------
@@ -391,12 +437,15 @@ revoke all on function public.qz_on_signup() from public, anon, authenticated;
 revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
-revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean) from public, anon;
+revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer) from public, anon;
 revoke all on function public.qz_pull(integer, boolean) from public, anon;
 revoke all on function public.qz_exchange(text) from public, anon;
+revoke all on function public.qz_import_rec(integer, integer, integer, integer, integer) from public, anon;
+revoke all on function public.qz_rec(public.profiles) from public, anon, authenticated;
 grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
-grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean) to authenticated;
+grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer) to authenticated;
 grant execute on function public.qz_pull(integer, boolean) to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;
+grant execute on function public.qz_import_rec(integer, integer, integer, integer, integer) to authenticated;
