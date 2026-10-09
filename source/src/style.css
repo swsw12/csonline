@@ -538,3 +538,110 @@ html:not(.touch) .rotbtn{display:none!important}
 #hRange .rgK kbd:first-child{margin-left:0}
 html.touch #hRange{top:calc(var(--bs)*.72 + 14px);transform:scale(.82);transform-origin:top left}
 html.touch #hRange .rgK{display:none}
+/* ===== coins, shop and account (shop.js) ===== */
+.ci{display:inline-block;width:13px;height:13px;border-radius:50%;vertical-align:-2px;margin-right:4px;flex:none;background:radial-gradient(circle at 35% 32%,#fff6c0 0,#f6cf3a 38%,#d39a12 72%,#9a6a06 100%);box-shadow:inset 0 0 0 1px #8a5c04,0 0 4px rgba(255,200,60,.35)}
+#qzToast{position:fixed;left:50%;bottom:9%;transform:translate(-50%,10px);z-index:9600;background:rgba(14,16,20,.92);border:1px solid #e8a33a;color:#ffe7b0;font-size:13px;padding:8px 16px;border-radius:3px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
+#qzToast.on{opacity:1;transform:translate(-50%,0)}
+/* lobby top bar */
+.accChip{display:flex;align-items:center;gap:4px}
+.accChip button{display:flex;align-items:center;gap:5px;font:inherit;font-size:12px;padding:6px 10px;background:linear-gradient(#33373f,#202328);border:1px solid #4a4e56;border-radius:3px;color:#e6e2d6;cursor:pointer;white-space:nowrap}
+.accChip button:hover{border-color:#e8a33a;color:#ffd890}
+.accChip .acoin b{color:#ffd24a;font-size:14px}.accChip svg{width:14px;height:14px}
+.accChip .alog{background:linear-gradient(#5a4310,#3a2a08);border-color:#c8901e;color:#ffe2a0}
+.accChip .aname span{max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.tbtns .tshop{background:linear-gradient(#5a4310,#33260a)!important;border-color:#c8901e!important;color:#ffe2a0!important}
+.tbtns .tshop:hover{background:linear-gradient(#6e5214,#44320c)!important}
+/* the shop window */
+#shopWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;padding:10px}
+#shopWin .swin{width:min(1080px,100%);height:min(680px,100%);display:flex;flex-direction:column;background:#1e2126;border:1px solid #4a4e58;box-shadow:0 12px 50px #000}
+#shopWin .swh{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(#2e3138,#24272d);border-bottom:2px solid #e8a33a}
+#shopWin .swh>b{font-size:17px;color:#ffd890;letter-spacing:.04em}#shopWin .swh>small{color:#8a8f98;font-size:11px;letter-spacing:.2em}
+#shopWin .sgap{flex:1}
+#shopWin .scoin{display:flex;align-items:center;padding:5px 10px;background:#141619;border:1px solid #5a4a20;border-radius:3px}#shopWin .scoin b{color:#ffd24a;font-size:15px}
+#shopWin .sacc{display:flex;align-items:center;gap:6px;font:inherit;font-size:12px;padding:6px 10px;background:#2c3036;border:1px solid #4a4e58;border-radius:3px;color:#e6e2d6;cursor:pointer}
+#shopWin .sacc svg{width:14px;height:14px}#shopWin .sacc.hl{background:linear-gradient(#5a4310,#3a2a08);border-color:#c8901e;color:#ffe2a0}
+#shopWin .sacc span{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#shopWin .soff{font-size:12px;color:#c8a860;padding:4px 8px;border:1px dashed #6a5a30;border-radius:3px}
+#shopWin .sx{width:34px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer}
+#shopWin .stabs{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #33373e;background:#1a1d21}
+#shopWin .stl{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:thin}
+#shopWin .stl button{font:inherit;font-size:12px;padding:6px 11px;white-space:nowrap;background:#262a30;border:1px solid #3a3e46;color:#b8bcc4;cursor:pointer;border-radius:2px}
+#shopWin .stl button.on{background:#3a2e12;border-color:#e8a33a;color:#ffd890}
+#shopWin .sfil{display:flex;align-items:center;gap:5px;font-size:12px;color:#9a968c;white-space:nowrap;cursor:pointer}
+#shopWin .sbody{flex:1;display:flex;min-height:0}
+#shopWin .sgrid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px;align-content:start;-webkit-overflow-scrolling:touch}
+#shopWin .sc{position:relative;display:flex;flex-direction:column;gap:4px;padding:8px 8px 7px;background:linear-gradient(#2a2e34,#22252a);border:1px solid #383c44;border-radius:3px;cursor:pointer;min-width:0}
+#shopWin .sc:hover{border-color:#6a6e78}#shopWin .sc.on{border-color:#e8a33a;box-shadow:0 0 0 1px #e8a33a inset;background:linear-gradient(#34301e,#26241a)}
+#shopWin .sci{height:40px;display:flex;align-items:center;justify-content:center;background:#16181b;border-radius:2px}
+#shopWin .sci img{max-height:30px;max-width:92%;image-rendering:pixelated}
+#shopWin .sc b{font-size:12px;color:#ece8dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#shopWin .scp{display:flex;align-items:center;font-size:12px;min-height:16px}
+#shopWin .scp .pr{color:#ffd24a;display:flex;align-items:center}#shopWin .scp .pr.poor{color:#c07a60}
+#shopWin .scp em,.sdet em{font-style:normal;font-size:10px;font-weight:bold;padding:1px 6px;border-radius:2px;color:#fff;letter-spacing:.03em}
+#shopWin .bf{background:#3f7a3a}#shopWin .bo{background:#2f6aa8}#shopWin .bc{background:#5a5e66}
+#shopWin .sc.own,#shopWin .sc.free{background:linear-gradient(#262d2a,#202522)}
+#shopWin .sc.on.own,#shopWin .sc.on.free{background:linear-gradient(#34301e,#26241a)}
+#shopWin .nyb{position:absolute;top:4px;right:4px;font-style:normal;font-size:9px;font-weight:bold;color:#ffe08a;background:#7a2a14;padding:0 4px;border-radius:2px;z-index:1}
+#shopWin .sempty{color:#8a8f98;font-size:13px;padding:20px}
+#shopWin .sdet{width:290px;flex:none;overflow-y:auto;padding:12px 14px;border-left:1px solid #33373e;background:#191b1f;display:flex;flex-direction:column;gap:8px}
+#shopWin .sdi{height:92px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 60%,#2e3238,#141619);border:1px solid #33373e;border-radius:3px}
+#shopWin .sdi img{max-height:58px;max-width:94%;image-rendering:pixelated}
+#shopWin .sdet h4{margin:2px 0 0;font-size:17px;color:#fff;display:flex;flex-direction:column;gap:2px}#shopWin .sdet h4 small{font-size:11px;color:#8a8f98;font-weight:normal}
+#shopWin .sinfo{font-size:12px;color:#b8b4a8}
+#shopWin .sdet .sbs{display:flex;flex-direction:column;gap:5px}#shopWin .sdet .sb{display:flex;align-items:center;gap:8px;font-size:11px}
+#shopWin .sdet .sb em{width:34px;color:#9a968c;font-style:normal}#shopWin .sdet .sb i{flex:1;height:7px;background:#2a2d33;display:block}
+#shopWin .sdet .sb u{display:block;height:100%;background:linear-gradient(90deg,#c88a1e,#ffd24a)}
+#shopWin .sdesc{margin:0;font-size:12px;color:#a8acb4;line-height:1.5}
+#shopWin .sbuy{margin-top:auto;display:flex;flex-direction:column;gap:7px;padding-top:6px}
+#shopWin .sbb{display:flex;align-items:center;justify-content:center;gap:4px;font:inherit;font-size:15px;padding:10px 12px;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;font-weight:bold;border-radius:3px;cursor:pointer}
+#shopWin .sbb:hover{background:linear-gradient(#e8ae30,#b07a10)}#shopWin .sbb span{font-size:14px}
+#shopWin .sbb:disabled{background:#33363c;border-color:#4a4e56;color:#8a8e96;cursor:default}
+#shopWin .sbb .ci{width:15px;height:15px}
+#shopWin .sbx2{font:inherit;font-size:13px;padding:8px 12px;background:#2c3036;border:1px solid #4a4e58;color:#d0d4da;border-radius:3px;cursor:pointer}
+#shopWin .sbr{display:flex;gap:6px}#shopWin .sbr .sbb{flex:1}
+#shopWin .sbq{font-size:13px;color:#ffe2a0;line-height:1.4}
+#shopWin .sbp{display:flex;align-items:center;font-size:16px;color:#ffd24a}
+#shopWin .sbn{font-size:12px;color:#b8b4a8;line-height:1.45}#shopWin .sbn.ok{color:#9be07a}#shopWin .sbn.bad{color:#e0886a}
+#shopWin .sbm{font-size:12px;padding:6px 8px;border-radius:2px}#shopWin .sbm.ok{background:#1e3320;color:#a8e89a}#shopWin .sbm.bad{background:#3a1e1a;color:#f0a090}
+#shopWin .sfoot{padding:7px 12px;font-size:11px;color:#8a8f98;border-top:1px solid #33373e;background:#1a1d21;line-height:1.4}
+@media (max-width:720px){#shopWin .sdet{width:220px}#shopWin .sgrid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}}
+@media (max-height:520px){#shopWin{padding:4px}#shopWin .sfoot{display:none}#shopWin .swh{padding:5px 10px}#shopWin .sdi{height:64px}#shopWin .sci{height:30px}#shopWin .sci img{max-height:24px}}
+@media (max-width:560px){#shopWin .sbody{flex-direction:column}#shopWin .sdet{width:auto;border-left:0;border-top:1px solid #33373e;max-height:46%}}
+/* the account window */
+#accWin{position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;padding:10px}
+#accWin .awin{width:min(380px,100%);max-height:100%;overflow-y:auto;background:#1e2126;border:1px solid #4a4e58;box-shadow:0 12px 50px #000}
+#accWin .awh{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:linear-gradient(#2e3138,#24272d);border-bottom:2px solid #e8a33a}
+#accWin .awh b{font-size:15px;color:#ffd890}#accWin .awh button{width:32px;height:30px;font-size:19px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer}
+#accWin .atabs{display:flex;border-bottom:1px solid #33373e}
+#accWin .atabs button{flex:1;font:inherit;font-size:13px;padding:9px;background:#1a1d21;border:0;border-bottom:2px solid transparent;color:#9a968c;cursor:pointer}
+#accWin .atabs button.on{color:#ffd890;border-bottom-color:#e8a33a;background:#22252a}
+#accWin .awb{padding:14px;display:flex;flex-direction:column;gap:10px}
+#accWin label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#b8b4a8}#accWin label small{color:#7a7e86}
+#accWin input{font:inherit;font-size:14px;padding:9px 10px;background:#121417;border:1px solid #3a3e46;color:#f0ece0;border-radius:3px;outline:none;user-select:text;-webkit-user-select:text}
+#accWin input:focus{border-color:#e8a33a}
+#accWin .ago{font:inherit;font-size:15px;font-weight:bold;padding:10px;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;border-radius:3px;cursor:pointer}
+#accWin .ago:disabled{opacity:.6;cursor:default}
+#accWin .alink{font:inherit;font-size:12px;background:none;border:0;color:#9ab8e8;cursor:pointer;padding:2px;text-decoration:underline}#accWin .alink.red{color:#e8907a}
+#accWin .arow{display:flex;justify-content:space-between}
+#accWin .anote{margin:0;font-size:12px;color:#b8b4a8;line-height:1.5;display:flex;align-items:center;flex-wrap:wrap}#accWin .anote.big{font-size:13px;color:#e6e2d6}
+#accWin .amsg{font-size:12px;padding:7px 9px;border-radius:2px}#accWin .amsg.ok{background:#1e3320;color:#a8e89a}#accWin .amsg.bad{background:#3a1e1a;color:#f0a090}
+#accWin .aor{display:flex;align-items:center;gap:8px;font-size:11px;color:#7a7e86}#accWin .aor:before,#accWin .aor:after{content:'';flex:1;height:1px;background:#33373e}
+#accWin .aso{display:flex;flex-direction:column;gap:6px}
+#accWin .ao{font:inherit;font-size:13px;padding:9px;border-radius:3px;cursor:pointer;border:1px solid #4a4e58;background:#2a2d33;color:#e6e2d6}
+#accWin .ao b{display:inline-block;width:18px}#accWin .ao.google{background:#f2f2f2;color:#222;border-color:#ccc}#accWin .ao.kakao{background:#fee500;color:#191600;border-color:#d8c400}
+#accWin .aguest{font:inherit;font-size:12px;padding:8px;background:transparent;border:1px dashed #4a4e58;color:#9a968c;border-radius:3px;cursor:pointer}
+#accWin .ame{display:flex;flex-direction:column;gap:8px}
+#accWin .amc{display:flex;align-items:center;gap:4px;font-size:24px}#accWin .amc b{color:#ffd24a}#accWin .amc small{font-size:12px;color:#9a968c;margin-left:4px}#accWin .amc .ci{width:20px;height:20px}
+#accWin .ams{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;color:#9a968c}#accWin .ams b{color:#ece8dc}
+/* in a match: guns you do not own; the coins on the results screen */
+.bi.lk{opacity:.5;cursor:not-allowed}.bi.lk .c{display:flex;flex-direction:column;align-items:flex-end;color:#c8a050!important}.bi.lk .c small{display:flex;align-items:center;color:#c8a050}
+.lki{width:14px;height:14px}
+#buy .bcoin{display:inline-flex;align-items:center;margin-left:10px;font-size:11px;color:#c8a860;font-weight:normal}
+.coinRes{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:8px auto 4px;padding:9px 14px;max-width:560px;background:linear-gradient(#2e2610,#1e1a0c);border:1px solid #8a6a1e;border-radius:3px;font-size:14px;color:#ffe7b0}
+.coinRes b{color:#ffd24a;font-size:18px}.coinRes small{color:#c8b080}.coinRes .crh{color:#c8b080;font-size:12px;display:inline-flex;align-items:center}
+.coinRes button{font:inherit;font-size:12px;padding:5px 12px;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;font-weight:bold;border-radius:3px;cursor:pointer;pointer-events:auto}
+#shopWin button,#accWin button,.accChip button,.coinRes button{min-width:0;box-shadow:none}
+#shopWin .sx,#accWin .awh button{flex:none;width:34px}
+#shopWin .stl button{flex:none}
+@media (max-width:900px){.accChip .aname span{display:none}.accChip button{padding:5px 7px}.tbtns button{padding:4px 6px}}
+@media (max-height:520px){#shopWin .sdesc{display:none}#shopWin .sdet{gap:6px;padding:8px 10px}#shopWin .sdet h4{font-size:15px}#shopWin .sbuy{position:sticky;bottom:-8px;background:#191b1f;padding:6px 0 8px}#shopWin .sbb{padding:8px 10px}}

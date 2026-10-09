@@ -334,3 +334,24 @@
   only the intended slaps remain), ammo logic (AK 10→31, empty→30, MAC-10 30, dual 32, M134 500, USAS 20, M3 shells, cut by firing → fade),
   knife sheets (kn.js) and step scan, first-draw pops unchanged, range: start, shots, kill / TTK / respawn / heal / walkers / reset, and a
   normal match → range → title → normal match round trip without console errors.
+
+## v6.7 — accounts (Supabase), coins, gun shop (account.js, shop.js, supabase/)
+- Backend: supabase/schema.sql (run once in the SQL editor; idempotent) — profiles (nickname, coins, earned_total, matches, last_claim,
+  day, day_earned), gun_prices (price, free, sold), owned_guns, coin_log; RLS = read own rows (prices public), no direct writes; trigger on
+  auth.users makes the profile (+3000 welcome). RPCs (security definer, search_path ''): qz_me, qz_set_nickname(p_nick), qz_buy(p_gun),
+  qz_claim(p_mode,p_rounds,p_kills,p_infects,p_damage,p_won,p_mvp,p_stage,p_cleared). Reward = 80 + 12/round + 6/kill + 10/infect +
+  4/1000 dmg + win 100 + mvp 60 (scen: 80 + 40/stage + 150 cleared + 4/kill); caps 900/match, 80/min since the last claim, 8000/KST day,
+  +200 first of the day, too_soon under 1.5 min. Errors are plain exception messages (not_enough_coins, already_owned, not_for_sale,
+  too_soon, not_signed_in). Validated on a local Postgres 16 with an auth stub (scratch shop/: stub.sql, t1.sql). Setup guide: supabase/README.md.
+- Client account.js: SB {url,key,oauth} (empty = accounts off: ACC.on false, every gun open, shop shows prices only); fetch-based GoTrue
+  (password / signup with data.nickname / refresh / recover / PUT user / logout / authorize redirect for OAuth, implicit #access_token
+  parsed on load incl. type=recovery) + PostgREST rpc. Session in localStorage qz_ses, last profile cached in qz_me. ACC.owns(id): free
+  or owned (nades / no price row always). window.QZ_SB overrides SB (tests).
+- shop.js: SHOP_FREE / SHOP_PRICE / SHOP_NOTSOLD (same list as schema.sql, generated from scratch shop/prices.py); SHOP window (#shopWin:
+  category tabs from BUY_MENU + knife / bhole, cards, detail with UI.statBars / UI.wTags, confirm, server errors), ACCW (#accWin: in / up /
+  reset / newpw / sent / me), lobby chip + shop button (UI.buildTitle wrap), buy-menu locks (UI.renderBuy wrap: .bi.lk, data-act buylk;
+  Main.buyItem wrap) — allowed anyway: gun in hand, NY free pick, the range; results reward (UI.showResults wrap, G.coinDone once per match,
+  G.coinBox re-shown); startMatch wrap resets; myName() = nickname when signed in; first visit opens the sign-in window once the lobby is up.
+- Tests (scratch shop/): mock.js (a fetch stand-in for auth + qz_* with the same rules) via play.py INIT — sign-up validation, sign-up,
+  buy / not enough / already owned, buy-menu locks + blocked buy + NY free pick, results +622 (first of the day), no double pay, reload
+  keeps the session, sign-out → guest; accounts off: no locks, no reward box; phone 844×390 layouts.
