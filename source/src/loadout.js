@@ -22,13 +22,17 @@ function ldOwns(a,id){return !a.isPlayer||!ACC.on||ACC.owns(id)}
 // Event Horizon: owners only, and only with accounts on (offline it stays a supply-crate gun). The host trusts a remote player's request; bots never.
 function ehOK(a){if(a.isPlayer)return !!(ACC.on&&ACC.owns('bhole'));return !!(a.net&&!a.bot)}
 // locked for the local player: the account locks (shop.js), the Event Horizon rule; a set never spends the 근하신년 free pick
-function ldLocked(a,id,set){const W=WPN[id];if(!W)return false;if(id==='bhole')return !ehOK(a);if(set&&W.ny&&!ldOwns(a,id))return true;return !!(a.isPlayer&&typeof shopLocked==='function'&&shopLocked(a,id))}
+// a crate-only gun (v6.18): an account that owns one picks it like any owned gun; the shooting range lends it to everyone; a remote
+// player's page has checked before asking; bots never (they only get one out of a crate)
+function crateOK(a,id){if(G.mode==='range')return true;if(a.isPlayer)return !!(ACC.on&&ACC.owns(id));return !!(a.net&&!a.bot)}
+function ldLocked(a,id,set){const W=WPN[id];if(!W)return false;if(id==='bhole')return !ehOK(a);if(W.crate)return !!(a.isPlayer&&!crateOK(a,id));if(set&&W.ny&&!ldOwns(a,id))return true;return !!(a.isPlayer&&typeof shopLocked==='function'&&shopLocked(a,id))}
 function ldKitReset(a){a.kit={he:0,frost:0,flare:0,armor:0,bhole:0}}
 // why a buy cannot happen, '' when it can: zombie · end · na (not on the menu) · lock · crate · own (has it, ammo full) · full · lim (once a round)
 function buyCheck(a,id){if(!a||a.team!==TH||!a.alive)return 'zombie';if(G.st==='end'||G.st==='over')return 'end';if(!ldBuyable(id))return 'na';const K=a.kit||{},lim=ldLimited();
   if(id==='armor')return a.armor>=100?'own':lim&&K.armor?'lim':'';
   if(id==='ammo'){for(const k in a.ammo){const W=WPN[k];if(W&&W.mag&&k!=='bhole'&&a.inv[W.slot]===k&&a.ammo[k].res<W.res)return ''}return 'full'}
   const W=WPN[id];if(!W)return 'na';
+  if(W.crate&&!crateOK(a,id))return a.isPlayer&&ACC.on?'lock':'crate';
   if(id==='bhole'){if(!ehOK(a))return ACC.on?'lock':'crate';return a.inv[1]==='bhole'?'own':lim&&K.bhole?'lim':''}
   if(W.kind==='nade')return a.inv[id]>=1?'own':lim&&K[id]?'lim':'';
   if(a.isPlayer&&typeof shopLocked==='function'&&shopLocked(a,id))return 'lock';
@@ -53,9 +57,9 @@ function buy(a,id,force,o){if(force?(!a||a.team!==TH||!a.alive):buyCheck(a,id))r
 function scEarn(a,v){if(G.mode==='scen'&&a&&v>0)a.money=Math.min(16000,(a.money||0)+v)}
 
 // ---------- the loadout that carries over ----------
-// guns in hand (a crate-only Event Horizon and the crate-only guns do not count) or else the last ones picked; the grenades and armour of this round
+// guns in hand (a crate-only Event Horizon and crate guns the account does not own do not count) or else the last ones picked; the grenades and armour of this round
 const ehKeep=a=>!!(a.ehBuy&&!a.bot);// an Event Horizon taken from the buy menu (a bot that took over a player's place loses it)
-const ldKeep=(a,id)=>!!(id&&WPN[id]&&!WPN[id].crate&&(id!=='bhole'||ehKeep(a)));// a gun that may go on into the next round
+const ldKeep=(a,id)=>!!(id&&WPN[id]&&(!WPN[id].crate||crateOK(a,id))&&(id!=='bhole'||ehKeep(a)));// a gun that may go on into the next round
 function ldCur(a){const o=a.ldo||LD_DEF,K=a.kit||{},inv=a.inv||{},n={};
   for(const s of [1,2,3]){const id=inv[s];n[s]=ldKeep(a,id)?id:ldKeep(a,o[s])?o[s]:s===2?'p9':s===3?'knife':null}
   for(const k of LD_NADES)n[k]=K[k]||inv[k]>0?1:0;n.armor=K.armor||a.armor>0?1:0;return n}
@@ -75,11 +79,11 @@ function ldWhy(why,id){const L=LI(),W=WPN[id]||EQUIP[id],n=W?W.n[L]:'';
     own:L?`You already have the ${n}`:`${n} — 이미 가지고 있어요`,full:L?'Your ammo is full':'탄약이 이미 가득해요',
     lim:L?`${n}: once a round — it comes back next round`:`${n} — 라운드당 한 번이에요 (다음 라운드에 다시 채워져요)`,
     lock:L?'Event Horizon: only for accounts that own it — once a round, 3 shots':'이벤트 호라이즌 — 보유한 계정만 쓸 수 있어요 (라운드당 1번 · 3발)',
-    crate:L?'The Event Horizon only comes from supply crates':'이벤트 호라이즌은 보급상자에서만 나와요'};
+    crate:L?`${n} only comes from supply crates`:`${n} — 보급상자에서만 나와요`};
   HUD.note(M[why]||M.na,why==='lim'||why==='lock'?2.4:1.5);AU.play('dry',{vol:.5})}
 // one row of the menu for the player: ok (can be taken), own (has it), lk (locked), t (the right-hand column)
 function ldItemState(P,id){const W=WPN[id],why=buyCheck(P,id),own=!!(W&&(W.kind==='nade'?P.inv[id]>0:P.inv[W.slot]===id))||(id==='armor'&&P.armor>=100);
-  if(ldLocked(P,id))return {ok:false,own:false,lk:1,t:id==='bhole'?SVG_LOCK+`<small>${T(ACC.on?'ldEhOwn':'ldCrate')}</small>`:shopLockTag(id)};// shop.js: where a locked gun comes from
+  if(ldLocked(P,id))return {ok:false,own:false,lk:1,t:id==='bhole'?SVG_LOCK+`<small>${T(ACC.on?'ldEhOwn':'ldCrate')}</small>`:W&&W.crate?SVG_LOCK+`<small>${T('ldCrate')}</small>`:shopLockTag(id)};// shop.js: where a locked gun comes from
   let t='';if(own)t=T('owned');else if(why==='lim')t=T('ldUsed');else if(why==='full')t=T('ldFull');else if(id==='bhole')t=T('ldEh');
   else if(W&&W.ny&&P.nyFree>0&&!ldOwns(P,id))t=T('ldNyPick');else if((id==='armor'||W&&W.kind==='nade')&&ldLimited())t=`<small>${T('ldOnce')}</small>`;
   return {ok:!why||why==='own',own,lk:0,t}}
@@ -121,8 +125,4 @@ function ldBuyNo(id){const P=G.player;if(!P)return;const e=ldAnswer(P,id),S=e&&e
   const sp=BUY_MENU.find(c=>c.k==='special');if(sp&&!sp.items.includes('bhole'))sp.items.push('bhole');
   const sc=shopCats;shopCats=function(){const r=sc.apply(this,arguments);for(const c of r){const s=new Set();c.items=c.items.filter(i=>!s.has(i)&&s.add(i))}return r};
   const a0=UI.act;UI.act=function(a,v,el){if(a==='lsEq'){ldEquipSet(+v);return}if(a==='lsSave'){ldSaveSet(+v);return}return a0.call(this,a,v,el)};
-  // the shooting range hands out the crate-only guns too: a row of their own on its buy menu, there only while the range is on
-  const sm=startMatch;startMatch=function(cfg){const i=BUY_MENU.findIndex(c=>c.k==='crate');
-    if(cfg&&cfg.mode==='range'){if(i<0){const e=BUY_MENU.findIndex(c=>c.k==='equip');BUY_MENU.splice(e<0?BUY_MENU.length:e,0,{k:'crate',n:['보급 무기','Crate guns'],items:CRATE_GUNS.filter(id=>WPN[id])})}}
-    else if(i>=0)BUY_MENU.splice(i,1);UI.buyCat=0;return sm(cfg)};
 })();

@@ -1,7 +1,8 @@
 'use strict';
 // ============ v6.16 supply-crate guns: AK-47 60R and Dual MP7A1 ============
-// Both come only out of supply crates (supply.js): never sold (the shop shows them as crate-only cards), not on the buy menu
-// (the shooting range lists them in a row of their own: loadout.js), not carried into the next round, never in a saved set.
+// Both come out of supply crates (supply.js) and are never sold (the shop shows them as crate-only cards). On the buy menu they are
+// locked unless the account owns one (v6.18: granted in the database); a crate gun that is not owned is not carried into the next round
+// and never goes into a saved set. The shooting range lends them to everyone.
 // AK-47 60R: a heavy matte-black AK with a scope on the gas tube and a 60-round half-moon magazine; right click: one zoom step.
 // Dual MP7A1: a pair of H&K MP7A1s, one in each hand, firing in turns; right click: the spray stance (both guns rolled outward,
 // fire rate x bRpm, spread x bSpread: game.js). The charging handles do not lock back (fd.nolock: vm.js, vmrel.js).
@@ -125,6 +126,9 @@ WPN.dmp7={slot:1,kind:'smg',crate:1,cat:'smg',n:['듀얼 MP7A1','Dual MP7A1'],co
   spread:[.011,.03,.085],rec:[.008,.007],kb:2.2,stag:.24,hs:3,reload:3,draw:.75,speed:1,snd:'dmp7',model:'dmp7',hold:'dual',shell:1};
 VM_POS.dmp7={p:[0,-.19,-.46],r:[0,0,0],dx:.15};// dx: each gun's distance from the middle
 const CRATE_GUNS=['ak60r','dmp7'];
+// on the buy menu in their category (v6.18): locked for everyone but an account that owns one (granted in the database: owned_guns), and lent
+// to everyone in the shooting range (loadout.js crateOK)
+for(const id of CRATE_GUNS){const c=BUY_MENU.find(q=>q.k===WPN[id].cat);if(c&&!c.items.includes(id))c.items.push(id)}
 
 // ---------- sounds ----------
 // AK-47 60R: a heavier, lower AK report with the bolt's clack; MP7A1: the sharp, high crack of the small 4.6 mm round

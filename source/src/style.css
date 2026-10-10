@@ -1035,3 +1035,39 @@ html.touch #hRange .rgK{display:none}
 #invWin .ivzd{color:#aab2bd;font-size:12px;margin:8px 0 0}
 @media (max-width:760px),(max-height:480px){#invWin .ivsetl{grid-template-columns:1fr}#invWin .ivl{width:70px;height:80px}#invWin .ivl b{font-size:32px}#invWin .ivh{padding:6px 10px}#invWin .ivb{padding:10px}
   #invWin .ivt button{padding:6px 9px;font-size:12px}#invWin .ivc{width:88px}#invWin .ivc img{height:64px}}
+
+/* ---- friends and gifts (friends.js, shop.js gift mode) ---- */
+.tbtns .tinv,.tbtns .tfr{position:relative}.tbtns .tinv .dot,.tbtns .tfr .dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+#frWin{position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(4,6,10,.6)}
+#frWin .frw{width:min(560px,96vw);max-height:min(640px,94vh);display:flex;flex-direction:column;background:linear-gradient(#1c2027,#14171c);border:1px solid #3a3f48;border-top:2px solid #e2b54a;border-radius:4px;box-shadow:0 18px 60px rgba(0,0,0,.6);overflow:hidden}
+#frWin .frh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #2c3038;color:#ffd56a}#frWin .frh svg{width:18px;height:18px}#frWin .frh b{font-size:19px}#frWin .frh small{color:#7a828e;letter-spacing:.12em}#frWin .sgap{flex:1}
+#frWin button.frx{flex:0 0 34px;width:34px;height:34px;min-width:0;padding:0;border:1px solid #4a505a;background:#22262d;color:#cfd5de;font-size:22px;border-radius:3px;cursor:pointer}
+#frWin .frb{overflow:auto;padding:12px 16px 16px}
+#frWin .frme{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;background:#15181c;border:1px solid #2f343c;border-radius:4px;color:#aab2bd;font-size:13px}
+#frWin .frc{font-size:22px;color:#ffd56a;letter-spacing:.12em;font-family:monospace}#frWin .frme small{flex-basis:100%;color:#7a828e;font-size:11px}
+#frWin .frme button{width:auto;min-width:0;padding:4px 10px;font-size:12px;border:1px solid #3a3f48;background:#1a1d22;color:#ffd56a;border-radius:3px;cursor:pointer}
+#frWin .fradd{display:flex;gap:6px;margin:10px 0 4px}#frWin .fradd input{flex:1;min-width:0;padding:8px 10px;background:#0f1114;border:1px solid #3a3f48;color:#fff;border-radius:3px;font-size:14px}
+#frWin .fradd button{width:auto;min-width:0;display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid #e2b54a;background:linear-gradient(#5a3e12,#2e200a);color:#fff;border-radius:3px;cursor:pointer}
+#frWin .fradd button svg{width:15px;height:15px}#frWin .fradd button:disabled{opacity:.5}
+#frWin .frm{margin:6px 0;font-size:13px}#frWin .frm.ok{color:#8fe08a}#frWin .frm.bad{color:#ff8a7a}
+#frWin h5{margin:14px 0 6px;color:#ffd56a;font-size:13px;display:flex;align-items:center;gap:6px}#frWin h5 i{font-style:normal;font-size:11px;color:#14171c;background:#ffd56a;border-radius:8px;padding:0 6px}
+#frWin .frr{display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:8px;padding:7px 8px;border:1px solid #2a2e35;background:#181b20;border-radius:3px;margin-bottom:5px}
+#frWin .frlv{font-size:11px;color:#9fd0ff;text-align:center;border:1px solid #2f4c6a;border-radius:3px;padding:2px 0;background:#132030}
+#frWin .frnm{display:flex;flex-direction:column;min-width:0}#frWin .frnm b{color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#frWin .frnm small{color:#7a828e;font-size:11px}
+#frWin .frbt{display:flex;gap:4px}#frWin .frbt button{width:auto;min-width:0;display:flex;align-items:center;gap:4px;padding:5px 9px;font-size:12px;border:1px solid #3a3f48;background:#1a1d22;color:#cfd5de;border-radius:3px;cursor:pointer}
+#frWin .frbt button.ok{border-color:#5aa25a;color:#9fe39f}#frWin .frbt button.bad{border-color:#b8463a;color:#ff9a8a}#frWin .frbt button.gift{border-color:#e06a9a;color:#ffb3d0}#frWin .frbt svg{width:13px;height:13px}
+#frWin .frn{color:#8b93a0;text-align:center;margin:10px 0}#frWin button.frbig{display:block;margin:6px auto;width:auto;min-width:160px;padding:9px 14px;border:1px solid #e2b54a;background:linear-gradient(#5a3e12,#2e200a);color:#fff;border-radius:3px;cursor:pointer}
+@media (max-width:520px){#frWin .frr{grid-template-columns:40px 1fr}#frWin .frbt{grid-column:1 / 3;justify-content:flex-end}}
+#giftPop{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(4,6,10,.55)}
+#giftPop .gpw{width:min(420px,92vw);padding:16px 18px;background:linear-gradient(#2a1c26,#15181c);border:1px solid #e06a9a;border-radius:6px;box-shadow:0 0 40px rgba(224,106,154,.35);text-align:center;animation:rresIn .4s ease-out}
+#giftPop .gph{display:flex;align-items:center;justify-content:center;gap:8px;color:#ffb3d0;font-size:19px;margin-bottom:10px}#giftPop .gph svg{width:24px;height:24px}
+#giftPop .gpr{display:flex;align-items:center;gap:10px;padding:8px;margin:6px 0;background:rgba(0,0,0,.25);border:1px solid #3a2a36;border-radius:4px;text-align:left;color:#ddd;font-size:13px}
+#giftPop .gpr img{height:34px;image-rendering:pixelated}#giftPop .gpr b{color:#fff}#giftPop p{color:#aab2bd;font-size:12px;margin:10px 0}
+#giftPop button{width:auto;min-width:120px;padding:8px 14px;border:1px solid #e06a9a;background:linear-gradient(#5a2440,#2e1220);color:#fff;border-radius:3px;cursor:pointer}
+#shopWin .sgift{display:flex;align-items:center;gap:8px;margin:0 12px 6px;padding:7px 10px;border:1px solid #e06a9a;background:rgba(224,106,154,.1);border-radius:3px;color:#ffd6e6;font-size:13px}
+#shopWin .sgift svg{width:16px;height:16px;flex:none}#shopWin .sgift b{color:#fff}#shopWin .sgift button{margin-left:auto;width:auto;min-width:0;padding:4px 10px;font-size:12px;border:1px solid #e06a9a;background:#2a1520;color:#ffb3d0;border-radius:3px;cursor:pointer}
+#shopWin .sbb.gift{border-color:#e06a9a;background:linear-gradient(#a03466,#5a1a38)}#shopWin .sbb.gift svg{width:15px;height:15px;margin-right:4px;vertical-align:-2px}
+#shopWin button.sgb{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;color:#ffb3d0;border-color:#7a3a58}#shopWin button.sgb svg{width:14px;height:14px}
+#shopWin .sgp{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding:6px;border:1px solid #4a2a3a;border-radius:3px;background:rgba(224,106,154,.06)}#shopWin .sgp small{flex-basis:100%;color:#cfa3b8;font-size:11px}
+#shopWin .sgp button{width:auto;min-width:0;padding:4px 8px;font-size:12px;border:1px solid #6a3a52;background:#21151c;color:#fff;border-radius:3px;cursor:pointer}#shopWin .sgp button i{font-style:normal;color:#9fd0ff;font-size:10px}
+#shopWin .sgp button.sgx{color:#8b93a0;border-color:#3a3f48;background:#1a1d22}

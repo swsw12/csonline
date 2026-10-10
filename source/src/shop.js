@@ -24,7 +24,8 @@ function seasonGuns(){const o=[];for(const c of ACC.gc().season_lines||[]){const
 const seasonNames=(L,ids)=>(ids||seasonGuns()).map(id=>WPN[id]?WPN[id].n[L]:id).join(' · ');
 // a locked gun's right-hand column in the buy menu: where it comes from (the 근하신년 card, the season card, else its price)
 function shopLockTag(id){const L=LI(),p=ACC.price(id);
-  return SVG_LOCK+(p&&p.tier?`<small class="gb">${L?'decoder':'해독기'}</small>`:p&&!p.sold&&seasonGun(id)?`<small class="gb gs">${L?'season':'시즌'}</small>`:`<small>${COIN}${fmtC(p&&p.price)}</small>`)}
+  return SVG_LOCK+(p&&p.tier?`<small class="gb">${L?'decoder':'해독기'}</small>`:p&&!p.sold&&seasonGun(id)?`<small class="gb gs">${L?'season':'시즌'}</small>`
+    :WPN[id]&&WPN[id].crate?`<small class="gb">${L?'crates':'보급 전용'}</small>`:`<small>${COIN}${fmtC(p&&p.price)}</small>`)}
 // averages for a card of 25 numbers out of N (a fixed seed, so the same every time): first line, 6th line, one given line, the whole card
 const SIMC={};
 function bingoSim(N){if(SIMC[N])return SIMC[N];let s=7,a=0,b=0;const T=2000,t=Array(25),pool=[...Array(N).keys()],rnd=()=>((s=Math.imul(s,1103515245)+12345|0)>>>0)/4294967296;
@@ -41,10 +42,8 @@ const SVG_CART='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1 2h2.4l.
 const SVG_USER='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.5a3.2 3.2 0 110 6.4 3.2 3.2 0 010-6.4zM2 14.5c.4-3.2 3-5 6-5s5.6 1.8 6 5z"/></svg>';
 
 // ---------- what the shop sells, in the buy menu's order ----------
-function shopCats(){const L=LI();const cats=BUY_MENU.filter(c=>c.k!=='equip'&&c.k!=='crate').map(c=>({k:c.k,n:c.n[L],items:c.items.filter(id=>WPN[id]&&WPN[id].model)}));
+function shopCats(){const L=LI();const cats=BUY_MENU.filter(c=>c.k!=='equip').map(c=>({k:c.k,n:c.n[L],items:c.items.filter(id=>WPN[id]&&WPN[id].model)}));
   const sp=cats.find(c=>c.k==='special');if(sp)sp.items=['knife',...sp.items.filter(i=>i!=='knife'&&i!=='bhole'),'bhole'].filter(id=>WPN[id]);
-  // the crate-only guns (not on the buy menu) get a card in their own category: crate only, not for sale
-  for(const id of CRATE_GUNS){const W=WPN[id],c=W&&cats.find(q=>q.k===W.cat);if(c&&!c.items.includes(id))c.items.push(id)}
   const seen=new Set(),all=[];for(const c of cats)for(const id of c.items)if(!seen.has(id)){seen.add(id);all.push(id)}
   return [{k:'all',n:L?'All':'전체',items:all},...cats]}
 // free / own / buy / crate / gacha (근하신년: decoder bingo or exchange only) / season (a line on the season decoder card: Event Horizon, Skull-9)
@@ -93,7 +92,9 @@ const SVG_COINS=(()=>{const st=(x,n)=>{let s='';for(let i=0;i<n;i++){const y=23-
   return `<svg class="cpile" viewBox="0 0 34 28" aria-hidden="true">${st(8,3)}${st(26,2)}${st(17,5)}<ellipse cx="17" cy="9.4" rx="3.2" ry="1.1" fill="#fff6c0" opacity=".85"/></svg>`})();
 
 // ---------- the shop window: the gun shop, the 근하신년 and season decoder bingos, the fragment exchange ----------
-const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msgOk:false,busy:false,exSel:null,anim:null,lastN:{},bLoad:{},
+// gift (v6.18): {code, nick} while buying for a friend (the buy buttons send the gun to them); gpick: the gun whose friend list is open
+const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msgOk:false,busy:false,exSel:null,anim:null,lastN:{},bLoad:{},gift:null,gpick:null,
+  giftTo(code,nick){this.gift={code,nick};this.gpick=null;this.page='shop';this.open()},
   open(id,page){let o=$('shopWin');if(!o){o=document.createElement('div');o.id='shopWin';document.body.appendChild(o);
       o.addEventListener('click',e=>{if(e.target===o){this.close();return}const t=e.target.closest('[data-sa]');if(t)this.act(t.dataset.sa,t.dataset.v)});
       o.addEventListener('change',e=>{if(e.target.dataset.sa==='own'){this.onlyOwn=e.target.checked;this.render()}});
@@ -101,7 +102,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
       const hl=k=>{for(const c of o.querySelectorAll('.bc.hl'))c.classList.remove('hl');if(k==null)return;for(const i of BINGO_LINES[k]){const c=o.querySelector('.bc[data-c="'+i+'"]');if(c)c.classList.add('hl')}};
       o.addEventListener('mouseover',e=>{const t=e.target.closest('.brw');hl(t?+t.dataset.l:null)})}
     if(page)this.page=page;if(id){this.sel=id;this.cat='all';this.page='shop'}this.confirm=null;this.msg='';this.bLoad={};this.scrollSel=true;this.render();AU.play('ui',{vol:.35})},
-  close(){if(this.anim)this.animSkip();const o=$('shopWin');if(o)o.remove();this.confirm=null;const p=$('gPop');if(p)p.remove()},
+  close(){if(this.anim)this.animSkip();const o=$('shopWin');if(o)o.remove();this.confirm=null;this.gift=null;this.gpick=null;const p=$('gPop');if(p)p.remove()},
   list(){const C=shopCats(),c=C.find(x=>x.k===this.cat)||C[0];let ids=c.items;if(this.onlyOwn)ids=ids.filter(id=>{const s=shopState(id);return s==='free'||s==='own'});return {C,c,ids:shopOrder(ids)}},
   head(){const L=LI(),signed=ACC.signed(),me=ACC.me;
     if(!ACC.on)return `<span class="soff">${L?'Accounts not set up — every gun is open':'계정 서버 연결 전 — 지금은 모든 총 사용 가능'}</span>`;
@@ -122,6 +123,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
       ||`<div class="sempty">${L?'Nothing here yet':'아직 없어요'}</div>`;
     return `<div class="stabs"><div class="stl">${C.map(c=>`<button class="${c.k===this.cat?'on':''}" data-sa="cat" data-v="${c.k}">${esc(c.n)}</button>`).join('')}</div>
         <label class="sfil"><input type="checkbox" data-sa="own"${this.onlyOwn?' checked':''}><span>${L?'Mine only':'보유한 총만'}</span></label></div>
+      ${this.gift?`<div class="sgift">${SVG_GIFT}<span>${L?`Pick a gun to send to <b>${esc(this.gift.nick)}</b> (your coins)`:`<b>${esc(this.gift.nick)}</b>에게 선물할 총을 골라요 (내 코인으로)`}</span><button data-sa="giftoff">${L?'Stop gifting':'선물 그만두기'}</button></div>`:''}
       <div class="sbody"><div class="sgrid">${cards}</div>${this.detail()}</div>
       <div class="sfoot">${L?'Coins and xp come at the end of every round (its kills, infections, damage and win) and more at the end of a finished match. In a match every gun you own is free to pick; floor pick-ups and supply crates still give any gun. The shooting range lends you every gun to try. 근하신년 guns come from the decoder bingo'+(seasonGuns().length?', '+seasonNames(1)+' from the season decoder.':'.')
         :'코인과 경험치는 라운드가 끝날 때마다 그 라운드의 킬·감염·피해량·승리로 들어오고, 매치를 끝까지 하면 더 들어와요. 매치 안에서는 보유한 총을 무료로 고를 수 있고, 바닥에 떨어진 총·보급상자는 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 근하신년 무기는 해독기 빙고에서만'+(seasonGuns().length?', '+seasonNames(0)+'는 시즌 해독기에서만':'')+' 나와요.'}</div>`},
@@ -142,9 +144,22 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
       <div class="sbr"><button class="sbb" data-sa="buyok" data-v="${id}"${this.busy?' disabled':''}>${this.busy?(L?'Buying…':'구매 중…'):(L?'Buy':'구매')}</button><button class="sbx2" data-sa="buyno">${L?'Cancel':'취소'}</button></div>`;
     else if(coins>=p.price)buy=`<button class="sbb" data-sa="buy" data-v="${id}">${COIN}${fmtC(p.price)} <span>${L?'Buy':'구매'}</span></button>`;
     else buy=`<button class="sbb" disabled>${COIN}${fmtC(p.price)}</button><div class="sbn bad">${L?fmtC(p.price-coins)+' coins short':'코인 '+fmtC(p.price-coins)+' 부족'}</div>`;
+    // gifts (v6.18): only guns the shop sells (one you own too). In gift mode the button sends it; otherwise a friend list opens under it
+    const giftable=ACC.on&&signed&&!!p.sold&&!p.free&&!p.tier&&p.price>0;
+    if(this.gift){const g=this.gift;
+      if(!giftable)buy=`<div class="sbn">${L?'Only guns the shop sells can be gifts.':'상점에서 파는 총만 선물할 수 있어요.'}</div>`;
+      else if(this.confirm==='gift:'+id)buy=`<div class="sbq">${L?`Send the ${esc(W.n[1])} to ${esc(g.nick)} for ${fmtC(p.price)} coins?`:`${esc(g.nick)}에게 ${esc(W.n[0])}을(를) ${fmtC(p.price)} 코인에 선물할까요?`}</div>
+        <div class="sbr"><button class="sbb gift" data-sa="giftok" data-v="${id}"${this.busy?' disabled':''}>${this.busy?(L?'Sending…':'보내는 중…'):(L?'Send':'선물하기')}</button><button class="sbx2" data-sa="buyno">${L?'Cancel':'취소'}</button></div>`;
+      else if(coins>=p.price)buy=`<button class="sbb gift" data-sa="gift" data-v="${id}">${SVG_GIFT}${COIN}${fmtC(p.price)} <span>${L?'Gift to '+esc(g.nick):esc(g.nick)+'에게 선물'}</span></button>`;
+      else buy=`<button class="sbb gift" disabled>${SVG_GIFT}${COIN}${fmtC(p.price)}</button><div class="sbn bad">${L?fmtC(p.price-coins)+' coins short':'코인 '+fmtC(p.price-coins)+' 부족'}</div>`}
+    else if(giftable&&this.confirm!==id)buy+=this.gpick===id?this.pickHtml():`<button class="sbx2 sgb" data-sa="gpick" data-v="${id}">${SVG_GIFT}<span>${L?'Gift to a friend':'친구에게 선물'}</span></button>`;
     if(this.msg)buy+=`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`;
     return `<div class="sdet"><div class="sdi${t?' t'+t:''}${seasonGun(id)?' tE':''}"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${esc(W.n[L?0:1])}</small></h4><div class="sinfo">${info}</div>
       ${UI.statBars(W)}<p class="sdesc">${UI.wTags(W,id)||''}</p><div class="sbuy">${buy}</div></div>`},
+  // the friends to send the selected gun to (loaded on first use)
+  pickHtml(){const L=LI(),F=ACC.fr;if(!F){ACC.loadFriends().then(()=>this.render()).catch(e=>{this.msg=ACC.errText(e);this.msgOk=false;this.gpick=null;this.render()});return `<div class="sgp"><small>${L?'Loading friends…':'친구 목록 불러오는 중…'}</small></div>`}
+    const fr=F.friends||[];if(!fr.length)return `<div class="sgp"><small>${L?'No friends yet.':'아직 친구가 없어요.'}</small><button data-sa="friends">${L?'Add friends':'친구 추가하러 가기'}</button><button class="sgx" data-sa="gpick" data-v="">${L?'Close':'닫기'}</button></div>`;
+    return `<div class="sgp"><small>${L?'Send it to':'누구에게 보낼까요?'}</small>${fr.map(f=>`<button data-sa="gto" data-v="${esc(f.code)}">${esc(f.nickname)} <i>Lv.${recLevel(f.xp|0).l}</i></button>`).join('')}<button class="sgx" data-sa="gpick" data-v="">${L?'Close':'닫기'}</button></div>`},
   // ---- the decoder bingos: 'gacha' = the 근하신년 card (guns), 'season' = the season card (Event Horizon, Skull-9 and items) ----
   // what a page needs from its card: the account's card, its numbers and prices, the server calls
   bk(k){const g=ACC.gc();return k==='season'?{k,s:1,card:ACC.season,hi:g.season_hi,c1:g.season_cost1,c10:g.season_cost10,f0:g.season_frag_min,f1:g.season_frag_max,
@@ -234,6 +249,12 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     if(a==='acc'){ACCW.open('me');return}
     if(a==='buy'){this.confirm=v;this.msg='';this.render();return}
     if(a==='buyno'){this.confirm=null;this.render();return}
+    if(a==='giftoff'){this.gift=null;this.confirm=null;this.msg='';this.render();return}
+    if(a==='gift'){this.confirm='gift:'+v;this.msg='';this.render();return}
+    if(a==='giftok'){this.giftBuy(v);return}
+    if(a==='gpick'){this.gpick=v||null;this.msg='';this.render();return}
+    if(a==='gto'){const f=(ACC.fr&&ACC.fr.friends||[]).find(x=>x.code===v);if(f){this.gift={code:f.code,nick:f.nickname};this.gpick=null;this.confirm='gift:'+this.sel;this.msg=''}this.render();return}
+    if(a==='friends'){this.close();FR.open();return}
     if(a==='buyok'){this.buy(v);return}
     if(a==='ex'){this.confirm='ex:'+v;this.msg='';this.render();return}
     if(a==='exok'){this.exchange(v);return}
@@ -248,6 +269,10 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     if(a==='hist'){gPopHist();return}},
   async buy(id){if(this.busy)return;const L=LI(),W=WPN[id];this.busy=true;this.render();
     try{await ACC.buy(id);this.msg=(L?'Bought: ':'구매 완료 — ')+W.n[L];this.msgOk=true;AU.play('buy',{vol:.8})}
+    catch(e){this.msg=ACC.errText(e);this.msgOk=false;AU.play('dry',{vol:.5});if(/not_signed_in|JWT/i.test(String(e.message)))ACCW.open('in')}
+    this.busy=false;this.confirm=null;this.render()},
+  async giftBuy(id){if(this.busy||!this.gift)return;const L=LI(),W=WPN[id],g=this.gift;this.busy=true;this.render();
+    try{const r=await ACC.gift(g.code,id);this.msg=L?`Sent the ${W.n[1]} to ${r.to||g.nick}`:`선물 완료 — ${r.to||g.nick}에게 ${W.n[0]}`;this.msgOk=true;AU.play('lvlup',{vol:.6})}
     catch(e){this.msg=ACC.errText(e);this.msgOk=false;AU.play('dry',{vol:.5});if(/not_signed_in|JWT/i.test(String(e.message)))ACCW.open('in')}
     this.busy=false;this.confirm=null;this.render()},
   async exchange(id){if(this.busy)return;const L=LI(),W=WPN[id];this.busy=true;this.render();
@@ -503,7 +528,7 @@ function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||AC
   const act0=UI.act;UI.act=function(a,v,el){
     if(a==='shop'){SHOP.open();return}
     if(a==='acc'){ACCW.open(ACC.signed()?'me':'in');return}
-    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI(),n=W?W.n[L]:'';HUD.note(p&&p.tier?`${n}: ${L?'only from the 근하신년 decoder bingo (lobby shop)':'근하신년 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
+    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI(),n=W?W.n[L]:'';HUD.note(W&&W.crate?`${n}: ${L?'only from supply crates (an account that owns one can pick it here)':'보급상자에서만 나와요 (계정에 있으면 여기서 고를 수 있어요)'}`:p&&p.tier?`${n}: ${L?'only from the 근하신년 decoder bingo (lobby shop)':'근하신년 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
       :p&&!p.sold&&seasonGun(v)?`${n}: ${L?'only from its line on the season decoder card (lobby shop)':'시즌 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
       :`${n}: ${L?'buy it in the shop first':'상점에서 먼저 사야 해요'} (${fmtC(p&&p.price)} ${L?'coins':'코인'})`,2.2);AU.play('dry',{vol:.5});return}
     return act0.call(this,a,v,el)};

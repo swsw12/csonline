@@ -6,7 +6,7 @@ FONTS = os.path.join(R, 'fonts')  # Galmuri11 (SIL OFL 1.1); subsetting needs: p
 os.makedirs(os.path.join(D, 'assets'), exist_ok=True)
 os.makedirs(os.path.join(D, 'standalone', 'assets'), exist_ok=True)
 order = ['util', 'i18n', 'design', 'world', 'tex', 'shaders', 'map', 'mapsub', 'mapit_data', 'mapit', 'mapmil_data', 'mapmil', 'maprest', 'mapbt', 'nav', 'models', 'gunart', 'vm', 'vmdraw', 'vmrel', 'vmknife', 'audio', 'fx',
-         'weapons', 'nyw', 'skull9', 'salamander', 'newguns', 'crateguns', 'game', 'ai', 'render', 'ui', 'minimap', 'net', 'coffin', 'drops', 'supply', 'lobby', 'main', 'scenario', 'range', 'account', 'shop', 'rank', 'newsban', 'loadout', 'inv', 'touch', 'hskill']
+         'weapons', 'nyw', 'skull9', 'salamander', 'newguns', 'crateguns', 'game', 'ai', 'render', 'ui', 'minimap', 'net', 'coffin', 'drops', 'supply', 'lobby', 'main', 'scenario', 'range', 'account', 'shop', 'rank', 'newsban', 'loadout', 'inv', 'friends', 'touch', 'hskill']
 parts = []
 for f in order:
     p = os.path.join(S, f + '.js')

@@ -17,6 +17,7 @@ sql=r"""-- =====================================================================
 --   * 보상은 서버가 계산합니다. 라운드 보상(v6.17): 라운드가 끝날 때마다 최대 600 (지난 라운드 보상 뒤 1초당 4까지,
 --     25초 안에 두 번은 안 됨) + 경험치. 판 보상: 판당 최대 1,200, 지난 판 보상 뒤 1분당 100까지, 그날 첫 판 +250.
 --     라운드 + 판 보상을 합쳐 하루(한국 시간) 20,000까지. 가입하면 3,000 코인.
+--   * 친구 · 선물(v6.18): 친구 코드(또는 한 명만 쓰는 닉네임)로 친구를 맺고, 상점에서 파는 총을 친구에게 선물합니다(보낸 사람 코인).
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
 --     시즌 해독기 숫자는 같은 줄의 season_* 칸에 있습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
@@ -225,7 +226,7 @@ $$;
 create or replace function public.qz_new_profile(uid uuid, nick text) returns void
 language plpgsql security definer set search_path = '' as $$
 begin
-  insert into public.profiles (id, nickname, coins) values (uid, public.qz_clean_nick(nick), 3000) on conflict (id) do nothing;
+  insert into public.profiles (id, nickname, coins, fcode) values (uid, public.qz_clean_nick(nick), 3000, public.qz_fcode_new()) on conflict (id) do nothing;
   if found then
     insert into public.coin_log (user_id, delta, reason) values (uid, 3000, 'welcome');
   end if;
@@ -248,7 +249,8 @@ language sql stable set search_path = '' as $$
 $$;
 
 -- ---------- what the game calls (POST /rest/v1/rpc/<name>) ----------
--- me: nickname, coins, fragments, pouch pity, the free decoder, 근하신년 decoders kept (tickets), owned guns
+-- me: nickname, coins, fragments, pouch pity, the free decoder, 근하신년 decoders kept (tickets), owned guns,
+-- the friend code, gifts not shown yet and friend requests waiting (v6.18)
 -- (creates the profile if the account is older than this file)
 create or replace function public.qz_me() returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -264,7 +266,13 @@ begin
       split_part(coalesce(u.email, ''), '@', 1)) from auth.users u where u.id = uid));
     p := (select t from public.profiles t where t.id = uid);
   end if;
+  if p.fcode is null then
+    update public.profiles set fcode = public.qz_fcode_new() where id = uid;
+    p := (select t from public.profiles t where t.id = uid);
+  end if;
   return jsonb_build_object('nickname', p.nickname, 'coins', p.coins, 'earned', p.earned_total, 'matches', p.matches,
+    'fcode', p.fcode, 'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen),
+    'friend_req', (select count(*) from public.friends f where f.b = uid and not f.accepted),
     'day_left', 20000 - case when p.day = today then p.day_earned else 0 end,
     'fragments', p.fragments, 'pity', p.pity, 'tickets', p.dec_tickets,
     'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'season_tickets', p.season_tickets,
@@ -1124,6 +1132,224 @@ grant execute on function public.qz_season_reset() to authenticated;
 grant execute on function public.qz_season_shuffle() to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;
 grant execute on function public.qz_import_rec(integer, integer, integer, integer, integer) to authenticated;
+
+-- ---------- friends and gifts (v6.18) ----------
+-- 친구: 플레이어마다 친구 코드(6자, 0 · O · 1 · I · L 없음)가 있고, 코드나 (한 명만 쓰는) 닉네임으로 친구 요청을 보냅니다.
+-- friends 한 줄 = 한 쌍 (a = 요청한 쪽, b = 받은 쪽, 받은 쪽이 수락하면 accepted). 선물: 상점에서 파는 총을 친구에게 사 줍니다
+-- (보낸 사람 코인으로, 받는 사람은 바로 보유). gifts 는 받은 쪽에 알림을 띄우려고 남깁니다. 테이블은 아래 함수로만.
+alter table public.profiles add column if not exists fcode text;
+create unique index if not exists profiles_fcode on public.profiles(fcode);
+create table if not exists public.friends (
+  a           uuid not null references auth.users(id) on delete cascade,
+  b           uuid not null references auth.users(id) on delete cascade,
+  accepted    boolean not null default false,
+  at          timestamptz not null default now(),
+  accepted_at timestamptz,
+  primary key (a, b),
+  check (a <> b)
+);
+create unique index if not exists friends_pair on public.friends (least(a, b), greatest(a, b));
+create index if not exists friends_b on public.friends (b);
+create table if not exists public.gifts (
+  id      bigint generated always as identity primary key,
+  from_id uuid references auth.users(id) on delete set null,
+  to_id   uuid not null references auth.users(id) on delete cascade,
+  gun_id  text not null references public.gun_prices(gun_id),
+  price   integer not null default 0,
+  at      timestamptz not null default now(),
+  seen    boolean not null default false
+);
+create index if not exists gifts_to on public.gifts(to_id, seen);
+alter table public.friends enable row level security;
+alter table public.gifts   enable row level security;
+
+-- a friend code nobody has yet
+create or replace function public.qz_fcode_new() returns text
+language plpgsql volatile set search_path = '' as $$
+declare
+  abc text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  c text;
+begin
+  loop
+    c := '';
+    for i in 1..6 loop c := c || substr(abc, 1 + floor(random() * 31)::integer, 1); end loop;
+    exit when not exists (select 1 from public.profiles t where t.fcode = c);
+  end loop;
+  return c;
+end $$;
+-- every player who has none gets one (re-running the file leaves the ones there alone)
+do $$
+declare r record;
+begin
+  for r in (select t.id from public.profiles t where t.fcode is null) loop
+    update public.profiles set fcode = public.qz_fcode_new() where id = r.id;
+  end loop;
+end $$;
+-- whom a request or a gift is for: a friend code (with or without #, any case), else a nickname only one player has
+create or replace function public.qz_find_player(p_who text) returns uuid
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  w text := btrim(coalesce(p_who, ''));
+  c text := upper(regexp_replace(btrim(coalesce(p_who, '')), '[^A-Za-z0-9]', '', 'g'));
+  r uuid;
+  n integer;
+begin
+  if w = '' then raise exception 'not_found'; end if;
+  if char_length(c) = 6 then
+    r := (select t.id from public.profiles t where t.fcode = c);
+    if r is not null then return r; end if;
+  end if;
+  n := (select count(*) from public.profiles t where lower(t.nickname) = lower(w));
+  if n = 0 then raise exception 'not_found'; end if;
+  if n > 1 then raise exception 'nick_many'; end if;
+  r := (select t.id from public.profiles t where lower(t.nickname) = lower(w));
+  return r;
+end $$;
+
+-- the friend list as the game shows it: my code; friends (code, nickname, xp, the last time they played, since when); the requests
+-- sent to me and by me; gifts not shown yet. Ids and e-mails never leave the database.
+create or replace function public.qz_friends() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  me text;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  me := (select t.fcode from public.profiles t where t.id = uid);
+  if me is null then
+    update public.profiles set fcode = public.qz_fcode_new() where id = uid;
+    me := (select t.fcode from public.profiles t where t.id = uid);
+  end if;
+  return jsonb_build_object('code', me,
+    'friends', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp,
+        'last', greatest(t.last_claim, t.last_round), 'since', f.accepted_at)
+        order by greatest(t.last_claim, t.last_round) desc nulls last, t.nickname)
+      from public.friends f join public.profiles t on t.id = case when f.a = uid then f.b else f.a end
+      where (f.a = uid or f.b = uid) and f.accepted), '[]'::jsonb),
+    'incoming', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at) order by f.at desc)
+      from public.friends f join public.profiles t on t.id = f.a where f.b = uid and not f.accepted), '[]'::jsonb),
+    'outgoing', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at) order by f.at desc)
+      from public.friends f join public.profiles t on t.id = f.b where f.a = uid and not f.accepted), '[]'::jsonb),
+    'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen));
+end $$;
+
+-- ask someone to be friends. If they had asked me already, this is a yes. At most 100 friends and requests, 30 requests waiting.
+create or replace function public.qz_friend_add(p_who text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+  f public.friends;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  t := public.qz_find_player(p_who);
+  if t = uid then raise exception 'friend_self'; end if;
+  f := (select x from public.friends x where (x.a = uid and x.b = t) or (x.a = t and x.b = uid));
+  if f.a is not null then
+    if f.accepted then raise exception 'friend_already'; end if;
+    if f.a = uid then raise exception 'friend_pending'; end if;
+    update public.friends set accepted = true, accepted_at = now() where a = t and b = uid;
+    return public.qz_friends() || jsonb_build_object('done', 'accepted');
+  end if;
+  if (select count(*) from public.friends x where x.a = uid or x.b = uid) >= 100 then raise exception 'friend_full'; end if;
+  if (select count(*) from public.friends x where x.a = uid and not x.accepted) >= 30 then raise exception 'friend_full'; end if;
+  insert into public.friends (a, b) values (uid, t);
+  return public.qz_friends() || jsonb_build_object('done', 'sent');
+end $$;
+
+-- yes or no to a request someone sent me (p_who = their code)
+create or replace function public.qz_friend_answer(p_who text, p_yes boolean) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  t := public.qz_find_player(p_who);
+  if not exists (select 1 from public.friends x where x.a = t and x.b = uid and not x.accepted) then raise exception 'no_request'; end if;
+  if coalesce(p_yes, false) then
+    if (select count(*) from public.friends x where (x.a = uid or x.b = uid) and x.accepted) >= 100 then raise exception 'friend_full'; end if;
+    update public.friends set accepted = true, accepted_at = now() where a = t and b = uid;
+  else
+    delete from public.friends where a = t and b = uid;
+  end if;
+  return public.qz_friends();
+end $$;
+
+-- no longer friends, or a request taken back (whichever side)
+create or replace function public.qz_friend_remove(p_who text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  t := public.qz_find_player(p_who);
+  delete from public.friends where (a = uid and b = t) or (a = t and b = uid);
+  return public.qz_friends();
+end $$;
+
+-- a gun from the shop bought for a friend: the giver pays the shop price, the friend owns it at once (and sees a note next time).
+-- Only guns the shop sells; never to someone who has it already (nothing is charged then).
+create or replace function public.qz_gift(p_who text, p_gun text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+  pr public.gun_prices;
+  c integer;
+  nick text;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  t := public.qz_find_player(p_who);
+  if t = uid then raise exception 'friend_self'; end if;
+  if not exists (select 1 from public.friends x where ((x.a = uid and x.b = t) or (x.a = t and x.b = uid)) and x.accepted) then raise exception 'not_friends'; end if;
+  pr := (select g from public.gun_prices g where g.gun_id = p_gun);
+  if pr.tier is not null then raise exception 'gacha_only'; end if;
+  if pr.gun_id is null or not pr.sold then raise exception 'not_for_sale'; end if;
+  if pr.free then raise exception 'friend_has_it'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  c := (select x.coins from public.profiles x where x.id = uid);
+  if c < pr.price then raise exception 'not_enough_coins'; end if;
+  insert into public.owned_guns (user_id, gun_id, price_paid) values (t, p_gun, pr.price) on conflict do nothing;
+  if not found then raise exception 'friend_has_it'; end if;
+  update public.profiles set coins = coins - pr.price where id = uid;
+  c := (select x.coins from public.profiles x where x.id = uid);
+  nick := (select x.nickname from public.profiles x where x.id = t);
+  insert into public.gifts (from_id, to_id, gun_id, price) values (uid, t, p_gun, pr.price);
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, -pr.price, 'gift', jsonb_build_object('gun', p_gun, 'to', nick));
+  return jsonb_build_object('coins', c, 'gun', p_gun, 'to', nick);
+end $$;
+
+-- the gifts not shown yet (who sent which gun); they count as shown after this
+create or replace function public.qz_gift_inbox() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  r jsonb;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  r := (select coalesce(jsonb_agg(jsonb_build_object('gun', g.gun_id, 'from', coalesce(t.nickname, '?'), 'at', g.at) order by g.at), '[]'::jsonb)
+    from public.gifts g left join public.profiles t on t.id = g.from_id where g.to_id = uid and not g.seen);
+  update public.gifts set seen = true where to_id = uid and not seen;
+  return jsonb_build_object('gifts', r);
+end $$;
+
+revoke all on function public.qz_fcode_new() from public, anon, authenticated;
+revoke all on function public.qz_find_player(text) from public, anon, authenticated;
+revoke all on function public.qz_friends() from public, anon;
+revoke all on function public.qz_friend_add(text) from public, anon;
+revoke all on function public.qz_friend_answer(text, boolean) from public, anon;
+revoke all on function public.qz_friend_remove(text) from public, anon;
+revoke all on function public.qz_gift(text, text) from public, anon;
+revoke all on function public.qz_gift_inbox() from public, anon;
+grant execute on function public.qz_friends() to authenticated;
+grant execute on function public.qz_friend_add(text) to authenticated;
+grant execute on function public.qz_friend_answer(text, boolean) to authenticated;
+grant execute on function public.qz_friend_remove(text) to authenticated;
+grant execute on function public.qz_gift(text, text) to authenticated;
+grant execute on function public.qz_gift_inbox() to authenticated;
 
 -- ---------- public rooms (v6.12) ----------
 -- 공개 방 목록: 로그인한 방장이 자기 방(PeerJS 방 코드)을 올리고 ~10초마다 갱신합니다. 30초 동안 갱신이 없으면 목록에서 빠지고,

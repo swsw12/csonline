@@ -517,3 +517,17 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Client: game.js r0 (the round-start snapshot) also keeps score and headshots. shop.js hooks endRound: shopRoundStats (that round's numbers,
   won = the player's side at the end won, mvp picked like the round card) → ACC.roundClaim → a line under the round card (or a note).
   An older schema (no qz_round_claim) sets ACC.noRound and stays quiet. test/mock.js has the same numbers.
+
+## v6.18 — friends, gifts, owned crate guns
+- Server (schema.sql): profiles.fcode (6 characters, no 0/O/1/I/L; qz_fcode_new; every profile gets one, new ones at sign-up), friends (a = asker,
+  b = asked, accepted; one row per pair), gifts (from, to, gun, price, seen). qz_find_player: a code, else a nickname only one player has
+  (not_found / nick_many). qz_friends (code, friends with xp and the last time they played, incoming, outgoing, gifts_new), qz_friend_add
+  (a mutual request is a yes; 100 friends, 30 waiting), qz_friend_answer, qz_friend_remove, qz_gift (accepted friends only, shop guns only,
+  friend_has_it charges nothing), qz_gift_inbox (marks seen). qz_me adds fcode, gifts_new, friend_req. ak60r / dmp7 are in gun_prices
+  (not sold) so owned_guns can hold them.
+- Client: friends.js (FR window, GIFTS pop-up in the lobby, the lobby button and its dot, a poll every 45 s in the lobby), ACC.loadFriends /
+  friendAdd / friendAnswer / friendRemove / gift / giftInbox, SHOP gift mode (SHOP.gift = {code, nick}; SHOP.giftTo; pickHtml).
+- Crate guns are in BUY_MENU (their W.cat row). loadout.js crateOK: the range, an account that owns one, a remote player (trusted), never bots;
+  buyCheck → 'lock' / 'crate', ldLocked, ldKeep (an owned one carries over). The range's own crate row is gone.
+- Granting a gun by hand (Supabase SQL Editor): insert into public.owned_guns (user_id, gun_id, price_paid) select id, 'dmp7', 0 from auth.users
+  where email = '...' on conflict do nothing;

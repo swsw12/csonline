@@ -19,4 +19,5 @@ PRICES=[
  ('blaze8',6000),('winchester',4500),
 ]
 GACHA={'S':['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],'A':['xdz','ripper','xbowa','xbow','sterling','duckfoot']}
-NOT_SOLD=['bhole','skull9','salamander']  # the season decoder's guns (gacha_config.season_lines): only from their line on the card
+NOT_SOLD=['bhole','skull9','salamander',  # the season decoder's guns (gacha_config.season_lines): only from their line on the card
+          'ak60r','dmp7']                # the supply-crate guns (v6.16); listed so an account can own one (owned_guns needs the row)

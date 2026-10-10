@@ -24,7 +24,7 @@ const INV={tab:'ny',busy:false,msg:'',ok:true,
     if(a==='reset'){CFG.sets[+v]=Object.assign({},LD_SETS0[+v]);saveCfg();this.render();return}},
   change(k,val){const [i,slot]=k.split(':');const s=ldSets()[+i];s[slot]=val||null;saveCfg();AU.play('ui',{vol:.35});this.render()},
   // the guns this player may take: on the buy menu (or the knife) and owned (or free, or accounts off)
-  mine(slot){const out=[],seen=new Set();for(const c of BUY_MENU)for(const id of c.items){const W=WPN[id];if(!W||!W.model||W.crate||W.kind==='nade'||W.slot!==slot||seen.has(id))continue;seen.add(id);
+  mine(slot){const out=[],seen=new Set();for(const c of BUY_MENU)for(const id of c.items){const W=WPN[id];if(!W||!W.model||W.crate&&!(ACC.on&&ACC.owns(id))||W.kind==='nade'||W.slot!==slot||seen.has(id))continue;seen.add(id);
       if(!ACC.on||ACC.owns(id))out.push(id)}if(slot===3&&!seen.has('knife'))out.unshift('knife');return out},
   render(){const o=$('invWin');if(!o)return;const L=LI(),signed=ACC.signed&&ACC.signed(),me=ACC.me;
     const tabs=[['ny',L?'근·하·신·년':'근하신년 글자'],['guns',L?'My weapons':'보유 무기'],['sets',L?'Presets':'장비 프리셋'],['char',L?'Zombie · character':'좀비 · 캐릭터']];

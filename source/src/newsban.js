@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'♥',tag:['신규 기능','New'],t:['친구 · 선물하기','Friends · gifts'],
+    d:['로비의 「친구」 버튼에서 친구 코드로 친구를 맺고, 상점에서 파는 총을 내 코인으로 친구에게 선물할 수 있어요. 받은 선물은 로비에 오면 알림이 떠요.','Make friends by friend code from the lobby’s Friends button, and buy any gun the shop sells for a friend with your coins. Gifts that come in show up in the lobby.']},
   {kind:'weapon',ref:'ak60r',tag:['보급상자 전용','Supply crates only'],t:['AK-47 60R','AK-47 60R'],
     d:['무광 블랙 AK. 가스관 위 조준경(우클릭 줌)과 반달 모양 60발 라운드 탄창. AK-47보다 한 발이 훨씬 세고 넉백 · 경직도 큼. 보급상자에서만 나와요.','A matte-black AK with a scope on the gas tube (right click to zoom) and a 60-round half-moon magazine. Hits far harder than the AK-47, with more knockback and stagger. Only from supply crates.']},
   {kind:'weapon',ref:'dmp7',tag:['보급상자 전용','Supply crates only'],t:['듀얼 MP7A1','Dual MP7A1'],
@@ -44,7 +46,7 @@ const NBAN={i:0,timer:null,shown:false,
   close(){const o=$('nbWin');if(o)o.remove();clearInterval(this.timer);this.timer=null},
   // first lobby of this page load: wait for the lobby and for a sign-in window already open to close
   boot(){if(this.shown||this.hidden()||!this.list().length)return;this.shown=true;let n=0;
-    const tryOpen=()=>{if(G.st!=='menu'||UI.open!=='menu'||$('accWin')||$('shopWin')||$('rkWin')||$('invWin')){if(++n<120)setTimeout(tryOpen,800);return}this.open()};setTimeout(tryOpen,1200)}};
+    const tryOpen=()=>{if(G.st!=='menu'||UI.open!=='menu'||$('accWin')||$('shopWin')||$('rkWin')||$('invWin')||$('frWin')||$('giftPop')){if(++n<120)setTimeout(tryOpen,800);return}this.open()};setTimeout(tryOpen,1200)}};
 (function(){const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{NBAN.boot()}catch(e){console.error(e)}return r};
   const act0=UI.act;UI.act=function(a,v,el){if(a==='nbopen'){NBAN.open();return}return act0.call(this,a,v,el)};
   addEventListener('keydown',e=>{if(e.key==='Escape'&&$('nbWin'))NBAN.close()});
