@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.14.1','2026-10-10',[
+ ['UP','킬나이프 디자인 변경 — 짙은 회색 칼날이 끝으로 갈수록 휘어지는 곡선형, 날 쪽에 핏자국, 손잡이까지 칼날과 같은 철제로 한 덩어리','Kill Knife redesign: a dark-grey blade that curves down to the point, blood along the edge, and a handle of the same steel all in one piece.']]],
 ['v6.14','2026-10-10',[
  ['NEW','블레이즈-8 — 골드 각인 반자동 샷건 (상점 6,000). 8발 한 발씩 장전, 장전 중 쏘면 바로 끊고 발사. 3발 쏠 때마다 특수탄 장전 → 좀비를 크게 밀어냄 (무기 이름 옆 ●●● / ◆ 특수탄 표시)','Blaze-8: a gold-engraved semi-auto shotgun (shop 6,000). 8 shells loaded one by one, firing mid-reload shoots at once; every 3 shells a special shell blows zombies back (pips / ◆ next to the weapon name).'],
  ['NEW','윈체스터 M1887 — 레버 액션 샷건 (상점 4,500). 한 방이 묵직, 쏠 때마다 레버 철컥, 장전 중 바로 사격','Winchester M1887: a lever-action shotgun (shop 4,500): heavy blasts, the lever racks after every shot, fires straight out of a reload.'],
@@ -205,7 +207,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.14 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.14.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
