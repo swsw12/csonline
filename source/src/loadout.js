@@ -77,9 +77,8 @@ function ldWhy(why,id){const L=LI(),W=WPN[id]||EQUIP[id],n=W?W.n[L]:'';
     crate:L?'The Event Horizon only comes from supply crates':'이벤트 호라이즌은 보급상자에서만 나와요'};
   HUD.note(M[why]||M.na,why==='lim'||why==='lock'?2.4:1.5);AU.play('dry',{vol:.5})}
 // one row of the menu for the player: ok (can be taken), own (has it), lk (locked), t (the right-hand column)
-function ldItemState(P,id){const L=LI(),W=WPN[id],why=buyCheck(P,id),own=!!(W&&(W.kind==='nade'?P.inv[id]>0:P.inv[W.slot]===id))||(id==='armor'&&P.armor>=100);
-  if(ldLocked(P,id)){const p=id!=='bhole'&&ACC.price(id);
-    return {ok:false,own:false,lk:1,t:SVG_LOCK+(id==='bhole'?`<small>${T(ACC.on?'ldEhOwn':'ldCrate')}</small>`:p&&p.tier?`<small class="gb">${L?'decoder':'해독기'}</small>`:`<small>${COIN}${fmtC(p&&p.price)}</small>`)}}
+function ldItemState(P,id){const W=WPN[id],why=buyCheck(P,id),own=!!(W&&(W.kind==='nade'?P.inv[id]>0:P.inv[W.slot]===id))||(id==='armor'&&P.armor>=100);
+  if(ldLocked(P,id))return {ok:false,own:false,lk:1,t:id==='bhole'?SVG_LOCK+`<small>${T(ACC.on?'ldEhOwn':'ldCrate')}</small>`:shopLockTag(id)};// shop.js: where a locked gun comes from
   let t='';if(own)t=T('owned');else if(why==='lim')t=T('ldUsed');else if(why==='full')t=T('ldFull');else if(id==='bhole')t=T('ldEh');
   else if(W&&W.ny&&P.nyFree>0&&!ldOwns(P,id))t=T('ldNyPick');else if((id==='armor'||W&&W.kind==='nade')&&ldLimited())t=`<small>${T('ldOnce')}</small>`;
   return {ok:!why||why==='own',own,lk:0,t}}

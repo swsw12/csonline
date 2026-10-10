@@ -760,7 +760,7 @@ html.touch #hRange .rgK{display:none}
 #gPop .grt tr.own td{color:#6a6e76}#gPop .grt small{color:#7a7e86}
 #gPop .grt.hist td:nth-child(3){text-align:right}#gPop .grt b.tS{color:#ffd24a}#gPop .grt b.tA{color:#c08aff}
 #gPop .grl{margin:10px 0 0;padding-left:18px;line-height:1.6;color:#a8acb4}#gPop .gload{padding:16px;text-align:center;color:#8a8f98}
-.bi.lk .c small.gb{color:#e07a5a}
+.bi.lk .c small.gb{color:#e07a5a}.bi.lk .c small.gb.gs,.mbi.lk .c small.gb.gs{color:#b48cff}
 /* ---------- the 근하신년 decoder bingo ---------- */
 #shopWin .bwrap .gleft{background:radial-gradient(ellipse at 50% 26%,#16304a,#0d1015 72%);width:300px}
 #shopWin .bdec{height:118px;display:flex;align-items:center;justify-content:center}

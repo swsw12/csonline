@@ -5,13 +5,13 @@
 // 근하신년 free pick still hand out any gun; the 근하신년 guns themselves come from the decoder bingo (or the fragment exchange). With accounts off (no Supabase settings in account.js) every gun stays open.
 // Prices: the database table gun_prices is the truth; this copy (same numbers as schema.sql) is shown until it has loaded.
 const SHOP_FREE=['knife','p9','sg8','k5','g35'];
-const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000,skull9:9000};
-const SHOP_NOTSOLD=['bhole'];
+const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000};
+const SHOP_NOTSOLD=['bhole','skull9'];// never in the shop: the season decoder's guns (a line on its card), else crate-only
 const SHOP_GACHA={S:['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],A:['xdz','ripper','xbowa','xbow','sterling','duckfoot']};
 // the decoder's numbers until gacha_config has loaded (same defaults as schema.sql)
 const GACHA_DEF={dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
-  season_lines:['gun:bhole','coins:1000','coins:1000','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3']};
+  season_lines:['gun:bhole','gun:skull9','coins:1000','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3']};
 // the 12 lines of the 5×5 card: rows 0-4, columns 5-9, the diagonal from the top left 10, from the top right 11
 const BINGO_LINES=[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
 // a season card's line items: 'gun:<id>' (owned already: season_owned_coins coins), 'coins:<n>', 'frags:<n>', 'tickets:<n>' (n 근하신년 decoders)
@@ -19,6 +19,12 @@ const sItem=c=>{const [k,v]=String(c||'').split(':');return k==='gun'?{k,gun:v,n
 const sAmt=n=>LI()?(n>=1000&&n%1000===0?n/1000+'K':fmtC(n)):(n>=10000&&n%10000===0?n/10000+'만':fmtC(n));// short amounts for the small tiles
 const sRank=c=>{const it=sItem(c);return ({gun:0,coins:1,frags:2,tickets:3})[it.k]*1e7-it.n};// the rules list: guns, then coins (biggest first), fragments, decoders
 function seasonGun(id){return (ACC.gc().season_lines||[]).includes('gun:'+id)}
+// the season card's guns (Event Horizon, Skull-9), in the order of the list; names: 'A · B' in the language shown
+function seasonGuns(){const o=[];for(const c of ACC.gc().season_lines||[]){const it=sItem(c);if(it.k==='gun'&&WPN[it.gun]&&!o.includes(it.gun))o.push(it.gun)}return o}
+const seasonNames=(L,ids)=>(ids||seasonGuns()).map(id=>WPN[id]?WPN[id].n[L]:id).join(' · ');
+// a locked gun's right-hand column in the buy menu: where it comes from (the 근하신년 card, the season card, else its price)
+function shopLockTag(id){const L=LI(),p=ACC.price(id);
+  return SVG_LOCK+(p&&p.tier?`<small class="gb">${L?'decoder':'해독기'}</small>`:p&&!p.sold&&seasonGun(id)?`<small class="gb gs">${L?'season':'시즌'}</small>`:`<small>${COIN}${fmtC(p&&p.price)}</small>`)}
 // averages for a card of 25 numbers out of N (a fixed seed, so the same every time): first line, 6th line, one given line, the whole card
 const SIMC={};
 function bingoSim(N){if(SIMC[N])return SIMC[N];let s=7,a=0,b=0;const T=2000,t=Array(25),pool=[...Array(N).keys()],rnd=()=>((s=Math.imul(s,1103515245)+12345|0)>>>0)/4294967296;
@@ -39,7 +45,7 @@ function shopCats(){const L=LI();const cats=BUY_MENU.filter(c=>c.k!=='equip').ma
   const sp=cats.find(c=>c.k==='special');if(sp)sp.items=['knife',...sp.items.filter(i=>i!=='knife'&&i!=='bhole'),'bhole'].filter(id=>WPN[id]);
   const seen=new Set(),all=[];for(const c of cats)for(const id of c.items)if(!seen.has(id)){seen.add(id);all.push(id)}
   return [{k:'all',n:L?'All':'전체',items:all},...cats]}
-// free / own / buy / crate / gacha (근하신년: decoder bingo or exchange only) / season (a line on the season decoder card: Event Horizon)
+// free / own / buy / crate / gacha (근하신년: decoder bingo or exchange only) / season (a line on the season decoder card: Event Horizon, Skull-9)
 function shopState(id){const p=ACC.price(id);if(!p||p.free)return 'free';if(ACC.me&&ACC.me.owned&&ACC.me.owned.has(id))return 'own';if(p.tier)return 'gacha';if(!p.sold)return seasonGun(id)?'season':'crate';return 'buy'}
 // free ones first, then by price; the 근하신년 guns after them (S first), then the season decoder's, crate-only last
 function shopOrder(ids){const grp=id=>{const s=shopState(id),t=ACC.tier(id);return s==='free'?0:t?(t==='S'?2:3):s==='season'?4:s==='crate'?5:1};
@@ -115,8 +121,8 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     return `<div class="stabs"><div class="stl">${C.map(c=>`<button class="${c.k===this.cat?'on':''}" data-sa="cat" data-v="${c.k}">${esc(c.n)}</button>`).join('')}</div>
         <label class="sfil"><input type="checkbox" data-sa="own"${this.onlyOwn?' checked':''}><span>${L?'Mine only':'보유한 총만'}</span></label></div>
       <div class="sbody"><div class="sgrid">${cards}</div>${this.detail()}</div>
-      <div class="sfoot">${L?'Coins come from finished matches — rounds, kills, infections, damage and wins. In a match every gun you own is free to pick; floor pick-ups, supply crates and the 근하신년 free pick still give any gun. The shooting range lends you every gun to try. 근하신년 guns come from the decoder bingo.'
-        :'코인은 매치를 끝까지 하면 라운드·킬·감염·피해량·승리에 따라 들어와요. 매치 안에서는 보유한 총을 무료로 고를 수 있고, 바닥에 떨어진 총·보급상자·근하신년 무료 교환은 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 근하신년 무기는 해독기 빙고에서만 나와요.'}</div>`},
+      <div class="sfoot">${L?'Coins come from finished matches — rounds, kills, infections, damage and wins. In a match every gun you own is free to pick; floor pick-ups, supply crates and the 근하신년 free pick still give any gun. The shooting range lends you every gun to try. 근하신년 guns come from the decoder bingo'+(seasonGuns().length?', '+seasonNames(1)+' from the season decoder.':'.')
+        :'코인은 매치를 끝까지 하면 라운드·킬·감염·피해량·승리에 따라 들어와요. 매치 안에서는 보유한 총을 무료로 고를 수 있고, 바닥에 떨어진 총·보급상자·근하신년 무료 교환은 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 근하신년 무기는 해독기 빙고에서만'+(seasonGuns().length?', '+seasonNames(0)+'는 시즌 해독기에서만':'')+' 나와요.'}</div>`},
   detail(){const L=LI(),id=this.sel,W=id&&WPN[id];if(!W)return '<div class="sdet"></div>';const st=shopState(id),p=ACC.price(id)||{price:0},signed=ACC.signed(),coins=signed?ACC.me.coins:0,t=ACC.tier(id),g=ACC.gc();
     const kn=(KIND_N[W.kind]||KIND_N.special)[L?1:0];
     const info=[kn,t?t+(L?' grade':'등급'):null,seasonGun(id)?(L?'Season decoder':'시즌 해독기'):null,W.mag?W.mag+(L?' rds':'발'):null,W.rpm?W.rpm+' RPM':null].filter(Boolean).join(' · ');
@@ -137,7 +143,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     if(this.msg)buy+=`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`;
     return `<div class="sdet"><div class="sdi${t?' t'+t:''}${seasonGun(id)?' tE':''}"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${esc(W.n[L?0:1])}</small></h4><div class="sinfo">${info}</div>
       ${UI.statBars(W)}<p class="sdesc">${UI.wTags(W,id)||''}</p><div class="sbuy">${buy}</div></div>`},
-  // ---- the decoder bingos: 'gacha' = the 근하신년 card (guns), 'season' = the season card (Event Horizon and items) ----
+  // ---- the decoder bingos: 'gacha' = the 근하신년 card (guns), 'season' = the season card (Event Horizon, Skull-9 and items) ----
   // what a page needs from its card: the account's card, its numbers and prices, the server calls
   bk(k){const g=ACC.gc();return k==='season'?{k,s:1,card:ACC.season,hi:g.season_hi,c1:g.season_cost1,c10:g.season_cost10,f0:g.season_frag_min,f1:g.season_frag_max,
       load:()=>ACC.loadSeason(),dec:n=>ACC.seasonDecode(n),reset:()=>ACC.seasonReset(),shuf:()=>ACC.seasonShuffle()}
@@ -154,7 +160,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     const name=W?W.n[L]:'?',sub=t==='S'?`${fmtC(g.full_s_coins)} ${L?'coins':'코인'}`:`${L?'fragments':'조각'} ${g.full_a_frags}`;
     const tip=got?(L?'Line done: ':'완성: ')+name:own?`${name} — ${L?'owned, pays':'보유 중 → 완성하면'} ${sub}`:name;
     return `<div class="brw ${cls}${t?' t'+t:''}${got?' got':''}${own?' own':''}${A&&A.flash&&A.flash.includes(k)?' pop':''}" data-l="${k}" title="${esc(tip)}">${W?`<img src="${gunIcon(W.model,22)}" alt="">`:''}${t?`<em>${t}</em>`:''}${got?'<i>✔</i>':''}</div>`},
-  // a season line's tile: the gun (Event Horizon, with its own glow; owned already: the coins it pays instead), a coin pile, fragments
+  // a season line's tile: a gun (Event Horizon, Skull-9, with their own glow; owned already: the coins it pays instead), a coin pile, fragments
   // or 근하신년 decoders, the amount under the picture
   srwTile(B,k,cls){const L=LI(),it=sItem(B.rewards[k]),got=B.done[k],me=ACC.me,g=ACC.gc(),A=this.banim('season');let ic,x,tip,amt='';
     if(it.k==='gun'){const W=WPN[it.gun],name=W?W.n[L]:it.gun,own=!got&&me&&me.owned&&me.owned.has(it.gun);
@@ -183,11 +189,11 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
         <button class="gbtn ten" data-sa="${sa}" data-v="10"${can10&&!dis?'':' disabled'}><b>${L?'10 decoders':'해독기 10개'}</b><span>${COIN}${fmtC(K.c10)}</span></button></div>`;
     const tools=signed&&!A?(this.confirm==='breset'?`<div class="bq">${L?'A new card? What is stamped now is lost.':'새 판으로 바꿀까요? 지금 찍힌 칸은 사라져요.'}<div><button data-sa="bresetok">${L?'New card':'바꾸기'}</button><button data-sa="buyno">${L?'Cancel':'취소'}</button></div></div>`
       :`<div class="btools"><button data-sa="breset"${this.busy?' disabled':''}>↻ ${L?'Reset':'초기화'}</button><button data-sa="bshuf"${this.busy||!(B.shuffles_left>0)?' disabled':''}>⇄ ${L?'Shuffle':'뒤섞기'} <small>${B.shuffles_left|0}/${g.shuffle_free}</small></button></div>`):'';
-    // the season card: how far its gun line has got
-    const ek=S?B.rewards.findIndex(c=>sItem(c).k==='gun'):-1,eW=ek>=0?WPN[sItem(B.rewards[ek]).gun]:null,en=ek>=0?BINGO_LINES[ek].filter(c=>B.marked[c]).length:0;
-    const eh=ek>=0&&B.nums&&eW?`<span class="ehs" title="${esc(eW.n[L])} ${L?'line':'줄'}">${eW.model?`<img src="${gunIcon(eW.model,14)}" alt="">`:''}<b>${B.done[ek]?'✔':en}</b>${B.done[ek]?'':'/5'}</span>`:'';
-    const note=S?(L?`Each season decoder shows one number from 0–${hi} not drawn on this card yet; a number on the card is stamped. Finish a line and you get the item at its end: ${eW?esc(eW.n[1]):'the season gun'} (owned already: ${fmtC(g.season_owned_coins)} coins), coins, fragments or 근하신년 decoders (open them on the 근하신년 tab instead of paying). Every season decoder also gives ${K.f0}–${K.f1} fragments. A full card is replaced by a new one.`
-        :`시즌 해독기 1개를 열면 0~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 줄을 채우면 줄 끝의 보상을 받아요: ${eW?esc(eW.n[0]):'시즌 무기'}(이미 가졌으면 ${fmtC(g.season_owned_coins)} 코인), 코인, 해독 조각, 근하신년 해독기(근하신년 해독기 탭에서 코인 대신 사용). 해독기마다 조각 ${K.f0}~${K.f1}개도 나오고, 판을 다 채우면 새 판이 깔려요.`)
+    // the season card: how far each of its gun lines has got (Event Horizon, Skull-9)
+    const gl=S?B.rewards.map((c,k)=>({k,W:WPN[sItem(c).gun]})).filter(x=>sItem(B.rewards[x.k]).k==='gun'&&x.W):[],gn=esc(gl.map(x=>x.W.n[L]).join(' · '));
+    const eh=B.nums?gl.map(({k,W})=>`<span class="ehs" title="${esc(W.n[L])} ${L?'line':'줄'}">${W.model?`<img src="${gunIcon(W.model,14)}" alt="">`:''}<b>${B.done[k]?'✔':BINGO_LINES[k].filter(c=>B.marked[c]).length}</b>${B.done[k]?'':'/5'}</span>`).join(''):'';
+    const note=S?(L?`Each season decoder shows one number from 0–${hi} not drawn on this card yet; a number on the card is stamped. Finish a line and you get the item at its end: ${gn||'the season gun'} (owned already: ${fmtC(g.season_owned_coins)} coins), coins, fragments or 근하신년 decoders (open them on the 근하신년 tab instead of paying). Every season decoder also gives ${K.f0}–${K.f1} fragments. A full card is replaced by a new one.`
+        :`시즌 해독기 1개를 열면 0~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 줄을 채우면 줄 끝의 보상을 받아요: ${gn||'시즌 무기'}(이미 가졌으면 ${fmtC(g.season_owned_coins)} 코인), 코인, 해독 조각, 근하신년 해독기(근하신년 해독기 탭에서 코인 대신 사용). 해독기마다 조각 ${K.f0}~${K.f1}개도 나오고, 판을 다 채우면 새 판이 깔려요.`)
       :(L?`Each decoder shows one number from 0–${hi} not drawn on this card yet; a number on the card is stamped. Finish a row, a column or a diagonal and you get the 근하신년 gun shown at its end (owned already: an S line pays ${fmtC(g.full_s_coins)} coins, an A line ${g.full_a_frags} fragments). Every decoder also gives ${K.f0}–${K.f1} fragments. A full card is replaced by a new one.`
         :`해독기 1개를 열면 0~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 가로·세로·대각선 한 줄을 채우면 줄 끝에 있는 근하신년 무기를 받아요 (이미 가진 무기면 S줄은 ${fmtC(g.full_s_coins)} 코인, A줄은 조각 ${g.full_a_frags}개). 해독기마다 조각 ${K.f0}~${K.f1}개도 나오고, 판을 다 채우면 새 판이 깔려요.`);
     return `<div class="gwrap bwrap${S?' sz':''}"><div class="gleft"><div class="bdec${A&&A.rolling?' roll':''}">${S?seasonSvg('dz'):decoderSvg('dz')}</div>
@@ -348,7 +354,7 @@ function gPopRules(){const L=LI(),g=ACC.gc(),hi=g.bingo_hi,rows=[],S=bingoSim(hi
 function sPopRules(){const L=LI(),g=ACC.gc(),hi=g.season_hi,N=hi+1,S=bingoSim(N),rows=[],cnt={},items=g.season_lines||[];
   const r=(a,b,h)=>rows.push(`<tr${h?' class="h"':''}><td>${a}</td><td>${b}</td></tr>`);
   for(const c of items)cnt[c]=(cnt[c]||0)+1;
-  const gun=sItem(items.find(c=>sItem(c).k==='gun')).gun,GW=gun&&WPN[gun],gname=GW?esc(GW.n[L]):(L?'the season gun':'시즌 무기');
+  const guns=seasonGuns(),many=guns.length>1,gname=guns.length?esc(seasonNames(L,guns)):(L?'the season gun':'시즌 무기');
   const nm=c=>{const it=sItem(c),W=it.gun&&WPN[it.gun];return it.k==='gun'?`<b class="tE">${esc(W?W.n[L]:it.gun)}</b>`:it.k==='coins'?`${COIN}${fmtC(it.n)} ${L?'coins':'코인'}`
     :it.k==='frags'?`${FRAG}${L?'fragments':'해독 조각'} ×${it.n}`:`${decoderSvg('tki')}${L?'근하신년 decoders':'근하신년 해독기'} ×${it.n}`};
   r(L?'The card':'빙고판','',1);r(L?'Numbers on the card':'판의 숫자',L?`25 of 0–${hi}`:`0~${hi} 중 25개`);r(L?'Lines':'줄',L?'12 (5 rows, 5 columns, 2 diagonals)':'12줄 (가로 5 · 세로 5 · 대각 2)');
@@ -358,11 +364,11 @@ function sPopRules(){const L=LI(),g=ACC.gc(),hi=g.season_hi,N=hi+1,S=bingoSim(N)
   r(L?'Number shown':'나오는 숫자',L?`one of 0–${hi} not drawn on this card yet (equal chance)`:`0~${hi} 중 이 판에서 아직 안 나온 숫자 (모두 같은 확률)`);
   r(L?'Hit chance, first decoder':'첫 해독기가 판에 맞을 확률',`${Math.round(25/N*100)}%`);r(L?'Fragments':'해독 조각',L?`${g.season_frag_min}–${g.season_frag_max} with every decoder`:`해독기마다 ${g.season_frag_min}~${g.season_frag_max}개`);
   r(L?'On average (simulated)':'평균 (시뮬레이션)','',1);r(L?'First line':'첫 줄 완성',L?`about ${S.first} decoders`:`해독기 약 ${S.first}개`);
-  r(`${gname} ${L?'line':'줄'}`,L?`about ${S.line} — never more than ${N}`:`약 ${S.line}개 — 최대 ${N}개`);
+  r(`${gname} ${L?(many?'line (each)':'line'):(many?'줄 (각각)':'줄')}`,L?`about ${S.line} — never more than ${N}`:`약 ${S.line}개 — 최대 ${N}개`);
   r(L?'…in coins, opening tens':'…코인으로 (10개씩 열면)',`${COIN}${fmtC(Math.round(S.line*g.season_cost10/1000)*100)}`);
   r(L?'6 lines':'6줄',L?`about ${S.six}`:`약 ${S.six}개`);r(L?'The whole card (12 lines)':'판 전체 (12줄)',L?`about ${S.full} — never more than ${N}`:`약 ${S.full}개 — 최대 ${N}개`);
   gPop(L?'How the season decoder works':'시즌 해독기 규칙 · 확률',`<table class="grt">${rows.join('')}</table><ul class="grl">
-    <li>${L?`The ${gname} line when you own it already pays ${fmtC(g.season_owned_coins)} coins instead.`:`${gname}을(를) 이미 가진 상태에서 그 줄을 완성하면 대신 ${fmtC(g.season_owned_coins)} 코인.`}</li>
+    <li>${L?`A gun line (${gname}) whose gun you own already pays ${fmtC(g.season_owned_coins)} coins instead.`:`무기 줄(${gname})은 그 무기를 이미 가졌으면 대신 ${fmtC(g.season_owned_coins)} 코인.`}</li>
     <li>${L?'근하신년 decoders are kept: open them on the 근하신년 tab instead of paying (one or ten at a time).':'근하신년 해독기는 보유해 두었다가 근하신년 해독기 탭에서 코인 대신 열어요 (1개 · 10개씩).'}</li>
     <li>${L?'A full card is replaced by a new one at once (the rest of a ten goes on it).':'25칸이 다 차면 바로 새 판이 깔려요 (10개 열기의 나머지는 새 판에).'}</li>
     <li>${L?`Reset: a new card, free. Shuffle: the numbers not stamped yet change places, ${g.shuffle_free} a day — counted apart from the 근하신년 card.`:`초기화: 새 판으로 (무료). 뒤섞기: 안 찍힌 숫자들 자리만 바뀜, 하루 ${g.shuffle_free}번 (근하신년 판과 따로).`}</li>
@@ -474,11 +480,13 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
   const act0=UI.act;UI.act=function(a,v,el){
     if(a==='shop'){SHOP.open();return}
     if(a==='acc'){ACCW.open(ACC.signed()?'me':'in');return}
-    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI();HUD.note(p&&p.tier?`${W?W.n[L]:''}: ${L?'only from the 근하신년 decoder bingo (lobby shop)':'근하신년 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`:`${W?W.n[L]:''}: ${L?'buy it in the shop first':'상점에서 먼저 사야 해요'} (${fmtC(p&&p.price)} ${L?'coins':'코인'})`,2.2);AU.play('dry',{vol:.5});return}
+    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI(),n=W?W.n[L]:'';HUD.note(p&&p.tier?`${n}: ${L?'only from the 근하신년 decoder bingo (lobby shop)':'근하신년 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
+      :p&&!p.sold&&seasonGun(v)?`${n}: ${L?'only from its line on the season decoder card (lobby shop)':'시즌 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
+      :`${n}: ${L?'buy it in the shop first':'상점에서 먼저 사야 해요'} (${fmtC(p&&p.price)} ${L?'coins':'코인'})`,2.2);AU.play('dry',{vol:.5});return}
     return act0.call(this,a,v,el)};
   const rb=UI.renderBuy;UI.renderBuy=function(){const r=rb.apply(this,arguments);const P=G.player;if(!ACC.on||!P)return r;const L=LI();
-    for(const el of document.querySelectorAll('#buy .bi[data-v]')){const id=el.dataset.v;if(!shopLocked(P,id))continue;const p=ACC.price(id);
-      el.classList.add('lk','na');el.dataset.act='buylk';const c=el.querySelector('.c');if(c)c.innerHTML=SVG_LOCK+(p&&p.tier?`<small class="gb">${L?'decoder':'해독기'}</small>`:`<small>${COIN}${fmtC(p&&p.price)}</small>`)}
+    for(const el of document.querySelectorAll('#buy .bi[data-v]')){const id=el.dataset.v;if(!shopLocked(P,id))continue;
+      el.classList.add('lk','na');el.dataset.act='buylk';const c=el.querySelector('.c');if(c)c.innerHTML=shopLockTag(id)}
     const h=document.querySelector('#buy h3');if(h&&!h.querySelector('.bcoin')){const s=document.createElement('span');s.className='bcoin';s.innerHTML=ACC.signed()?`${COIN}${fmtC(ACC.me.coins)} · ${L?'locked guns are bought in the lobby shop':'잠긴 총은 로비 상점에서 구매'}`:(L?'Guest: free guns only — sign in to unlock more':'게스트: 기본 총만 — 로그인하면 더 많은 총');h.appendChild(s)}
     return r};
   const bi=Main.buyItem;Main.buyItem=function(id){const P=G.player;if(shopLocked(P,id)){UI.act('buylk',id);return}return bi.call(this,id)};

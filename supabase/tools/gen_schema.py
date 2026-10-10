@@ -13,7 +13,7 @@ sql=r"""-- =====================================================================
 -- 규칙
 --   * 코인 · 조각 · 보유 총 · 보유 해독기는 테이블에 직접 쓸 수 없고(RLS: 자기 것 읽기만), 아래 함수로만 바뀝니다.
 --   * 총 가격은 gun_prices 테이블이 기준입니다 (게임 화면도 그 값을 씀). tier = 'S' / 'A' 는 근하신년 무기:
---     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole)은 시즌 해독기 빙고에서만.
+--     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole) · 스컬-9(skull9)는 시즌 해독기 빙고에서만.
 --   * 판 보상은 서버가 계산합니다: 판당 최대 900, 지난 보상 뒤 1분당 80까지, 하루(한국 시간) 8,000까지,
 --     그날 첫 판 +200. 가입하면 3,000 코인.
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
@@ -48,7 +48,7 @@ create table if not exists public.gun_prices (
   gun_id text primary key,
   price  integer not null check (price >= 0),
   free   boolean not null default false,  -- everyone has it from the start
-  sold   boolean not null default true    -- false: not in the shop (bhole: the season decoder; tier S / A: the 근하신년 decoder)
+  sold   boolean not null default true    -- false: not in the shop (bhole, skull9: the season decoder; tier S / A: the 근하신년 decoder)
 );
 alter table public.gun_prices add column if not exists tier text check (tier in ('S', 'A'));  -- 근하신년: pouch only
 create table if not exists public.owned_guns (
@@ -116,7 +116,7 @@ alter table public.gacha_config add column if not exists season_frag_min    inte
 alter table public.gacha_config add column if not exists season_frag_max    integer not null default 3;
 alter table public.gacha_config add column if not exists season_owned_coins integer not null default 10000;  -- a gun line whose gun is owned
 alter table public.gacha_config add column if not exists season_lines text[] not null
-  default '{gun:bhole,coins:1000,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
+  default '{gun:bhole,gun:skull9,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
 alter table public.profiles add column if not exists dec_tickets integer not null default 0 check (dec_tickets >= 0);  -- 근하신년 decoders to open
 alter table public.profiles add column if not exists season_shuffle_day date;                          -- the season card's own shuffles
 alter table public.profiles add column if not exists season_shuffles    integer not null default 0;
@@ -131,6 +131,19 @@ create table if not exists public.season_boards (
   updated_at timestamptz not null default now()
 );
 insert into public.gacha_config (id) values (1) on conflict (id) do nothing;
+-- v6.11.1: Skull-9 leaves the shop for a season line, in the place of one coins:1000 line. A card dealt before that gets it too, on a
+-- coins:1000 line not finished yet. Both run only while gacha_config still holds the v6.11 list (a list edited by hand is left alone).
+with t as (
+  select b.user_id, (select min(i) from generate_subscripts(b.rewards, 1) i where b.rewards[i] = 'coins:1000' and not b.done[i]) as k
+  from public.season_boards b
+  where not ('gun:skull9' = any(b.rewards))
+    and exists (select 1 from public.gacha_config c where c.id = 1 and c.season_lines = '{gun:bhole,coins:1000,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}'::text[])
+)
+update public.season_boards b set rewards = b.rewards[1:t.k - 1] || array['gun:skull9'] || b.rewards[t.k + 1:]
+from t where b.user_id = t.user_id and t.k is not null;
+update public.gacha_config set season_lines = '{gun:bhole,gun:skull9,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}'::text[]
+where id = 1 and season_lines = '{gun:bhole,coins:1000,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}'::text[];
+alter table public.gacha_config alter column season_lines set default '{gun:bhole,gun:skull9,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
 create table if not exists public.gacha_log (
   id       bigint generated always as identity primary key,
   user_id  uuid not null references auth.users(id) on delete cascade,
@@ -526,7 +539,7 @@ begin
   return public.qz_bingo_json(uid);
 end $$;
 
--- ---------- the season decoder bingo (Event Horizon) ----------
+-- ---------- the season decoder bingo (Event Horizon, Skull-9) ----------
 -- a new season card: 25 different numbers from 0..season_hi, the season_lines items shuffled onto the 12 lines
 create or replace function public.qz_season_new(uid uuid) returns void
 language plpgsql security definer set search_path = '' as $$

@@ -1,4 +1,4 @@
-# the one price list: coins per gun; FREE = handed out to everyone; NOT_SOLD = never in the shop (crate-only)
+# the one price list: coins per gun; FREE = handed out to everyone; NOT_SOLD = never in the shop (season decoder lines, supply crates)
 # GACHA = the 근하신년 guns: only from the decoder bingo (해독기) or the fragment exchange, never sold
 FREE=['knife','p9','sg8','k5','g35']
 PRICES=[
@@ -15,7 +15,7 @@ PRICES=[
  # machine guns
  ('mg6',6000),('hmg',6500),('gx6',10000),
  # special + melee
- ('airb',4500),('gl40',5500),('axe',1500),('hammer',4000),('skull9',9000),
+ ('airb',4500),('gl40',5500),('axe',1500),('hammer',4000),
 ]
 GACHA={'S':['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],'A':['xdz','ripper','xbowa','xbow','sterling','duckfoot']}
-NOT_SOLD=['bhole']
+NOT_SOLD=['bhole','skull9']  # the season decoder's guns (gacha_config.season_lines): only from their line on the card

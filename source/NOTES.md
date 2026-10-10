@@ -435,3 +435,11 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   dec_tickets + qz_decode(p_count,p_free,p_ticket). README §8. schema.sql must be re-run.
 - Test assets: source/test/mock.js (fake Supabase), supabase/tools/gen_schema.py + prices.py (python3 supabase/tools/gen_schema.py).
 
+
+## v6.11.1 — Skull-9 moves to the season decoder
+- skull9 joins NOT_SOLD (prices.py → gun_prices row price 0, sold false; qz_buy says not_for_sale) and gacha_config.season_lines
+  gets gun:skull9 in the place of one coins:1000. schema.sql updates a DB still on the exact v6.11 list (an edited list is left alone)
+  and, in the same one-shot, puts gun:skull9 on every dealt season card that lacks it, on its first coins:1000 line not done yet.
+- Client: SHOP_NOTSOLD / GACHA_DEF.season_lines / mock.js match. shopLockTag(id) (shop.js) is the locked-gun tag for both buy menus
+  (해독기 / 시즌 / price); buylk explains a season gun. The season page shows a progress badge per gun line, its note and rules
+  name every season gun (seasonGuns(), seasonNames()).
