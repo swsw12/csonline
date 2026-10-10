@@ -497,3 +497,5 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - profiles.ny_g/ny_h/ny_s/ny_n hold the letters; qz_ny_exchange('ny'|'season') takes one of each for dec_tickets +2 or season_tickets +1 (gacha_log src 'letters').
 - qz_season_decode(p_count, p_ticket default false): with a ticket it costs no coins and uses season_tickets.
 - inv.js: INV window (z 55), tabs ny / guns / sets (CFG.sets, slots 1-3, grenades, armor) / char (CFG.zclass, CFG.skin). The lobby bag button shows a dot when a set can be traded. The NEW banner waits while #invWin is open, and opening the inventory closes the banner.
+
+- v6.15.1: the Kill Knife is renamed 나타나이프 / Nata Knife (WPN.killknife.n, the NEW banner, the lobby news). The id stays 'killknife': owned guns, gun_prices and SHOP_PRICE are unchanged.

@@ -11,7 +11,7 @@ const NEW_CONTENT=[
     d:['골드 각인 반자동 샷건. 8발을 한 발씩 장전하고 장전 도중 쏘면 바로 끊고 발사. 3발 쏠 때마다 특수칸에 특수탄이 1발씩 (최대 8발) 쌓이고, 우클릭하면 부채꼴로 넓게 퍼지는 경직 · 넉백탄 발사.','A gold-engraved semi-auto shotgun: 8 shells loaded one by one, firing mid-reload shoots at once. Every 3 shells one special shell goes into its own slot (up to 8); right click fires it as a wide fan that staggers and blows zombies back.']},
   {kind:'weapon',ref:'winchester',tag:['상점 4,500 코인','Shop · 4,500 coins'],t:['윈체스터 M1887','Winchester M1887'],
     d:['레버 액션 샷건. 쏠 때마다 레버를 철컥. 한 방이 묵직하고, 장전 중 쏘면 바로 끊고 발사.','A lever-action shotgun: rack the lever after every shot. Heavy single blasts; firing mid-reload shoots at once.']},
-  {kind:'weapon',ref:'killknife',tag:['상점 12,000 코인','Shop · 12,000 coins'],t:['킬나이프','Kill Knife'],
+  {kind:'weapon',ref:'killknife',tag:['상점 12,000 코인','Shop · 12,000 coins'],t:['나타나이프','Nata Knife'],
     d:['커다란 전투 칼. 기본 칼보다 사거리 · 데미지 · 경직이 훨씬 높고, 강공격은 두 마리까지 벰.','A big combat knife: far more reach, damage and stagger than the standard knife; the heavy attack cuts two.']},
   {kind:'weapon',ref:'salamander',tag:['시즌 해독기','Season decoder'],t:['샐러맨더','Salamander'],
     d:['화염방사기. 8m 안의 좀비를 한꺼번에 태우고 불붙여 느리게 만듦. 벽은 못 넘음.','A flamethrower: burns every zombie within 8 m at once and slows them; stopped by walls.']},

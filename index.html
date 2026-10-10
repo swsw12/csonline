@@ -8184,7 +8184,8 @@ SFX_ORDER.push('salign','salroar','salgust','saloff','salout','salin');
 
 // ---- newguns.js ----
 'use strict';
-// ============ v6.14 weapons: Blaze-8 (gold semi-auto shotgun), Winchester M1887 (lever-action shotgun), Kill Knife ============
+// ============ v6.14 weapons: Blaze-8 (gold semi-auto shotgun), Winchester M1887 (lever-action shotgun), Nata Knife ============
+// (the Nata Knife was called the Kill Knife until v6.15.1; its id stays 'killknife' so purchases, prices and the server keep working)
 // Models are boxes on the existing atlas materials (no new atlas slots); sounds reuse the game's synthesised ones.
 // relFire: a shell-by-shell reload is cut short by a trigger press and that same press fires (game.js reload block).
 // spEvery: every spEvery shells fired, one special shell goes into its own slot (up to spMax); right click fires it as a wide fan
@@ -8234,7 +8235,7 @@ WPN.winchester={slot:1,kind:'shotgun',n:['윈체스터 M1887','Winchester M1887'
   shellRel:.42,relStart:.36,relFire:1,draw:.8,speed:.92,snd:'db2',model:'winchester',hold:'rifle',pump:1,lever:1};
 VM_POS.winchester={p:[.15,-.165,-.37],r:[0,.08,.035]};
 
-// ---------- Kill Knife: a long hazy-grey blade that curves down to the point, a bright honed edge, blood along the belly,
+// ---------- Nata Knife (id killknife): a long hazy-grey blade that curves down to the point, a bright honed edge, blood along the belly,
 // a handle of the same steel running on from it (built in slices along the blade so the spine and the edge can curve) ----------
 // stained steel: the hazy grey of 'steel' with old blood soaked into it, faint (kkS1) to deep (kkS3), blotchy so it reads as a stain
 const KK_MATS=['kkS1','kkS2','kkS3'];
@@ -8267,7 +8268,7 @@ function kkParts(){const P=[],N=26,z0=-.045,z1=-.37;
   P.push(Pt(0,-.002,.108,.026,.04,.016,'steel'),Pt(0,-.004,.118,.022,.03,.008,'steel'),Pt(0,-.004,.112,.0285,.008,.008,'blk'));
   return P}
 GUNS.killknife={parts:kkParts(),grip:[0,0,0],muzzle:[0,.03,-.36],trail:[0,.0,-.12,0,.028,-.35]};
-WPN.killknife={slot:3,kind:'melee',n:['킬나이프','Kill Knife'],cost:12000,dmg:[95,330],rate:[.5,1.1],range:[2.7,2.2],kb:[5,15],stag:[2.2,3],cleave:[1,2],arc:[.55,.6],
+WPN.killknife={slot:3,kind:'melee',n:['나타나이프','Nata Knife'],cost:12000,dmg:[95,330],rate:[.5,1.1],range:[2.7,2.2],kb:[5,15],stag:[2.2,3],cleave:[1,2],arc:[.55,.6],
   speed:1,draw:.65,model:'killknife',hold:'knife',sw:1,hitT:[.15,.32]};
 VM_POS.killknife={p:[.16,-.17,-.34],r:[.15,.25,-.15]};
 
@@ -10384,6 +10385,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.15.1','2026-10-10',[
+ ['UP','킬나이프 이름이 「나타나이프」로 바뀜 — 성능 · 디자인 · 상점가 그대로, 이미 산 계정은 그대로 보유','The Kill Knife is now called the Nata Knife: same stats, look and price; accounts that bought it keep it.']]],
 ['v6.15','2026-10-10',[
  ['NEW','인벤토리 (로비 상단 가방 버튼) — 근하신년 글자 · 보유 무기 · 장비 프리셋 3세트 · 좀비/생존자 캐릭터를 한 곳에서','Inventory (bag button in the lobby top bar): New-Year letters, owned weapons, three loadout presets and the zombie / survivor character in one place.'],
  ['UP','근하신년 이벤트 변경 — 매치에서 주운 근 · 하 · 신 · 년 글자가 계정 인벤토리에 저장 (로그인). 한 세트를 모으면 근하신년 해독기 2개 또는 시즌 해독기 1개 중 골라서 교환','New-Year event: the 근 · 하 · 신 · 년 letters you pick up in a match are kept in your account inventory (signed in). A full set trades for 2 New-Year decoders or 1 season decoder, your choice.'],
@@ -10578,8 +10581,8 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       art:`<img class="a1" src="${portrait('h_'+(HSKINS[1]||skin),140)}"><img class="a3" src="${portrait('h_'+(HSKINS[2]||skin),110)}">`},
     {act:'range',cls:'c3',t:L?'SHOOTING RANGE':'사격장',s:L?'Dummies at 10–50 m, moving targets, free weapons':'10–50 m 더미 · 이동 표적 · 무기 무료',tag:L?'Practice':'연습',
       art:`<img class="gun g1" src="${gunIcon('sr8',40)}"><img class="gun g2" src="${gunIcon('kv47',48)}"><img class="gun g3" src="${gunIcon('d50',34)}">`}];
-  const news=L?[['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Kill Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
-    :[['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 킬나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
+  const news=L?[['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
+    :[['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
@@ -10592,7 +10595,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.15 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.15.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -12127,7 +12130,7 @@ const NEW_CONTENT=[
     d:['골드 각인 반자동 샷건. 8발을 한 발씩 장전하고 장전 도중 쏘면 바로 끊고 발사. 3발 쏠 때마다 특수칸에 특수탄이 1발씩 (최대 8발) 쌓이고, 우클릭하면 부채꼴로 넓게 퍼지는 경직 · 넉백탄 발사.','A gold-engraved semi-auto shotgun: 8 shells loaded one by one, firing mid-reload shoots at once. Every 3 shells one special shell goes into its own slot (up to 8); right click fires it as a wide fan that staggers and blows zombies back.']},
   {kind:'weapon',ref:'winchester',tag:['상점 4,500 코인','Shop · 4,500 coins'],t:['윈체스터 M1887','Winchester M1887'],
     d:['레버 액션 샷건. 쏠 때마다 레버를 철컥. 한 방이 묵직하고, 장전 중 쏘면 바로 끊고 발사.','A lever-action shotgun: rack the lever after every shot. Heavy single blasts; firing mid-reload shoots at once.']},
-  {kind:'weapon',ref:'killknife',tag:['상점 12,000 코인','Shop · 12,000 coins'],t:['킬나이프','Kill Knife'],
+  {kind:'weapon',ref:'killknife',tag:['상점 12,000 코인','Shop · 12,000 coins'],t:['나타나이프','Nata Knife'],
     d:['커다란 전투 칼. 기본 칼보다 사거리 · 데미지 · 경직이 훨씬 높고, 강공격은 두 마리까지 벰.','A big combat knife: far more reach, damage and stagger than the standard knife; the heavy attack cuts two.']},
   {kind:'weapon',ref:'salamander',tag:['시즌 해독기','Season decoder'],t:['샐러맨더','Salamander'],
     d:['화염방사기. 8m 안의 좀비를 한꺼번에 태우고 불붙여 느리게 만듦. 벽은 못 넘음.','A flamethrower: burns every zombie within 8 m at once and slows them; stopped by walls.']},
