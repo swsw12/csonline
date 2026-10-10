@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.11.2','2026-10-10',[
+ ['UP','스컬-9 우클릭 내려찍기 — 오른쪽 위에서 왼쪽 아래로 비스듬히 긋던 궤적을 위에서 아래로 일자로 바꿈 (화면 가운데 살짝 오른쪽). 내려오는 동안 날 면이 보이고, 땅에 박힐 때는 날이 똑바로 섬. 찍는 순간 화면이 조금 더 크게 숙여짐','SKULL-9 right click: the slam now comes straight down (one vertical line just right of the crosshair) instead of across from the upper right to the lower left. The blade shows its face on the way down and lands square; the view dips a little more on impact.']]],
 ['v6.11.1','2026-10-10',[
  ['UP','스컬-9 — 상점 판매 대신 시즌 해독기 줄 보상으로 이동 (이벤트 호라이즌처럼 빙고 줄을 채워야 영구 보유). 12줄 중 1줄, 코인 1,000 줄 하나가 빠짐. 이미 산 사람은 그대로 보유, 이미 가진 상태로 줄을 채우면 10,000 코인. 지금 깔린 시즌 판도 아직 안 채운 코인 1,000 줄 하나가 스컬-9 줄로 바뀜','SKULL-9 leaves the shop for a line on the season decoder card (like Event Horizon, a finished line makes it yours): one of the 12 lines, in the place of a 1,000-coin line. Bought already: yours to keep; owned when its line is done: 10,000 coins. Season cards already dealt get it too, on a 1,000-coin line not finished yet.']]],
 ['v6.11','2026-10-10',[
@@ -188,7 +190,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.11.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.11.2 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

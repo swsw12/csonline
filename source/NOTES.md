@@ -443,3 +443,9 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Client: SHOP_NOTSOLD / GACHA_DEF.season_lines / mock.js match. shopLockTag(id) (shop.js) is the locked-gun tag for both buy menus
   (해독기 / 시즌 / price); buylk explains a season gun. The season page shows a progress badge per gun line, its note and rules
   name every season gun (seasonGuns(), seasonNames()).
+
+## v6.11.2 — Skull-9 slam straight down
+- SK_SW.heavy (skull9.js) rebuilt from .52 on: the haft stays in a plane through the eye (x = .12 * depth), so the first-person slam is
+  one vertical line on screen; the blade turns 35 degrees about the haft on the way down (its face shows) and lands square (8 degrees);
+  impact pose: head at about NDC (.13, -.45), hands just under the bottom edge. SK_FX.heavy: no yaw/roll, pitch dip -.12 at the hit.
+  Third person (KF.skH) was already a pure pitch swing. window.__SKT = {heavy: {K, F}} still overrides the keys for tuning.
