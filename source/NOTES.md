@@ -506,3 +506,14 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - SUP.open: Event Horizon r<.3, a crate gun r<.6, heavy r<.8, else supplies.
 - AK-47 60R: the half-moon magazine is 36 slices round an arc (AK60: centre, radii, sweep); the first mag part is the slice in the well (rlMag takes the axis from it). Support hand at the front of the handguard, clear of the magazine tip. zoom:[44].
 - Dual MP7A1: real MP7A1 proportions (mp7Parts). Charging handles are tag 'slide' for the dual first draw; fd.nolock keeps them forward when empty (vm.js slide lock skipped, rlDual skips the slide release and just plays the bolt sound). bRpm/bSpread: the right-click stance (a.dualB) multiplies the fire rate (game.js) and the spread (curSpread). VM_POS.dmp7.dx sets the gap between the guns (vm.js).
+
+## v6.17 — round rewards, bigger match rewards
+- Server: qz_round_claim(p_mode, p_round, p_kills, p_infects, p_damage, p_won, p_survived, p_mvp, p_score, p_hs). raw = 150 + 8k + 12inf + 5·dmg/1000
+  + 120 won + 60 survived + 80 mvp, capped at 600 and at 4 a second since profiles.last_round (too_soon under 25 s); scen / range: no_rounds.
+  xp = clamp(score·0.6 + 8k + 12inf, 10, 1500). Shares day / day_earned with qz_claim; the daily limit is 20,000 (was 8,000).
+- qz_claim: raw = 100 + 15 rounds + 7k + 12inf + 5·dmg/1000 + 130 won + 80 mvp (scen: 100 + 50 stage + 200 cleared + 5k), capped at 1,200 and
+  100 a minute; xp = clamp(score·0.75 + 10k + 15inf, 25, 4000); the first-match bonus (250) is keyed on profiles.bonus_day (day is moved by
+  the round rewards too). The upgrade copies day into bonus_day so nobody gets a second bonus today.
+- Client: game.js r0 (the round-start snapshot) also keeps score and headshots. shop.js hooks endRound: shopRoundStats (that round's numbers,
+  won = the player's side at the end won, mvp picked like the round card) → ACC.roundClaim → a line under the round card (or a note).
+  An older schema (no qz_round_claim) sets ACC.noRound and stays quiet. test/mock.js has the same numbers.

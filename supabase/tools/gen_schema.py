@@ -14,8 +14,9 @@ sql=r"""-- =====================================================================
 --   * 코인 · 조각 · 보유 총 · 보유 해독기는 테이블에 직접 쓸 수 없고(RLS: 자기 것 읽기만), 아래 함수로만 바뀝니다.
 --   * 총 가격은 gun_prices 테이블이 기준입니다 (게임 화면도 그 값을 씀). tier = 'S' / 'A' 는 근하신년 무기:
 --     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole) · 스컬-9(skull9) · 샐러맨더(salamander)는 시즌 해독기 빙고에서만.
---   * 판 보상은 서버가 계산합니다: 판당 최대 900, 지난 보상 뒤 1분당 80까지, 하루(한국 시간) 8,000까지,
---     그날 첫 판 +200. 가입하면 3,000 코인.
+--   * 보상은 서버가 계산합니다. 라운드 보상(v6.17): 라운드가 끝날 때마다 최대 600 (지난 라운드 보상 뒤 1초당 4까지,
+--     25초 안에 두 번은 안 됨) + 경험치. 판 보상: 판당 최대 1,200, 지난 판 보상 뒤 1분당 100까지, 그날 첫 판 +250.
+--     라운드 + 판 보상을 합쳐 하루(한국 시간) 20,000까지. 가입하면 3,000 코인.
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
 --     시즌 해독기 숫자는 같은 줄의 season_* 칸에 있습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
@@ -128,6 +129,11 @@ alter table public.profiles add column if not exists ny_quota integer not null d
 alter table public.profiles add column if not exists season_tickets integer not null default 0 check (season_tickets >= 0);
 alter table public.profiles add column if not exists season_shuffle_day date;                          -- the season card's own shuffles
 alter table public.profiles add column if not exists season_shuffles    integer not null default 0;
+-- v6.17: coins and xp for every finished round (qz_round_claim). last_round = when the last round was paid; bonus_day = the day the
+-- first-match bonus was given (it used to be read off profiles.day, which the round rewards now move on too)
+alter table public.profiles add column if not exists last_round timestamptz;
+alter table public.profiles add column if not exists bonus_day date;
+update public.profiles set bonus_day = day where bonus_day is null and day is not null;
 create table if not exists public.season_boards (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   nums       integer[] not null,
@@ -259,7 +265,7 @@ begin
     p := (select t from public.profiles t where t.id = uid);
   end if;
   return jsonb_build_object('nickname', p.nickname, 'coins', p.coins, 'earned', p.earned_total, 'matches', p.matches,
-    'day_left', 8000 - case when p.day = today then p.day_earned else 0 end,
+    'day_left', 20000 - case when p.day = today then p.day_earned else 0 end,
     'fragments', p.fragments, 'pity', p.pity, 'tickets', p.dec_tickets,
     'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'season_tickets', p.season_tickets,
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
@@ -304,7 +310,8 @@ begin
 end $$;
 
 -- the coins for a finished match: worked out here from the match's numbers, every one of them capped. The same numbers
--- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills)
+-- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills).
+-- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean);
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer);   -- v6.11, before p_hs
 create or replace function public.qz_claim(p_mode text, p_rounds integer, p_kills integer, p_infects integer, p_damage integer,
@@ -333,20 +340,20 @@ begin
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
   if p_mode = 'scen' then
-    raw := 80 + 40 * least(greatest(coalesce(p_stage, 0), 0), 5) + case when p_cleared then 150 else 0 end + 4 * k;
+    raw := 100 + 50 * least(greatest(coalesce(p_stage, 0), 0), 5) + case when p_cleared then 200 else 0 end + 5 * k;
   else
-    raw := 80 + 12 * least(greatest(coalesce(p_rounds, 0), 0), 10) + 6 * least(k, 60)
-         + 10 * least(greatest(coalesce(p_infects, 0), 0), 30)
-         + 4 * (least(greatest(coalesce(p_damage, 0), 0), 60000) / 1000)
-         + case when p_won then 100 else 0 end + case when p_mvp then 60 else 0 end;
+    raw := 100 + 15 * least(greatest(coalesce(p_rounds, 0), 0), 10) + 7 * least(k, 60)
+         + 12 * least(greatest(coalesce(p_infects, 0), 0), 30)
+         + 5 * (least(greatest(coalesce(p_damage, 0), 0), 60000) / 1000)
+         + case when p_won then 130 else 0 end + case when p_mvp then 80 else 0 end;
   end if;
-  raw := least(raw, 900, floor(mins * 80)::integer);
+  raw := least(raw, 1200, floor(mins * 100)::integer);
   day0 := case when p.day = today then p.day_earned else 0 end;
-  if p.day is distinct from today then bonus := 200; end if;
-  got := greatest(0, least(raw + bonus, 8000 - day0));
-  gx := least(3000, greatest(20, round(sc * 0.6 + k * 8 + inf * 12)::integer));  -- the same xp the game showed before accounts
+  if p.bonus_day is distinct from today then bonus := 250; end if;
+  got := greatest(0, least(raw + bonus, 20000 - day0));
+  gx := least(4000, greatest(25, round(sc * 0.75 + k * 10 + inf * 15)::integer));  -- a quarter more than the xp the game showed before accounts
   update public.profiles set coins = coins + got, earned_total = earned_total + got, matches = matches + 1,
-    last_claim = now(), day = today, day_earned = day0 + got,
+    last_claim = now(), day = today, day_earned = day0 + got, bonus_day = today,
     rec_games = rec_games + 1, rec_kills = rec_kills + k, rec_infects = rec_infects + inf, rec_best = greatest(rec_best, sc), xp = xp + gx,
     ny_quota = least(8, 2 + k / 6)   -- letters this match may add (qz_ny_add): a few, more with more kills
   where id = uid;
@@ -367,8 +374,52 @@ begin
     from public.daily_missions m where m.user_id = uid and m.day = today);
   update public.daily_missions m set progress = least(m.goal, m.progress + coalesce((v_gain ->> m.kind)::integer, 0))
   where m.user_id = uid and m.day = today and m.progress < m.goal;
-  return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 8000 - p.day_earned,
+  return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 20000 - p.day_earned,
     'xp_got', gx, 'rec', public.qz_rec(p), 'missions', v_mis);
+end $$;
+
+-- the coins and xp for one finished round (v6.17): a round of the infection modes pays about what a whole match paid before.
+-- Worked out here from that round's own numbers (kills, infections and damage in it; won = the side the player ended the round on
+-- won it; survived; mvp = the round's human or zombie MVP), each capped: at most 600 a round and 4 a second since the last round was
+-- paid (never twice within 25 s); the day's limit is the one the match rewards use. The scenario and the range have no rounds.
+create or replace function public.qz_round_claim(p_mode text, p_round integer, p_kills integer, p_infects integer, p_damage integer,
+  p_won boolean, p_survived boolean, p_mvp boolean, p_score integer default 0, p_hs integer default 0) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  p public.profiles;
+  today date := (now() at time zone 'Asia/Seoul')::date;
+  secs numeric;
+  raw integer;
+  day0 integer;
+  got integer;
+  k integer := least(greatest(coalesce(p_kills, 0), 0), 30);
+  inf integer := least(greatest(coalesce(p_infects, 0), 0), 12);
+  dmg integer := least(greatest(coalesce(p_damage, 0), 0), 40000);
+  sc integer := least(greatest(coalesce(p_score, 0), 0), 8000);
+  gx integer;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if coalesce(p_mode, '') in ('scen', 'range', '') then raise exception 'no_rounds'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
+  secs := extract(epoch from (now() - coalesce(p.last_round, now() - interval '10 minutes')));
+  if secs < 25 then raise exception 'too_soon'; end if;
+  raw := 150 + 8 * k + 12 * inf + 5 * (dmg / 1000)
+       + case when p_won then 120 else 0 end + case when p_survived then 60 else 0 end + case when p_mvp then 80 else 0 end;
+  raw := least(raw, 600, floor(secs * 4)::integer);
+  day0 := case when p.day = today then p.day_earned else 0 end;
+  got := greatest(0, least(raw, 20000 - day0));
+  gx := least(1500, greatest(10, round(sc * 0.6 + k * 8 + inf * 12)::integer));
+  update public.profiles set coins = coins + got, earned_total = earned_total + got, last_round = now(), day = today,
+    day_earned = day0 + got, xp = xp + gx
+  where id = uid;
+  p := (select t from public.profiles t where t.id = uid);
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'round', jsonb_build_object('mode', p_mode,
+    'round', p_round, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'survived', p_survived,
+    'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx));
+  return jsonb_build_object('got', got, 'coins', p.coins, 'raw', raw, 'xp_got', gx, 'day_left', 20000 - p.day_earned, 'rec', public.qz_rec(p));
 end $$;
 
 -- once per account: the record this browser kept before accounts (games, kills, ...) is added in, within sane limits
@@ -1038,6 +1089,7 @@ revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
 revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer) from public, anon;
+revoke all on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) from public, anon;
 revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo_json(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo() from public, anon;
@@ -1059,6 +1111,7 @@ grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
 grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer) to authenticated;
+grant execute on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) to authenticated;
 grant execute on function public.qz_bingo() to authenticated;
 grant execute on function public.qz_decode(integer, boolean, boolean) to authenticated;
 grant execute on function public.qz_bingo_reset() to authenticated;

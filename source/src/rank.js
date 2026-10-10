@@ -46,8 +46,8 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
         <div class="mrw">${misRw(m,L)}</div>
         <button class="mcl" data-ra="claim" data-v="${m.slot}"${done&&!m.claimed&&!this.busy?'':' disabled'}>${m.claimed?(L?'Claimed ✔':'받음 ✔'):done?(L?'Claim':'보상 받기'):(L?'In progress':'진행 중')}</button></div>`}).join('');
     return `<div class="mbody">${body}${this.msg?`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`:''}</div>
-      <div class="sfoot">${ACC.signed()&&M&&M.resets_in!=null?`<span class="mrs">${L?'New missions in':'새 미션까지'} <b id="rkReset">${hms(M.resets_in-(Date.now()-M.at)/1000)}</b></span>`:''}${L?'Progress is counted by the server when a match ends (the results screen), with the same limits as the coins. Mission coins do not count toward the 8,000-a-day match limit. A reward not claimed by midnight (Korea) is gone.'
-        :'진행도는 매치가 끝나 결과 화면이 뜰 때 서버가 코인과 같은 기준으로 올려요. 미션 코인은 하루 매치 보상 한도(8,000)와 따로예요. 자정(한국 시간)까지 안 받은 보상은 사라져요.'}</div>`},
+      <div class="sfoot">${ACC.signed()&&M&&M.resets_in!=null?`<span class="mrs">${L?'New missions in':'새 미션까지'} <b id="rkReset">${hms(M.resets_in-(Date.now()-M.at)/1000)}</b></span>`:''}${L?'Progress is counted by the server when a match ends (the results screen), with the same limits as the coins. Mission coins do not count toward the 20,000-a-day round and match limit. A reward not claimed by midnight (Korea) is gone.'
+        :'진행도는 매치가 끝나 결과 화면이 뜰 때 서버가 코인과 같은 기준으로 올려요. 미션 코인은 하루 라운드 · 매치 보상 한도(20,000)와 따로예요. 자정(한국 시간)까지 안 받은 보상은 사라져요.'}</div>`},
   // ---- the ranking ----
   rankPage(){const L=LI(),k=this.kind,R=this.data[k],lvK=k==='level';
     const val=x=>lvK?`${fmtC(x.xp)} <small>XP</small>`:fmtC(x.value);

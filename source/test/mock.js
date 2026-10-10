@@ -79,7 +79,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(!uid)return err(401,{code:'PGRST301',message:'JWT expired'});const P=db.prof[uid];
     // window.__MOCK_OFF = ['qz_season', ...]: a database that has not been updated yet (checked above)
     if(fn==='qz_me'){if(!P)newProfile(db,uid,db.users[uid].email.split('@')[0]);const Q=db.prof[uid];save(db);
-      return res(200,{nickname:Q.nickname,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:8000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid]})}
+      return res(200,{nickname:Q.nickname,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid]})}
     if(fn==='qz_ny_add'){let q=Math.max(P.nyQ|0,0);const v=[body.p_g,body.p_h,body.p_s,body.p_n].map(x=>Math.min(Math.max(x|0,0),8)),ad=v.map(x=>{const t=Math.min(x,q);q-=t;return t});
       P.ny=(P.ny||[0,0,0,0]).map((x,i)=>x+ad[i]);P.nyQ=0;save(db);return res(200,{added:ad,ny:P.ny})}
     if(fn==='qz_ny_exchange'){const c=body.p_choice;if(c!=='ny'&&c!=='season')return pgerr('bad_choice');const N=P.ny||[0,0,0,0];if(Math.min(...N)<1)return pgerr('no_set');
@@ -89,18 +89,27 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(P.coins<r.price)return pgerr('not_enough_coins');P.coins-=r.price;db.own[uid].push(body.p_gun);db.log.push([uid,-r.price,'buy']);save(db);return res(200,{coins:P.coins,gun:body.p_gun})}
     if(fn==='qz_claim'){if(window.__MOCK_NOHS&&'p_hs' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_cleared, p_damage, p_hs, ...) in the schema cache'});
       const mins=(Date.now()-(P.last||Date.now()-15*60e3))/60e3*(window.__MOCK_TIMEWARP||1);if(mins<1.5)return pgerr('too_soon');
-      const cl=(v,a)=>Math.min(Math.max(v|0,0),a),k=cl(body.p_kills,80);let raw=body.p_mode==='scen'?80+40*cl(body.p_stage,5)+(body.p_cleared?150:0)+4*k
-        :80+12*cl(body.p_rounds,10)+6*Math.min(k,60)+10*cl(body.p_infects,30)+4*Math.floor(cl(body.p_damage,60000)/1000)+(body.p_won?100:0)+(body.p_mvp?60:0);
-      raw=Math.min(raw,900,Math.floor(mins*80));const d0=P.day===today()?P.dayE:0,bonus=P.day!==today()?200:0,got=Math.max(0,Math.min(raw+bonus,8000-d0));
-      P.coins+=got;P.earned+=got;P.matches++;P.last=Date.now();P.day=today();P.dayE=d0+got;P.nyQ=Math.min(8,2+Math.floor(k/6));db.log.push([uid,got,'match']);save(db);
-      const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false}),sc=cl(body.p_score,30000),inf=cl(body.p_infects,30),gx=Math.min(3000,Math.max(20,Math.round(sc*.6+k*8+inf*12)));
+      const cl=(v,a)=>Math.min(Math.max(v|0,0),a),k=cl(body.p_kills,80);let raw=body.p_mode==='scen'?100+50*cl(body.p_stage,5)+(body.p_cleared?200:0)+5*k
+        :100+15*cl(body.p_rounds,10)+7*Math.min(k,60)+12*cl(body.p_infects,30)+5*Math.floor(cl(body.p_damage,60000)/1000)+(body.p_won?130:0)+(body.p_mvp?80:0);
+      raw=Math.min(raw,1200,Math.floor(mins*100));const d0=P.day===today()?P.dayE:0,bonus=P.bday!==today()?250:0,got=Math.max(0,Math.min(raw+bonus,20000-d0));
+      P.coins+=got;P.earned+=got;P.matches++;P.last=Date.now();P.day=today();P.bday=today();P.dayE=d0+got;P.nyQ=Math.min(8,2+Math.floor(k/6));db.log.push([uid,got,'match']);save(db);
+      const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false}),sc=cl(body.p_score,30000),inf=cl(body.p_infects,30),gx=Math.min(4000,Math.max(25,Math.round(sc*.75+k*10+inf*15)));
       R0.g++;R0.k+=k;R0.inf+=inf;R0.best=Math.max(R0.best,sc);R0.xp+=gx;
       // daily missions: this match's numbers, clamped the same way (headshot kills at most the kills). window.__MOCK_NOHS: a database before p_hs
       misMake(db,uid);const scen=body.p_mode==='scen',gain={play:1,win:body.p_won||(scen&&body.p_cleared)?1:0,kills:k,infects:inf,damage:cl(body.p_damage,60000),
         rounds:scen?cl(body.p_stage,5):cl(body.p_rounds,10),hs:Math.min(cl(body.p_hs,1e9),k)};
       const missions=misJ(db,uid).missions.map(m=>({slot:m.slot,kind:m.kind,goal:m.goal,from:m.progress,progress:Math.min(m.goal,m.progress+(gain[m.kind]|0)),claimed:m.claimed,ko:m.ko,en:m.en}));
       for(const m of db.mis[uid])if(m.day===today())m.progress=Math.min(m.goal,m.progress+(gain[m.kind]|0));save(db);
-      return res(200,{got,coins:P.coins,bonus,raw,day_left:8000-P.dayE,xp_got:gx,rec:REC(P),missions})}
+      return res(200,{got,coins:P.coins,bonus,raw,day_left:20000-P.dayE,xp_got:gx,rec:REC(P),missions})}
+    // v6.17: a finished round (same numbers as qz_round_claim in schema.sql)
+    if(fn==='qz_round_claim'){if(window.__MOCK_NOROUND)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_round_claim in the schema cache'});
+      if(['scen','range',''].includes(body.p_mode||''))return pgerr('no_rounds');
+      const secs=(Date.now()-(P.lastR||Date.now()-600e3))/1e3*(window.__MOCK_TIMEWARP||1);if(secs<25)return pgerr('too_soon');
+      const cl=(v,a)=>Math.min(Math.max(v|0,0),a),k=cl(body.p_kills,30),inf=cl(body.p_infects,12),dm=cl(body.p_damage,40000),sc=cl(body.p_score,8000);
+      let raw=150+8*k+12*inf+5*Math.floor(dm/1000)+(body.p_won?120:0)+(body.p_survived?60:0)+(body.p_mvp?80:0);raw=Math.min(raw,600,Math.floor(secs*4));
+      const d0=P.day===today()?P.dayE:0,got=Math.max(0,Math.min(raw,20000-d0)),gx=Math.min(1500,Math.max(10,Math.round(sc*.6+k*8+inf*12)));
+      P.coins+=got;P.earned+=got;P.lastR=Date.now();P.day=today();P.dayE=d0+got;const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false});R0.xp+=gx;db.log.push([uid,got,'round']);save(db);
+      return res(200,{got,coins:P.coins,raw,xp_got:gx,day_left:20000-P.dayE,rec:REC(P)})}
     if(fn==='qz_missions'){misMake(db,uid);save(db);return res(200,misJ(db,uid))}
     if(fn==='qz_mission_claim'){const m=(db.mis&&db.mis[uid]||[]).find(x=>x.day===today()&&x.slot===(body.p_slot|0));if(!m)return pgerr('no_mission');if(m.claimed)return pgerr('already_claimed');
       if(m.progress<m.goal)return pgerr('not_done');m.claimed=true;P.coins+=m.coins;P.earned+=m.coins;P.tickets=(P.tickets|0)+m.tickets;db.log.push([uid,m.coins,'mission']);save(db);

@@ -123,8 +123,8 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     return `<div class="stabs"><div class="stl">${C.map(c=>`<button class="${c.k===this.cat?'on':''}" data-sa="cat" data-v="${c.k}">${esc(c.n)}</button>`).join('')}</div>
         <label class="sfil"><input type="checkbox" data-sa="own"${this.onlyOwn?' checked':''}><span>${L?'Mine only':'보유한 총만'}</span></label></div>
       <div class="sbody"><div class="sgrid">${cards}</div>${this.detail()}</div>
-      <div class="sfoot">${L?'Coins come from finished matches — rounds, kills, infections, damage and wins. In a match every gun you own is free to pick; floor pick-ups, supply crates and the 근하신년 free pick still give any gun. The shooting range lends you every gun to try. 근하신년 guns come from the decoder bingo'+(seasonGuns().length?', '+seasonNames(1)+' from the season decoder.':'.')
-        :'코인은 매치를 끝까지 하면 라운드·킬·감염·피해량·승리에 따라 들어와요. 매치 안에서는 보유한 총을 무료로 고를 수 있고, 바닥에 떨어진 총·보급상자·근하신년 무료 교환은 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 근하신년 무기는 해독기 빙고에서만'+(seasonGuns().length?', '+seasonNames(0)+'는 시즌 해독기에서만':'')+' 나와요.'}</div>`},
+      <div class="sfoot">${L?'Coins and xp come at the end of every round (its kills, infections, damage and win) and more at the end of a finished match. In a match every gun you own is free to pick; floor pick-ups and supply crates still give any gun. The shooting range lends you every gun to try. 근하신년 guns come from the decoder bingo'+(seasonGuns().length?', '+seasonNames(1)+' from the season decoder.':'.')
+        :'코인과 경험치는 라운드가 끝날 때마다 그 라운드의 킬·감염·피해량·승리로 들어오고, 매치를 끝까지 하면 더 들어와요. 매치 안에서는 보유한 총을 무료로 고를 수 있고, 바닥에 떨어진 총·보급상자는 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 근하신년 무기는 해독기 빙고에서만'+(seasonGuns().length?', '+seasonNames(0)+'는 시즌 해독기에서만':'')+' 나와요.'}</div>`},
   detail(){const L=LI(),id=this.sel,W=id&&WPN[id];if(!W)return '<div class="sdet"></div>';const st=shopState(id),p=ACC.price(id)||{price:0},signed=ACC.signed(),coins=signed?ACC.me.coins:0,t=ACC.tier(id),g=ACC.gc();
     const kn=(KIND_N[W.kind]||KIND_N.special)[L?1:0];
     const info=[kn,t?t+(L?' grade':'등급'):null,seasonGun(id)?(L?'Season decoder':'시즌 해독기'):null,W.mag?W.mag+(L?' rds':'발'):null,W.rpm?W.rpm+' RPM':null].filter(Boolean).join(' · ');
@@ -410,7 +410,7 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
       <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Save':'저장')}</button>`;
     else if(m==='sent')body=`<p class="anote big">${this.msg?esc(this.msg):''}</p><button class="ago" data-aa="mode" data-v="in">${L?'OK':'확인'}</button>`;
     else if(m==='me'&&me)body=`<div class="ame"><div class="amc">${COIN}<b>${fmtC(me.coins)}</b><small>${L?'coins':'코인'}</small></div>
-        <div class="ams"><span>${L?'Earned':'모은 코인'} <b>${fmtC(me.earned||0)}</b></span><span>${L?'Matches':'정산한 판'} <b>${fmtC(me.matches||0)}</b></span><span>${L?'Left today':'오늘 남은 보상'} <b>${fmtC(me.dayLeft==null?8000:me.dayLeft)}</b></span><span>${L?'Guns owned':'보유 총'} <b>${(me.owned?me.owned.size:0)+SHOP_FREE.length}</b></span><span>${L?'Fragments':'해독 조각'} <b>${fmtC(me.frags||0)}</b></span></div>
+        <div class="ams"><span>${L?'Earned':'모은 코인'} <b>${fmtC(me.earned||0)}</b></span><span>${L?'Matches':'정산한 판'} <b>${fmtC(me.matches||0)}</b></span><span>${L?'Left today':'오늘 남은 보상'} <b>${fmtC(me.dayLeft==null?20000:me.dayLeft)}</b></span><span>${L?'Guns owned':'보유 총'} <b>${(me.owned?me.owned.size:0)+SHOP_FREE.length}</b></span><span>${L?'Fragments':'해독 조각'} <b>${fmtC(me.frags||0)}</b></span></div>
         ${me.email?`<p class="anote">${esc(me.email)}</p>`:''}</div>
       <label>${L?'Nickname':'닉네임'}${inp('nick','text',esc(me.nickname),'nickname')}</label><button class="ago" data-aa="nick"${this.busy?' disabled':''}>${L?'Change nickname':'닉네임 바꾸기'}</button>
       <div class="arow"><button class="alink" data-aa="shop">${L?'Open the shop':'상점 열기'}</button><button class="alink red" data-aa="out">${L?'Sign out':'로그아웃'}</button></div>`;
@@ -478,6 +478,25 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
       .catch(e=>{G.coinBox=box.innerHTML=`${COIN}<span>${esc(ACC.errText(e))}</span>`})}
   put()}
 
+// ---------- after every round: that round's coins and xp (v6.17) ----------
+// the round's own numbers (kills, infections, damage since it began: a.r0), the side the player ended it on, and whether he was its
+// human or zombie MVP (picked the way the round card picks them, ui.js). The server works the coins out (qz_round_claim).
+function shopRoundStats(win){const P=G.player,r0=P.r0||{},d=(v,b)=>Math.max(0,(v||0)-(b||0)),A=G.actors.filter(a=>a.r0&&!a.scen&&!a.rg);
+  const R=A.map(a=>({a,k:d(a.kills,a.r0.k),i:d(a.infects,a.r0.i),dm:d(a.dmgDealt,a.r0.dm)})),hs=r=>r.dm+r.k*400,zs=r=>r.i*1000+r.k*300+r.dm*.2;
+  const hm=R.filter(r=>!(r.a.team===TZ&&r.a.host)).sort((p,q)=>hs(q)-hs(p))[0],zm=R.filter(r=>r.a.team===TZ&&r.i>0).sort((p,q)=>zs(q)-zs(p))[0];
+  return {mode:G.mode,round:G.round|0,kills:d(P.kills,r0.k),infects:d(P.infects,r0.i),damage:Math.round(d(P.dmgDealt,r0.dm)),won:P.team===win,survived:!!P.survived,
+    mvp:!!((hm&&hm.a===P&&(hm.dm>0||hm.k>0))||(zm&&zm.a===P)),score:Math.round(d(P.score,r0.sc)),hs:d(P.hsKills,r0.hs)}}
+// a line on the round card (or a note when the card has gone): counting… → +coins · +XP
+function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||ACC.noRound||G.mode==='range'||G.mode==='scen'||!P.r0)return;
+  const n=G.round|0;if(G.roundPaid===n)return;G.roundPaid=n;const L=LI(),st=shopRoundStats(win);
+  const line=h=>{const el=$('hRRes');if(!el||el.classList.contains('off'))return false;let r=el.querySelector('.rrw');if(!h){if(r)r.remove();return true}
+    if(!r){r=document.createElement('div');r.className='rrw';el.appendChild(r)}r.innerHTML=h;return true};
+  line(`${COIN}<span>${L?'Counting the round reward…':'라운드 보상 정산 중…'}</span>`);
+  ACC.roundClaim(st).then(r=>{if(!r){line('');return}
+    const h=`${COIN}<span><b>+${fmtC(r.got)}</b> ${L?'coins':'코인'}${r.xp_got?` · <b>+${fmtC(r.xp_got)}</b> XP`:''}</span><small>${L?`Round ${n} reward`:`${n}라운드 보상`}${r.day_left<=0?(L?' · daily limit reached':' · 오늘 한도 다 받음'):''}</small>`;
+    if(!line(h))HUD.note(`${L?'Round reward':'라운드 보상'} +${fmtC(r.got)} ${L?'coins':'코인'}${r.xp_got?` · +${fmtC(r.xp_got)} XP`:''}`,2.6);AU.play('buy',{vol:.45})})
+  .catch(e=>{if(/too_soon|no_rounds/.test(String(e&&e.message||e))){line('');return}line(`${COIN}<span>${esc(ACC.errText(e))}</span>`)})}
+
 // ---------- hooks ----------
 (function(){
   const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{shopLobby()}catch(e){console.error(e)}return r};
@@ -495,7 +514,8 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
     return r};
   const bi=Main.buyItem;Main.buyItem=function(id){const P=G.player;if(shopLocked(P,id)){UI.act('buylk',id);return}return bi.call(this,id)};
   const sr=UI.showResults;UI.showResults=function(){const r=sr.apply(this,arguments);try{shopReward()}catch(e){console.error(e)}return r};
-  const sm=startMatch;startMatch=function(cfg){G.coinDone=false;G.coinBox=null;G.misBox=null;return sm(cfg)};
+  const sm=startMatch;startMatch=function(cfg){G.coinDone=false;G.coinBox=null;G.misBox=null;G.roundPaid=0;return sm(cfg)};
+  const er=endRound;endRound=function(win){const s0=G.st,r=er.apply(this,arguments);try{if(s0!==G.st&&G.st==='end')shopRoundReward(win)}catch(e){console.error(e)}return r};
   // the signed-in nickname is the name other players see
   const mn=myName;myName=function(){return ACC.signed()&&ACC.me.nickname||mn()};
   ACC.sub(()=>{if(G.st==='menu'&&UI.open==='menu')UI.buildTitle();if($('shopWin'))SHOP.render();if($('accWin')&&!ACCW.busy)ACCW.render()});

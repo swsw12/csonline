@@ -94,6 +94,11 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     if(r.missions){let all=!!(this.mis&&this.mis.missions);for(const x of r.missions){const m=all&&this.mis.missions.find(y=>y.slot===x.slot&&y.kind===x.kind&&y.goal===x.goal);if(m)m.progress=x.progress;else all=false}
       if(!all)this.loadMissions().catch(()=>{})}
     if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;if(r.rec)this.me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:this.me.rec})}this.emit();return r},
+  // a finished round (v6.17): {got,coins,raw,xp_got,day_left,rec}; null when the server has no round rewards yet (an older schema.sql)
+  async roundClaim(st){const a={p_mode:st.mode,p_round:st.round|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
+      p_won:!!st.won,p_survived:!!st.survived,p_mvp:!!st.mvp,p_score:st.score|0,p_hs:st.hs|0};let r;
+    try{r=await this.rpc('qz_round_claim',a)}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noRound=true;return null}throw e}
+    const me=this.me;if(me){me.coins=r.coins;me.dayLeft=r.day_left;if(r.rec)me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:me.rec})}this.emit();return r},
   // daily missions (v6.12): {day,resets_in,missions:[{slot,id,tier,kind,goal,progress,coins,tickets,ko,en,claimed}]}, the time it came (at)
   async loadMissions(){if(!this.ses)return null;const r=await this.rpc('qz_missions');this.mis={...r,at:Date.now()};this.emit();return this.mis},
   async misClaim(slot){const r=await this.rpc('qz_mission_claim',{p_slot:slot});this.mis={...r.missions,at:Date.now()};const me=this.me;
@@ -136,7 +141,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     if(/already_claimed/.test(m))return T2('이미 받은 보상이에요','Already claimed');
     if(/no_mission/.test(m))return T2('오늘의 미션이 바뀌었어요. 다시 열어 주세요','Today\'s missions changed — open them again');
     if(/no_set/.test(m))return T2('근·하·신·년 한 세트가 아직 모자라요','You need one of each letter first');if(/no_tickets/.test(m))return T2('보유한 해독기가 없어요','No kept decoders left');
-    if(/qz_ny_|qz_decode|qz_bingo|qz_season|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');
