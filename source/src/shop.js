@@ -6,7 +6,7 @@
 // Prices: the database table gun_prices is the truth; this copy (same numbers as schema.sql) is shown until it has loaded.
 const SHOP_FREE=['knife','p9','sg8','k5','g35'];
 const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000,killknife:12000,blaze8:6000,winchester:4500};
-const SHOP_NOTSOLD=['bhole','skull9','salamander'];// never in the shop: the season decoder's guns (a line on its card), else crate-only
+const SHOP_NOTSOLD=['bhole','skull9','salamander','ak60r','dmp7'];// never in the shop: the season decoder's guns (a line on its card), else crate-only
 const SHOP_GACHA={S:['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],A:['xdz','ripper','xbowa','xbow','sterling','duckfoot']};
 // the decoder's numbers until gacha_config has loaded (same defaults as schema.sql)
 const GACHA_DEF={dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
@@ -41,8 +41,10 @@ const SVG_CART='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1 2h2.4l.
 const SVG_USER='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.5a3.2 3.2 0 110 6.4 3.2 3.2 0 010-6.4zM2 14.5c.4-3.2 3-5 6-5s5.6 1.8 6 5z"/></svg>';
 
 // ---------- what the shop sells, in the buy menu's order ----------
-function shopCats(){const L=LI();const cats=BUY_MENU.filter(c=>c.k!=='equip').map(c=>({k:c.k,n:c.n[L],items:c.items.filter(id=>WPN[id]&&WPN[id].model)}));
+function shopCats(){const L=LI();const cats=BUY_MENU.filter(c=>c.k!=='equip'&&c.k!=='crate').map(c=>({k:c.k,n:c.n[L],items:c.items.filter(id=>WPN[id]&&WPN[id].model)}));
   const sp=cats.find(c=>c.k==='special');if(sp)sp.items=['knife',...sp.items.filter(i=>i!=='knife'&&i!=='bhole'),'bhole'].filter(id=>WPN[id]);
+  // the crate-only guns (not on the buy menu) get a card in their own category: crate only, not for sale
+  for(const id of CRATE_GUNS){const W=WPN[id],c=W&&cats.find(q=>q.k===W.cat);if(c&&!c.items.includes(id))c.items.push(id)}
   const seen=new Set(),all=[];for(const c of cats)for(const id of c.items)if(!seen.has(id)){seen.add(id);all.push(id)}
   return [{k:'all',n:L?'All':'전체',items:all},...cats]}
 // free / own / buy / crate / gacha (근하신년: decoder bingo or exchange only) / season (a line on the season decoder card: Event Horizon, Skull-9)

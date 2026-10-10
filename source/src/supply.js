@@ -2,8 +2,8 @@
 // ============ Supply drops and the weapon that only comes out of them ============
 // During a round of the infection modes the host drops a crate on a parachute every 35-50 s (the first one 20-32 s into the
 // fight, at most two on the map). It lands somewhere open near a human, pours red smoke and blinks until a human walks into it.
-// Opening it gives one of: the Event Horizon (45 %, the crate-only black-hole launcher), a heavy weapon (30 %), or supplies
-// (full ammo, armour, a set of grenades and $1000). Clients see crates appear ('sb') and get opened ('so'); whoever opens one
+// Opening it gives one of: the Event Horizon (30 %, the crate-only black-hole launcher), one of the crate-only guns (30 %: AK-47 60R
+// or Dual MP7A1, crateguns.js), a heavy weapon (20 %), or supplies (20 %: full ammo, armour, a set of grenades and $1000). Clients see crates appear ('sb') and get opened ('so'); whoever opens one
 // applies the reward to his own inventory, the same way picked-up guns work (drops.js).
 
 // ---------- atlas materials (rows 8-9 of the weapon atlas) ----------
@@ -119,8 +119,8 @@ const SUP={list:[],seq:1,next:1e9,MAXN:2,
       // opening: host / solo decides
       if(own&&b.landed){for(const a of G.actors){if(!a.alive||a.team!==TH)continue;if(Math.abs(a.c.x-b.x)>1.1||Math.abs(a.c.z-b.z)>1.1||Math.abs(a.c.y-b.y)>1.6)continue;this.open(a,b);break}}}},
   open(a,b){const i=this.list.indexOf(b);if(i>=0)this.list.splice(i,1);this.drop(b);
-    const r=Math.random(),heavy=['gx6','airb','ripper','rdc','hmg','gl40','bdc'].filter(w=>WPN[w]&&a.inv[1]!==w);
-    let k='kit',w='';if(r<.45&&a.inv[1]!=='bhole'){k='w';w='bhole'}else if(r<.75&&heavy.length){k='w';w=rpick(heavy)}
+    const r=Math.random(),heavy=['gx6','airb','ripper','rdc','hmg','gl40','bdc'].filter(w=>WPN[w]&&a.inv[1]!==w),cg=CRATE_GUNS.filter(w=>WPN[w]&&a.inv[1]!==w);
+    let k='kit',w='';if(r<.3&&a.inv[1]!=='bhole'){k='w';w='bhole'}else if(r<.6&&cg.length){k='w';w=rpick(cg)}else if(r<.8&&heavy.length){k='w';w=rpick(heavy)}
     this.give(a,k,w,b.x,b.y,b.z);if(NET.host)netEv('so',{d:b.id,i:a.id,k,w,x:r2(b.x),y:r2(b.y),z:r2(b.z)})},
   give(a,k,w,x,y,z){const L=LI();AU.at('pickup',x,y+.5,z,{vol:.9});FX.spawn({x,y:y+.5,z,life:.5,s0:.4,s1:2.5,r:1,g:.8,b:.4,a:.6,f:14,add:1});
     if(k==='w'){const W=WPN[w];if(!W)return;a.inv[1]=w;a.ammo[w]={mag:W.mag,res:W.res};gunFresh(a,w);equip(a,w);

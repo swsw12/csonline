@@ -499,3 +499,10 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - inv.js: INV window (z 55), tabs ny / guns / sets (CFG.sets, slots 1-3, grenades, armor) / char (CFG.zclass, CFG.skin). The lobby bag button shows a dot when a set can be traded. The NEW banner waits while #invWin is open, and opening the inventory closes the banner.
 
 - v6.15.1: the Kill Knife is renamed 나타나이프 / Nata Knife (WPN.killknife.n, the NEW banner, the lobby news). The id stays 'killknife': owned guns, gun_prices and SHOP_PRICE are unchanged.
+
+## v6.16 — supply-crate guns: AK-47 60R, Dual MP7A1
+- crateguns.js (after newguns in build.py): three atlas materials (mtB matte metal, mtP matte polymer, mtRed) painted by paintCgAtlas (main.js), the models, WPN entries, VM_POS, sounds (GUNDEF/SFX ak60r, dmp7). GUN_DESIGN rows and SOUND_DESIGN rows are in design.js.
+- WPN.crate=1 marks a crate-only gun (CRATE_GUNS). Not in BUY_MENU, so not buyable; shopCats adds them to their W.cat category as crate cards (SHOP_NOTSOLD); INV.mine skips them; ldKeep (loadout.js) keeps them out of the next round and out of saved sets. The shooting range splices a 'crate' row into BUY_MENU while it runs (startMatch hook in loadout.js).
+- SUP.open: Event Horizon r<.3, a crate gun r<.6, heavy r<.8, else supplies.
+- AK-47 60R: the half-moon magazine is 36 slices round an arc (AK60: centre, radii, sweep); the first mag part is the slice in the well (rlMag takes the axis from it). Support hand at the front of the handguard, clear of the magazine tip. zoom:[44].
+- Dual MP7A1: real MP7A1 proportions (mp7Parts). Charging handles are tag 'slide' for the dual first draw; fd.nolock keeps them forward when empty (vm.js slide lock skipped, rlDual skips the slide release and just plays the bolt sound). bRpm/bSpread: the right-click stance (a.dualB) multiplies the fire rate (game.js) and the spread (curSpread). VM_POS.dmp7.dx sets the gap between the guns (vm.js).

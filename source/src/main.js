@@ -4,7 +4,7 @@ function applyCfg(){if(R.ok){R.setScale(CFG.scale);R.setFov(CFG.fov);R.bloom=CFG
 const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,overlay:null,paused:false,last:0,dtAvg:16,mx:0,my:0,boardOn:false,demo:[],shakeP:0,shakeY:0,camT:0,specCam:new THREE.Vector3(),fpsT:0,
   async boot(){const step=async(t,p)=>{$('loadT').textContent=t;$('loadFill').style.width=(p*100)+'%';await new Promise(r=>setTimeout(r,16))};
     try{
-      await step(T('lTex'),.05);bakeTextures();paintGunAtlas();paintNYAtlas();paintSupAtlas();paintSkAtlas();paintSalAtlas();paintKkAtlas();
+      await step(T('lTex'),.05);bakeTextures();paintGunAtlas();paintNYAtlas();paintSupAtlas();paintSkAtlas();paintSalAtlas();paintKkAtlas();paintCgAtlas();
       if(!R.init($('cv'))){$('loadT').textContent='WebGL is not available on this device.';return}
       {const an=Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1);for(const k in TEX)TEX[k].anisotropy=an}
       buildSky(R.scene);{const g=MAP.gen=mapLoader(MAPDEFS[CFG.map]?CFG.map:'q7');let p=.15;for(;;){const r=g.next();if(r.done)break;p+=.15;await step(T(r.value),p)}MAP.gen=null}

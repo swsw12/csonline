@@ -5,6 +5,10 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'ak60r',tag:['보급상자 전용','Supply crates only'],t:['AK-47 60R','AK-47 60R'],
+    d:['무광 블랙 AK. 가스관 위 조준경(우클릭 줌)과 반달 모양 60발 라운드 탄창. AK-47보다 한 발이 훨씬 세고 넉백 · 경직도 큼. 보급상자에서만 나와요.','A matte-black AK with a scope on the gas tube (right click to zoom) and a 60-round half-moon magazine. Hits far harder than the AK-47, with more knockback and stagger. Only from supply crates.']},
+  {kind:'weapon',ref:'dmp7',tag:['보급상자 전용','Supply crates only'],t:['듀얼 MP7A1','Dual MP7A1'],
+    d:['실총 MP7A1을 양손에 한 자루씩. 번갈아 쏘는 빠른 연사, 우클릭 「난사」 자세는 연사 +30%. 보급상자에서만 나와요.','A real-pattern MP7A1 in each hand, firing in turns; right click for the spray stance (+30 % fire rate). Only from supply crates.']},
   {kind:'feature',ico:'▣',tag:['신규 기능','New'],t:['인벤토리 · 근하신년 글자','Inventory · New-Year letters'],
     d:['매치에서 주운 근 · 하 · 신 · 년 글자가 인벤토리에 저장돼요. 한 세트를 모으면 근하신년 해독기 2개 또는 시즌 해독기 1개로 교환. 보유 무기, 장비 프리셋 3세트, 좀비 · 생존자 캐릭터도 여기서 미리 설정.','Letters you pick up in a match are kept in your inventory; a full set trades for 2 New-Year decoders or 1 season decoder. Owned weapons, three loadout presets and your zombie / survivor character are set here too.']},
   {kind:'weapon',ref:'blaze8',tag:['상점 6,000 코인','Shop · 6,000 coins'],t:['블레이즈-8','Blaze-8'],

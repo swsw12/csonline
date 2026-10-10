@@ -280,12 +280,12 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;
   // a burst keeps going after the trigger is released
   if(a.burstN>0){if(ready){if(am.mag<=0)a.burstN=0;else{fireGun(a,W);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/W.rpm:W.burstCd)}}return}
-  // Dual Berettas in the sideways stance fire full-auto while held
+  // Dual Berettas in the sideways stance fire full-auto while held (a pair with bRpm, the Dual MP7A1, fires faster in it)
   if(cmd.fire&&ready&&(!((W.semi&&!(W.dual&&a.dualB))||W.burst)||!pc.fire||!a.isPlayer)){
     if(am.mag<=0){if(!pc.fire&&a.isPlayer)AU.play('dry',{vol:.6});a.nextFire=G.t+.25;return}
     if(W.spin&&a.spinV<1)return;
     fireGun(a,W);a.an.atk=0;
-    if(W.burst){a.burstN=W.burst-1;a.nextFire=G.t+(a.burstN>0?60/W.rpm:W.burstCd)}else a.nextFire=G.t+60/W.rpm}}
+    if(W.burst){a.burstN=W.burst-1;a.nextFire=G.t+(a.burstN>0?60/W.rpm:W.burstCd)}else a.nextFire=G.t+60/(W.rpm*(W.bRpm&&a.dualB?W.bRpm:1))}}
 // zombies: claws, spore bomb and class skill
 function zombieAttack(a,dt){const cmd=a.cmd,pc=a.pc,Z=ZCLASS[a.zc];
   if(a.cur==='zbomb'){zbombUpdate(a,dt);return}
@@ -363,7 +363,7 @@ function hurtHuman(t,dmg,src,o){if(NET.ghost)return;if(NET.cli&&!NET.ev){if(t===
 function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.deadT=0;t.deaths++;t.frozen=0;t.skillT=0;t.reviving=0;t.an.dead=Math.max(t.an.dead,.001);// keeps the body drawn while it falls
   aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;
   // Original: every dead zombie stays down this round. Mutation: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
-  // the Kill Knife's last blow keeps any zombie down in every mode (hosts too)
+  // the Nata Knife's (killknife) last blow keeps any zombie down in every mode (hosts too)
   const perma=G.mode==='orig'||o.w==='killknife'&&G.mode!=='scen'||G.mode==='mut'&&(o.knife||(!t.host&&(o.hs||o.he)));
   if(perma)t.permaDead=true;else if(G.mode==='mut')t.reviveT=8;else t.respawnT=5
   if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills

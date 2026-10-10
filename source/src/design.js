@@ -60,6 +60,7 @@ const SOUND_DESIGN={
   um45:    {vol:1, rate:1, file:''},  // UMP45 발사음
   pd50:    {vol:1, rate:1, file:''},  // P90 발사음
   sterling:{vol:1, rate:1, file:''},  // 스털링 바요넷 발사음
+  dmp7:    {vol:1, rate:1, file:''},  // 듀얼 MP7A1 (보급상자 전용) 발사음 — 날카롭고 높은 4.6mm, 양손 번갈아 쏨
   // ── 총소리 · 소총 / 저격총 / 기관총 ──────────────────────────────────────────────────────────
   ar7:     {vol:1, rate:1, file:''},  // M4A1 발사음
   kv47:    {vol:1, rate:1, file:''},  // AK-47 발사음
@@ -67,6 +68,7 @@ const SOUND_DESIGN={
   br3:     {vol:1, rate:1, file:''},  // 파마스 발사음
   ar5c:    {vol:1, rate:1, file:''},  // SG552 발사음
   hr17:    {vol:1, rate:1, file:''},  // SCAR-H 발사음
+  ak60r:   {vol:1, rate:1, file:''},  // AK-47 60R (보급상자 전용) 발사음 — AK보다 낮고 묵직한 7.62mm + 노리쇠 철컥
   sr8:     {vol:1, rate:1, file:''},  // 스카웃 저격총 발사음
   r700:    {vol:1, rate:1, file:''},  // AWP 저격총 발사음 — 길게 울리는 메아리
   dm14:    {vol:1, rate:1, file:''},  // G3SG1 자동 저격총 발사음
@@ -578,6 +580,7 @@ const GUN_DESIGN={
   um45:    {mag:25, ch:1, act:'hk', x:.75, d:.05, heavy:.4},                 // H&K UMP45 — 25발. HK 슬랩 (조금 더 묵직)
   pd50:    {mag:50, ch:1, act:'charge', x:.5, side:'u', d:.03, roll:.3},    // FN P90 — 50발. 총 아래 양쪽 장전손잡이
   sterling:{mag:34, ch:0, act:'charge', x:.5, side:'r', d:.05, roll:.25, ob:1}, // 스털링 L2A3 — 34발, 오픈볼트. 오른쪽 장전손잡이 (탄창은 왼쪽)
+  dmp7:    {mag:80, ch:1, act:'slide', x:.5, d:.035, nolock:1},             // H&K MP7A1 ×2 (보급상자 전용) — 한 자루 40발씩. 두 총을 모아 뒤쪽 T자 장전손잡이를 동시에 (약실 +2). nolock: 손잡이는 뒤에 걸리지 않음
   // ── 소총 ─────────────────────────────────────────────────────────────────────────────────────
   g35:     {mag:35, ch:1, act:'charge', x:.6,  side:'r', d:.06,  roll:.32},  // IMI 갈릴 ARM — 35발. 위로 휜 오른쪽 장전손잡이
   kv47:    {mag:30, ch:1, act:'charge', x:.65, side:'r', d:.075, roll:.42, heavy:.5}, // AK-47 — 30발. 총을 기울이고 오른쪽 손잡이를 크게 당겼다 철컥
@@ -585,6 +588,7 @@ const GUN_DESIGN={
   ar7:     {mag:30, ch:1, act:'ar', x:.75, d:.06},                           // 콜트 M4A1 — 30발. 뒤쪽 T자 손잡이 당겼다 놓고 전진기 탁
   ar5c:    {mag:30, ch:1, act:'charge', x:.5,  side:'r', d:.045, roll:.28},  // SIG SG552 — 30발. 오른쪽 손잡이, 짧고 경쾌하게
   hr17:    {mag:20, ch:1, act:'charge', x:.5,  side:'l', d:.06,  roll:.25},  // FN SCAR-H 7.62 — 20발. 왼쪽 앞 장전손잡이를 지지손으로 바로
+  ak60r:   {mag:60, ch:1, act:'charge', x:.7,  side:'r', d:.075, roll:.42, heavy:.6}, // AK-47 60R (보급상자 전용) — 반달형 60발 라운드 탄창. 총을 기울이고 오른쪽 손잡이를 크게 당겼다 철컥
   xbow:    {         ch:0, act:'xbow', x:.8},                                // 크로스보우 (CSO 연발식) — 장전 슬라이드로 시위를 당겨 걸기
   xbowa:   {         ch:0, act:'xbow', x:.75},                               // 크로스보우 어드밴스 (CSO)
   // ── 저격총 ────────────────────────────────────────────────────────────────────────────────────

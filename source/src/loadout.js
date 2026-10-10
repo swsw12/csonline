@@ -53,16 +53,17 @@ function buy(a,id,force,o){if(force?(!a||a.team!==TH||!a.alive):buyCheck(a,id))r
 function scEarn(a,v){if(G.mode==='scen'&&a&&v>0)a.money=Math.min(16000,(a.money||0)+v)}
 
 // ---------- the loadout that carries over ----------
-// guns in hand (a crate-only Event Horizon does not count) or else the last ones picked; the grenades and armour of this round
+// guns in hand (a crate-only Event Horizon and the crate-only guns do not count) or else the last ones picked; the grenades and armour of this round
 const ehKeep=a=>!!(a.ehBuy&&!a.bot);// an Event Horizon taken from the buy menu (a bot that took over a player's place loses it)
+const ldKeep=(a,id)=>!!(id&&WPN[id]&&!WPN[id].crate&&(id!=='bhole'||ehKeep(a)));// a gun that may go on into the next round
 function ldCur(a){const o=a.ldo||LD_DEF,K=a.kit||{},inv=a.inv||{},n={};
-  for(const s of [1,2,3]){const id=inv[s];n[s]=id&&WPN[id]&&(id!=='bhole'||ehKeep(a))?id:o[s]&&(o[s]!=='bhole'||ehKeep(a))?o[s]:s===2?'p9':s===3?'knife':null}
+  for(const s of [1,2,3]){const id=inv[s];n[s]=ldKeep(a,id)?id:ldKeep(a,o[s])?o[s]:s===2?'p9':s===3?'knife':null}
   for(const k of LD_NADES)n[k]=K[k]||inv[k]>0?1:0;n.armor=K.armor||a.armor>0?1:0;return n}
 // noted on every page as a human goes down or turns (before his primary drops) and for the living at the round's end
 function ldSnap(a){if(a&&a.team===TH)a.ldo=ldCur(a)}
 // the start of a round: the noted loadout, fresh ammo, armour if he had it (the refill uses up this round's grenades and armour)
 function ldRestore(a){const L=a.ldo||LD_DEF;a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};ldKitReset(a);
-  for(const s of [1,2,3]){let id=L[s];const W=WPN[id];if(!W||W.slot!==s||id==='bhole'&&!ehKeep(a))id=s===2?'p9':s===3?'knife':null;if(!id)continue;
+  for(const s of [1,2,3]){let id=L[s];const W=WPN[id];if(!W||W.slot!==s||!ldKeep(a,id))id=s===2?'p9':s===3?'knife':null;if(!id)continue;
     a.inv[s]=id;fillAmmo(a,id);gunFresh(a,id);if(id==='bhole'){a.ammo.bhole.res=0;a.kit.bhole=1}}
   for(const k of LD_NADES)if(L[k]){a.inv[k]=1;a.kit[k]=1}
   a.armor=L.armor?100:0;a.kit.armor=L.armor?1:0;a.ldo=Object.assign({},L,{1:a.inv[1],2:a.inv[2],3:a.inv[3]});a.cur=bestWeapon(a);a.prev='knife'}
@@ -120,4 +121,8 @@ function ldBuyNo(id){const P=G.player;if(!P)return;const e=ldAnswer(P,id),S=e&&e
   const sp=BUY_MENU.find(c=>c.k==='special');if(sp&&!sp.items.includes('bhole'))sp.items.push('bhole');
   const sc=shopCats;shopCats=function(){const r=sc.apply(this,arguments);for(const c of r){const s=new Set();c.items=c.items.filter(i=>!s.has(i)&&s.add(i))}return r};
   const a0=UI.act;UI.act=function(a,v,el){if(a==='lsEq'){ldEquipSet(+v);return}if(a==='lsSave'){ldSaveSet(+v);return}return a0.call(this,a,v,el)};
+  // the shooting range hands out the crate-only guns too: a row of their own on its buy menu, there only while the range is on
+  const sm=startMatch;startMatch=function(cfg){const i=BUY_MENU.findIndex(c=>c.k==='crate');
+    if(cfg&&cfg.mode==='range'){if(i<0){const e=BUY_MENU.findIndex(c=>c.k==='equip');BUY_MENU.splice(e<0?BUY_MENU.length:e,0,{k:'crate',n:['보급 무기','Crate guns'],items:CRATE_GUNS.filter(id=>WPN[id])})}}
+    else if(i>=0)BUY_MENU.splice(i,1);UI.buyCat=0;return sm(cfg)};
 })();

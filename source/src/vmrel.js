@@ -69,13 +69,13 @@ function rlMag(W,G,m,L,o){o=o||{};const E=fdExt(G,'mag'),mp=G.parts.find(p=>p.ta
 // ---- the dual Berettas: both magazines drop, the guns dip to the belt and come back loaded ----
 function rlDual(W,G,m,L,empty){const d=(WPN[W.model]&&WPN[W.model].fd&&WPN[W.model].fd.d)||.04,r0=.1,fall=r0+rlS(L,.3),dn=.3,low=.42,upU=.6,seat=.64;
   const mk=(two,dt)=>[{tag:'mag',two,ch:'py',k:[[0,0],[r0+dt,0],[fall+dt,-.5,1],[fall+dt+.004,-.06],[upU,-.06],[seat+dt,0,1]]},{tag:'mag',two,ch:'rx',k:[[0,0],[r0+dt,0],[fall+dt,.8,1],[fall+dt+.004,0]]}];
-  const parts=[...mk(0,0),...mk(1,.02)];
-  if(empty)parts.push({tag:'slide',ch:'pz',k:[[0,d],[.8,d]],rel:.8,A:1200,e:.2,home:['fdslam',.85,1.08,[.2,-.6,0],[.01,0,0]]},
+  const parts=[...mk(0,0),...mk(1,.02)],nl=!!(WPN[W.model]&&WPN[W.model].fd&&WPN[W.model].fd.nolock);// nolock: the handles stayed forward, the bolt catch lets the bolts go
+  if(empty&&!nl)parts.push({tag:'slide',ch:'pz',k:[[0,d],[.8,d]],rel:.8,A:1200,e:.2,home:['fdslam',.85,1.08,[.2,-.6,0],[.01,0,0]]},
                       {tag:'slide',two:1,ch:'pz',k:[[0,d],[.83,d]],rel:.83,A:1200,e:.2,home:['fdslam',.8,.98,[.15,-.4,0]]});
   return {G:[K6(0),K6(.08,0,.02,0,.12,0,0),K6(r0+.05,0,.03,0,.2,0,0),K6(dn,0,-.08,.02,-.2,0,0),K6(low,0,-.3,.05,-.5,0,0),K6(upU-.06,0,-.28,.05,-.45,0,0),
       K6(seat,0,-.02,0,.05,0,0),K6(seat+.06,0,.012,0,.1,0,0),K6(.8,0,.006,0,.06,0,0),K6(.9,0,-.004,0,-.01,0,0),K6(1)],
     D:[[0,0],[r0,0],[r0+.06,1],[dn,1],[dn+.06,0],[1,0]],DP:[.02,.0,0,-.15,0,-.5],parts,
-    E:[[r0,'magout',.6,1.1],[r0+.02,'magout',.5,1.05],[seat-rlS(L,.07),'magin',.6,1.1],[seat+.02-rlS(L,.07),'magin',.55,1.05]],
+    E:[[r0,'magout',.6,1.1],[r0+.02,'magout',.5,1.05],[seat-rlS(L,.07),'magin',.6,1.1],[seat+.02-rlS(L,.07),'magin',.55,1.05],...(empty&&nl?[[.8,'fdslam',.8,1.12,[.2,-.6,0],[.01,0,0]],[.83,'fdslam',.75,1.02,[.15,-.4,0]]]:[])],
     C:[[0,0,0,0],[r0+.05,.006,0,0],[low,-.01,0,0],[seat,.004,0,0],[1,0,0,0]]}}
 
 // ---- revolver: crane out, empties out (muzzle up, a slap on the ejector), a speed loader, crane shut ----

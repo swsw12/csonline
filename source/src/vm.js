@@ -137,7 +137,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     if(m.armL&&m.armL.userData.base)m.armL.position.copy(m.armL.userData.base);
     if(kind!=='claw')for(const A of [m.armL,m.armR])if(A&&A.userData.q0){A.position.copy(A.userData.base);A.quaternion.copy(A.userData.q0);if(A.userData.hand)vmHandCurl(A,A.userData.hand.rest);fdPropsHide(A)}// a clip may have moved the hands
     this.kick=Math.max(0,(this.kick||0)-dt*10);this.kick2=Math.max(0,(this.kick2||0)-dt*10);
-    if(m.gun2){const k=this.kick*this.kick,k2=this.kick2*this.kick2;m.gun.position.set(.13,0,k*.035-.02);m.gun.rotation.set(k*.14,.05,0);m.gun2.position.set(-.13,0,k2*.035-.02);m.gun2.rotation.set(k2*.14,-.05,0);
+    if(m.gun2){const k=this.kick*this.kick,k2=this.kick2*this.kick2;const dx=VP.dx||.13;m.gun.position.set(dx,0,k*.035-.02);m.gun.rotation.set(k*.14,.05,0);m.gun2.position.set(-dx,0,k2*.035-.02);m.gun2.rotation.set(k2*.14,-.05,0);
       // Dual Berettas: an X-cross flourish while drawing; the aim key toggles stance B (wide apart, rolled outward on their sides)
       const tgt=a.dualB?1:0;this.stD=(this.stD||0)+(tgt-(this.stD||0))*Math.min(1,dt*10);const kB=smooth(clamp(this.stD,0,1));
       let kX=0;if(this.drawT>0&&this.drawD>0){const p=1-this.drawT/this.drawD;kX=p<.3?smooth(p/.3):p<.62?1:1-smooth((p-.62)/.38)}
@@ -145,8 +145,8 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
         g.position.x+=sd*P.bX*kB;g.position.y+=P.bY*kB;g.position.z+=P.bZ*kB;g.rotation.z-=sd*P.bRoll*kB;g.rotation.y+=sd*P.bYaw*kB;g.rotation.x+=P.bPitch*kB;
         g.position.x-=sd*P.xX*kX;g.position.y+=P.xY*kX;g.position.z+=(P.xZ-sd*.012)*kX;g.rotation.x+=P.xPitch*kX;g.rotation.y+=sd*P.xYaw*kX;g.rotation.z+=sd*P.xRoll*kX}}
     if(tags.spin){this.spinA+=dt*(a.spinV||0)*40;tags.spin.rotation.z=this.spinA}
-    // slide lock: an empty pistol's slide stays back after the last shot (a reload from empty releases it)
-    if(W.fd&&W.fd.act==='slide'&&!(this.act&&this.act.rl)){const am=a.ammo&&a.ammo[this.id];if(am&&am.mag===0)for(const T of [tags,m.tags2])if(T&&T.slide)T.slide.position.z+=W.fd.d||.045}
+    // slide lock: an empty pistol's slide stays back after the last shot (a reload from empty releases it); not a charging handle (fd.nolock)
+    if(W.fd&&W.fd.act==='slide'&&!W.fd.nolock&&!(this.act&&this.act.rl)){const am=a.ammo&&a.ammo[this.id];if(am&&am.mag===0)for(const T of [tags,m.tags2])if(T&&T.slide)T.slide.position.z+=W.fd.d||.045}
     // ---- reload choreography ----
     // (a v2 reload clip from vmrel.js does the work; this older choreography only runs if no clip could be built)
     if(this.rel){const R0=this.rel;R0.t+=dt;const p=clamp(R0.t/R0.d,0,1),v2=this.act&&this.act.rl;
