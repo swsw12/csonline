@@ -18,4 +18,4 @@ PRICES=[
  ('airb',4500),('gl40',5500),('axe',1500),('hammer',4000),
 ]
 GACHA={'S':['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],'A':['xdz','ripper','xbowa','xbow','sterling','duckfoot']}
-NOT_SOLD=['bhole','skull9']  # the season decoder's guns (gacha_config.season_lines): only from their line on the card
+NOT_SOLD=['bhole','skull9','salamander']  # the season decoder's guns (gacha_config.season_lines): only from their line on the card

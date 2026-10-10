@@ -50,7 +50,7 @@ const HSK={SP:10,EX:5,DS:5,SPM:1.45,EXM:.4,BIT:256,fovAdd:0,fovK:0,botT:-9,pant:
   // the host: is a forced headshot from this player inside their window? (a client's window runs about half a round trip behind)
   dsOk(a,L){const h=a.hsk;if(!h)return false;if(h.ds>0)return true;return G.t-h.off<clamp(.35+((L&&L.rtt)||0)/1000,.35,1.25)},
   // guns whose hits can be headshots: everything that traces bullets, plus the bolt and the disc (not air, flame or explosive shots)
-  dsGun(W){return !!W&&W.kind!=='melee'&&W.kind!=='nade'&&!W.air&&!W.cone&&(!W.proj||W.proj==='bolt'||W.proj==='disc')},
+  dsGun(W){return !!W&&W.kind!=='melee'&&W.kind!=='nade'&&!W.air&&!W.cone&&!W.flame&&(!W.proj||W.proj==='bolt'||W.proj==='disc')},
   // ---------- bots (host / solo): Sprint to get away or when they are the last one standing; Deadshot into a crowd or at a host ----------
   bot(a,dt){const B=a.bot;if(!B||NET.cli||G.st!=='fight'||!a.alive||a.team!==TH||a.cmd.hsk)return;const h=this.of(a);if(h.uS&&h.uD)return;
     B.hskT=(B.hskT||0)-dt;if(B.hskT>0)return;B.hskT=rr(.3,.6);if(B.hskP==null)B.hskP=rr(.2,.65);

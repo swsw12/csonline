@@ -59,7 +59,7 @@ const AI={
     if(!best)return false;B.spot=[best.x+rr(-.25,.25),best.y,best.z+rr(-.25,.25)];B.camp=null;B.path=null;B.repath=0;B.scanY=null;return true},
   // buying is free: every bot has a loadout it likes (rolled from the weights below, the dearer guns a little likelier, rolled again now and
   // then) and at the start of a round fills in what it lacks — an empty slot, the default pistol or knife, a missing grenade, armour
-  rollLd(){const prim=[['hmg',.24],['mg6',.16],['gx6',.12],['ar7',.24],['kv47',.2],['g35',.12],['br3',.1],['ar5c',.12],['hr17',.1],['as12',.18],['m14',.12],['sg8',.13],['db2',.06],['k5',.06],['k9',.05],['um45',.05],['pd50',.07],['r700',.04],['sr8',.03],['dm14',.05],['gl40',.04],['airb',.05],['volc',.05],['xbow',.04],['xbowa',.03],['bdc',.05],['rdc',.03],['mdrill',.04],['mlaunch',.03],['xdz',.03],['gaebolg',.03],['sterling',.05]];
+  rollLd(){const prim=[['hmg',.24],['mg6',.16],['gx6',.12],['ar7',.24],['kv47',.2],['g35',.12],['br3',.1],['ar5c',.12],['hr17',.1],['as12',.18],['m14',.12],['sg8',.13],['db2',.06],['k5',.06],['k9',.05],['um45',.05],['pd50',.07],['r700',.04],['sr8',.03],['dm14',.05],['gl40',.04],['airb',.05],['volc',.05],['xbow',.04],['xbowa',.03],['bdc',.05],['rdc',.03],['mdrill',.04],['mlaunch',.03],['xdz',.03],['gaebolg',.03],['sterling',.05],['salamander',.03]];
     const ok=prim.filter(p=>WPN[p[0]]),w=p=>p[1]*(1+(WPN[p[0]].cost||0)/3000);let t=0;for(const p of ok)t+=w(p);let r=Math.random()*t,p1=ok.length?ok[ok.length-1][0]:null;for(const p of ok){r-=w(p);if(r<=0){p1=p[0];break}}
     const pis=['d50','f7','tw9','r6','duckfoot'].filter(id=>WPN[id]);
     return {1:p1,2:pis.length&&Math.random()<.25?rpick(pis):'p9',3:Math.random()<.14?rpick(['hammer','axe','axe',WPN.skull9?'skull9':'hammer']):'knife',
@@ -114,7 +114,7 @@ const AI={
       if(best){if(!B.seen||B.seen.a!==best){B.seen={a:best,t:G.t};B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<4?.35:1);B.aimT0=G.t;B.hsT=0}B.seen.ls=G.t}
       else if(B.seen&&(!B.seen.a.alive||G.t-(B.seen.ls||B.seen.t)>.5))B.seen=null;
       const tg=B.seen&&B.seen.a.alive?B.seen.a:null;B.lof=!tg||losClear(e.x,e.y,e.z,tg.c.x,B.hs?tg.head.y:tg.c.y+(tg.zc==='boss'?2.6:tg.c.h*.55),tg.c.z);
-      if(fight)this.kiteScan(a,spread?HBOT.kite:5.5,e);else B.kd=99;
+      if(fight)this.kiteScan(a,WPN[a.cur]&&WPN[a.cur].flame?4:spread?HBOT.kite:5.5,e);else B.kd=99;
       // trying to walk somewhere for 6 s without getting 1.5 m anywhere (wedged on a ledge, a coffin, a teammate): somewhere else then
       if(spread){const m=B.mv||(B.mv={x:c.x,z:c.z,t:G.t});if(Math.hypot(c.x-m.x,c.z-m.z)>1.5||!(G.t-(B.wantT||-9)<1)){m.x=c.x;m.z=c.z;m.t=G.t}else if(G.t-m.t>6){m.t=G.t;if(!this.pickRoam(a))this.pickCamp(a)}}}
     const tgt=B.seen&&B.seen.a.alive?B.seen.a:null;if(tgt)B.seenT=G.t;
@@ -163,6 +163,7 @@ const AI={
       if(B.react<=0&&B.lof&&!far&&err<D.tol+(W&&W.pellets?.1:0)){
         if(W&&W.kind==='nade'){}else if(W&&W.kind==='melee'){const bw=bestWeapon(a);const ba=a.ammo[bw];if(bw!==a.cur&&ba&&(ba.mag+ba.res)>0)equip(a,bw);else if(tdist<2.3)cmd.fire=Math.random()<.7,cmd.alt=!cmd.fire}
         else{const am=a.ammo[a.cur];if(am&&am.mag===0&&am.res===0){const o=a.cur===a.inv[1]?a.inv[2]:null;if(o&&a.ammo[o]&&(a.ammo[o].mag+a.ammo[o].res)>0)equip(a,o);else equip(a,a.inv[3]||'knife')}
+          else if(W&&W.flame&&tdist-tgt.c.hw>W.flame.r-.3){}// a flamethrower holds its fire until the zombie is in reach
           else{const semi=W&&(W.semi||W.burst);cmd.fire=semi?(B.fireHold=!B.fireHold):true;if(W&&W.zoom&&a.zoom===0&&dist>(W.kind==='sniper'?8:15)&&!cmd.alt)cmd.alt=true}}}
       if(W&&W.spin)cmd.alt=true;// keep the barrels turning while a target is in view
       if(a.zoom>0&&tdist<6)a.zoom=0;

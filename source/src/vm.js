@@ -12,7 +12,7 @@ const VM_POS={
   r700:{p:[.145,-.165,-.38],r:[0,.075,.03]},sr8:{p:[.145,-.16,-.37],r:[0,.075,.03]},dm14:{p:[.145,-.165,-.38],r:[0,.075,.03]},
   hmg:{p:[.16,-.19,-.42],r:[0,.08,.035]},mg6:{p:[.16,-.185,-.41],r:[0,.08,.035]},gx6:{p:[.19,-.235,-.43],r:[0,.07,.03]},gl40:{p:[.15,-.17,-.37],r:[0,.08,.035]},airb:{p:[.15,-.18,-.36],r:[0,.08,.035]}};
 // recoil impulses: [push back m/s, pitch rad/s, random roll rad/s]
-function vmKick(W){if(W.spin)return [.16,.25,.25];if(W.kind==='shotgun'||W.kind==='special')return [1.05,2.4,.7];if(W.kind==='sniper')return [.95,2.1,.5];if(W.kind==='pistol')return [.42,1.7,.45];if(W.kind==='mg')return [.5,.75,.4];return [.42,.6,.3]}
+function vmKick(W){if(W.flame)return [.1,.16,.18];if(W.spin)return [.16,.25,.25];if(W.kind==='shotgun'||W.kind==='special')return [1.05,2.4,.7];if(W.kind==='sniper')return [.95,2.1,.5];if(W.kind==='pistol')return [.42,1.7,.45];if(W.kind==='mg')return [.5,.75,.4];return [.42,.6,.3]}
 // keyframed first-person actions: [t, [x,y,z, rx,ry,rz]] offsets from the rest pose
 const VMK={
   // knife: forehand slash right-to-left, rising backhand, heavy stab (hold, then a straight thrust)

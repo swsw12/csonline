@@ -241,7 +241,7 @@ const UI={open:null,
   statBars(W){const L=LI();if(W.kind==='melee'){const pw=Math.sqrt(W.dmg[1]/400),rt=1/W.rate[0]/2.2,kb=W.kb[1]/24,mob=(W.speed-.7)/.32;return this.bars([[L?'PWR':'위력',pw],[L?'ROF':'속도',rt],[L?'KB':'넉백',kb],[L?'MOB':'기동',mob]])}
     const n=(W.pellets||W.fan||W.slugs||1)*(W.cone?W.cone.ticks*1.5:1);return this.bars([[L?'PWR':'위력',Math.sqrt(W.dmg*n/400)],[L?'ROF':'연사',(W.rpm||0)/1500],[L?'KB':'넉백',W.kb*n*(W.rpm||60)/60/50+(W.proj?.35:0)],[L?'MOB':'기동',(W.speed-.7)/.32]])},
   bars(list){return `<span class="sbs">${list.map(([n,v])=>`<span class="sb"><em>${n}</em><i><u style="width:${Math.round(clamp(v,.05,1)*100)}%"></u></i></span>`).join('')}</span>`},
-  wTags(W,id){const L=LI();if(W&&W.ny)return nyTags(W,L);const t=[];if(EQUIP[id]){return ({armor:L?'Absorbs claw hits':'할퀴기를 막아 감염을 늦춤',ammo:L?'Refill reserve ammo':'예비 탄약 가득',})[id]}
+  wTags(W,id){const L=LI();if(W&&W.ny)return nyTags(W,L);if(W&&W.flame)return L?`Flame stream · sets zombies alight · reach ${Math.round(W.flame.r)} m · Fuel ${W.mag}`:`화염 방사 · 화상 · 사거리 ${Math.round(W.flame.r)}m · 연료 ${W.mag}`;const t=[];if(EQUIP[id]){return ({armor:L?'Absorbs claw hits':'할퀴기를 막아 감염을 늦춤',ammo:L?'Refill reserve ammo':'예비 탄약 가득',})[id]}
     if(id==='he')return L?'Blast + knockback':'폭발 피해 + 넉백';if(id==='frost')return L?'Freezes zombies 3s':'좀비를 3초간 얼림';if(id==='flare')return L?'Lights the area 25s':'주변을 25초간 밝힘';
     if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.burst)t.push(L?'3-round burst':'3점사');if(W.dual)t.push(L?'Akimbo':'쌍권총');if(W.zoom)t.push(L?'Scope':'조준경');
     if(W.spin)t.push(L?'Spin-up':'예열 회전');if(W.proj)t.push(L?'Explosive':'폭발 유탄');if(W.bolt)t.push(L?'Bolt-action':'볼트액션');if(W.kind==='melee')t.push(L?'Melee · RMB chop':'근접 · 우클릭 강타');

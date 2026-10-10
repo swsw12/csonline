@@ -179,7 +179,7 @@ function mkBeam(){if(!BEAM_GEO){BEAM_GEO=new THREE.ConeGeometry(1.5,9,10,1,true)
 // ---------- movement ----------
 const ZSPD=.95;// every zombie class runs 5 % below its table speed
 function maxSpeed(a){if(a.frozen>0)return 0;let s;
-  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*ZSPD*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1)*(a.spdMul||1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.5;if(a.holdT>0)s*=a.host?.3:.12;if(a.duck)s*=.45}
+  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*ZSPD*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1)*(a.spdMul||1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.5;if(a.holdT>0)s*=a.host?.3:.12;if(a.burnT>0&&a.burnW==='salamander')s*=.88;if(a.duck)s*=.45}
   else{const W=WPN[a.cur];s=5.15*(a.hsk?hskSpeed(a,W):W?W.speed:1);if(W&&W.stance&&a.hamB)s*=W.stanceSpd;if(W&&W.atkSpd&&G.t<a.nextFire)s*=W.atkSpd[a.an.heavy?1:0];if(a.zoom>0)s*=.6;if(a.duck)s*=.36;else if(a.cmd.walk)s*=.52;if(a.shriekT>0)s*=.6}
   return s}
 function jumpV(a){if(a.team===TZ)return ZCLASS[a.zc].jump;return 6.3}
@@ -508,7 +508,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){const cb=zComeback();a.reviveT-=dt*(cb?ZBAL.cbRevive:1);if(a.reviveT<=0){reviveZombie(a,cb?zPackSpawn(a):zRandomSpawn(),true);if(cb){a.hp=a.maxHp;a.armor=Math.max(a.armor,Math.round(ZCLASS[a.zc].armor*.75))}}}else{a.respawnT-=dt;if(a.respawnT<=0)reviveZombie(a,zRandomSpawn())}}}
     // dead bodies still settle under gravity
     if(!a.alive&&a.deadT<3){a.c.vy-=GRAV*dt;a.c.vx*=.9;a.c.vz*=.9;a.c.vx+=a.kvx*.3;a.c.vz+=a.kvz*.3;a.kvx*=.8;a.kvz*=.8;moveChar(a.c,dt)}}
-  separate(dt);updateNades(dt);nyUpdate(dt);dropsUpdate(dt);
+  separate(dt);updateNades(dt);nyUpdate(dt);salUpdate(dt);dropsUpdate(dt);
   for(const a of G.actors)updateVisual(a,dt)}
 
 // zombie grenade: the free hand comes up, hooks two fingers into the mouth, yanks the bone pin out and drops away; armed, the bomb trembles in the fist

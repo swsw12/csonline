@@ -103,7 +103,7 @@ function spreadDir(base,ang,out){if(ang<=0)return out.copy(base);
   const r=ang*Math.sqrt(Math.random()),th=Math.random()*TAU;out.copy(base).addScaledVector(_uv,Math.cos(th)*r).addScaledVector(_rv,Math.sin(th)*r).normalize();return out}
 function curSpread(a,W){const c=a.c;const moving=Math.hypot(c.vx,c.vz)>1.2;let s=!c.onGround?W.spread[2]:moving?W.spread[1]:W.spread[0];
   if(W.zoom&&a.zoom>0){if(c.onGround&&!moving)s=W.spreadZ;else if(W.kind==='sniper')s=W.spread[1]}if(a.duck&&c.onGround)s*=.8;return s+a.recoilSpread}
-function fireGun(a,W){const am=a.ammo[a.cur];
+function fireGun(a,W){if(W.flame){salFire(a,W);return}const am=a.ammo[a.cur];
   const eye=actorEye(a);aimDir(a.yaw+a.punchY,a.pitch+a.punchP,_dv);const base=_dv.clone();
   if(W.dual)a.dualSide=-(a.dualSide||1);
   NET.on&&netFxPush(['f',a.id,WI[a.cur],r3(a.yaw+a.punchY),r3(a.pitch+a.punchP),a.dualSide||0]);

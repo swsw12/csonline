@@ -4,7 +4,7 @@ function applyCfg(){if(R.ok){R.setScale(CFG.scale);R.setFov(CFG.fov);R.bloom=CFG
 const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,overlay:null,paused:false,last:0,dtAvg:16,mx:0,my:0,boardOn:false,demo:[],shakeP:0,shakeY:0,camT:0,specCam:new THREE.Vector3(),fpsT:0,
   async boot(){const step=async(t,p)=>{$('loadT').textContent=t;$('loadFill').style.width=(p*100)+'%';await new Promise(r=>setTimeout(r,16))};
     try{
-      await step(T('lTex'),.05);bakeTextures();paintGunAtlas();paintNYAtlas();paintSupAtlas();paintSkAtlas();
+      await step(T('lTex'),.05);bakeTextures();paintGunAtlas();paintNYAtlas();paintSupAtlas();paintSkAtlas();paintSalAtlas();
       if(!R.init($('cv'))){$('loadT').textContent='WebGL is not available on this device.';return}
       {const an=Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1);for(const k in TEX)TEX[k].anisotropy=an}
       buildSky(R.scene);{const g=MAP.gen=mapLoader(MAPDEFS[CFG.map]?CFG.map:'q7');let p=.15;for(;;){const r=g.next();if(r.done)break;p+=.15;await step(T(r.value),p)}MAP.gen=null}
@@ -172,6 +172,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(!this.paused||NET.on){this.fires(dt);FX.update(dt);DL.update(dt,R.cam)}
       if(AU.spin)AU.spin(G.player&&G.player.alive&&!this.paused&&G.st!=='menu'?G.player.spinV||0:0,G.player&&G.player.cmd.fire);
       if(AU.saw&&!(G.player&&G.player.alive&&G.player.cur==='ripper'&&!this.paused&&G.st!=='menu'))AU.saw(0);
+      if(AU.flame)AU.flame(G.player&&G.player.alive&&G.player.salOn&&!this.paused&&G.st!=='menu'?1:0);
       AU.update(dt,{play:G.st==='fight',music:null,low:G.player&&G.player.alive&&G.player.team===TH&&G.lastHuman===G.player?.6:0,flash:()=>{this.lightning=.6}});
       FX.rain.k=1;AU.rainIndoor&&!AU.throttle('ri',300)&&AU.rainIndoor(rayCast(R.cam.position.x,R.cam.position.y,R.cam.position.z,0,1,0,30)?1:0);
       $('app').classList.toggle('playing',!!G.player&&G.st!=='menu'&&G.st!=='over'&&!this.paused&&!this.overlay);

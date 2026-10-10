@@ -6,12 +6,12 @@
 // Prices: the database table gun_prices is the truth; this copy (same numbers as schema.sql) is shown until it has loaded.
 const SHOP_FREE=['knife','p9','sg8','k5','g35'];
 const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000};
-const SHOP_NOTSOLD=['bhole','skull9'];// never in the shop: the season decoder's guns (a line on its card), else crate-only
+const SHOP_NOTSOLD=['bhole','skull9','salamander'];// never in the shop: the season decoder's guns (a line on its card), else crate-only
 const SHOP_GACHA={S:['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],A:['xdz','ripper','xbowa','xbow','sterling','duckfoot']};
 // the decoder's numbers until gacha_config has loaded (same defaults as schema.sql)
 const GACHA_DEF={dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
-  season_lines:['gun:bhole','gun:skull9','coins:1000','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3']};
+  season_lines:['gun:bhole','gun:skull9','gun:salamander','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3']};
 // the 12 lines of the 5×5 card: rows 0-4, columns 5-9, the diagonal from the top left 10, from the top right 11
 const BINGO_LINES=[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
 // a season card's line items: 'gun:<id>' (owned already: season_owned_coins coins), 'coins:<n>', 'frags:<n>', 'tickets:<n>' (n 근하신년 decoders)

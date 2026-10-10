@@ -458,3 +458,26 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   qz_claim (new p_hs = headshot kills, old 10-arg signature dropped; client retries without p_hs on an old DB), qz_missions /
   qz_mission_claim; qz_ranking(level|kills|infects|best) top 50 + my place (anon too). P.hsKills counted in killZombie.
 - CLAW_LOCK (game.js): a newly infected zombie (not a host) can't start a claw for 2 s; the player gets a note.
+## Salamander flamethrower (salamander.js)
+- WPN.salamander (slot 1, special, cost 5500): 100 fuel (res 100 → 200 after game.js doubles spare ammo), rpm 600 = ten flame ticks a
+  second, dmg 38 per tick full to 2.5 m, down to 38 % at the 7.6 m reach (eye to the body's surface), nothing past it. The cone is
+  w0 .3 m + .09 m per metre wide (+ the body's half width), so it narrows as an angle; every tick needs a clear line from the eye (walls
+  stop it). Each tick sets burnT 2.5 / burnSrc / burnW 'salamander' (updBurn: 11 per .25 s, kill credit and feed with its icon; a
+  client's ticks reach the host through the 'eff' bt/bw path like the dragon cannons). kb 1.1, stag .22, burning zombies run ×.88
+  (maxSpeed), no headshots (hskill dsGun skips W.flame), speed .85, reload 3.5 s (the canister under the barrel is the magazine: the
+  rlMag drop clip, its magout/magin events renamed salout/salin), first draw act 'salig' (GUN_DESIGN: valve wheel a quarter turn, the
+  pilot light pops).
+- fireGun hands W.flame guns to salFire (net 'f' push, fuel, punch, salHits). salUpdate (gameUpdate, every frame, every actor holding
+  one): salOn = a tick within .16 s (.24 for remote puppets fed by 'f' replays); the stream (salEmit: a rope redrawn every frame + core,
+  fringe, plain-blended body, glow, smoke, embers; every droplet is raycast and cut at the wall, where a lick and a scorch go), a
+  flickering DL light, ignition / shutoff / gust sounds for others. The player's stream starts where the view model's nozzle is on
+  screen (salOrigin; muzzleWorld when the camera is not at the player). VMX.salamander: pilot sprites, jet sprites, the orange VM light
+  and the shudder. AU.flame (main.js) is the player's roar loop. Bots: AI.rollLd weight .03, kite at 4 m, fire only within reach.
+  Atlas mats salTank / salHose / salSoot / salBottle take slots 72-75 (supply.js moves to 76-79; the 8 x 10 atlas is now full).
+- Measured (body aim, 60 fps sim; ticks land every 6-7 frames): DPS incl. burn 382 @2 m, 297 @5 m, 0 @8 / 10 m; MG3 380 / 355 / 329 /
+  329, M249 384 flat; four zombies at 2.5-4 m take ≈ 330 each at once.
+
+## v6.13 — Salamander on the season card
+- salamander joins NOT_SOLD / SHOP_NOTSOLD and season_lines (in the place of one coins:1000). schema.sql moves a DB on the exact
+  v6.11.1 list to the new one and gives dealt season cards a gun:salamander line on a coins:1000 line not done yet (one-shot);
+  a DB still on the v6.11 list gets Skull-9 then Salamander in the same run.
