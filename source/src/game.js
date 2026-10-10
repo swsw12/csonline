@@ -261,12 +261,12 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(W.zoom&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0){a.zoom=(a.zoom+1)%(W.zoom.length+1);a.zoomWas=0;if(a.isPlayer)AU.play('ui',{vol:.3,rate:.7})}
   // reloading
   if(a.reloadT>0){a.reloadT-=dt;
-    if(W.shellRel){if(cmd.fire&&!pc.fire&&am.mag>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload()}
+    if(W.shellRel){if(cmd.fire&&!pc.fire&&am.mag>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload();if(W.relFire){a.drawT=0;a.nextFire=Math.min(a.nextFire,G.t)}}
       else if(a.reloadT<=0){// one shell in; the view model's clip plays the push and its click, and racks the gun after the last one if it was loaded from empty
         if(am.mag<W.mag&&am.res>0){am.mag++;am.res--;if(a.isPlayer)VM.shellIn(!(am.mag<W.mag&&am.res>0),W.shellRel)}
         if(am.mag<W.mag&&am.res>0){a.reloadT=W.shellRel;a.relKind='shell'}else a.relKind=null}}
     else if(a.reloadT<=0){const cap=W.mag+(W.ch&&a.relCh?(W.dual?2:1):0),need=cap-am.mag,take=Math.min(Math.max(0,need),am.res);am.mag+=take;am.res-=take;a.relKind=null}
-    return}
+    if(!(W.relFire&&a.reloadT<=0&&a.relKind===null&&cmd.fire&&!pc.fire))return}
   const wantReload=(cmd.reload&&!pc.reload)||(am.mag===0&&(cmd.fire||!a.isPlayer));
   if(wantReload&&am.mag<W.mag&&am.res>0&&a.drawT<=0&&a.boltT<=0){a.zoom=0;a.burstN=0;
     // the player's reload sounds come from the view model's clip (vmrel.js), in step with the hands

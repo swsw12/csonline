@@ -96,7 +96,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
   shellIn(){this.rel={t:0,d:.4,kind:'shell'};this.sp.py.v+=.12},
   stopReload(){this.rel=null},
   stance(b){this.sp.py.v-=.2;this.sp.rx.v+=b?.8:-.6},
-  melee(heavy){if(this.id==='knife'&&this.knSwing&&this.knSwing(heavy))return;if(this.id==='skull9'&&this.skSwing&&this.skSwing(heavy))return;const W=WPN[this.id];/* the knife swings on a clip (vmknife.js) */this.mel={t:0,d:W&&W.anD?W.anD[heavy?1:0]:(heavy?.75:.42),heavy,side:this.mel&&this.mel.side>0?-1:1};this.trail.S.length=0},
+  melee(heavy){if((this.id==='knife'||this.id==='killknife')&&this.knSwing&&this.knSwing(heavy))return;if(this.id==='skull9'&&this.skSwing&&this.skSwing(heavy))return;const W=WPN[this.id];/* the knife swings on a clip (vmknife.js) */this.mel={t:0,d:W&&W.anD?W.anD[heavy?1:0]:(heavy?.75:.42),heavy,side:this.mel&&this.mel.side>0?-1:1};this.trail.S.length=0},
   claw(heavy,side){this.mel={t:0,d:heavy?.75:.46,heavy,side:side||1};this.trail.S.length=0},
   // voodoo zombie: the right fist holds the doll, the left fist sits just behind it on the doll's legs; light = overhead bash, heavy = bigger slam
   vdPose(A,dt,m){const M=this.mel;let tr=false;const K=_vdk;
@@ -171,7 +171,9 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       else if(R0.kind==='start'&&!v2){const s=smooth(p);rz+=.25*s;rx+=.12*s;y-=.02*s}
       if(R0.t>=R0.d&&R0.kind!=='start')this.rel=null}
     // pump / bolt after a shot
-    if(this.pumpT>0){this.pumpT=Math.max(0,this.pumpT-dt);const p=1-this.pumpT/.62;if(p>.2&&tags.pump){const q=clamp((p-.2)/.8,0,1);const s=q<.45?smooth(q/.45):1-smooth((q-.45)/.55);tags.pump.position.z+=s*.095;if(m.armL)m.armL.position.z+=s*.095;rx-=s*.035;rz+=s*.03}}
+    if(this.pumpT>0){this.pumpT=Math.max(0,this.pumpT-dt);const p=1-this.pumpT/.62;if(p>.2&&tags.pump){const q=clamp((p-.2)/.8,0,1);const s=q<.45?smooth(q/.45):1-smooth((q-.45)/.55);tags.pump.position.z+=s*.095;if(m.armL)m.armL.position.z+=s*.095;rx-=s*.035;rz+=s*.03}
+      if(p>.15&&tags.lever){const q=clamp((p-.15)/.85,0,1),s=q<.45?smooth(q/.45):1-smooth((q-.45)/.55),th=s*.95,P=(GUNS[W.model]&&GUNS[W.model].leverPiv)||[0,0,0],c=Math.cos(th),sn=Math.sin(th);
+        tags.lever.rotation.x=th;tags.lever.position.y+=P[1]-(P[1]*c-P[2]*sn);tags.lever.position.z+=P[2]-(P[1]*sn+P[2]*c);rx-=s*.03}}
     if(this.boltT>0){this.boltT=Math.max(0,this.boltT-dt);const p=1-this.boltT/.95;if(p>.25&&tags.bolt){const q=clamp((p-.25)/.75,0,1);const lift=q<.2?smooth(q/.2):q<.8?1:1-smooth((q-.8)/.2),pull=q<.2?0:q<.5?smooth((q-.2)/.3):q<.8?1-smooth((q-.5)/.3):0;
       tags.bolt.rotation.z=lift*1.1;tags.bolt.position.z+=pull*.07;rz+=lift*.12;x-=lift*.01;rx+=pull*.03}}
     // ---- melee: anticipation, a fast stroke with a trail, follow-through, recovery; the camera rolls with the stroke ----
@@ -213,7 +215,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       else if(kind==='axe'){m.gun.localToWorld(_vv.set(0,.03,-.49));m.gun.localToWorld(_vw.set(0,.15,-.49));this.trailPush(_vv,_vw)}
       else if(kind==='hammer'){m.gun.localToWorld(_vv.set(0,-.13,-.81));m.gun.localToWorld(_vw.set(0,.13,-.81));this.trailPush(_vv,_vw)}
       else if(kind==='skull9'){const q=GUNS.skull9.trail;m.gun.localToWorld(_vv.set(q[0],q[1],q[2]));m.gun.localToWorld(_vw.set(q[3],q[4],q[5]));this.trailPush(_vv,_vw)}
-      else{m.gun.localToWorld(_vv.set(0,.006,-.1));m.gun.localToWorld(_vw.set(0,.006,-.28));this.trailPush(_vv,_vw)}}
+      else{const q=GUNS[this.id]&&GUNS[this.id].trail;if(q){m.gun.localToWorld(_vv.set(q[0],q[1],q[2]));m.gun.localToWorld(_vw.set(q[3],q[4],q[5]))}else{m.gun.localToWorld(_vv.set(0,.006,-.1));m.gun.localToWorld(_vw.set(0,.006,-.28))}this.trailPush(_vv,_vw)}}
     const T=this.trail;T.mat.uniforms.uCol.value.set(kind==='claw'?'#7a0a08':'#e8eef4');T.mat.uniforms.uOp.value=kind==='claw'?.6:.42;this.trailUpdate(dt,.11);
     // muzzle flash + lights
     this.flashT-=dt;this.flash.visible=this.flashT>0&&this.vis;const mu=this.U.uMuzzle.value;mu.multiplyScalar(Math.exp(-dt*30));

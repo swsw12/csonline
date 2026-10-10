@@ -145,7 +145,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     // weapon / skill
     if(zt){e.hAmmo.style.display='none';e.hWName.textContent=P.cur==='zbomb'?T('bomb'):WPN.claw.n[LI()];const Z=ZCLASS[P.zc];
       e.hSkill.style.display='block';e.hSkill.innerHTML=`<span class="k">G</span> ${Z.sk?Z.sk[LI()]:T('skill')}: ${P.skillCD>0?Math.ceil(P.skillCD)+'s':`<b>${T('ready')}</b>`}${P.skillT>0?' ▲':''}<br><span class="k">4</span> ${T('bomb')} ×${P.bombs}  <span class="k">N</span> ${T('nv')} ${P.nv?'ON':'OFF'}`;e.hNades.textContent=''}
-    else{e.hSkill.style.display='none';const am=P.ammo[P.cur];const Wn=WPN[P.cur];e.hWName.textContent=Wn?Wn.n[LI()]+(Wn.dual&&P.dualB?(LI()?' · full auto':' · 연사'):'')+(Wn.stance?(P.hamB?(LI()?' · B knock-away':' · B 날리기'):(LI()?' · A pound':' · A 떡찧기')):''):'';
+    else{e.hSkill.style.display='none';const am=P.ammo[P.cur];const Wn=WPN[P.cur];e.hWName.textContent=Wn?Wn.n[LI()]+(Wn.dual&&P.dualB?(LI()?' · full auto':' · 연사'):'')+(Wn.stance?(P.hamB?(LI()?' · B knock-away':' · B 날리기'):(LI()?' · A pound':' · A 떡찧기')):'')+spTag(P,Wn):'';
       if(am){e.hAmmo.style.display='flex';e.hMag.textContent=am.mag;e.hRes.textContent='/ '+am.res;e.hMag.className=am.mag<=Math.ceil(Wn.mag*.2)?'low':''}else e.hAmmo.style.display='none';
       e.hNades.textContent=['he','frost','flare'].filter(k=>P.inv[k]>0).map(k=>({he:'HE',frost:'FROST',flare:'FLARE'})[k]).join(' · ')+(P.flash?'  ☀':'')+nyHud(P)}
     {const Ls=P.nyL||{};const s=P.team===TH?NY_CH.map(c=>`<b class="${Ls[c]?'on':''}">${c}</b>`).join('')+(P.nyFree>0?`<small>${T('nyFree')} ×${P.nyFree}</small>`:''):'';if(this.nyS!==s){this.nyS=s;$('hNY').innerHTML=s}}

@@ -962,3 +962,32 @@ html.touch #hRange .rgK{display:none}
 .misRes .mri{display:inline-flex;align-items:center;gap:5px}.misRes .mri u{text-decoration:none}.misRes .mri i{font-style:normal;color:#ffd890}.misRes .mri small{color:#9be07a}
 .misRes .mri em{font-style:normal;font-size:10px;font-weight:bold;padding:1px 5px;border-radius:2px;background:#3f7a3a;color:#fff}
 .misRes button{font:inherit;font-size:12px;padding:4px 10px;min-width:0;box-shadow:none;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;font-weight:bold;border-radius:3px;cursor:pointer;pointer-events:auto}
+
+/* ---- the "new" banner (newsban.js) ---- */
+#nbWin{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(4,6,10,.62);backdrop-filter:blur(2px)}
+#nbWin .nbw0{width:min(760px,94vw);max-height:92vh;display:flex;flex-direction:column;background:linear-gradient(#1c2027,#14171c);border:1px solid #3a3f48;border-top:2px solid #e2b54a;box-shadow:0 18px 60px rgba(0,0,0,.6);border-radius:4px;overflow:hidden}
+#nbWin .nbh{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid #2c3038}
+#nbWin .nbh b{color:#ffd56a;font-size:20px;letter-spacing:.06em}#nbWin .nbh small{color:#8b93a0;font-size:12px;flex:1}
+#nbWin .nbx{width:34px;height:34px;border:1px solid #4a505a;background:#22262d;color:#cfd5de;font-size:22px;line-height:1;cursor:pointer;border-radius:3px}#nbWin .nbx:hover{background:#3a2020;border-color:#a44}
+#nbWin .nbb{display:flex;align-items:stretch;gap:8px;padding:14px 10px;min-height:0;overflow:auto}
+#nbWin .nbar{width:34px;flex:none;border:1px solid #3a3f48;background:#1a1d22;color:#e2b54a;font-size:26px;cursor:pointer;border-radius:3px}#nbWin .nbar:disabled{opacity:.25;cursor:default}
+#nbWin .nbc{flex:1;display:flex;gap:16px;min-width:0;animation:nbIn .35s ease}
+@keyframes nbIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+#nbWin .nba{position:relative;flex:0 0 46%;min-height:190px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 60%,#3a3020,#15171b 72%);border:1px solid #2f343c;border-radius:3px;overflow:hidden}
+#nbWin .nba img.nbw{width:92%;image-rendering:pixelated;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));position:relative;z-index:1}#nbWin .nba img.nbw.m{width:70%}
+#nbWin .nba .nbg{position:absolute;inset:auto 0 0 0;height:40%;background:linear-gradient(transparent,rgba(226,181,74,.12))}
+#nbWin .nba .nbi{font-size:84px;color:#e2b54a;text-shadow:0 0 24px rgba(226,181,74,.5)}#nbWin .nba img.nbz{height:180px}
+#nbWin .nbt{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+#nbWin .nbtag{align-self:flex-start;background:#e2b54a;color:#1a1408;font-weight:bold;font-size:12px;padding:3px 8px;border-radius:2px}
+#nbWin .nbk{color:#8b93a0;font-size:12px}#nbWin .nbt h3{margin:2px 0;color:#fff;font-size:24px}#nbWin .nbt p{margin:0;color:#c2c8d2;font-size:14px;line-height:1.55}
+#nbWin .nbgo{margin-top:auto;align-self:flex-start;border:1px solid #e2b54a;background:transparent;color:#ffd56a;padding:7px 12px;cursor:pointer;border-radius:3px}#nbWin .nbgo:hover{background:rgba(226,181,74,.12)}
+#nbWin .nbf{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-top:1px solid #2c3038;background:#121418}
+#nbWin .nbd{display:flex;gap:6px}#nbWin .nbd i{width:9px;height:9px;border-radius:50%;background:#3a3f48;cursor:pointer}#nbWin .nbd i.on{background:#e2b54a}
+#nbWin .nbh2{border:1px solid #3a3f48;background:#1a1d22;color:#aab2bd;padding:7px 12px;cursor:pointer;border-radius:3px;font-size:13px}#nbWin .nbh2:hover{color:#fff;border-color:#6a707a}
+.lpt .pplus.nbo{width:auto;padding:0 6px;font-size:11px;color:#1a1408;background:#e2b54a;border-color:#e2b54a;margin-right:4px}
+@media (max-height:480px){#nbWin .nbw0{max-height:96vh}#nbWin .nbh{padding:7px 12px}#nbWin .nbh b{font-size:16px}#nbWin .nbb{padding:8px}#nbWin .nba{min-height:120px;flex-basis:40%}
+  #nbWin .nbt h3{font-size:18px}#nbWin .nbt p{font-size:12px}#nbWin .nbf{padding:6px 12px}#nbWin .nbx{width:38px;height:38px}}
+@media (max-width:560px){#nbWin .nbc{flex-direction:column}#nbWin .nba{min-height:130px}}
+#nbWin button.nbar{flex:0 0 34px;width:34px;min-width:0;max-width:34px;padding:0;margin:0}
+#nbWin button.nbx{flex:0 0 34px;width:34px;min-width:0;max-width:34px;padding:0;margin:0}
+#nbWin button.nbgo,#nbWin button.nbh2{width:auto;min-width:0;flex:none}

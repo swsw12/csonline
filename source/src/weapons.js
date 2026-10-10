@@ -103,7 +103,7 @@ function spreadDir(base,ang,out){if(ang<=0)return out.copy(base);
   const r=ang*Math.sqrt(Math.random()),th=Math.random()*TAU;out.copy(base).addScaledVector(_uv,Math.cos(th)*r).addScaledVector(_rv,Math.sin(th)*r).normalize();return out}
 function curSpread(a,W){const c=a.c;const moving=Math.hypot(c.vx,c.vz)>1.2;let s=!c.onGround?W.spread[2]:moving?W.spread[1]:W.spread[0];
   if(W.zoom&&a.zoom>0){if(c.onGround&&!moving)s=W.spreadZ;else if(W.kind==='sniper')s=W.spread[1]}if(a.duck&&c.onGround)s*=.8;return s+a.recoilSpread}
-function fireGun(a,W){if(W.flame){salFire(a,W);return}const am=a.ammo[a.cur];
+function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.ammo[a.cur];
   const eye=actorEye(a);aimDir(a.yaw+a.punchY,a.pitch+a.punchP,_dv);const base=_dv.clone();
   if(W.dual)a.dualSide=-(a.dualSide||1);
   NET.on&&netFxPush(['f',a.id,WI[a.cur],r3(a.yaw+a.punchY),r3(a.pitch+a.punchP),a.dualSide||0]);
@@ -124,6 +124,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}const am=a.ammo[a.cur];
   a.heat=Math.min(1.4,(a.heat||0)+(W.kind==='shotgun'||W.kind==='sniper'?.35:W.kind==='mg'?.07:.09));// barrel heat: smokes when you stop
   if(W.shell){const sd=a.isPlayer?1:.6;FX.shell(mz.x-base.x*.4,mz.y-.05,mz.z-base.z*.4,Math.cos(a.yaw)*sd,-Math.sin(a.yaw)*sd,W.kind==='mg')}
   const loud=W.spin?(a.shots%2===0):true;
+  if(W.sp){FX.muzzle(mz.x,mz.y,mz.z,base.x,base.y,base.z,true);if(a.isPlayer)AU.play(W.spSnd||W.snd,{vol:.9,rate:.8});else AU.at(W.spSnd||W.snd,eye.x,eye.y,eye.z,{vol:.9,range:70,rate:.8})}
   if(a.isPlayer){if(loud)AU.play(W.snd,{vol:W.spin?.75:.95});if(W.shell&&Math.random()<(W.spin?.25:.6))AU.play(W.kind==='shotgun'?'shellcase':'casing',{vol:.5,delay:rr(.25,.45)});VM.fire(W,a.dualSide);if(hitAny)HUD.hitmark(hsAny)}
   else if(loud)AU.at(W.snd,eye.x,eye.y,eye.z,{vol:.9,range:70});
   if(W.bolt){a.boltT=.95;a.zoomWas=a.zoom;a.zoom=0}
@@ -141,7 +142,7 @@ function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
   if(ha){const t=ha.a;let dmg=W.dmg;if(W.pellets){const fall=clamp(1-(ha.t-10)/25,.35,1);dmg*=fall}
     const ds=hsForce(a,ha),hs=ha.part==='head';dmg*=hs?(W.hs||3):ha.part==='legs'?.75:1;
     const pb=1+Math.max(0,(4-ha.t)/4)*.8;// point-blank shots shove harder
-    damageActor(t,dmg,a,{w:a.cur,hs,ds,dir:[dx,dy,dz],kb:W.kb*pb,stag:W.stag,x:ex,y:ey,z:ez});
+    damageActor(t,dmg,a,{w:a.cur,hs,ds,dir:[dx,dy,dz],kb:W.kb*pb,stag:W.stag,x:ex,y:ey,z:ez,up:W.spUp&&t.c.onGround?W.spUp:0});
     FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
     if(hs&&!t.isPlayer&&a.isPlayer)AU.play('headshot',{vol:.7});else if(!a.isPlayer&&t.isPlayer){}else if(Math.random()<.5)AU.at('imp_flesh',ex,ey,ez,{vol:.6});
     return {hit:true,hs,dmg}}

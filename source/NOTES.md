@@ -481,3 +481,12 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - salamander joins NOT_SOLD / SHOP_NOTSOLD and season_lines (in the place of one coins:1000). schema.sql moves a DB on the exact
   v6.11.1 list to the new one and gives dealt season cards a gun:salamander line on a coins:1000 line not done yet (one-shot);
   a DB still on the v6.11 list gets Skull-9 then Salamander in the same run.
+
+## v6.14 — Blaze-8, Winchester M1887, Kill Knife, the "new" banner (built without review: the owner tests them)
+- newguns.js (after salamander): models on existing atlas materials only. W.relFire: a fire press during a shell reload cuts it and
+  fires in the same frame (game.js reload block). W.spEvery/spKb/spUp/spStag: spShot(a,W) in fireGun swaps in the special shell
+  every spEvery shots (a.spN[id]); shotTrace passes up:W.spUp; spTag() on the HUD weapon name. Winchester: pump:1 + a 'lever'
+  tag rotated about GUNS.winchester.leverPiv in vm.js's pump block. Kill Knife uses the knife clips (vm.js melee) and GUNS[id].trail.
+- newsban.js (after rank): NEW_CONTENT list, NBAN (shows once per load after the lobby and any sign-in window; LS 'nbHide' = 2 h),
+  NEW button on the notice panel (UI.act 'nbopen'); the first-visit sign-in prompt waits while the banner is open.
+- Shop prices: killknife 3000, blaze8 6000, winchester 4500 (prices.py, SHOP_PRICE, mock.js).
