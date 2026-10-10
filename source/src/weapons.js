@@ -116,7 +116,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.a
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}}
   else for(let i=0;i<n;i++){spreadDir(base,n>1?W.spread[0]+(sp-W.spread[0])*.5:sp,dir);if(n>1&&i>0)spreadDir(dir,W.spread[0]*.9,dir);
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}
-  am.mag--;a.shots++;
+  if(!W.noMag)am.mag--;a.shots++;
   // recoil: view punch + accumulating spread
   const rv=W.rec[0]*(a.duck?.75:1),rh=W.rec[1];a.punchP+=rv*(.7+Math.min(a.shots,8)*.06);a.punchY+=(Math.random()*2-1)*rh;a.recoilSpread=Math.min(W.spread[1]*1.4,a.recoilSpread+W.rec[0]*.35);a.kick=1;
   // effects + sound

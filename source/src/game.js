@@ -259,6 +259,9 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   // Dual Berettas: the aim key flips the stance (looks only)
   if(W.dual&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
   if(W.zoom&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0){a.zoom=(a.zoom+1)%(W.zoom.length+1);a.zoomWas=0;if(a.isPlayer)AU.play('ui',{vol:.3,rate:.7})}
+  // Blaze-8: right click fires a special shell from its own slot (cuts a shell reload short)
+  if(W.spEvery&&a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire&&(a.isPlayer?cmd.alt&&!pc.alt:(a.spAm&&a.spAm[a.cur]>0&&cmd.fire&&Math.random()<.04))&&a.spAm&&a.spAm[a.cur]>0){
+    if(a.reloadT>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload()}if(a.reloadT<=0){spFire(a,W);return}}
   // reloading
   if(a.reloadT>0){a.reloadT-=dt;
     if(W.shellRel){if(cmd.fire&&!pc.fire&&am.mag>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload();if(W.relFire){a.drawT=0;a.nextFire=Math.min(a.nextFire,G.t)}}

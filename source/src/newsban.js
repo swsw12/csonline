@@ -6,7 +6,7 @@
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
   {kind:'weapon',ref:'blaze8',tag:['상점 6,000 코인','Shop · 6,000 coins'],t:['블레이즈-8','Blaze-8'],
-    d:['골드 각인 반자동 샷건. 8발을 한 발씩 장전하는데 장전 도중 쏘면 바로 끊고 발사. 3발 쏠 때마다 특수탄이 들어가 좀비를 크게 밀어냄.','A gold-engraved semi-auto shotgun: 8 shells loaded one by one, and firing mid-reload shoots at once. Every 3 shells a special shell is loaded that blows zombies back.']},
+    d:['골드 각인 반자동 샷건. 8발을 한 발씩 장전하고 장전 도중 쏘면 바로 끊고 발사. 3발 쏠 때마다 특수칸에 특수탄이 1발씩 (최대 8발) 쌓이고, 우클릭하면 부채꼴로 넓게 퍼지는 경직 · 넉백탄 발사.','A gold-engraved semi-auto shotgun: 8 shells loaded one by one, firing mid-reload shoots at once. Every 3 shells one special shell goes into its own slot (up to 8); right click fires it as a wide fan that staggers and blows zombies back.']},
   {kind:'weapon',ref:'winchester',tag:['상점 4,500 코인','Shop · 4,500 coins'],t:['윈체스터 M1887','Winchester M1887'],
     d:['레버 액션 샷건. 쏠 때마다 레버를 철컥. 한 방이 묵직하고, 장전 중 쏘면 바로 끊고 발사.','A lever-action shotgun: rack the lever after every shot. Heavy single blasts; firing mid-reload shoots at once.']},
   {kind:'weapon',ref:'killknife',tag:['상점 12,000 코인','Shop · 12,000 coins'],t:['킬나이프','Kill Knife'],

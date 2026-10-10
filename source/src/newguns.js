@@ -2,7 +2,8 @@
 // ============ v6.14 weapons: Blaze-8 (gold semi-auto shotgun), Winchester M1887 (lever-action shotgun), Kill Knife ============
 // Models are boxes on the existing atlas materials (no new atlas slots); sounds reuse the game's synthesised ones.
 // relFire: a shell-by-shell reload is cut short by a trigger press and that same press fires (game.js reload block).
-// spEvery: every spEvery shells fired, the next shot is a special shell (sp* fields: heavier knockback, a pop-up, longer stagger).
+// spEvery: every spEvery shells fired, one special shell goes into its own slot (up to spMax); right click fires it as a wide fan
+// (spFan pellets over ±spFanA rad) with heavy knockback, a pop-up and a long stagger (sp* fields).
 
 // ---------- Blaze-8: tube-fed semi-auto, gold furniture with dark engraving, black barrel / tube / skeletal stock ----------
 GUNS.blaze8={parts:[
@@ -25,7 +26,7 @@ GUNS.blaze8={parts:[
   Pt(0,.02,.345,.05,.13,.025,'rub'),Pt(0,.02,.33,.044,.11,.012,'blk2')],
   grip:[0,-.03,.02],sup:[0,.005,-.31],muzzle:[0,.068,-.75],mag:[0,.0,-.12],eject:[.03,.05,-.06]};
 WPN.blaze8={slot:1,kind:'shotgun',n:['블레이즈-8','Blaze-8'],cost:6000,mag:8,res:48,pellets:7,dmg:22,rpm:250,semi:1,spread:[.055,.07,.1],rec:[.055,.02],kb:3,stag:.42,hs:2,
-  shellRel:.38,relStart:.32,relFire:1,spEvery:3,spKb:9,spUp:2.6,spStag:.9,draw:.85,speed:.9,snd:'m14',spSnd:'db2',model:'blaze8',hold:'rifle',shell:1};
+  shellRel:.38,relStart:.32,relFire:1,spEvery:3,spMax:8,spFan:11,spFanA:.6,spDmg:20,spKb:10,spUp:2.8,spStag:1.6,draw:.85,speed:.9,snd:'m14',spSnd:'db2',model:'blaze8',hold:'rifle',shell:1};
 VM_POS.blaze8={p:[.15,-.165,-.37],r:[0,.08,.035]};
 
 // ---------- Winchester M1887: lever-action, walnut and blued steel, a brass bead; the lever swings down after every shot ----------
@@ -89,8 +90,13 @@ BUY_MENU.find(c=>c.k==='shotgun').items.push('blaze8','winchester');
 BUY_MENU.find(c=>c.k==='special').items.push('killknife');
 
 // ---------- the special shell (Blaze-8) ----------
-// a.spN[id] = shells fired toward the next special one; at spEvery the next shot is special
-function spShot(a,W){if(!W.spEvery)return W;const c=a.spN||(a.spN={}),n=c[a.cur]|0;
-  if(n>=W.spEvery){c[a.cur]=0;a.spFx=G.t;return Object.assign({},W,{kb:W.spKb,stag:W.spStag,spUp:W.spUp,sp:1})}c[a.cur]=n+1;return W}
-// the HUD's weapon name: three pips filling, then the special shell ready
-function spTag(P,W){if(!W||!W.spEvery)return '';const n=(P.spN&&P.spN[P.cur])|0;return n>=W.spEvery?(LI()?' · ◆ SPECIAL':' · ◆ 특수탄'):' · '+'●'.repeat(n)+'○'.repeat(W.spEvery-n)}
+// a.spN[id] = normal shells fired toward the next special shell; a.spAm[id] = special shells in their own slot (at most spMax).
+// Right click fires one: a wide fan of pellets that staggers and blows zombies back (game.js calls spFire).
+function spShot(a,W){if(!W.spEvery||W.sp)return W;const c=a.spN||(a.spN={}),m=a.spAm||(a.spAm={}),n=(c[a.cur]|0)+1;
+  if(n>=W.spEvery){c[a.cur]=0;if((m[a.cur]|0)<W.spMax){m[a.cur]=(m[a.cur]|0)+1;if(a.isPlayer)AU.play('shellin',{vol:.5,rate:1.3})}}else c[a.cur]=n;return W}
+function spFire(a,W){const m=a.spAm||(a.spAm={});if(!((m[a.cur]|0)>0))return false;m[a.cur]--;
+  fireGun(a,Object.assign({},W,{sp:1,noMag:1,pellets:0,fan:W.spFan,fanA:W.spFanA,dmg:W.spDmg,spread:[.012,.018,.03],kb:W.spKb,stag:W.spStag,spUp:W.spUp,rec:[W.rec[0]*1.6,W.rec[1]*1.5]}));
+  a.nextFire=G.t+60/W.rpm*1.6;return true}
+// the HUD's weapon name: special shells in the slot, then pips toward the next one
+function spTag(P,W){if(!W||!W.spEvery)return '';const n=(P.spN&&P.spN[P.cur])|0,m=(P.spAm&&P.spAm[P.cur])|0;
+  return ` · ◆×${m}${m<W.spMax?' '+'●'.repeat(n)+'○'.repeat(W.spEvery-n):''}${m>0?(LI()?' (right click)':' (우클릭)'):''}`}

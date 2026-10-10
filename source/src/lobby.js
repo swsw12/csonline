@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.14.3','2026-10-10',[
+ ['UP','블레이즈-8 특수탄 변경 — 3발 쏠 때마다 특수칸에 특수탄 1발 장전 (최대 8발, 일반 탄창과 따로). 우클릭으로 발사하면 부채꼴로 넓게 퍼져 앞의 좀비들을 강하게 경직 · 넉백. 무기 이름 옆에 ◆×개수와 다음 특수탄까지 ●○○ 표시','Blaze-8 special shells reworked: every 3 shells one special shell goes into its own slot (up to 8, apart from the tube). Right click fires it as a wide fan that staggers and blows back the zombies in front. ◆×count and pips toward the next one next to the weapon name.']]],
 ['v6.14.2','2026-10-10',[
  ['UP','킬나이프로 막타를 친 좀비는 그 라운드에 다시 살아나지 않음 (숙주 포함, 모든 모드)','A zombie finished off with the Kill Knife stays down for the round (hosts too, every mode).'],
  ['UP','킬나이프 강화 — 데미지 약공 42→95 · 강공 150→330, 경직 1.3/1.6초 → 2.2/3초. 상점가 3,000 → 12,000 코인. 피 얼룩은 칼끝 쪽 강철에 바랜 듯 물들고 손잡이 쪽으로 옅어짐','Kill Knife buffed: damage 42→95 (light) and 150→330 (heavy), stagger 1.3/1.6 s → 2.2/3 s; shop price 3,000 → 12,000 coins. The old blood is now soaked into the steel near the point, fading toward the handle.']]],
@@ -210,7 +212,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.14.2 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.14.3 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
