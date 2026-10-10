@@ -1085,16 +1085,20 @@ html.touch #hRange .rgK{display:none}
 #chatBox .cl{color:#e8e4d8;line-height:1.35;word-break:break-word}#chatBox .cl b{color:#fff}
 #chatBox .cl.h b{color:#7ec8ff}#chatBox .cl.z b{color:#ff8a6a}#chatBox .cl.me b{color:#ffd56a}#chatBox .cl i{font-style:normal;color:#9be07a;font-size:11px}
 #chatBox .cl.sys{color:#9aa2ad;font-style:italic;font-size:12px}
-#chatBar{position:fixed;left:16px;bottom:130px;z-index:31;width:min(440px,46vw);display:none;align-items:center;gap:6px;padding:5px 6px;background:rgba(8,10,14,.88);border:1px solid #4a505a;border-radius:4px;box-sizing:border-box}
+#chatBar{position:fixed;left:16px;bottom:130px;z-index:31;width:min(440px,46vw);display:none;flex-direction:row;flex-wrap:nowrap;margin:0;align-items:center;gap:6px;padding:5px 6px;background:rgba(8,10,14,.88);border:1px solid #4a505a;border-radius:4px;box-sizing:border-box}
 #chatBar.on{display:flex}#chatBar.tm{border-color:#9be07a}
 #chatBar .cbk{font-size:12px;color:#ffd56a;white-space:nowrap}#chatBar.tm .cbk{color:#9be07a}
 #chatBar input{flex:1;min-width:0;padding:6px 8px;background:#0f1114;border:1px solid #3a3f48;color:#fff;border-radius:3px;font-size:13px}
 #chatBar button{width:auto;min-width:0;padding:5px 9px;font-size:12px;border:1px solid #3a3f48;background:#1a1d22;color:#cfd5de;border-radius:3px;cursor:pointer;white-space:nowrap}
-#chatBar.lob .cbt{display:none}
-#chatBox.lob{bottom:58px}#chatBar.lob{bottom:14px}
+#chatBar.inRoom .cbt{display:none}
+/* the waiting room: a row of the room window (log + input), not floating over it */
+.rchat{grid-column:1/3;margin-top:6px;display:flex;flex-direction:column;gap:6px;min-width:0}.rchat:empty{display:none}
+#chatBox.inRoom,html.touch #chatBox.inRoom{position:static;display:block;transform:none;width:auto;height:116px;max-height:none;padding:6px 10px;overflow-y:auto;pointer-events:auto;
+  background:rgba(0,0,0,.35);border:1px solid #3e424a;border-radius:3px;text-shadow:none;font-size:13px;box-sizing:border-box}
+#chatBox.inRoom:empty{display:block}#chatBox.inRoom:empty::before{content:attr(data-empty);color:#6a7078;font-size:12px}
+#chatBar.inRoom,html.touch #chatBar.inRoom{position:static;transform:none;width:auto;background:rgba(0,0,0,.25);border-color:#3e424a}
 html.touch #chatBox{left:calc(clamp(80px,24vh,120px) + 14px);top:48px;bottom:auto;width:36vw;font-size:11px}
 html.touch #chatBar{left:50%;transform:translateX(-50%);top:8px;bottom:auto;width:min(560px,80vw)}
-html.touch #chatBox.lob{top:auto;bottom:58px;left:12px}html.touch #chatBar.lob{top:auto;bottom:10px;left:12px;transform:none;width:min(560px,92vw)}
 #touch.dead .ttop .tChat{display:flex!important}
 
 </style>
@@ -10593,6 +10597,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.19.1','2026-10-10',[
+ ['FIX','멀티 대기실 채팅을 대기실 창 안(플레이어 목록 바로 아래)으로 옮김 — 입력칸이 세로로 깨지고 최근 채팅이 가려지던 것, 채팅이 대기실 화면을 덮던 것 수정','Fixed: the waiting-room chat now sits inside the room window, right under the player list; its bar no longer stacks up, hides the newest lines or covers the room.'],
+ ['UP','채팅 도배 제한 완화 — 5초에 4줄 → 6줄','Chat flood limit eased: 6 lines in 5 seconds instead of 4.']]],
 ['v6.19','2026-10-10',[
  ['NEW','인게임 채팅 — 매치 중 Enter(또는 Y)는 전체, U는 우리 편에게. 멀티 대기실에서도 채팅. 한 줄 90자, 5초에 4줄까지. 입장 · 퇴장은 회색 줄로 표시. 치는 동안은 캐릭터가 멈추고, Esc나 빈 칸에서 Enter로 닫기. 폰은 위쪽 💬 버튼','In-game chat: Enter (or Y) talks to everyone, U to your own side, in a match and in the multiplayer waiting room. 90 characters a line, up to 4 lines in 5 seconds; joins and leaves show as grey lines. You stand still while typing; Esc or Enter on an empty line closes it. On phones, the 💬 button at the top.']]],
 ['v6.18','2026-10-10',[
@@ -10816,7 +10823,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.19 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.19.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -10844,7 +10851,7 @@ UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.
   const conn=[...NET.links.values()].find(l=>l.ok);const slots=[];for(let i=0;i<NET_MAXP;i++)slots.push(lb.pl[i]||null);
   $('lobby').innerHTML=`<div class="win room"><div class="dpHead"><b>${L?'Waiting Room':'게임 대기실'}</b><span>${L?'Room code':'방 코드'} <span class="mpcode">${esc(NET.code)}</span> <button class="mini" data-act="mpcopy">${T('mpCopy')}</button> · ${T('mpShare')}</span><button class="x" data-act="mpleave">✕</button></div>
     <div class="wbody"><div class="slots">${slots.map((p,i)=>p?`<div class="slot pl${p.k===NET.me?' me':''}"><span class="no">${i+1}</span><img src="${portrait('h_'+(HSKINS.includes(p.s)?p.s:'guard'),40)}"><div><b>${esc(p.n||'?')}</b>${p.k===NET.me?`<small>(${T('mpMe')})</small>`:''}<em>${i===0?'':(p.r?T('mpRelay')+' · ':'')+(p.p||0)+'ms'}</em></div>${i===0?`<span class="ht">${T('mpHost')}</span>`:'<span class="rd">READY</span>'}</div>`
-        :`<div class="slot empty"><span class="no">${i+1}</span><div>${L?'Open':'빈 자리'}</div></div>`).join('')}<div class="sprev">${roomPreview(c)}</div></div>
+        :`<div class="slot empty"><span class="no">${i+1}</span><div>${L?'Open':'빈 자리'}</div></div>`).join('')}<div class="rchat"></div><div class="sprev">${roomPreview(c)}</div></div>
       <div class="rside"><div class="rform">${row(T('mode'),'mode',OPT.mode())}${row(T('map'),'map',OPT.map())}${row(c.mode==='scen'?T('allies'):T('mpBots'),'bots',c.mode==='scen'?[[0,0],[1,1],[3,3],[5,5],[7,7]]:[[0,0],[4,4],[8,8],[12,12]])}${row(T('diff'),'diff',OPT.diff())}${c.mode==='scen'?'':row(T('rounds'),'rounds',OPT.rounds())+row(T('rtime'),'time',OPT.time())+row(T('boSet'),'blackout',OPT.blackout())}</div>
         ${H?'':`<p class="hint">${T('mpOnlyHost')}</p>`}</div></div>
     <div class="wchars">${charPick('mpme')}</div>
@@ -13072,26 +13079,31 @@ SFX_ORDER.push('hsprint','hpant','hdshot','hskoff');
 'use strict';
 // ============ Chat (v6.19): in a match and in the multiplayer waiting room ============
 // Enter or Y: a line to everyone; U: to your own side only (humans or zombies). Lines show at the bottom left, above health, and fade
-// after a while; while typing, the recent ones all come back. In the waiting room the box stays open under the room.
-// In a multiplayer room the host relays every line (a client → the host → the others): at most 90 characters, at most 4 lines in 5 s
+// after a while; while typing, the recent ones all come back. In the waiting room the box is a row of the room window, under the slots.
+// In a multiplayer room the host relays every line (a client → the host → the others): at most 90 characters, at most 6 lines in 5 s
 // a player; a team line only reaches players on the sender's side. Joins and leaves show as grey lines. Alone, the lines just show.
 // Phones: the 💬 button on the top bar opens the box (and the keyboard).
 const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escAt:0,
   MAXLEN:90,KEEP:60,SHOW:8,FADE:9000,
   // where it shows: a match (and its results), or a multiplayer waiting room
   where(){if(NET.on&&NET.ui==='lobby')return 'lobby';if(G.player&&G.st!=='menu')return 'game';return null},
-  ensure(){if(this.box&&document.body.contains(this.box))return;const L=LI();
-    this.box=document.createElement('div');this.box.id='chatBox';document.body.appendChild(this.box);
-    this.bar=document.createElement('div');this.bar.id='chatBar';
-    this.bar.innerHTML=`<span class="cbk"></span><input id="chatIn" maxlength="${this.MAXLEN}" autocomplete="off" spellcheck="false"><button class="cbs" data-c="send">${L?'Send':'보내기'}</button><button class="cbt" data-c="team" title="${L?'Everyone / my side':'전체 / 우리 편'}"></button>`;
-    document.body.appendChild(this.bar);this.inp=this.bar.querySelector('#chatIn');
-    this.bar.addEventListener('mousedown',e=>e.stopPropagation());
-    this.bar.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;if(b.dataset.c==='send')this.send();else{this.team=!this.team;this.label();this.inp.focus()}});
-    this.inp.addEventListener('keydown',e=>{e.stopPropagation();
-      if(e.key==='Enter'||e.key==='NumpadEnter'){e.preventDefault();if(this.inp.value.trim())this.send();else this.closeIn();return}
-      if(e.key==='Escape'){e.preventDefault();this.escAt=performance.now();this.closeIn()}});
-    this.inp.addEventListener('keyup',e=>e.stopPropagation());
-    this.label();this.render()},
+  ensure(){if(!this.box){const L=LI();
+      this.box=document.createElement('div');this.box.id='chatBox';this.box.dataset.empty=L?'No messages yet':'아직 채팅이 없어요';
+      this.bar=document.createElement('div');this.bar.id='chatBar';
+      this.bar.innerHTML=`<span class="cbk"></span><input id="chatIn" maxlength="${this.MAXLEN}" autocomplete="off" spellcheck="false"><button class="cbs" data-c="send">${L?'Send':'보내기'}</button><button class="cbt" data-c="team" title="${L?'Everyone / my side':'전체 / 우리 편'}"></button>`;
+      this.inp=this.bar.querySelector('#chatIn');
+      this.bar.addEventListener('mousedown',e=>e.stopPropagation());
+      this.bar.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;if(b.dataset.c==='send')this.send();else{this.team=!this.team;this.label();this.inp.focus()}});
+      this.inp.addEventListener('keydown',e=>{e.stopPropagation();
+        if(e.key==='Enter'||e.key==='NumpadEnter'){e.preventDefault();if(this.inp.value.trim())this.send();else this.closeIn();return}
+        if(e.key==='Escape'){e.preventDefault();this.escAt=performance.now();this.closeIn()}});
+      this.inp.addEventListener('keyup',e=>e.stopPropagation());
+      this.label()}
+    this.place()},
+  // the waiting room keeps the box inside its own window (the .rchat row under the slots); a match shows it on the page, bottom left
+  place(){const slot=this.where()==='lobby'?document.querySelector('#lobby .rchat'):null,host=slot||document.body,f=document.activeElement===this.inp;
+    for(const e of [this.box,this.bar])if(e&&e.parentNode!==host)host.appendChild(e);
+    if(f&&document.activeElement!==this.inp)try{this.inp.focus()}catch(e){}},
   label(){if(!this.bar)return;const L=LI(),tm=this.team&&this.where()==='game';this.bar.classList.toggle('tm',tm);
     this.bar.querySelector('.cbk').textContent=tm?(L?'Team':'우리 편'):(L?'All':'전체');
     this.bar.querySelector('.cbt').textContent=tm?(L?'→ All':'→ 전체'):(L?'→ Team':'→ 우리 편');
@@ -13102,7 +13114,7 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
   closeIn(){this.on=false;if(this.bar){this.bar.classList.remove('on');if(this.inp){this.inp.value='';this.inp.blur()}}this.render()},
   // a line typed here: to the host (a client), to everyone (the host), or just here (alone)
   send(){const m=this.clean(this.inp.value);this.inp.value='';if(!m){if(this.where()==='game')this.closeIn();return}const L=LI();
-    const now=Date.now();this.mine=this.mine.filter(t=>now-t<5000);if(this.mine.length>=4){this.add({sys:1,m:L?'Slow down a little':'채팅이 너무 빨라요. 잠시 후에 보내 주세요'});return}this.mine.push(now);
+    const now=Date.now();this.mine=this.mine.filter(t=>now-t<5000);if(this.mine.length>=6){this.add({sys:1,m:L?'Slow down a little':'채팅이 너무 빨라요. 잠시 후에 보내 주세요'});return}this.mine.push(now);
     const tm=this.team&&this.where()==='game',P=G.player,tc=P&&G.st!=='menu'?P.team:null;
     if(NET.on&&NET.cli)netToHost({t:'chat',m,tm:tm?1:0});
     else if(NET.on&&NET.host)this.relay({n:this.myName(),m,tm,tc,k:NET.me||'host'});
@@ -13119,17 +13131,20 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
   add(o){this.lines.push({n:o.n||'',m:o.m||'',tm:!!o.tm,tc:o.tc==null||o.tc<0?null:o.tc,sys:!!o.sys,me:!!o.me,at:Date.now()});
     if(this.lines.length>this.KEEP)this.lines.splice(0,this.lines.length-this.KEEP);this.ensure();this.render();
     if(!o.sys&&!o.me&&this.where())AU.play('ui',{vol:.25,rate:1.6})},
-  render(){if(!this.box)return;const w=this.where(),L=LI();this.box.classList.toggle('lob',w==='lobby');this.box.classList.toggle('open',this.on||w==='lobby');
+  render(){if(!this.box)return;const w=this.where(),L=LI(),room=w==='lobby';this.place();
+    this.box.classList.toggle('inRoom',room);this.box.classList.toggle('open',this.on||room);
     if(!w&&this.on){this.on=false;if(this.inp){this.inp.value='';this.inp.blur()}}
-    if(this.bar){this.bar.classList.toggle('lob',w==='lobby');this.bar.classList.toggle('on',!!w&&(this.on||w==='lobby'))}
+    if(this.bar){this.bar.classList.toggle('inRoom',room);this.bar.classList.toggle('on',!!w&&(this.on||room))}
     if(!w){this.box.style.display='none';return}this.box.style.display='';
-    const now=Date.now(),open=this.on||w==='lobby',list=this.lines.slice(-(open?14:this.SHOW)).filter(l=>open||now-l.at<this.FADE);
-    this.box.innerHTML=list.map(l=>{const fade=open?1:Math.min(1,(this.FADE-(now-l.at))/1200);
+    const now=Date.now(),open=this.on||room,list=this.lines.slice(-(room?40:open?14:this.SHOW)).filter(l=>open||now-l.at<this.FADE);
+    const h=list.map(l=>{const fade=open?1:Math.min(1,(this.FADE-(now-l.at))/1200);
       if(l.sys)return `<div class="cl sys" style="opacity:${fade.toFixed(2)}">${esc(l.m)}</div>`;
       const side=l.tc===TH?'h':l.tc===TZ?'z':'n';
-      return `<div class="cl ${side}${l.me?' me':''}" style="opacity:${fade.toFixed(2)}">${l.tm?`<i>${L?'[Team]':'[우리 편]'}</i> `:''}<b>${esc(l.n)}</b><span>: ${esc(l.m)}</span></div>`}).join('')}};
+      return `<div class="cl ${side}${l.me?' me':''}" style="opacity:${fade.toFixed(2)}">${l.tm?`<i>${L?'[Team]':'[우리 편]'}</i> `:''}<b>${esc(l.n)}</b><span>: ${esc(l.m)}</span></div>`}).join('');
+    // rebuilt only when something changed; in the room the log scrolls and follows the newest line unless it was scrolled up
+    const B=this.box;if(h===B._h)return;const end=B.scrollHeight-B.scrollTop-B.clientHeight<24;B._h=h;B.innerHTML=h;if(room&&end)B.scrollTop=B.scrollHeight}};
 // network: a client's line comes to the host, the host's lines come to everyone
-HOSTH.chat=function(L,m){const now=Date.now();L.chatT=(L.chatT||[]).filter(t=>now-t<5000);if(L.chatT.length>=4)return;L.chatT.push(now);
+HOSTH.chat=function(L,m){const now=Date.now();L.chatT=(L.chatT||[]).filter(t=>now-t<5000);if(L.chatT.length>=6)return;L.chatT.push(now);
   const txt=CHAT.clean(m.m);if(!txt)return;const a=NET.ui==='game'?actorOfKey(L.key):null;
   CHAT.relay({n:(a&&a.name)||L.name||'?',m:txt,tm:!!m.tm&&!!a,tc:a?a.team:null,k:L.key})};
 CLIH.chat=function(L,m){if(m.s){CHAT.add({sys:1,m:CHAT.clean(m.m)});return}CHAT.add({n:String(m.n||'?').slice(0,16),m:CHAT.clean(m.m),tm:!!m.tm,tc:m.tc,me:!!m.me})};
@@ -13152,6 +13167,9 @@ CLIH.chat=function(L,m){if(m.s){CHAT.add({sys:1,m:CHAT.clean(m.m)});return}CHAT.
   // the phone's top bar: a chat button
   if(typeof TOUCH!=='undefined'){const b0=TOUCH.build.bind(TOUCH);TOUCH.build=function(){const r=b0();try{const t=this.el&&this.el.querySelector('.ttop');if(t&&!t.querySelector('.tChat'))t.insertAdjacentHTML('afterbegin',this.B('chat','💬','tChat'))}catch(e){}return r};
     const p0=TOUCH.press.bind(TOUCH);TOUCH.press=function(id,on,v){if(id==='chat'){if(on)CHAT.on?CHAT.closeIn():CHAT.openIn(false);return}return p0(id,on,v)}}
+  // the waiting room is rebuilt whenever a player or a setting changes: put the box back into the new window, keep the typing focus
+  const ml=UI.mpLobby;UI.mpLobby=function(){const had=!!CHAT.inp&&document.activeElement===CHAT.inp;const r=ml.apply(this,arguments);
+    CHAT.ensure();CHAT.render();if(had)try{CHAT.inp.focus()}catch(e){}return r};
   setInterval(()=>{try{CHAT.render()}catch(e){}},400);
   if(typeof STR.ko.prepHint==='string')STR.ko.prepHint+='  ·  Enter: 채팅';if(typeof STR.en.prepHint==='string')STR.en.prepHint+='  ·  Enter: chat'})();
 

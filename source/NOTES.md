@@ -543,3 +543,10 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   match, L.name in the lobby) → CHAT.relay: every link (a team line only to links whose actor is on the sender's side; the sender gets its
   own line back with me:1). Joins / leaves: HOSTH.hello and netDropPlayer wrappers → CHAT.sys → netAll {t:'chat', s:1}.
 - Phones: TOUCH.build adds a 💬 button to .ttop (also shown while dead); TOUCH.press('chat') toggles the box.
+
+## v6.19.1 — waiting-room chat fix
+- The chat's waiting-room class was 'lob', which is also the main menu's container class (.lob = a flex column, 12 px gaps): the bar laid out
+  top to bottom and covered the newest lines. Now 'inRoom'; #chatBar also pins flex-direction:row. Flood limit 6 lines / 5 s (client and host).
+- The waiting room now holds the chat as a row of its own window (.rchat, right under the slots: a 116 px scrolling log that follows the
+  newest line + the input), instead of floating over the room. CHAT.place() moves the box and bar between .rchat and the page; a
+  UI.mpLobby wrapper re-docks them after every rebuild and keeps the typing focus. render() only rewrites the log when it changed.

@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.19.1','2026-10-10',[
+ ['FIX','멀티 대기실 채팅을 대기실 창 안(플레이어 목록 바로 아래)으로 옮김 — 입력칸이 세로로 깨지고 최근 채팅이 가려지던 것, 채팅이 대기실 화면을 덮던 것 수정','Fixed: the waiting-room chat now sits inside the room window, right under the player list; its bar no longer stacks up, hides the newest lines or covers the room.'],
+ ['UP','채팅 도배 제한 완화 — 5초에 4줄 → 6줄','Chat flood limit eased: 6 lines in 5 seconds instead of 4.']]],
 ['v6.19','2026-10-10',[
  ['NEW','인게임 채팅 — 매치 중 Enter(또는 Y)는 전체, U는 우리 편에게. 멀티 대기실에서도 채팅. 한 줄 90자, 5초에 4줄까지. 입장 · 퇴장은 회색 줄로 표시. 치는 동안은 캐릭터가 멈추고, Esc나 빈 칸에서 Enter로 닫기. 폰은 위쪽 💬 버튼','In-game chat: Enter (or Y) talks to everyone, U to your own side, in a match and in the multiplayer waiting room. 90 characters a line, up to 4 lines in 5 seconds; joins and leaves show as grey lines. You stand still while typing; Esc or Enter on an empty line closes it. On phones, the 💬 button at the top.']]],
 ['v6.18','2026-10-10',[
@@ -231,7 +234,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.19 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.19.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -259,7 +262,7 @@ UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.
   const conn=[...NET.links.values()].find(l=>l.ok);const slots=[];for(let i=0;i<NET_MAXP;i++)slots.push(lb.pl[i]||null);
   $('lobby').innerHTML=`<div class="win room"><div class="dpHead"><b>${L?'Waiting Room':'게임 대기실'}</b><span>${L?'Room code':'방 코드'} <span class="mpcode">${esc(NET.code)}</span> <button class="mini" data-act="mpcopy">${T('mpCopy')}</button> · ${T('mpShare')}</span><button class="x" data-act="mpleave">✕</button></div>
     <div class="wbody"><div class="slots">${slots.map((p,i)=>p?`<div class="slot pl${p.k===NET.me?' me':''}"><span class="no">${i+1}</span><img src="${portrait('h_'+(HSKINS.includes(p.s)?p.s:'guard'),40)}"><div><b>${esc(p.n||'?')}</b>${p.k===NET.me?`<small>(${T('mpMe')})</small>`:''}<em>${i===0?'':(p.r?T('mpRelay')+' · ':'')+(p.p||0)+'ms'}</em></div>${i===0?`<span class="ht">${T('mpHost')}</span>`:'<span class="rd">READY</span>'}</div>`
-        :`<div class="slot empty"><span class="no">${i+1}</span><div>${L?'Open':'빈 자리'}</div></div>`).join('')}<div class="sprev">${roomPreview(c)}</div></div>
+        :`<div class="slot empty"><span class="no">${i+1}</span><div>${L?'Open':'빈 자리'}</div></div>`).join('')}<div class="rchat"></div><div class="sprev">${roomPreview(c)}</div></div>
       <div class="rside"><div class="rform">${row(T('mode'),'mode',OPT.mode())}${row(T('map'),'map',OPT.map())}${row(c.mode==='scen'?T('allies'):T('mpBots'),'bots',c.mode==='scen'?[[0,0],[1,1],[3,3],[5,5],[7,7]]:[[0,0],[4,4],[8,8],[12,12]])}${row(T('diff'),'diff',OPT.diff())}${c.mode==='scen'?'':row(T('rounds'),'rounds',OPT.rounds())+row(T('rtime'),'time',OPT.time())+row(T('boSet'),'blackout',OPT.blackout())}</div>
         ${H?'':`<p class="hint">${T('mpOnlyHost')}</p>`}</div></div>
     <div class="wchars">${charPick('mpme')}</div>
