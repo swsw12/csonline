@@ -46,8 +46,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,email:this.ses&&this.ses.user&&this.ses.user.email||''};
-    this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
+      frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],email:this.ses&&this.ses.user&&this.ses.user.email||''};
+    this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
   async importRec(){const me=this.me,uid=this.ses&&this.ses.user&&this.ses.user.id;if(!me||!me.rec||me.rec.imported||!uid||this.ls('qz_recFor'))return;
@@ -90,10 +90,15 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
   gc(){return Object.assign({},GACHA_DEF,this.gcfg||{})},
   async claim(st){const a={p_mode:st.mode,p_rounds:st.rounds|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
       p_won:!!st.won,p_mvp:!!st.mvp,p_stage:st.stage|0,p_cleared:!!st.cleared,p_score:st.score|0,p_hs:st.hs|0};let r;
-    try{r=await this.rpc('qz_claim',a)}catch(e){if(!/Could not find the function|PGRST202/i.test(e.message+' '+e.code))throw e;delete a.p_hs;r=await this.rpc('qz_claim',a)}// a database before v6.12 (no p_hs)
+    if(st.ep)Object.assign(a,{p_ep:st.ep|0,p_diff:st.diff|0,p_time:st.time|0,p_lives:st.lives|0,p_bonus:!!st.bonus});
+    const old=e=>/Could not find the function|PGRST202/i.test(e.message+' '+e.code);
+    // a database before v6.20 (no episode fields), then before v6.12 (no p_hs)
+    try{r=await this.rpc('qz_claim',a)}catch(e){if(!old(e))throw e;for(const k of ['p_ep','p_diff','p_time','p_lives','p_bonus'])delete a[k];
+      try{r=await this.rpc('qz_claim',a)}catch(e2){if(!old(e2))throw e2;delete a.p_hs;r=await this.rpc('qz_claim',a)}}
     if(r.missions){let all=!!(this.mis&&this.mis.missions);for(const x of r.missions){const m=all&&this.mis.missions.find(y=>y.slot===x.slot&&y.kind===x.kind&&y.goal===x.goal);if(m)m.progress=x.progress;else all=false}
       if(!all)this.loadMissions().catch(()=>{})}
-    if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;if(r.rec)this.me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:this.me.rec})}this.emit();return r},
+    if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;if(r.rec)this.me.rec=r.rec;if(Array.isArray(r.eps))this.me.eps=r.eps;if(r.tickets!=null)this.me.tickets=r.tickets|0;
+      this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:this.me.rec,eps:this.me.eps})}this.emit();return r},
   // a finished round (v6.17): {got,coins,raw,xp_got,day_left,rec}; null when the server has no round rewards yet (an older schema.sql)
   async roundClaim(st){const a={p_mode:st.mode,p_round:st.round|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
       p_won:!!st.won,p_survived:!!st.survived,p_mvp:!!st.mvp,p_score:st.score|0,p_hs:st.hs|0};let r;

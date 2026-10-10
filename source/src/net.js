@@ -12,7 +12,7 @@ const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-r5'}// r3: Italy rebuilt on two levels (map geometry must match between peers)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r6'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
@@ -305,7 +305,7 @@ function skillFx(a,k){const c=a.c;
   else if(k==='trap'){a.an.skill=.4;if(a.isPlayer)HUD.note(T('nyTrapSet'),1.5)}}
 
 // ---------- effects on actors this page does not own: found by diffing around the frame, sent to their owner ----------
-const EFF_T=[['frozen','fz'],['holdT','hd'],['staggerT','st'],['dizzy','dz'],['shriekT','sh'],['rootT','rt']];
+const EFF_T=[['frozen','fz'],['holdT','hd'],['staggerT','st'],['dizzy','dz'],['shriekT','sh'],['rootT','rt'],['grabT','gb']];
 function netPre(){for(const a of G.actors){if(!a.pup||!a.alive){a._ef=null;continue}a.kvx=a.kvz=0;a.c.vy=0;const e=a._ef||(a._ef={});for(const [f] of EFF_T)e[f]=a[f]||0;e.burnT=a.burnT||0}}
 function netPost(){for(const a of G.actors){const e0=a._ef;if(!e0||!a.pup||!a.alive)continue;const e={t:'eff',i:a.id};let any=false;
     if(Math.abs(a.kvx)>.01||Math.abs(a.kvz)>.01){e.kx=r2(a.kvx);e.kz=r2(a.kvz);any=true}
@@ -319,7 +319,7 @@ function netApplyEff(a,e,src){if(!a||!a.alive)return;
   if(e.rt){a.rootT=Math.max(a.rootT||0,e.rt/10);a.c.vx=a.c.vz=0;a.mvx=a.mvz=a.kvx=a.kvz=0}
   if(e.kx||e.kz){a.kvx+=(e.kx||0)/100;a.kvz+=(e.kz||0)/100}
   if(e.up){a.c.vy=Math.max(a.c.vy,e.up/100);a.c.onGround=false;a.c.jumped=true}
-  if(e.hd)a.holdT=Math.max(a.holdT||0,e.hd/10);if(e.st)a.staggerT=Math.max(a.staggerT,e.st/10);if(e.dz)a.dizzy=Math.max(a.dizzy,e.dz/10);if(e.sh)a.shriekT=Math.max(a.shriekT,e.sh/10);
+  if(e.gb)a.grabT=Math.max(a.grabT||0,e.gb/10);if(e.hd)a.holdT=Math.max(a.holdT||0,e.hd/10);if(e.st)a.staggerT=Math.max(a.staggerT,e.st/10);if(e.dz)a.dizzy=Math.max(a.dizzy,e.dz/10);if(e.sh)a.shriekT=Math.max(a.shriekT,e.sh/10);
   if(e.bt&&src&&a.team===TZ){a.burnT=Math.max(a.burnT||0,e.bt/10);a.burnSrc=src;a.burnW=WL[e.bw]||'bdc'}
   if(a.isPlayer&&e.dz)FX.shake=Math.max(FX.shake,.5)}
 // a hit this page saw on someone it does not own: shown at once, judged by the host
@@ -399,7 +399,7 @@ NET.leave=function(){ROOMS.down();if(!NET.on)return;netAll({t:'bye'});netFlushR(
   setTimeout(()=>{for(const L of links)try{L.dead=true;L.close()}catch(e){}if(kind==='room')RSIG.close();else PJ.close()},150);
   NET.on=NET.host=NET.cli=false;NET.ui='';NET.out.clear();NET.inQ=[];NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.hostKey=''};
 function netFatal(msg){console.warn('net: end',msg);const wasGame=NET.ui==='game';NET.leave();NET.msg=msg;if(wasGame||G.st!=='menu'){Main.toTitle();UI.act('mp')}else UI.act('mp');setTimeout(()=>{NET.msg=msg;UI.mpRender&&UI.mpRender()},30)}
-NET.start=function(){if(!NET.host||NET.ui!=='lobby')return;const cfg=Object.assign({},NET.lob.cfg);CFG.mpCfg=cfg;saveCfg();
+NET.start=function(){if(!NET.host||NET.ui!=='lobby')return;const cfg=Object.assign({},NET.lob.cfg);if(cfg.mode==='scen'){cfg.ep=epSel(cfg);cfg.map=epMapOf(cfg)}else cfg.ep=0;CFG.mpCfg=cfg;saveCfg();
   const ro=[];let id=0;for(const p of NET.lob.pl)ro.push([id++,p.n,p.s,p.z,p.k]);const names=shuffle(BOT_NAMES.slice());const nb=cfg.mode==='scen'?Math.max(0,Math.min(cfg.bots|0,NET_MAXP-NET.lob.pl.length)):cfg.bots;for(let i=0;i<nb;i++)ro.push([id++,names[i%names.length],rpick(HSKINS),rpick(ZLIST),'']);
   if(cfg.mode==='scen')for(let i=0;i<=SCEN.POOL;i++)ro.push([id++,'Z','guard','rager','',1]);
   for(const L of NET.links.values())L.inGame=NET.lob.pl.some(p=>p.k===L.key);
@@ -439,7 +439,7 @@ const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:fals
     if(!this.list.length)return `<p class="rempty">${L?'No public rooms right now — make one!':'지금 열린 공개 방이 없어요 — 방을 만들어 보세요'}</p>`;
     return this.list.map(r=>{const pl=r.status==='playing',n=r.players|0,mx=r.max_players|0;
       return `<div class="rrow${pl?' play':''}${n>=mx?' full':''}" data-act="mproom" data-v="${esc(String(r.code||''))}"><div class="rh"><b>${esc(r.host_name||'?')}</b><i>${esc(String(r.code||''))}</i></div>
-        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${T(r.mode==='scen'?'scen':r.mode==='orig'?'orig':'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
+        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(r.mode==='scen'?'scen':r.mode==='orig'?'orig':'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
   render(){const el=$('mpRooms');if(el)el.innerHTML=this.html();const b=document.querySelector('[data-act="mprooms"]');if(b)b.classList.toggle('busy',this.busy)}};
 setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
 

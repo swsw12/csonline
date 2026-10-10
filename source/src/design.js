@@ -357,9 +357,10 @@ function defHuman(k){
 // ── 좀비 캐릭터 ──────────────────────────────────────────────────────────────────────────────────
 //    k = 'rager' 일반 | 'runner' 라이트 | 'brute' 헤비 | 'coffin' 관짝 | 'scream' 부두
 //        | 'bomber' 자폭(시나리오) | 'spitter' 산성(시나리오) | 'boss' 거대 좀비(시나리오: 헤비 몸에 어두운 색)
+//        | 'strait' 구속복 좀비(1챕터) | 'aleph' 알레프(1챕터 보스: 거대 좀비 몸 + 구속구)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
-function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant: the heavy zombie's body in different colours (scaled up by the game)
+function defZombie(k,host){const aleph=k==='aleph',boss=k==='boss'||aleph;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
   let o={},mats,decor,extra=()=>[];const vein=host||boss?'#ff3020':null,eyeH=host?'#ff3a1a':boss?'#ff5a20':null;
   // shared gore materials: exposed bone, intestine, tumour flesh, nails
   const goreM={bone:{base:'#d4ccae',style:'plate',gloss:243},guts:{base:'#a03a34',style:'meat'},tumor:{base:'#6a3a48',style:'tumor'},nail:{base:'#cfc4a0',style:'plate',gloss:246},flesh:{base:'#8a1c14',style:'flesh'}};
@@ -476,6 +477,23 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
       handL:{all:[['soak',0,1,'#4a7a10',.85]]},handR:{all:[['soak',0,1,'#4a7a10',.85]]},thL:{all:[['tear',2,19,sk]]},thR:{all:[['grime',.6]]},
       sac:{all:[['veins',4,'#d8f070',1],['glow',.36,.3,.64,.6,'#b8f040']]}};
     extra=H=>{const o=H.o,nY=H.piv[2][1];return [{n:'sac',b:2,c:[0,nY+.03,o.headZ-.1],s:[.2,.16,.15],m:'sac'},{n:'sac',b:2,c:[.05,nY-.05,o.headZ-.07],s:[.13,.1,.1],m:'sac'},{n:'sac',b:1,c:[-.06,nY-.12,-.12],s:[.1,.09,.07],m:'sac'}]}}
+  // ▶ 구속복 좀비 (strait, 1챕터 「알레프」 전용) — Q-7 격리병동 환자
+  //    누런 구속복(가죽 띠 3줄, 등에 버클과 'Q7-W'), 가슴 앞에서 X자로 묶인 소매(움직임은 models.js poseZombie), 회청색 환자 바지, 맨발,
+  //    꿰맨 자국이 있는 민머리, 입을 막은 가죽 마스크, 희뿌연 눈.
+  else if(k==='strait'){// 구속체 — a Q-7 ward patient still in its straitjacket: sleeves strapped across the chest, a leather muzzle, shaved scalp
+    o={hipY:.93,thigh:.44,legW:.13,legD:.14,shinW:.11,torsoW:.4,torsoH:.52,torsoD:.24,shX:.23,armW:.11,upper:.3,fore:.29,hand:.1,headW:.21,headH:.25,headD:.24,headZ:-.02,neck:.07,claw:.005,fingL:.4,curl:.9,curlJ:23,ears:[1,1]};
+    const sk='#9aa08e',cv='#cfc6ac',st='#3a2c20';
+    mats=Object.assign({top:{base:cv},legs:{base:'#5a6270'},sleeve:{base:cv},fore:{base:cv},shin:{base:'#5a6270'},skin:{base:sk,style:'zskin',blot:'#5a4a5a'},hand:{base:dk(cv,.12)},boot:{base:dk(sk,.15),style:'zskin'},
+      jaw:{base:st},strap:{base:st,style:'plate',gloss:244},buckle:{base:'#a8a490',style:'plate',gloss:248}},goreM);
+    decor={torso:{front:[['band',.22,.3,st],['band',.52,.6,st],['band',.8,.86,st],['soak',.3,1,'#5a0808',.55],['tear',2,23,cv],['grime',.7]],back:[['band',.22,.3,st],['band',.52,.6,st],['text','Q7-W',.32,.72,'#3a2c20'],['soak',.5,1,'#4a0606',.4],['grime',.7]],side:[['band',.22,.3,st],['band',.52,.6,st],['grime',.6]]},
+      uaL:{all:[['band',.4,.5,st],['grime',.6]]},uaR:{all:[['band',.4,.5,st],['grime',.6]]},faL:{all:[['band',.55,.65,st],['soak',0,.5,'#4a0606',.5],['grime',.6]]},faR:{all:[['band',.55,.65,st],['grime',.6]]},
+      handL:{all:[['grime',.8]]},handR:{all:[['grime',.8],['soak',0,1,'#4a0606',.4]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#e8ecd8',tears:1}],['rect',.12,.1,.88,.36,st],['rect',.45,.16,.55,.3,'#a8a490']],top:[['rect',0,0,1,1,dk(sk,.08)],['stitch',.2,.3,.8,.7],['wounds',1,23]],side:[['rect',0,.2,1,.32,st],['blood',1,23]],back:[['rect',0,.2,1,.32,st],['rect',.4,.18,.6,.34,'#a8a490']],bottom:[['teethrow','bottom',.3]]},
+      jaw:{all:[['grime',.5]]},thL:{all:[['grime',.6],['soak',.5,1,'#4a0606',.4]]},thR:{all:[['grime',.6]]},pelvis:{fb:[['belt',.72,.92,st,'#a8a490']]},strap:{all:[['grime',.4]]}};
+    // the strap that holds the sleeves crossed in front, three buckles down the back
+    extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2;
+      const L=[{n:'strap',b:1,c:[0,sY+o.torsoH*.42,zf-.08],s:[o.torsoW*.95,.06,.035],m:'strap'}];
+      for(let i=0;i<3;i++)L.push({n:'buckle',b:1,c:[0,sY+o.torsoH*(.26+i*.29),zb+.015],s:[.07,.05,.02],m:'buckle'});return L}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),
@@ -497,6 +515,16 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
        {n:'dollB',b:0,c:[-.16,.9,-.12],s:[.06,.1,.05],m:'doll'},{n:'dollH',b:0,c:[-.16,.98,-.12],s:[.05,.05,.05],m:'doll'}
      ];
   }
+  // ▶ 알레프 (aleph, 1챕터 보스 Q7-000) — 거대 좀비 몸(위 헤비 좀비, 어두운 색) + 끊어진 구속 목줄과 늘어진 사슬 두 줄,
+  //    어깨와 가슴에 볼트로 박은 철판, 등에 탱크를 묶은 띠 두 줄. (등의 주황 혈청 탱크와 2페이즈의 격벽 방패는 게임이 따로 붙인다: aleph.js)
+  if(aleph){const ex0=extra;mats.iron={base:'#4a4e52',style:'plate',gloss:244};mats.chain={base:'#6a6e70',style:'plate',gloss:246};mats.bolt={base:'#9a9890',style:'plate',gloss:248};
+    decor.iron={all:[['grime',.5],['soak',0,.4,'#4a0606',.5]]};decor.torso.back=(decor.torso.back||[]).concat([['band',.42,.5,'#1a1814'],['band',.7,.78,'#1a1814']]);
+    extra=H=>{const L=ex0(H),o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],zf=o.belly*.25-(o.torsoD+o.belly)/2;
+      L.push({n:'collar',b:1,c:[0,nY+.01,o.headZ+.01],s:[.36,.075,.34],m:'iron'});
+      for(const s of [-1,1])for(let i=0;i<5;i++)L.push({n:'chain',b:1,c:[s*(.09+i*.012),nY-.08-i*.11,zf-.05+i*.004],s:[.035,.1,.035],m:'chain'});
+      L.push({n:'plate',b:3,c:[-.44,1.76,0],s:[.32,.06,.32],m:'iron'},{n:'plate',b:5,c:[.46,1.78,0],s:[.34,.06,.34],m:'iron'},{n:'plate',b:1,c:[-.17,sY+o.torsoH*.72,zf-.02],s:[.22,.17,.03],m:'iron'},{n:'plate',b:1,c:[.19,sY+o.torsoH*.66,zf-.02],s:[.18,.14,.03],m:'iron'});
+      for(const [x,y] of [[-.25,.8],[-.09,.8],[-.25,.64],[-.09,.64],[.12,.72],[.26,.72],[.12,.6],[.26,.6]])L.push({n:'bolt',b:1,c:[x,sY+o.torsoH*y,zf-.04],s:[.025,.025,.02],m:'bolt'});
+      return L}}
   // ── 여기부터 모든 좀비 공통 처리 ──
   //    숙주·보스 혈관 추가 → 아래턱 → 팔다리가 잘렸을 때 보이는 단면(stump) → 부두 좀비 인형
   if(host||boss){for(const p of Object.keys(decor))for(const fk of ['front','back','all'])if(decor[p][fk])decor[p][fk]=decor[p][fk].concat([['veins',2,vein,1]]);
@@ -525,7 +553,7 @@ function defZombie(k,host){const boss=k==='boss';if(boss)k='brute';// the giant:
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
       stumpLL:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]},stumpLR:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]}})}
   H.parts.push(...ex.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
-  return Object.assign(H,{key:'z_'+(boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
+  return Object.assign(H,{key:'z_'+(aleph?'aleph':boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
 
 // ================================================================================================
 //  4부  총기 아이덴티티 — 실제 총 · 탄창 수 · 약실 · 처음 꺼낼 때의 장전 모션

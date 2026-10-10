@@ -10,6 +10,10 @@
 --     25초 안에 두 번은 안 됨) + 경험치. 판 보상: 판당 최대 1,200, 지난 판 보상 뒤 1분당 100까지, 그날 첫 판 +250.
 --     라운드 + 판 보상을 합쳐 하루(한국 시간) 20,000까지. 가입하면 3,000 코인.
 --   * 친구 · 선물(v6.18): 친구 코드(또는 한 명만 쓰는 닉네임)로 친구를 맺고, 상점에서 파는 총을 친구에게 선물합니다(보낸 사람 코인).
+--   * 좀비 시나리오 챕터(v6.20): 클리어 기록은 ep_records(챕터 × 난이도)에. 판 보상은 (100 + 구역 150 + 클리어 400 + 탈출 300
+--     + 킬 5) × 난이도(쉬움 .7 · 보통 1 · 어려움 1.4 · 전문가 2), 판당 3,000 · 1분당 150까지. 난이도마다 첫 클리어 1번:
+--     1,000 / 3,000 / 5,000 / 8,000 코인(하루 상한과 별개) + 보통 이상은 근하신년 해독기 1개. 클리어는 5분 이상 걸린 판이어야 하고,
+--     n챕터는 n-1챕터를 깬 계정만 기록됩니다.
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
 --     시즌 해독기 숫자는 같은 줄의 season_* 칸에 있습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
@@ -175,6 +179,21 @@ create table if not exists public.gacha_log (
   pity_hit boolean not null default false
 );
 create index if not exists gacha_log_user on public.gacha_log(user_id, id desc);
+-- v6.20: the zombie-scenario episodes, one row per player × episode × difficulty (0 easy .. 3 expert): plays, clears, the best clear
+-- (time in seconds, medal S / A / B, lives lost) and when it was first cleared (the first-clear reward is paid once per row)
+create table if not exists public.ep_records (
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  ep         integer not null check (ep between 1 and 5),
+  diff       integer not null check (diff between 0 and 3),
+  plays      integer not null default 0,
+  clears     integer not null default 0,
+  best_time  integer,
+  best_medal text check (best_medal in ('S', 'A', 'B')),
+  best_lives integer,
+  first_at   timestamptz,
+  last_at    timestamptz not null default now(),
+  primary key (user_id, ep, diff)
+);
 
 -- ---------- row level security: read your own rows (prices and pouch numbers are public); no direct writes ----------
 alter table public.profiles     enable row level security;
@@ -185,6 +204,7 @@ alter table public.gacha_config enable row level security;
 alter table public.gacha_log    enable row level security;
 alter table public.bingo_boards enable row level security;
 alter table public.season_boards enable row level security;
+alter table public.ep_records   enable row level security;
 drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile" on public.profiles for select to authenticated using ((select auth.uid()) = id);
 drop policy if exists "read prices" on public.gun_prices;
@@ -201,6 +221,8 @@ drop policy if exists "read own card" on public.bingo_boards;
 create policy "read own card" on public.bingo_boards for select to authenticated using ((select auth.uid()) = user_id);
 drop policy if exists "read own season card" on public.season_boards;
 create policy "read own season card" on public.season_boards for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists "read own episodes" on public.ep_records;
+create policy "read own episodes" on public.ep_records for select to authenticated using ((select auth.uid()) = user_id);
 
 -- ---------- price list (re-running updates it; tier S / A = pouch only) ----------
 insert into public.gun_prices (gun_id, price, free, sold, tier) values
@@ -289,9 +311,17 @@ language sql stable set search_path = '' as $$
   select jsonb_build_object('g', p.rec_games, 'k', p.rec_kills, 'inf', p.rec_infects, 'best', p.rec_best, 'xp', p.xp, 'imported', p.rec_imported)
 $$;
 
+-- the episode records as the game reads them (v6.20)
+create or replace function public.qz_eps(uid uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('ep', r.ep, 'diff', r.diff, 'plays', r.plays, 'clears', r.clears, 'best_time', r.best_time,
+    'best_medal', r.best_medal, 'best_lives', r.best_lives, 'first_at', r.first_at) order by r.ep, r.diff), '[]'::jsonb)
+  from public.ep_records r where r.user_id = uid
+$$;
+
 -- ---------- what the game calls (POST /rest/v1/rpc/<name>) ----------
 -- me: nickname, coins, fragments, pouch pity, the free decoder, 근하신년 decoders kept (tickets), owned guns,
--- the friend code, gifts not shown yet and friend requests waiting (v6.18)
+-- the friend code, gifts not shown yet and friend requests waiting (v6.18), the episode records (v6.20)
 -- (creates the profile if the account is older than this file)
 create or replace function public.qz_me() returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -318,7 +348,7 @@ begin
     'fragments', p.fragments, 'pity', p.pity, 'tickets', p.dec_tickets,
     'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'season_tickets', p.season_tickets,
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
-    'rec', public.qz_rec(p),
+    'rec', public.qz_rec(p), 'eps', public.qz_eps(uid),
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
 
@@ -360,11 +390,16 @@ end $$;
 
 -- the coins for a finished match: worked out here from the match's numbers, every one of them capped. The same numbers
 -- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills).
--- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them
+-- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them.
+-- v6.20: an episode of the zombie scenario (p_ep 1..5) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
+-- and goes on ep_records (p_time = the clear time in seconds, p_lives = lives lost, p_bonus = escaped in time); the first clear of
+-- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean);
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer);   -- v6.11, before p_hs
+drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer);   -- v6.12, before the episodes
 create or replace function public.qz_claim(p_mode text, p_rounds integer, p_kills integer, p_infects integer, p_damage integer,
-  p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0, p_hs integer default 0) returns jsonb
+  p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0, p_hs integer default 0,
+  p_ep integer default 0, p_diff integer default 1, p_time integer default 0, p_lives integer default 0, p_bonus boolean default false) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
@@ -381,6 +416,16 @@ declare
   gx integer;
   v_gain jsonb;
   v_mis jsonb;
+  v_ep integer := case when p_mode = 'scen' then least(greatest(coalesce(p_ep, 0), 0), 5) else 0 end;
+  v_diff integer := least(greatest(coalesce(p_diff, 1), 0), 3);
+  v_time integer := least(greatest(coalesce(p_time, 0), 0), 36000);
+  v_lives integer := least(greatest(coalesce(p_lives, 0), 0), 3);
+  v_clear boolean := false;
+  v_had boolean := false;
+  v_medal text;
+  v_first integer := 0;
+  v_tix integer := 0;
+  v_secs numeric;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform 1 from public.profiles where id = uid for update;
@@ -388,15 +433,25 @@ begin
   p := (select t from public.profiles t where t.id = uid);
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
-  if p_mode = 'scen' then
+  v_secs := extract(epoch from (now() - coalesce(p.last_claim, p.created_at, now() - interval '1 day')));   -- (an episode's clear time fits in it)
+  -- an episode's clear counts when it took 5 minutes at least and no longer than the time since the last paid match, and (from
+  -- episode 2 on) the episode before it was cleared; only such a clear pays the clear and the escape
+  if v_ep > 0 then
+    v_clear := coalesce(p_cleared, false) and v_time >= 300 and v_secs >= v_time * 0.9
+      and (v_ep = 1 or exists (select 1 from public.ep_records r where r.user_id = uid and r.ep = v_ep - 1 and r.clears > 0));
+    raw := round((100 + 150 * least(greatest(coalesce(p_stage, 0), 0), 4) + case when v_clear then 400 else 0 end
+         + case when v_clear and p_bonus then 300 else 0 end + 5 * k) * (array[0.7, 1.0, 1.4, 2.0])[v_diff + 1])::integer;
+    raw := least(raw, 3000, floor(mins * 150)::integer);
+  elsif p_mode = 'scen' then
     raw := 100 + 50 * least(greatest(coalesce(p_stage, 0), 0), 5) + case when p_cleared then 200 else 0 end + 5 * k;
+    raw := least(raw, 1200, floor(mins * 100)::integer);
   else
     raw := 100 + 15 * least(greatest(coalesce(p_rounds, 0), 0), 10) + 7 * least(k, 60)
          + 12 * least(greatest(coalesce(p_infects, 0), 0), 30)
          + 5 * (least(greatest(coalesce(p_damage, 0), 0), 60000) / 1000)
          + case when p_won then 130 else 0 end + case when p_mvp then 80 else 0 end;
+    raw := least(raw, 1200, floor(mins * 100)::integer);
   end if;
-  raw := least(raw, 1200, floor(mins * 100)::integer);
   day0 := case when p.day = today then p.day_earned else 0 end;
   if p.bonus_day is distinct from today then bonus := 250; end if;
   got := greatest(0, least(raw + bonus, 20000 - day0));
@@ -409,7 +464,33 @@ begin
   p := (select t from public.profiles t where t.id = uid);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', p_mode,
     'rounds', p_rounds, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'mvp', p_mvp,
-    'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'hs', p_hs, 'raw', raw, 'bonus', bonus, 'xp', gx));
+    'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'hs', p_hs, 'raw', raw, 'bonus', bonus, 'xp', gx,
+    'ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'escaped', p_bonus));
+  -- an episode (v6.20): the play and the clear (v_clear, above) go on the record; medal S = no life lost within 16 minutes,
+  -- A = at most one within 22, B = the rest (and every clear without the escape)
+  if v_ep > 0 then
+    v_medal := case when not v_clear then null when not coalesce(p_bonus, false) then 'B' when v_lives = 0 and v_time <= 960 then 'S'
+      when v_lives <= 1 and v_time <= 1320 then 'A' else 'B' end;
+    v_had := exists (select 1 from public.ep_records r where r.user_id = uid and r.ep = v_ep and r.diff = v_diff and r.clears > 0);
+    insert into public.ep_records as r (user_id, ep, diff, plays, clears, best_time, best_medal, best_lives, first_at, last_at)
+    values (uid, v_ep, v_diff, 1, case when v_clear then 1 else 0 end, case when v_clear then v_time end, v_medal,
+      case when v_clear then v_lives end, case when v_clear then now() end, now())
+    on conflict (user_id, ep, diff) do update set plays = r.plays + 1, last_at = now(),
+      clears = r.clears + case when v_clear then 1 else 0 end,
+      best_time = case when v_clear and (r.best_time is null or v_time < r.best_time) then v_time else r.best_time end,
+      best_lives = case when v_clear and (r.best_lives is null or v_lives < r.best_lives) then v_lives else r.best_lives end,
+      best_medal = case when v_clear and (case v_medal when 'S' then 3 when 'A' then 2 else 1 end)
+        > (case r.best_medal when 'S' then 3 when 'A' then 2 when 'B' then 1 else 0 end) then v_medal else r.best_medal end,
+      first_at = coalesce(r.first_at, case when v_clear then now() end);
+    if v_clear and not v_had then
+      v_first := (array[1000, 3000, 5000, 8000])[v_diff + 1];
+      v_tix := case when v_diff >= 1 then 1 else 0 end;
+      update public.profiles set coins = coins + v_first, earned_total = earned_total + v_first, dec_tickets = dec_tickets + v_tix where id = uid;
+      insert into public.coin_log (user_id, delta, reason, detail) values (uid, v_first, 'ep_first',
+        jsonb_build_object('ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'tickets', v_tix));
+      p := (select t from public.profiles t where t.id = uid);
+    end if;
+  end if;
   -- daily missions (v6.12): what this match adds to each kind, clamped like the coins above
   perform public.qz_missions_make(uid, today);
   v_gain := jsonb_build_object('play', 1,
@@ -424,7 +505,8 @@ begin
   update public.daily_missions m set progress = least(m.goal, m.progress + coalesce((v_gain ->> m.kind)::integer, 0))
   where m.user_id = uid and m.day = today and m.progress < m.goal;
   return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 20000 - p.day_earned,
-    'xp_got', gx, 'rec', public.qz_rec(p), 'missions', v_mis);
+    'xp_got', gx, 'rec', public.qz_rec(p), 'missions', v_mis, 'tickets', p.dec_tickets,
+    'ep_first', v_first, 'ep_tickets', v_tix, 'ep_clear', v_clear, 'ep_medal', v_medal, 'eps', case when v_ep > 0 then public.qz_eps(uid) end);
 end $$;
 
 -- the coins and xp for one finished round (v6.17): a round of the infection modes pays about what a whole match paid before.
@@ -1137,7 +1219,7 @@ revoke all on function public.qz_on_signup() from public, anon, authenticated;
 revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
-revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer) from public, anon;
+revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean) from public, anon;
 revoke all on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) from public, anon;
 revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo_json(uuid) from public, anon, authenticated;
@@ -1156,10 +1238,11 @@ revoke all on function public.qz_season_shuffle() from public, anon;
 revoke all on function public.qz_exchange(text) from public, anon;
 revoke all on function public.qz_import_rec(integer, integer, integer, integer, integer) from public, anon;
 revoke all on function public.qz_rec(public.profiles) from public, anon, authenticated;
+revoke all on function public.qz_eps(uuid) from public, anon, authenticated;
 grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
-grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer) to authenticated;
+grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean) to authenticated;
 grant execute on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) to authenticated;
 grant execute on function public.qz_bingo() to authenticated;
 grant execute on function public.qz_decode(integer, boolean, boolean) to authenticated;

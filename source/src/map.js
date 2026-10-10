@@ -227,11 +227,13 @@ function buildQ7(){
   MAP.cam=(t,cam)=>{const a=t*.05;cam.position.set(Math.sin(a)*15,4.5+Math.sin(a*1.7),Math.cos(a)*15+4);cam.lookAt(0,1.5,2)};
 }
 // ---------- geometry: faces split into ~0.5 m cells (vertex-lit, so finer cells = sharper light pools and shadows); hidden cells are dropped ----------
-function insideSolid(x,y,z,self){_bq.length=0;boxesIn(x,z,x,z,_bq);for(const b of _bq){if(b===self||b.nosolid)continue;if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1&&z>b.z0&&z<b.z1)return true}return false}
-function buildMapGeometry(){
+// (gates do not count: they open later, so nothing behind one is hidden)
+function insideSolid(x,y,z,self){_bq.length=0;boxesIn(x,z,x,z,_bq);for(const b of _bq){if(b===self||b.nosolid||b.o.gate)continue;if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1&&z>b.z0&&z<b.z1)return true}return false}
+// pick: only the boxes it accepts (a gate's own mesh); by default every box except gates
+function buildMapGeometry(pick){
   const groups={};const g=m=>groups[m]||(groups[m]={pos:[],nrm:[],uv:[],col:[],tn:[]});
   const FACES=[['px',[1,0,0]],['nx',[-1,0,0]],['py',[0,1,0]],['ny',[0,-1,0]],['pz',[0,0,1]],['nz',[0,0,-1]]];
-  for(const b of MAP.boxes){
+  for(const b of MAP.boxes){if(pick?!pick(b):b.o.gate)continue;
     for(const [fk,n] of FACES){
       if(fk==='ny'&&b.y0<=-.99)continue;if(b.o.ground&&fk!=='py')continue;
       const mat=(b.o.f&&b.o.f[fk])||b.mat;const M=MATS[mat];if(!M)continue;
@@ -316,8 +318,21 @@ function buildMapMeshes(scene){
     for(const g of parts){const P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv;for(let i=0;i<P.count;i++){const x=P.getX(i),y=P.getY(i),z=P.getZ(i),nx=N.getX(i),ny=N.getY(i),nz=N.getZ(i);
         pos.set([x,y,z],(o+i)*3);nrm.set([nx,ny,nz],(o+i)*3);uv.set([U.getX(i)*2,U.getY(i)],(o+i)*2);const c=lightAt(x+nx*.02,y+ny*.02,z+nz*.02,nx,ny,nz);col.set(c,(o+i)*3)}o+=P.count;g.dispose()}
     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nrm,3));geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
-    const mesh=new THREE.Mesh(geo,matWorld(TEX[k]));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh)}
-  return nb}
+    const mesh=new THREE.Mesh(geo,matWorld(TEX[k],{emis:(MATS[k]&&MATS[k].emis)||0}));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh)}
+  gateMeshes(scene);return nb}
+// ---------- gates: boxes that open (doors, a wall that is burst through) — their own meshes, solid until opened ----------
+// o.gate = the gate's key, o.gs = how far that box slides as it opens [dx,dy,dz] (boxes sliding the same way share a mesh)
+function gateMeshes(scene){MAP.gates={};for(const b of MAP.boxes){const k=b.o.gate;if(!k)continue;const G0=MAP.gates[k]||(MAP.gates[k]={k,boxes:[],parts:[],open:false,anim:1});G0.boxes.push(b)}
+  for(const k in MAP.gates){const G0=MAP.gates[k],by={};for(const b of G0.boxes){const s=String(b.o.gs||[0,0,0]);(by[s]=by[s]||[]).push(b)}
+    for(const s in by){const set=new Set(by[s]),groups=buildMapGeometry(b=>set.has(b));bakeGroups(groups);const part={gs:by[s][0].o.gs||[0,0,0],meshes:[]};
+      for(const m in groups){const G=groups[m];if(!G.pos.length)continue;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3));
+        geo.setAttribute('uv',new THREE.Float32BufferAttribute(G.uv,2));geo.setAttribute('color',new THREE.Float32BufferAttribute(G.col,3));geo.computeBoundingSphere();
+        const M=MATS[m];const mesh=new THREE.Mesh(geo,matWorld(TEX[M.t],{emis:M.emis||0}));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh);part.meshes.push(mesh)}
+      G0.parts.push(part)}}}
+function gateFrame(G0){const e=G0.open?smooth(G0.anim):1-smooth(G0.anim);for(const p of G0.parts)for(const m of p.meshes){m.position.set(p.gs[0]*e,p.gs[1]*e,p.gs[2]*e);m.updateMatrix();m.visible=!(G0.open&&G0.anim>=1)}}
+// open (or shut) a gate: it stops blocking at once and slides away over dur seconds (instant: no slide)
+function gateSet(k,open,instant,dur){const G0=MAP.gates&&MAP.gates[k];if(!G0)return false;if(G0.open===!!open&&(instant||G0.anim<1))return false;G0.open=!!open;for(const b of G0.boxes)b.nosolid=G0.open;G0.dur=dur||1;G0.anim=instant?1:0;gateFrame(G0);return true}
+function gatesUpdate(dt){const GS=MAP.gates;if(!GS)return;for(const k in GS){const G0=GS[k];if(G0.anim>=1)continue;G0.anim=Math.min(1,G0.anim+dt/(G0.dur||1));gateFrame(G0)}}
 // sky: dome + star field + moon, kept centred on the camera (built once; maps without a sky hide it)
 function buildSky(scene){
   const SG=new THREE.Group();
@@ -343,14 +358,14 @@ const MAPDEFS={
   q7:{n:['격리구역 Q-7','Quarantine Zone Q-7'],d:['비 내리는 밤의 격리시설. 창고 중2층·사무동 2층·펌프장 옥상·감시탑과 넓은 마당.','A rainy night at the quarantine facility: warehouse mezzanine, two-storey office, pump-house roof, a watchtower and a wide yard.'],
     env:{sky:1,rain:1,storm:1,fog:'#0a0c12',fogD:.045,boAmb:.5},build:buildQ7},
 };
-const MAPLIST=()=>Object.keys(MAPDEFS).filter(k=>!MAPDEFS[k].practice);// (the shooting range is not a match map)
+const MAPLIST=()=>Object.keys(MAPDEFS).filter(k=>!MAPDEFS[k].practice&&!MAPDEFS[k].ep);// (the shooting range and the episode maps are not match maps)
 function buildMapData(id){const D=MAPDEFS[id];
-  Object.assign(MAP,{id,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fires:[],smoke:[],spray:[],dyn:[],moon:null,probe:null,probeY:D.probeY||null,env:D.env,cam:null,spawnYaw:null,
+  Object.assign(MAP,{id,gates:{},ez:null,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fires:[],smoke:[],spray:[],dyn:[],moon:null,probe:null,probeY:D.probeY||null,env:D.env,cam:null,spawnYaw:null,
     ambIn:D.env.ambIn?new THREE.Color(D.env.ambIn):null,ambOut:D.env.ambOut?new THREE.Color(D.env.ambOut):null,bounds:D.bounds||[-30,-30,30,30],miniCut:D.mini||null});
   D.build()}
 // ---------- loading and switching: a built map is kept (GPU meshes, collision grid, nav graph, probes) so switching back is instant ----------
 const MAPCACHE={};
-const MAPKEYS=['mini','miniCut','id','boxes','lights','spawns','camps','zspawns','deco','fires','smoke','spray','dyn','moon','meshes','probe','probeY','env','cam','spawnYaw','ambIn','ambOut','bounds'];
+const MAPKEYS=['gates','ez','mini','miniCut','id','boxes','lights','spawns','camps','zspawns','deco','fires','smoke','spray','dyn','moon','meshes','probe','probeY','env','cam','spawnYaw','ambIn','ambOut','bounds'];
 function* mapLoader(id){
   if(MAP.id){const C=MAPCACHE[MAP.id]={};for(const k of MAPKEYS)C[k]=MAP[k];C.cells=WORLD.cells;C.grid=[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh];
     C.nav={nodes:NAV.nodes,col:NAV.col,g:NAV.g,f:NAV.f,came:NAV.came,mark:NAV.mark,heap:NAV.heap,hf:NAV.hf,X0:NAV.X0,Z0:NAV.Z0,NX:NAV.NX,NZ:NAV.NZ};C.rainHM=FX.rain?FX.rain.hm:null;
@@ -359,7 +374,11 @@ function* mapLoader(id){
   if(C){for(const k of MAPKEYS)MAP[k]=C[k];WORLD.boxes=MAP.boxes;WORLD.cells=C.cells;if(C.grid)[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh]=C.grid;Object.assign(NAV,C.nav);if(FX.rain&&C.rainHM)FX.rain.hm=C.rainHM;for(const m of MAP.meshes)R.scene.add(m)}
   else{yield 'lMap';const D=MAPDEFS[id];if(D.tex)D.tex();buildMapData(id);WORLD.boxes=MAP.boxes;worldIndex();
     yield 'lLight';MAP.meshes=[];buildMapMeshes(R.scene);if(D.mesh)D.mesh(R.scene);bakeProbes();
-    yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow))FX.buildRainHM()}
+    yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}
+    // the graph is built with every gate open (they open as the map is played; a shut one simply blocks the way for now)
+    const GT=Object.values(MAP.gates||{});for(const G0 of GT)for(const b of G0.boxes)b.nosolid=true;
+    buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));
+    for(const G0 of GT)for(const b of G0.boxes)b.nosolid=G0.open;MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow))FX.buildRainHM()}
   // bots holding paths through the old graph start over
   for(const a of G.actors)if(a.bot){a.bot.path=null;a.bot.goal=null;a.bot.wander=null;a.bot.spot=null}
   mapEnv()}

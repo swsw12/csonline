@@ -550,3 +550,32 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - The waiting room now holds the chat as a row of its own window (.rchat, right under the slots: a 116 px scrolling log that follows the
   newest line + the input), instead of floating over the room. CHAT.place() moves the box and bar between .rchat and the page; a
   UI.mpLobby wrapper re-docks them after every rebuild and keeps the typing focus. render() only rewrites the log when it changed.
+
+## v6.20 — zombie scenario episode 1 「알레프」 (episode.js, aleph.js, mapep1.js; multiplayer not tested here: the owner tests it)
+- Players see an episode as a chapter: 「1챕터」 / "Chapter 1", "CH.1" (the owner's wording); the code and the database say episode / ep.
+- An episode = the scenario mode (G.mode 'scen') with G.cfg.ep > 0, always on the episode's own map (EPS[ep].map; epMapOf / epSel in
+  main.js, net.js and the lobby). EP.on is set in a SCEN.initPool wrapper when MAP.ez exists and MAP.id is that map; every SCEN hook
+  (begin, update, hud, hpFor, onRevive, pickTick, encState / decState, spotNear) hands over to EP while it is on. ep 0 = the free scenario.
+- EPS: 1 = ALEPH (Q7-000, map ep1), 2–5 'soon' (ARGUS RT1-07, KHEPRI Q7-303, LYREBIRD RT1-05, TIAMAT Q7-Ω, LEGATUS RT1-01 in the plan).
+  Unlocks: EP.unlocked(n) = episode n−1 cleared (ACC.me.eps from qz_me, or LS 'eprec' for guests); CLIH.lobby turns a joiner away
+  (netFatal) from a room set to an episode they have not opened.
+- Flow (host / solo, EP.host): stage 1 zone A waves (3, makeWave), 2 zone B terminals (25 s each in a 2.6 m ring, zombies near it stop it;
+  a retry keeps the done ones), 3 zone C hold 60 s (ALEPH bursts through gate gW at 12 s, retreats at 35 s or at −10 % health), board
+  the lift (gC, 40 s), ride 15 s (rideEnd moves everyone from car C to car D: x_D = −z_C, z_D = 74 + (x_C − 62), yaw − π/2), 4 the boss
+  (prep 12 s with the supply pick, then bossGo: gD shuts, ALEPH breaks its chains), 5 escape 60 s (all living humans in car D =
+  finish(true,true); time out = a clear without the bonus). 'move' 40 s between zones (all in the next zone's box ends it early).
+  Three shared lives: a wipe = fail → the zone again (the boss: its phase, kind 'phase', starts shifted 8.4 m out of the car).
+- Events (host → clients): eps (stage start: s, k, l, P = placements, g = gates, z = despawned, bp = boss phase), epw / epwc / epm / epo /
+  epb / epr / epgo / epk / epf / epend / eprh / epdz / epg / epn, epx (aleph.js FX), ept (floor warnings). Client → host: eprv (revive),
+  eppn / epvl (a panel / valve shot). Snapshot: SCEN.encState index 7 = EP.pack().
+- aleph.js: ALEPH (hp 27,000 × (0.6 + 0.4 × humans) × SC_DIFF.hp; the header comment has every rule), STRAIT (the straitjacket zombie's
+  pounce / grab), TELE (red floor warnings, also dodged by bots), ROCK (thrown slabs: 20 s cover), STEAM (valves: no far picks inside),
+  CHAIN (the four restraint chains during the prep: sync from ALEPH.attach, tick from EP.update). Atlas slots epTank / epConc (GA 88).
+- Records: shopMatchStats adds ep / diff / time / lives / bonus; ACC.claim sends p_ep … p_bonus (falls back without them on an older
+  database). Server (schema.sql): ep_records (user × ep × diff: plays, clears, best time / medal / lives, first_at), qz_eps, qz_claim
+  (16 arguments: the 11-argument one is dropped) pays an episode (100 + 150/zone + 400 clear + 300 escape + 5/kill) × [.7, 1, 1.4, 2],
+  ≤ 3,000 and 150/min; a clear needs ≥ 300 s and the time since the last paid match ≥ 90 % of it (and episode n−1 cleared); the first clear
+  per difficulty: 1,000 / 3,000 / 5,000 / 8,000 coins outside the daily limit + 1 decoder from normal up. Medal S (no life lost, ≤ 16 min) /
+  A (≤ 1, ≤ 22 min) / B, and B for any clear without the escape (EP.medal is the same rule).
+- Test harness note: a headless run that steps gameUpdate itself must also call DL.update(dt, cam), or the dynamic light list never
+  expires and the page eventually crashes.

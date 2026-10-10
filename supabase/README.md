@@ -5,7 +5,7 @@
 ## 1. 프로젝트 만들기
 1. https://supabase.com 에서 새 프로젝트 생성 (무료 플랜으로 충분)
 2. 왼쪽 **SQL Editor → New query** → `supabase/schema.sql` 내용 전체 붙여넣기 → **Run**
-   - 테이블(`profiles`, `owned_guns`, `gun_prices`, `coin_log`, `gacha_config`, `gacha_log`, `bingo_boards`, `season_boards`), 보안 규칙, 함수, 가입 트리거, 가격표가 한 번에 만들어집니다.
+   - 테이블(`profiles`, `owned_guns`, `gun_prices`, `coin_log`, `gacha_config`, `gacha_log`, `bingo_boards`, `season_boards`, `ep_records` …), 보안 규칙, 함수, 가입 트리거, 가격표가 한 번에 만들어집니다.
    - 여러 번 실행해도 안전합니다(가격표는 파일 값으로 다시 맞춰짐, 이미 산 총 · 코인 · 조각 · 빙고판은 그대로).
    - **v6.7에서 이미 실행했다면 v6.8 `schema.sql`을 한 번 더 실행**하세요. 복주머니 테이블과 함수가 추가되고, 근하신년 무기가 판매 목록에서 빠집니다(이미 산 사람은 계속 보유).
    - **v6.11(시즌 해독기)도 `schema.sql`을 한 번 더 실행해야 합니다.** `season_boards` 테이블, `gacha_config`의 `season_*` 칸, `profiles`의 `dec_tickets`(보유 근하신년 해독기) · `season_shuffle_day` · `season_shuffles`,
@@ -193,3 +193,28 @@ v6.11 목록(`gun:skull9` 없이 `coins:1000`이 3개)을 그대로 쓰던 DB는
     and user_id = (select id from public.profiles where nickname = '닉네임');
   ```
 - v6.12부터 `qz_claim`에 `p_hs`(헤드샷 킬)가 붙어서 예전 10개 인자 함수는 지워집니다(같은 이름 함수가 두 개면 PostgREST가 헷갈림). 게임은 새 함수가 없는 DB면 `p_hs` 없이 다시 보내요.
+
+## 11. 좀비 시나리오 챕터 기록 (v6.20)
+좀비 시나리오의 **챕터**(1챕터 「알레프」부터)를 끝내면 `qz_claim`이 기록과 보상을 같이 처리해요. **v6.20 `schema.sql`을 한 번 더 실행**해야 켜집니다
+(실행 전에는 코인이 예전 시나리오 식으로 나오고, 기록은 그 브라우저에만 남아요).
+
+- 테이블 `ep_records` — 계정 × 챕터(`ep` 1~5) × 난이도(`diff` 0 쉬움 · 1 보통 · 2 어려움 · 3 전문가) 한 줄: `plays`(끝낸 판), `clears`, `best_time`(초),
+  `best_medal`(S / A / B), `best_lives`(잃은 목숨), `first_at`(첫 클리어). 자기 것만 읽기, 쓰기는 `qz_claim`만.
+- `qz_claim`에 인자 5개가 붙어요: `p_ep`, `p_diff`, `p_time`(클리어 시간, 초), `p_lives`(잃은 목숨), `p_bonus`(60초 안에 탈출). 예전 11개 인자 함수는 지워지고,
+  게임은 새 함수가 없는 DB면 이 5개 없이 다시 보내요. `qz_me`는 `eps`(기록 목록)를 같이 돌려줘요.
+
+| 항목 | 값 |
+|---|---|
+| 판 보상 | (100 + 도달 구역당 150 + 클리어 400 + 탈출 300 + 킬당 5) × 난이도 (쉬움 0.7 · 보통 1 · 어려움 1.4 · 전문가 2) |
+| 상한 | 판당 3,000 · 지난 판 보상 뒤 1분당 150 · 하루 20,000(다른 매치와 같이) |
+| 첫 클리어 (난이도마다 1번) | 쉬움 1,000 · 보통 3,000 · 어려움 5,000 · 전문가 8,000 코인 (**하루 한도와 별개**) + 보통 이상 근하신년 해독기 1개 |
+| 메달 | S: 목숨 0개 잃고 16분 안 · A: 1개 이하, 22분 안 · B: 나머지 (탈출 못 하고 클리어해도 B) |
+
+- 클리어로 인정되는 조건: 5분 이상 걸린 판, 지난 매치 보상 뒤 지난 시간(처음이면 가입 뒤)이 클리어 시간의 90% 이상, 2챕터부터는 앞 챕터를 한 번이라도 깬 계정.
+  아니면 그 판은 `plays`만 오르고 클리어 · 탈출 보너스 · 첫 클리어 보상이 없어요.
+- 챕터는 앞 챕터를 깨야 열려요(게임이 이 기록 + 브라우저 기록으로 확인). 방장이 고른 챕터가 안 열린 사람은 그 방에 못 들어가요.
+- `coin_log`: 판 보상은 `reason = match`(detail에 `ep` · `diff` · `time` · `lives` · `escaped`), 첫 클리어는 `reason = ep_first`.
+- 특정 유저의 기록 지우기 (SQL Editor):
+  ```sql
+  delete from public.ep_records where user_id = (select id from public.profiles where nickname = '닉네임');
+  ```

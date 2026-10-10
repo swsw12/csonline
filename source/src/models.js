@@ -503,11 +503,11 @@ const ZGAIT={coffin:{stride:.92,knee:.8,runK:.65,bob:1.35,twist:1.3,roll:1.15},r
 // doll bash (third person): [shoulders forward, elbows, spine pitch, jaw, twist]
 KF.vdA=[[0,[0,0,0,0,0]],[.25,[2.1,.9,.18,.25,.1]],[.34,[2.2,.95,.2,.3,.1]],[.45,[-.5,-.3,-.38,.65,-.05]],[.62,[-.55,-.25,-.3,.5,-.05]],[1,[0,0,0,0,0]]];
 KF.vdH=[[0,[0,0,0,0,0]],[.32,[2.5,1,.25,.35,0]],[.44,[2.6,1.05,.28,.4,0]],[.55,[-.65,-.35,-.55,.9,0]],[.72,[-.7,-.3,-.45,.7,0]],[1,[0,0,0,0,0]]];
-const JAW0={coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34,bomber:.1,spitter:.3};
-Object.assign(ZGAIT,{bomber:{stride:.85,knee:.7,runK:.6,bob:1.5,wide:2.5,twist:1.2,roll:1.6},spitter:{stride:1.05,knee:1.1,runK:.9,bob:1.2,twist:1.4,sway:1.2},boss:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4}});
+const JAW0={coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34,bomber:.1,spitter:.3,strait:.02};
+Object.assign(ZGAIT,{bomber:{stride:.85,knee:.7,runK:.6,bob:1.5,wide:2.5,twist:1.2,roll:1.6},spitter:{stride:1.05,knee:1.1,runK:.9,bob:1.2,twist:1.4,sway:1.2},boss:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},aleph:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},strait:{stride:1.05,knee:1.1,runK:.95,bob:1.25,twist:.6,sway:1.3}});
 function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.dead>0){poseDead(ch,st);return}
-  const t=st.t,z=st.zclass==='boss'?'brute':st.zclass,sd=st.seed||0,cfg=ZGAIT[z]||ZGAIT.rager;const turn=st.turn>0?Math.min(1,st.turn):0;
+  const t=st.t,z=ZBIG[st.zclass]?'brute':st.zclass,sd=st.seed||0,cfg=ZGAIT[z]||ZGAIT.rager;const turn=st.turn>0?Math.min(1,st.turn):0;
   // the screamer lurches: its gait clock speeds up and slows down within each stride
   const st2=z==='scream'?Object.assign({},st,{phase:st.phase+.4*Math.sin(st.phase)}):st;
   const a=st.atk||0,heavy=st.heavy,side=st.atkSide>0?1:-1;
@@ -524,6 +524,7 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   else if(z==='brute'){aL=.22-g.arm*.75+Math.sin(t*1.6)*.05;aR=.28+g.arm*.75+Math.sin(t*1.8)*.05;zL=-.35;zR=.42;fL=fR=.45}
   else if(z==='scream'){aL=aR=.72+g.arm*.1;zL=.3;zR=-.3;fL=fR=.62;spR+=Math.sin(st.phase)*.08*g.amp}// both hands on the doll in front of the belly
   else if(z==='bomber'){aL=.42+Math.sin(t*1.4+sd)*.07-g.arm*.55;aR=.46+Math.sin(t*1.6+sd)*.07+g.arm*.55;zL=-.46;zR=.46;fL=fR=.5}// arms held out round the belly
+  else if(z==='strait'){aL=aR=.62+Math.sin(t*2.1+sd)*.05;zL=.62+Math.sin(t*5.3+sd)*.04;zR=-.62-Math.sin(t*4.7+sd)*.04;fL=fR=2.05;spR+=Math.sin(t*3.3+sd)*.07}// sleeves strapped across the chest, straining
   else if(z==='spitter'){aL=.3+Math.sin(t*1.3+sd)*.08-g.arm*.45;aR=.26+Math.sin(t*1.5+sd*2)*.08+g.arm*.45;zL=-.14;zR=.16;fL=.75;fR=.8}
   else{// rager: reaching, grasping hands that open and close
     aL=1.02+Math.sin(t*1.7+sd)*.1-g.arm*.25;aR=.95+Math.sin(t*1.9+sd*2)*.1+g.arm*.25;zL=-.1;zR=.12;fL=.3+Math.max(0,Math.sin(t*2.6+sd))*.25;fR=.25+Math.max(0,Math.sin(t*2.2+sd*3))*.3}
@@ -544,6 +545,10 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   // bomber about to burst: arms thrown wide, shaking, mouth open; spitter: rears back, then lunges the acid out
   if(st.skill>0&&z==='bomber'){const k=Math.min(1,st.skill*3),tr=Math.sin(t*50)*.08;aL=lerp(aL,1.2+tr,k);aR=lerp(aR,1.2-tr,k);zL=lerp(zL,-1.1,k);zR=lerp(zR,1.1,k);fL=fR=lerp(fL,.25,k);spP=lerp(spP,.3,k);jaw=lerp(jaw,1.35,k)}
   if(st.skill>0&&z==='spitter'){const p=1-Math.min(1,st.skill/.55);spP+=kf1([[0,0],[.3,.4],[.5,-.55],[.8,-.4],[1,0]],p);jaw=Math.max(jaw,kf1([[0,.3],[.3,.7],[.45,1.45],[.8,1.2],[1,.3]],p))}
+  if(st.skill>0&&z==='strait'){const k=Math.min(1,st.skill*3);spP=lerp(spP,-.75,k);jaw=lerp(jaw,.1,k)}// the pounce: low and forward
+  if(st.shield&&z==='brute'&&!(a>0)&&!(st.skill>0)){aL=1.15+Math.sin(t*1.4)*.04;zL=.1;fL=.55}// ALEPH carries the torn bulkhead leaf on the left forearm
+  // ALEPH floored (the stagger gauge, a broken tank or shield): sunk on its haunches, slumped forward, arms hanging, mouth open
+  if(st.down>0){const k=st.down;spP=lerp(spP,-.78,k);aL=lerp(aL,.16,k);aR=lerp(aR,.24,k);zL=lerp(zL,-.24,k);zR=lerp(zR,.26,k);fL=lerp(fL,.4,k);fR=lerp(fR,.32,k);jaw=lerp(jaw,.85,k);twist+=Math.sin(t*1.7)*.06*k}
   if(st.skill>0&&z==='brute'){const k=Math.min(1,st.skill*2);aL=lerp(aL,1.45,k);aR=lerp(aR,1.45,k);zL=lerp(zL,.45,k);zR=lerp(zR,-.45,k);fL=fR=lerp(fL,1.6,k);spP=lerp(spP,-.32,k);jaw=lerp(jaw,.7,k)}
   if(turn>0){const j=Math.sin(t*31)*.5+Math.sin(t*17)*.5;aL=.3+j*.8*turn;aR=.4-j*.7*turn;zL=-.9*turn;zR=.9*turn;fL=fR=1.2*turn;spP=-.55*turn+Math.sin(t*23)*.25*turn;twist=Math.sin(t*13)*.4*turn;jaw=.4+Math.abs(Math.sin(t*11))*.8*turn}
   setE(R[0],0,g.twist,g.roll);setE(R[1],spP,-g.twist*1.2+twist,-g.roll*.7+spR-(st.flinchX||0)*.25);

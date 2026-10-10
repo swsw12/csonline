@@ -7,7 +7,7 @@
 const SCEN={POOL:30,STAGES:5,WAVES:3,on:false,stage:1,wave:0,ph:'',t:0,lives:3,queue:[],spawnT:0,remain:0,total:0,boss:null,bossId:-1,acid:[],tq:[],
   H:[],Z:[],pickOpen:false,picked:false,offer:null,best:0,win:false,chkT:0,PH:['prep','wave','break','fail','over']};
 // the horde walks a little slower than infection-mode zombies: there are many more of them
-SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1};
+SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9};
 const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;
 Object.assign(STR.ko,{scen:'좀비 시나리오',scenD:'협동 PvE — 감염 없이 끝까지 인간으로 싸운다. 스테이지 5개 × 웨이브 3번, 마지막엔 거대 좀비. 팀 목숨 3개: 전멸하면 그 스테이지를 다시 하고, 다 쓰면 게임 오버. 죽어도 다음 웨이브에 부활.',scDead:'다음 웨이브에 부활 — 관전 중',allies:'아군 봇'});
@@ -28,7 +28,7 @@ SCEN.stageStart=function(kind,plan){if(NET.cli&&!plan)return;
   SCEN.on=true;SCEN.ph='prep';SCEN.t=20;SCEN.wave=0;SCEN.queue=[];SCEN.remain=0;SCEN.total=0;SCEN.boss=null;SCEN.bossId=-1;SCEN.tq=[];SCEN.closePick(false,true);
   G.st='prep';G.time=SCEN.t;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=6;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;
   FX.clearLimbs();clearNades();NY.clear();SCEN.acid.length=0;for(const l of DL.list)if(l.flare)l.dead=true;
-  for(const a of SCEN.Z){a.alive=false;a.permaDead=true;a.an.dead=0;a.deadT=99;a.hp=0;a.c.y=-60;a.reviving=0;a.frozen=0;a.skillT=0;a.boomT=0;a.nb=null;if(a.ch)a.ch.grp.scale.setScalar(a.boss?BOSS_S:1)}
+  for(const a of SCEN.Z){a.alive=false;a.permaDead=true;a.an.dead=0;a.deadT=99;a.hp=0;a.c.y=-60;a.reviving=0;a.frozen=0;a.skillT=0;a.boomT=0;a.nb=null;if(a.ch)a.ch.grp.scale.setScalar(ZBIG[a.zc]?BOSS_S:1)}
   const sp=shuffle(MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
   for(const a of SCEN.H){const q=pm[a.id],was=a.alive;a.team=TH;a.host=false;a.alive=true;a.permaDead=false;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;a.skillCD=0;a.shriekT=0;a.dizzy=0;a.rootT=0;a.burnT=0;
     a.nb=null;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.an.dead=0;a.an.atk=0;a.pendingClaw=null;a.zoom=0;a.lvl=1;a.dmgRound=0;a.deadT=0;a.maxHp=100;
@@ -81,18 +81,20 @@ SCEN.hpFor=function(zc){const H=SCEN.H.length,d=G.diff||0;
 SCEN.dmgMul=()=>.18*SC_DIFF.dmg[G.diff||0]*(1+.06*(SCEN.stage-1));
 // ---------- spawning ----------
 // a spawn point out of every human's sight and not too close; the big one needs room
-SCEN.spawnPoint=function(big){const H=SCEN.H.filter(h=>h.alive);const pts=MAP.zspawns.length?MAP.zspawns:MAP.spawns;const ok=[];
+// (an episode spawns in the zone it is playing: SCEN.zsp)
+SCEN.spawnPoint=function(big){const H=SCEN.H.filter(h=>h.alive);const pts=SCEN.zsp||(MAP.zspawns.length?MAP.zspawns:MAP.spawns);const ok=[];
   for(const p of pts){const x=p[0],z=p[1],y=p[2]||0;let md=1e9,seen=false;for(const h of H){const d=Math.hypot(x-h.c.x,z-h.c.z);md=Math.min(md,d);if(d<28&&losClear(h.c.x,h.c.y+1.6,h.c.z,x,y+1.2,z))seen=true}
     if(md<10||(seen&&md<30))continue;if(big&&!charFits({hw:.45,h:2.2},x,y+.05,z))continue;ok.push([x,y,z,md])}
-  if(!ok.length){const p=zSpawnPoint();return [p[0]+rr(-1,1),p[2]||0,p[1]+rr(-1,1)]}
+  if(!ok.length){if(SCEN.zsp){let best=null,bd=-1;for(const p of pts){let md=1e9;for(const h of H)md=Math.min(md,Math.hypot(p[0]-h.c.x,p[1]-h.c.z));if(md>bd){bd=md;best=p}}if(best)return [best[0]+rr(-.6,.6),best[2]||0,best[1]+rr(-.6,.6)]}
+    const p=zSpawnPoint();return [p[0]+rr(-1,1),p[2]||0,p[1]+rr(-1,1)]}
   ok.sort((a,b)=>a[3]-b[3]);const p=ok[Math.floor(Math.random()*Math.min(ok.length,4))];return [p[0]+rr(-.8,.8),p[1],p[2]+rr(-.8,.8)]};
 // revive the longest-dead free slot of the pool as a zombie of class zc
-SCEN.spawn=function(zc,at){const boss=zc==='boss';let a=null;for(const z of SCEN.Z)if(!z.alive&&!!z.boss===boss&&z.deadT>1.2&&(!a||z.deadT>a.deadT))a=z;if(!a)return null;
+SCEN.spawn=function(zc,at){const boss=!!ZBIG[zc];let a=null;for(const z of SCEN.Z)if(!z.alive&&!!z.boss===boss&&z.deadT>1.2&&(!a||z.deadT>a.deadT))a=z;if(!a)return null;
   const p=at||SCEN.spawnPoint(boss);const Z=ZCLASS[zc];
   if(!charFits({hw:Z.hw,h:Z.h},p[0],p[1]+.05,p[2])&&!boss)return null;
   a.zpick=zc;a.yaw=Math.random()*TAU;reviveZombie(a,p);return a};
 SCEN.onRevive=function(a){if(!a.scen)return;a.zc=a.zpick;setHull(a);ensureRig(a);a.name=ZCLASS[a.zc].n[LI()];a.lvl=1;a.host=false;a.bombs=0;a.boomT=0;a.sb=null;a.reviving=0;a.turning=0;a.scSeen=G.t;a.spitT=rr(1,2);
-  a.hitW=a.zc==='boss'?.85:0;a.spdMul=SCEN.SPD[a.zc]||.86;a.scHit=0;a.lastHurt=G.t;
+  a.hitW=ZBIG[a.zc]?.85:0;a.spdMul=SCEN.SPD[a.zc]||.86;a.scHit=0;a.lastHurt=G.t;
   if(!NET.cli){a.maxHp=a.hp=SCEN.hpFor(a.zc);a.armor=a.zc==='boss'?0:Math.round(ZCLASS[a.zc].armor*.3);a.skillCD=rr(2,6)}
   if(a.zc==='boss'){SCEN.boss=a;SCEN.bossId=a.id;a.sb={pt:4,mode:'',mt:0,hit:false,sumT:0,half:false,lx:a.c.x,lz:a.c.z,stuck:0,far:0}}};
 // ---------- per frame ----------
@@ -117,7 +119,7 @@ SCEN.update=function(dt){if(!SCEN.on)return;SCEN.updateAcid(dt);
   for(const a of SCEN.Z)if(a.alive){if(a.zc==='bomber')SCEN.bomberTick(a,dt);else if(a.zc==='boss')SCEN.bossTick(a,dt)}};
 // a zombie that has neither hurt anyone nor been hurt for a while (stuck under a ledge, lost) comes back in at a fresh spawn point
 SCEN.unstick=function(dt){SCEN.chkT-=dt;if(SCEN.chkT>0)return;SCEN.chkT=2;
-  for(const a of SCEN.Z){if(!a.alive)continue;const idle=G.t-Math.max(a.scSeen||0,a.scHit||0,a.lastHurt||0);
+  for(const a of SCEN.Z){if(!a.alive||a.zc==='aleph')continue;const idle=G.t-Math.max(a.scSeen||0,a.scHit||0,a.lastHurt||0);
     if(idle>(a.zc==='boss'?30:22)||a.c.y<-30){a.scSeen=G.t;const p=SCEN.spawnPoint(a.zc==='boss');placeAt(a,p[0],p[1],p[2],a.yaw);if(a.bot)AI.onTeam(a)}}};
 // ally bots stay with the team: they hold a spot a few metres around the leader (the player, or the first human still standing), facing out
 SCEN.lead=a=>{const P=G.player;if(P&&P.alive&&!P.scen)return P;for(const h of SCEN.H)if(h.alive)return h;return null};
@@ -261,20 +263,20 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
 // ---------- hooks into the game ----------
 (function(){
   // claws only wound in the scenario
-  const ca=clawApply;clawApply=function(a,t,heavy){if(G.mode!=='scen')return ca(a,t,heavy);const Z=ZCLASS[a.zc];aimDir(a.yaw,0,_dv);const kb=(heavy?4:2)*(a.zc==='boss'?3:1);
+  const ca=clawApply;clawApply=function(a,t,heavy){if(G.mode!=='scen')return ca(a,t,heavy);const Z=ZCLASS[a.zc];aimDir(a.yaw,0,_dv);const kb=(heavy?4:2)*(ZBIG[a.zc]?3:1);
     if(t.isPlayer||!t.pup){t.kvx+=_dv.x*kb;t.kvz+=_dv.z*kb}a.scHit=G.t;hurtHuman(t,Z.dmg*(heavy?1.6:1)*SCEN.dmgMul(),a,{claw:1})};
   const kz=killZombie;killZombie=function(t,src,o){const was=t.alive;kz(t,src,o);if(G.mode!=='scen'||!t.scen)return;t.permaDead=true;t.respawnT=1e9;t.reviveT=1e9;
-    if(t.ch)t.ch.grp.scale.setScalar(t.zc==='boss'?BOSS_S:1);
+    if(t.ch)t.ch.grp.scale.setScalar(ZBIG[t.zc]?BOSS_S:1);
     if(was&&t.zc==='bomber'&&!NET.cli&&!t.scBlown)SCEN.bomberBlow(t,0);if(t===SCEN.boss)SCEN.boss=null};
   const rz=reviveZombie;reviveZombie=function(a,at,rise){if(a.scen)a.scBlown=false;rz(a,at,rise);if(G.mode==='scen')SCEN.onRevive(a)};
-  const er=ensureRig;ensureRig=function(a){er(a);if(a.ch)a.ch.grp.scale.setScalar(a.team===TZ&&a.zc==='boss'?BOSS_S:1)};
+  const er=ensureRig;ensureRig=function(a){er(a);if(a.ch)a.ch.grp.scale.setScalar(a.team===TZ&&ZBIG[a.zc]?BOSS_S:1)};
   const pc=AI.pickCamp.bind(AI);AI.pickCamp=function(a){pc(a);if(G.mode==='scen')SCEN.spotNear(a)};
   const au=AI.update.bind(AI);AI.update=function(a,dt){
     if(G.mode==='scen'&&a.alive&&a.team===TH&&a.bot){const B=a.bot;B.regT=(B.regT||0)-dt;if(B.regT<=0){B.regT=1.5;const L=SCEN.lead(a);
       if(L&&L!==a&&(B.lead!==L||!B.leadAt||Math.hypot(L.c.x-B.leadAt[0],L.c.z-B.leadAt[1])>7))SCEN.spotNear(a)}}
     au(a,dt);if(G.mode!=='scen'||!a.alive||a.team!==TZ)return;
     if(SCEN.leapStep(a,dt))return;
-    if(a.zc!=='boss'&&a.c.onGround){const B=a.bot,t=B.target;let k=false;if(t&&t.alive&&(!B.path||B.partial)){const dy=t.c.y-a.c.y,dh=Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z);k=dy>1.2&&dy<4.6&&dh<7.5}
+    if(!ZBIG[a.zc]&&a.c.onGround){const B=a.bot,t=B.target;let k=false;if(t&&t.alive&&(!B.path||B.partial)){const dy=t.c.y-a.c.y,dh=Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z);k=dy>1.2&&dy<4.6&&dh<7.5}
       if(k){B.climbT=(B.climbT||0)+dt;if(B.climbT>1.2&&losClear(a.c.x,a.c.y+1.6,a.c.z,t.c.x,t.c.y+1.4,t.c.z)){B.climbT=0;SCEN.leapTo(a,t.c.x+rr(-.4,.4),t.c.y,t.c.z+rr(-.4,.4),1);AU.at('zleap',a.c.x,a.c.y+1.5,a.c.z,{vol:.8})}}else B.climbT=0}
     if(a.zc==='spitter')SCEN.spitAI(a,dt);
     else if(a.zc==='boss'&&a.sb){if(a.sb.mode&&a.sb.mode!=='leap'){a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=false}else{const t=a.bot.target;if(t&&t.alive&&Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z)<2.6&&Math.abs(t.c.y-a.c.y)<2.2)a.cmd.fire=Math.random()<.85}}};

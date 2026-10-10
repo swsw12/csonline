@@ -18,7 +18,11 @@ Object.assign(ZCLASS,{
   bomber:{n:['자폭 좀비','Bomber'],sk:['자폭','Self-destruct'],d:['시나리오 전용 · 가까이 오면 부풀어 터진다 (범위 피해)','Scenario only · swells up and bursts next to you (area damage)'],hp:1300,armor:0,speed:5.9,jump:7,kb:1.4,dmg:30,skill:'none',cd:99,dur:0,hw:.36,h:1.8,eye:1.62},
   spitter:{n:['산성 좀비','Spitter'],sk:['산성 침','Acid spit'],d:['시나리오 전용 · 거리를 두고 산성 침을 뱉는다','Scenario only · keeps its distance and spits acid'],hp:1500,armor:40,speed:5.3,jump:7.4,kb:1.2,dmg:26,skill:'none',cd:99,dur:0,hw:.28,h:1.9,eye:1.74},
   boss:{n:['거대 좀비','The Giant'],sk:['강타','Slam'],d:['시나리오 보스','Scenario boss'],hp:30000,armor:0,speed:4.7,jump:8,kb:.06,dmg:70,skill:'none',cd:99,dur:0,hw:.4,h:2.05,eye:2}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss'],BOSS_S=2.2;
+// episode 1 (episode.js / aleph.js): ALEPH, the boss (the giant's body in restraints), and the straitjacket zombie that pounces and pins
+Object.assign(ZCLASS,{
+  aleph:{n:['알레프','ALEPH'],sk:['분노','Rage'],d:['1챕터 보스 · Q7-000','Chapter 1 boss · Q7-000'],hp:30000,armor:0,speed:4.7,jump:8,kb:.05,dmg:70,skill:'none',cd:99,dur:0,hw:.4,h:2.05,eye:2},
+  strait:{n:['구속복 좀비','Straitjacket Zombie'],sk:['덮치기','Pounce'],d:['1챕터 · 할퀴지 못하고 덮쳐서 붙잡는다 (동료가 떼어 줘야 함)','Chapter 1 · cannot claw: pounces and pins you (a teammate has to shoot it off)'],hp:1530,armor:40,speed:6.6,jump:7.4,kb:1.2,dmg:0,skill:'none',cd:99,dur:0,hw:.29,h:1.82,eye:1.66}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};
@@ -125,7 +129,7 @@ const _pr=new THREE.Color(),_fyo=[0,0,0,0];
 function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.isPlayer&&!G.spec&&a.alive)&&(a.alive||a.deadT<60||!a.permaDead||G.st!=='menu');
   ch.grp.visible=show&&(a.alive||a.an.dead>0);if(!ch.grp.visible){if(a.gun)a.gun.visible=false;
     // the local player's body is not drawn, but its head (the hit sphere, and where claws and bot bullets aim) must still follow it
-    if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:a.zc==='boss'?.16*BOSS_S:.14):.14}return}
+    if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14}return}
   const an=a.an;an.atk=Math.max(0,an.atk-dt/(an.atkD||.42));an.flinch=Math.max(0,an.flinch-dt*4);an.flx=(an.flx||0)*Math.exp(-dt*5);an.skill=Math.max(0,an.skill-dt);
   if(!a.alive)an.dead=Math.min(1,an.dead+dt*2.2);else if(a.reviving>0){an.dead=a.reviving/1.2}else an.dead=0;
   // locomotion state for animation: body-space velocity, a stride clock tied to distance, turn rate, acceleration, smoothed crouch / air / sprint
@@ -144,11 +148,11 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   else{_fyo[0]=_fyo[1]=wrapA(an.fy-a.yaw);_fyo[2]=_fyo[3]=0}
   const stride=strideLen(sp)*legScale(ch.A)*(a.team===TZ?((ZGAIT[a.zc]||{}).stride||1):1);a.stepPh+=dt*(sp>.12?sp/stride*TAU:0);
   const Wv=WPN[a.cur]||{};const sprintW=a.team===TH&&a.alive&&sp>4.3&&G.t-(a.lastFire||-9)>.6&&a.reloadT<=0&&!(an.atk>0)&&a.zoom<=0;an.spr=approach(an.spr||0,sprintW?1:0,dt*4);
-  const st={spd:a.alive&&a.frozen<=0?sp:0,phase:a.stepPh,stride,footYaw:_fyo,mvF:an.mvF,mvS:an.mvS,crouch:an.cr,air:an.airS,land:an.land,accel:an.acc,turnRate:an.trn,pitch:a.pitch,t:G.t+a.id*1.7,seed:a.id,zclass:a.zc,
+  const st={spd:a.alive&&a.frozen<=0?sp:0,phase:a.stepPh,stride,footYaw:_fyo,mvF:an.mvF,mvS:an.mvS,crouch:Math.max(an.cr,a.epDown||0),air:an.airS,land:an.land,accel:an.acc,turnRate:an.trn,pitch:a.pitch,t:G.t+a.id*1.7,seed:a.id,zclass:a.zc,
     dead:an.dead,deadT:a.deadT,deadDir:a.deadDir,reviving:a.alive&&a.reviving>0,zombie:a.team===TZ,
     hold:a.team===TH?holdFor(a.cur):null,kick:Wv.dual&&a.dualSide<0?0:a.kick,kick2:Wv.dual&&a.dualSide<0?a.kick:0,
     reload:a.reloadT>0&&a.relKind==='mag'?1-a.reloadT/(Wv.reload||2):0,relKind:a.reloadT>0?a.relKind:null,shellP:a.relKind==='shell'?1-a.reloadT/(Wv.shellRel||.5):a.relKind==='start'?1-a.reloadT/(Wv.relStart||.4):0,brk:!!Wv.brk,sprint:an.spr,
-    atk:an.atk>0?1-an.atk:0,atkSide:an.atkSide,heavy:!!an.heavy,flinch:an.flinch,flinchX:an.flx,skill:an.skill,stun:a.frozen,turn:a.turning>0?Math.min(1,a.turning*1.5):0,frenzy:a.team===TZ&&a.zc==='rager'&&a.skillT>0};
+    atk:an.atk>0?1-an.atk:0,atkSide:an.atkSide,heavy:!!an.heavy,flinch:an.flinch,flinchX:an.flx,skill:an.skill,stun:a.frozen,turn:a.turning>0?Math.min(1,a.turning*1.5):0,frenzy:a.team===TZ&&a.zc==='rager'&&a.skillT>0,shield:!!a.epShield,down:a.epDown||0};
   if(a.team===TZ)poseZombie(ch,st);else poseHuman(ch,st);
   if(a.alive&&ch.hide!==STUMPS){ch.hide=STUMPS;a.spurts=null}// anything revived is whole again
   rigCompute(ch);ch.grp.position.set(c.x,c.y,c.z);ch.grp.rotation.y=a.yaw;ch.grp.updateMatrixWorld(true);
@@ -165,7 +169,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   U.uEmisA.value=a.team===TZ?(a.lvl>=3?1.6:a.lvl>=2?1.25:1):1;
   ensureGun(a);if(a.gun){a.gun.visible=!!ch.gunOn;if(ch.gunOn){a.gun.matrix.multiplyMatrices(ch.M[1],ch.gunM);a.gun.material.uniforms.uProbe.value.copy(U.uProbe.value)}}
   if(a.gun2){a.gun2.visible=!!ch.gunOn2;if(ch.gunOn2)a.gun2.matrix.multiplyMatrices(ch.M[1],ch.gunM2)}
-  charHead(ch,a.head);a.headR=a.team===TZ?(a.zc==='brute'?.16:a.zc==='boss'?.16*BOSS_S:.14):.14;
+  charHead(ch,a.head);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14;
   // a zombie's arms are hit volumes too (the Heavy's reach well outside its body box)
   if(a.team===TZ&&a.alive){if(!a.arms)a.arms=[0,1,2,3,4,5].map(()=>new THREE.Vector3());a.armR=charArms(ch,a.arms);a.armT=G.t}else a.armT=-1e9;
   // flashlight beam for human bots
@@ -242,6 +246,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(cmd.lastInv){equip(a,hasWeapon(a,a.prev)?a.prev:(a.team===TZ?'claw':bestWeapon(a)));cmd.lastInv=false}
   const W=WPN[a.cur];if(!W)return;
   if(a.team===TZ){zombieAttack(a,dt);return}
+  if(a.grabT>0){cmd.fire=cmd.alt=cmd.reload=false}// pinned by a straitjacket zombie: no shooting until a teammate frees you
   // grenades
   if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){throwNade(a,a.cur);a.inv[a.cur]=Math.max(0,a.inv[a.cur]-1);const nx=['he','frost','flare'].find(k=>a.inv[k]>0);equip(a,nx||bestWeapon(a))}return}
     if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;if(a.isPlayer){VM.throwNade();AU.play('pin',{vol:.5})}}return}

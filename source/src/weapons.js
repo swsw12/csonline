@@ -146,7 +146,8 @@ function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
     FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
     if(hs&&!t.isPlayer&&a.isPlayer)AU.play('headshot',{vol:.7});else if(!a.isPlayer&&t.isPlayer){}else if(Math.random()<.5)AU.at('imp_flesh',ex,ey,ez,{vol:.6});
     return {hit:true,hs,dmg}}
-  if(hw){if(wbox.coffin&&a.team===TH)COFF.hurt(wbox.coffin,W.pellets?W.dmg*.8:W.dmg,a);const m=wbox.o.f&&wbox.o.f[nf(wn)]||wbox.mat;FX.impact(ex,ey,ez,wn[0],wn[1],wn[2],m);
+  if(hw){if(wbox.coffin&&a.team===TH)COFF.hurt(wbox.coffin,W.pellets?W.dmg*.8:W.dmg,a);if((wbox.o.epanel!=null||wbox.o.esteam!=null)&&typeof ALEPH!=='undefined')ALEPH.devShot(wbox,a);// B4's pillar panels and steam valves (aleph.js)
+    const m=wbox.o.f&&wbox.o.f[nf(wn)]||wbox.mat;FX.impact(ex,ey,ez,wn[0],wn[1],wn[2],m);
     if(pi===0||Math.random()<.3){const mk=matKind(m),snd=mk==='metal'?'imp_metal':mk==='wood'?'imp_wood':mk==='soft'?'imp_dirt':'imp_conc';AU.at(snd,ex,ey,ez,{vol:.55,range:30})}}
   return null}
 function nf(n){return n[0]>.5?'px':n[0]<-.5?'nx':n[1]>.5?'py':n[1]<-.5?'ny':n[2]>.5?'pz':'nz'}

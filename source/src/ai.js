@@ -110,11 +110,11 @@ const AI={
     if(B.think<=0){B.think=.12+Math.random()*.05;const e=actorEye(a);let best=null,bd=1e9;
       for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>(spread?HBOT.sight:48))continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;const pz=B.panicT>0&&B.panicZ===z;
         const ang=Math.abs(wrapA(Math.atan2(-(z.c.x-c.x),-(z.c.z-c.z))-a.yaw));if(ang>1.5&&d>6&&!(B.seen&&B.seen.a===z)&&!pz)continue;
-        if(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+(z.zc==='boss'?2.8:1.2),z.c.z))continue;const sc=d*(ang>1.5?1.5:1)*(pz?.3:1)*(B.seen&&B.seen.a===z?.75:1)*(spread&&d>4&&hNear(z.c.x,z.c.y,z.c.z,3.5,a)?.6:1);if(sc<bd){bd=sc;best=z}}
+        if(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+(ZBIG[z.zc]?2.8:1.2),z.c.z))continue;const sc=d*(ang>1.5?1.5:1)*(pz?.3:1)*(B.seen&&B.seen.a===z?.75:1)*(spread&&d>4&&hNear(z.c.x,z.c.y,z.c.z,3.5,a)?.6:1);if(sc<bd){bd=sc;best=z}}
       if(best){if(!B.seen||B.seen.a!==best){B.seen={a:best,t:G.t};B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<4?.35:1);B.aimT0=G.t;B.hsT=0}B.seen.ls=G.t}
       else if(B.seen&&(!B.seen.a.alive||G.t-(B.seen.ls||B.seen.t)>.5))B.seen=null;
-      const tg=B.seen&&B.seen.a.alive?B.seen.a:null;B.lof=!tg||losClear(e.x,e.y,e.z,tg.c.x,B.hs?tg.head.y:tg.c.y+(tg.zc==='boss'?2.6:tg.c.h*.55),tg.c.z);
-      if(fight)this.kiteScan(a,WPN[a.cur]&&WPN[a.cur].flame?4:spread?HBOT.kite:5.5,e);else B.kd=99;
+      const tg=B.seen&&B.seen.a.alive?B.seen.a:null;B.lof=!tg||losClear(e.x,e.y,e.z,tg.c.x,B.hs?tg.head.y:tg.c.y+(ZBIG[tg.zc]?2.6:tg.c.h*.55),tg.c.z);
+      if(fight)this.kiteScan(a,WPN[a.cur]&&WPN[a.cur].flame?4:spread?HBOT.kite:B.epObj?2.6:5.5,e);else B.kd=99;// (an episode's goal — a terminal, the lift — keeps them from backing off unless it is right on them)
       // trying to walk somewhere for 6 s without getting 1.5 m anywhere (wedged on a ledge, a coffin, a teammate): somewhere else then
       if(spread){const m=B.mv||(B.mv={x:c.x,z:c.z,t:G.t});if(Math.hypot(c.x-m.x,c.z-m.z)>1.5||!(G.t-(B.wantT||-9)<1)){m.x=c.x;m.z=c.z;m.t=G.t}else if(G.t-m.t>6){m.t=G.t;if(!this.pickRoam(a))this.pickCamp(a)}}}
     const tgt=B.seen&&B.seen.a.alive?B.seen.a:null;if(tgt)B.seenT=G.t;
@@ -150,7 +150,7 @@ const AI={
         if(am&&W&&W.mag&&prim&&am.mag===0&&tdist<(spread?5:10)&&side&&side.mag>0&&a.drawT<=0&&!(spread&&a.reloadT>0&&a.reloadT<.8))equip(a,a.inv[2]);// (not with the reload nearly done)
         else if(spread&&a.cur===a.inv[2]&&a.inv[1]&&!(B.kd<99)&&tdist>12&&a.drawT<=0&&a.ammo[a.inv[1]]&&a.ammo[a.inv[1]].mag+a.ammo[a.inv[1]].res>0)equip(a,a.inv[1]);// breathing room: back to the main gun
         else if(am&&W&&W.mag&&am.res>0&&!close&&a.reloadT<=0&&(am.mag<=Math.max(1,W.mag*.25)&&tdist>13||spread&&!(B.kd<99)&&am.mag<W.mag*.5&&tdist>14))cmd.reload=true;
-        if(a.reloadT>0&&a.relKind==='shell'&&am&&am.mag>0&&tdist<7){a.reloadT=0;a.relKind=null}}const tx=tgt.c.x,tz=tgt.c.z,ty=hs?tgt.head.y:tgt.c.y+(tgt.zc==='boss'?2.6:tgt.c.h*.55);
+        if(a.reloadT>0&&a.relKind==='shell'&&am&&am.mag>0&&tdist<7){a.reloadT=0;a.relKind=null}}const tx=tgt.c.x,tz=tgt.c.z,ty=hs?tgt.head.y:tgt.c.y+(ZBIG[tgt.zc]?2.6:tgt.c.h*.55);
       // aim error: wide on a fresh target, settling over ~0.6 s to an error that grows with the distance (re-drawn a few times a second);
       // the scenario's allies keep their old steady aim
       if(spread){const A=HBOT.aim,sk=clamp((G.t-B.aimT0)/.6,0,1),sig=D.err*lerp(A[0],A[1]+tdist/A[2],sk);B.aimRT-=dt;if(B.aimRT<=0){B.aimRT=rr(.12,.28);B.aimOX=gRand()*sig;B.aimOY=gRand()*sig*.6}

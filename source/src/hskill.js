@@ -55,7 +55,7 @@ const HSK={SP:10,EX:5,DS:5,SPM:1.45,EXM:.4,BIT:256,fovAdd:0,fovK:0,botT:-9,pant:
   bot(a,dt){const B=a.bot;if(!B||NET.cli||G.st!=='fight'||!a.alive||a.team!==TH||a.cmd.hsk)return;const h=this.of(a);if(h.uS&&h.uD)return;
     B.hskT=(B.hskT||0)-dt;if(B.hskT>0)return;B.hskT=rr(.3,.6);if(B.hskP==null)B.hskP=rr(.2,.65);
     const c=a.c;let nz=null,nd=1e9,n12=0,host=false;
-    for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d<nd){nd=d;nz=z}if(d<12)n12++;if((z.host||z.zc==='boss')&&d<10)host=true}
+    for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d<nd){nd=d;nz=z}if(d<12)n12++;if((z.host||ZBIG[z.zc])&&d<10)host=true}
     if(!nz)return;
     if(!h.uS){const last=humansAlive()===1;let flee=false;
       // backing off: the way it is walking points away from the nearest zombie

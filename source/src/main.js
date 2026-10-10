@@ -28,8 +28,9 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
   clearDemo(){for(const a of this.demo){for(const k in a.rigs)R.scene.remove(a.rigs[k].grp)}this.demo=[]},
   demoUpdate(dt){for(const a of this.demo){a.cmd.f=a.cmd.s=0;a.cmd.jump=false;AI.wander(a,dt);a.cmd.f*=.45;a.cmd.s*=.45;actorPhysics(a,dt);Object.assign(a.pc,a.cmd);
       a.bot.growlT-=dt;if(a.bot.growlT<=0){a.bot.growlT=rr(4,10);AU.at('zgrowl',a.c.x,a.c.y+1.5,a.c.z,{vol:.5,range:30})}}},
-  async startGame(){AU.init();const mid=MAPDEFS[CFG.map]?CFG.map:'q7';if(MAP.id!==mid){await loadMapUI(mid);if(MAP.id!==mid)return}this.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);
-    startMatch({mode:CFG.mode,bots:CFG.mode==='scen'?(CFG.scBots??3):CFG.bots,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,skin:CFG.skin,zclass:CFG.zclass,blackout:CFG.blackout??1,name:T('you')});
+  // (a scenario set to an episode plays on the episode's map: epMapOf, episode.js)
+  async startGame(){AU.init();const mid=epMapOf(CFG);if(MAP.id!==mid){await loadMapUI(mid);if(MAP.id!==mid)return}this.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);
+    startMatch({mode:CFG.mode,ep:CFG.mode==='scen'?epSel(CFG):0,bots:CFG.mode==='scen'?(CFG.scBots??3):CFG.bots,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,skin:CFG.skin,zclass:CFG.zclass,blackout:CFG.blackout??1,name:T('you')});
     HUD.show(true);this.paused=false;this.overlay=null;this.lock();window.onbeforeunload=e=>{if(G.st!=='menu'&&G.st!=='over'){e.preventDefault();e.returnValue='';return ''}}},
   toTitle(){if(NET.on)NET.leave();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);G.actors=[];G.player=null;clearNades();NY.clear();FX.clearDecals();this.closeOverlay(true);this.paused=false;
     R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;window.onbeforeunload=null;AU.stopAll('countdown');this.menuDemo();UI.buildTitle();UI.show('menu');AU.muSet&&AU.muSet('calm')},

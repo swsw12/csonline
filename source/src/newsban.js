@@ -5,6 +5,10 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'zombie',ref:'aleph',tag:['좀비 시나리오 1챕터','Zombie scenario · CH.1'],t:['1챕터 「알레프」','Chapter 1 「ALEPH」'],
+    d:['격리병원 Q-7 연구동을 뚫고 지하 B4의 최초 감염자 알레프를 쓰러뜨린 뒤 60초 안에 탈출. 맞을수록 분노하는 거대 보스, 등의 혈청 탱크가 약점. 방 만들기 → 좀비 시나리오에서 1챕터를 고르세요.','Fight through the Q-7 research wing, bring down ALEPH, patient zero, in the B4 chamber and escape within 60 s. A giant that gets angrier with every hit; the serum tank on its back is the weak spot. Create a room → Zombie scenario → CH.1.']},
+  {kind:'zombie',ref:'strait',tag:['신규 좀비','New zombie'],t:['구속복 좀비','Straitjacket Zombie'],
+    d:['할퀴지 못하는 대신 덮쳐서 붙잡아요. 붙잡히면 꼼짝 못 하니 동료가 쏴서 떼어 줘야 해요. 1챕터에 나와요.','It cannot claw: it pounces and pins you, and only a teammate shooting it gets you free. Shows up in chapter 1.']},
   {kind:'feature',ico:'✉',tag:['신규 기능','New'],t:['인게임 채팅','In-game chat'],
     d:['매치 중 Enter(또는 Y)로 전체 채팅, U로 우리 편 채팅. 멀티 대기실에서도 바로 대화할 수 있고, 입장 · 퇴장도 채팅창에 떠요. 폰은 위쪽 💬 버튼.','Enter (or Y) talks to everyone and U to your own side, in a match and in the multiplayer waiting room; joins and leaves show in the chat too. On phones, the 💬 button at the top.']},
   {kind:'feature',ico:'♥',tag:['신규 기능','New'],t:['친구 · 선물하기','Friends · gifts'],
