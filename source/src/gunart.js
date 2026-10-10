@@ -4,7 +4,8 @@
 const GA_MATS=['blk','blk2','steel','bright','wood','olive','tan','rub','brass','glove','sl_guard','sl_medic','sl_soldier','sl_hazmat','skin','zs_rager',
   'zs_runner','zs_brute','zs_scream','claw','red','heGreen','frost','lens','muzzle','white','wood2','gunmetal','cuff','hglove','nail','flesh',
   'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap','coffW','coffL','zs_coffin','dred','dyel'];
-const GA={W:1024,H:1280,P:128,idx:{},tex:null,texVM:null,canvas:null};// 8 x 10 slots of 128 px
+const GA={W:1024,H:1408,P:128,idx:{},tex:null,texVM:null,canvas:null};// 8 x 11 slots of 128 px
+const GA_SLOTS=GA.W/GA.P*(GA.H/GA.P);// slots the atlas holds (the module painters skip a material past it)
 GA_MATS.forEach((m,i)=>GA.idx[m]=i);
 function paintGunAtlas(){const PS=GA.P;
   const cv=paint(GA.W,GA.H,P=>{

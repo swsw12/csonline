@@ -50,18 +50,26 @@ VM_POS.winchester={p:[.15,-.165,-.37],r:[0,.08,.035]};
 
 // ---------- Kill Knife: a long hazy-grey blade that curves down to the point, a bright honed edge, blood along the belly,
 // a handle of the same steel running on from it (built in slices along the blade so the spine and the edge can curve) ----------
+// stained steel: the hazy grey of 'steel' with old blood soaked into it, faint (kkS1) to deep (kkS3), blotchy so it reads as a stain
+const KK_MATS=['kkS1','kkS2','kkS3'];
+for(const m of KK_MATS){if(GA.idx[m]==null){GA_MATS.push(m);GA.idx[m]=GA_MATS.length-1}}
+function paintKkAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getContext('2d');
+  KK_MATS.forEach((name,lv)=>{const i=GA.idx[name];if(i==null||i>=GA_SLOTS)return;const x0=(i%8)*PS,y0=Math.floor(i/8)*PS,id=x.getImageData(x0,y0,PS,PS),D=id.data;
+    for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const X=x0+xx,Y=y0+y,t=hash2(Math.floor(xx/10),y,3)*.55+fbm(X/12,Y/12,4,2,0)*.45;
+      let c=t>.62?'#71767b':t<.35?'#45494e':'#5a5f64';
+      const b=fbm(X/22,Y/22,90+lv,2,0)+(hash2(X,Y,91)-.5)*.08,amt=[.3,.48,.64][lv]*Math.max(.35,Math.min(1,(b-.15)*2));
+      c=mix(c,lv>1?'#5a2420':'#6e3a32',amt);const r=rgbOf(c),k=(y*PS+xx)*4;D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=255}
+    x.putImageData(id,x0,y0)})}
 function kkParts(){const P=[],N=26,z0=-.045,z1=-.37;
   const ys=t=>.036-.07*Math.pow(t,2.2),ye=t=>-.03+.02*t-.02*t*t*t;// spine and edge heights, t 0 at the bolster .. 1 at the point
   for(let i=0;i<N;i++){const t=(i+.5)/N,z=z0+(z1-z0)*t,dz=(z1-z0)/N,a=ys(t),b=ye(t)+.006,th=.0078-.0036*t;if(a-b<.003)continue;
-    P.push(Pt(0,(a+b)/2,z,th,a-b,Math.abs(dz)+.002,'steel',{r:.001}));
+    P.push(Pt(0,(a+b)/2,z,th,a-b,Math.abs(dz)+.002,t>.86?'kkS3':t>.74?'kkS2':t>.6?'kkS1':'steel',{r:.001}));
     if(i%5===2)P.push(Pt(0,a-.003,z,th+.0006,.004,Math.abs(dz)*.9,'gunmetal'))}// a darker spine line every few slices
   // the honed edge along the bottom, following the curve
-  for(let i=0;i<N-1;i++){const t0=i/N,t1=(i+1)/N;P.push(segV(ye(t0)+.003,z0+(z1-z0)*t0,ye(t1)+.003,z0+(z1-z0)*t1,0,.0042,.008,'bright',{r:.001}))}
+  for(let i=0;i<N-1;i++){const t0=i/N,t1=(i+1)/N;P.push(segV(ye(t0)+.003,z0+(z1-z0)*t0,ye(t1)+.003,z0+(z1-z0)*t1,0,.0042,.008,t0>.8?'kkS2':t0>.66?'kkS1':'bright',{r:.001}))}
   // the point
-  P.push(segV(ys(.97),z1+.012,ye(1)+.002,z1-.004,0,.004,.006,'bright'));
-  // blood: smears on both faces along the belly, a few drips
-  for(const sx of [1,-1])for(const [t,h,l] of [[.38,.014,.07],[.55,.012,.05],[.68,.009,.035],[.22,.008,.03]]){const z=z0+(z1-z0)*t;P.push(Pt(sx*(.0042-.0018*t),ye(t)+.012,z,.0007,h,l,'dred'))}
-  for(const t of [.42,.6])P.push(Pt(.0043,ye(t)+.002,z0+(z1-z0)*t,.0007,.01,.006,'red'));
+  P.push(segV(ys(.97),z1+.012,ye(1)+.002,z1-.004,0,.004,.006,'kkS3'));
+  // (the old blood is in the steel itself: the slices toward the point use the kkS1..kkS3 stained steels, see paintKkAtlas)
   // the edge faces the other way in the hand: mirror the blade top to bottom (the curve then sweeps up toward the point)
   for(const q of P){q.c[1]=-q.c[1];if(q.rx)q.rx=-q.rx}
   // the handle: one piece of the same dark-grey steel running on from the blade (no bolster break), a darker groove down each side,

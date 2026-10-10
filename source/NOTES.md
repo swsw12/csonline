@@ -490,3 +490,4 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - newsban.js (after rank): NEW_CONTENT list, NBAN (shows once per load after the lobby and any sign-in window; LS 'nbHide' = 2 h),
   NEW button on the notice panel (UI.act 'nbopen'); the first-visit sign-in prompt waits while the banner is open.
 - Shop prices: killknife 3000, blaze8 6000, winchester 4500 (prices.py, SHOP_PRICE, mock.js).
+- v6.14.x: Kill Knife blood is dyed into the steel (kkS1..kkS3 stained-steel materials, fading toward the handle). The gun atlas grew to 8 x 11 slots (GA_SLOTS); skull9/salamander painters check GA_SLOTS.

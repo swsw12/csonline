@@ -11,7 +11,7 @@ const SK_MATS=['skSteel','skHaft','skWire','skBone'];
 for(const m of SK_MATS){if(GA.idx[m]==null){GA_MATS.push(m);GA.idx[m]=GA_MATS.length-1}}
 function paintSkAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getContext('2d');
   // alpha = gloss level for the character shader (240..254 = sheen)
-  const patch=(name,fn,alpha)=>{const i=GA.idx[name];if(i==null||i>=80)return;const x0=(i%8)*PS,y0=Math.floor(i/8)*PS;const id=x.getImageData(x0,y0,PS,PS),D=id.data;
+  const patch=(name,fn,alpha)=>{const i=GA.idx[name];if(i==null||i>=GA_SLOTS)return;const x0=(i%8)*PS,y0=Math.floor(i/8)*PS;const id=x.getImageData(x0,y0,PS,PS),D=id.data;
     for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const c=fn(xx,y,x0+xx,y0+y);if(!c)continue;const k=(y*PS+xx)*4;const r=rgbOf(c);D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=alpha||255}
     x.putImageData(id,x0,y0)};
   const nz=(X,Y,s,c)=>fbm(X/(c||16),Y/(c||16),s,2,0);
