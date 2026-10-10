@@ -360,7 +360,8 @@ function hurtHuman(t,dmg,src,o){if(NET.ghost)return;if(NET.cli&&!NET.ev){if(t===
 function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.deadT=0;t.deaths++;t.frozen=0;t.skillT=0;t.reviving=0;t.an.dead=Math.max(t.an.dead,.001);// keeps the body drawn while it falls
   aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;
   // Original: every dead zombie stays down this round. Mutation: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
-  const perma=G.mode==='orig'||G.mode==='mut'&&(o.knife||(!t.host&&(o.hs||o.he)));
+  // the Kill Knife's last blow keeps any zombie down in every mode (hosts too)
+  const perma=G.mode==='orig'||o.w==='killknife'&&G.mode!=='scen'||G.mode==='mut'&&(o.knife||(!t.host&&(o.hs||o.he)));
   if(perma)t.permaDead=true;else if(G.mode==='mut')t.reviveT=8;else t.respawnT=5
   if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills
   HUD.feed(src,o.w,t,{hs:o.hs,perma});nyOnKill(t,src);

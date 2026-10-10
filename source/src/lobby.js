@@ -9,6 +9,7 @@ const THUMB={};
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
 ['v6.14.2','2026-10-10',[
+ ['UP','킬나이프로 막타를 친 좀비는 그 라운드에 다시 살아나지 않음 (숙주 포함, 모든 모드)','A zombie finished off with the Kill Knife stays down for the round (hosts too, every mode).'],
  ['UP','킬나이프 강화 — 데미지 약공 42→95 · 강공 150→330, 경직 1.3/1.6초 → 2.2/3초. 상점가 3,000 → 12,000 코인. 피 얼룩은 칼끝 쪽 강철에 바랜 듯 물들고 손잡이 쪽으로 옅어짐','Kill Knife buffed: damage 42→95 (light) and 150→330 (heavy), stagger 1.3/1.6 s → 2.2/3 s; shop price 3,000 → 12,000 coins. The old blood is now soaked into the steel near the point, fading toward the handle.']]],
 ['v6.14.1','2026-10-10',[
  ['UP','킬나이프 디자인 변경 — 짙은 회색 칼날이 끝으로 갈수록 휘어지는 곡선형, 날 쪽에 핏자국, 손잡이까지 칼날과 같은 철제로 한 덩어리','Kill Knife redesign: a dark-grey blade that curves down to the point, blood along the edge, and a handle of the same steel all in one piece.']]],
