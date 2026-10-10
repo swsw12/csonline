@@ -5,6 +5,10 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'zombie',ref:'argus',tag:['좀비 시나리오 2챕터','Zombie scenario · CH.2'],t:['2챕터 「아르고스」','Chapter 2 「ARGUS」'],
+    d:['비 오는 밤의 봉쇄선 전방기지. 감시탑을 옮겨 다니는 1차 회수팀 저격수 아르고스는 불빛만 보이면 쏴요 — 붉은 레이저가 보이면 엄폐! 투광등을 놈이 선 탑으로 돌리면 야간투시경이 타서 떨어져요. 1챕터를 깨면 열려요.','A rainy night at the containment line’s forward base. ARGUS, RT-1’s sniper, moves between the watchtowers and shoots at any light it sees — when the red laser lands on you, get behind cover. Swing a floodlight onto its tower and its night vision burns out. Opens once chapter 1 is cleared.']},
+  {kind:'zombie',ref:'squad',tag:['신규 좀비','New zombie'],t:['1차 팀 분대원 좀비','RT-1 Squad Zombie'],
+    d:['헬멧과 방탄복을 입은 1차 회수팀 대원. 정면에서 쏘면 잘 안 먹히니 머리나 옆을 노려요. 가끔 수류탄을 던지고, 죽으면 탄약 상자를 떨궈요. 2챕터에 나와요.','An RT-1 trooper in a helmet and a plate carrier: bullets from the front do less, so go for the head or the flank. Throws a grenade now and then and drops an ammo box when it dies. Shows up in chapter 2.']},
   {kind:'zombie',ref:'aleph',tag:['좀비 시나리오 1챕터','Zombie scenario · CH.1'],t:['1챕터 「알레프」','Chapter 1 「ALEPH」'],
     d:['격리병원 Q-7 연구동을 뚫고 지하 B4의 최초 감염자 알레프를 쓰러뜨린 뒤 60초 안에 탈출. 맞을수록 분노하는 거대 보스, 등의 혈청 탱크가 약점. 방 만들기 → 좀비 시나리오에서 1챕터를 고르세요.','Fight through the Q-7 research wing, bring down ALEPH, patient zero, in the B4 chamber and escape within 60 s. A giant that gets angrier with every hit; the serum tank on its back is the weak spot. Create a room → Zombie scenario → CH.1.']},
   {kind:'zombie',ref:'strait',tag:['신규 좀비','New zombie'],t:['구속복 좀비','Straitjacket Zombie'],

@@ -358,6 +358,7 @@ function defHuman(k){
 //    k = 'rager' 일반 | 'runner' 라이트 | 'brute' 헤비 | 'coffin' 관짝 | 'scream' 부두
 //        | 'bomber' 자폭(시나리오) | 'spitter' 산성(시나리오) | 'boss' 거대 좀비(시나리오: 헤비 몸에 어두운 색)
 //        | 'strait' 구속복 좀비(1챕터) | 'aleph' 알레프(1챕터 보스: 거대 좀비 몸 + 구속구)
+//        | 'argus' 아르고스(2챕터 보스: 1차 회수팀 저격수) | 'squad' 1차 팀 분대원 좀비(2·4챕터)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
 function defZombie(k,host){const aleph=k==='aleph',boss=k==='boss'||aleph;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
@@ -494,6 +495,57 @@ function defZombie(k,host){const aleph=k==='aleph',boss=k==='boss'||aleph;if(bos
     extra=H=>{const o=H.o,sY=H.piv[1][1],zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2;
       const L=[{n:'strap',b:1,c:[0,sY+o.torsoH*.42,zf-.08],s:[o.torsoW*.95,.06,.035],m:'strap'}];
       for(let i=0;i<3;i++)L.push({n:'buckle',b:1,c:[0,sY+o.torsoH*(.26+i*.29),zb+.015],s:[.07,.05,.02],m:'buckle'});return L}}
+  // ▶ 아르고스 (argus, 2챕터 보스 RT1-07) — 1차 회수팀 저격수가 감염된 모습 (게임이 1.3배로 키운다)
+  //    길쭉하게 늘어난 팔다리, 찢어진 올리브 위장복 위에 길리 슈트 조각이 너덜너덜, 짙은 방탄조끼(탄창 주머니, 등에 'RT1-07'),
+  //    얼굴에 박혀 버린 4안 야간투시경(검은 마운트 + 렌즈 통 4개 — 초록 렌즈 불빛은 게임이 따로 붙여서 하나씩 깨진다),
+  //    회녹색 피부, 피에 젖은 턱, 장갑 낀 손에 갈고리처럼 자란 손톱. 등의 저격총도 게임이 붙인다.
+  else if(k==='argus'){// 저격수 — RT-1's sniper: limbs drawn out long, rags of a ghillie suit, a four-tube night-vision rig grown into the face
+    o={hipY:1.02,thigh:.49,legSep:.1,legW:.13,legD:.15,shinW:.115,torsoW:.4,torsoH:.55,torsoD:.22,shX:.235,armW:.1,upper:.35,fore:.35,hand:.115,headW:.22,headH:.25,headD:.25,headZ:-.05,neck:.1,
+      claw:.045,fingL:.68,curl:.55,curlJ:13,ears:[1,1],eyeY:.42};
+    const sk='#6c7462',cm=['#26301e','#5e6444'];
+    mats=Object.assign({top:{base:'#465036',camo:cm},legs:{base:'#424a32',camo:cm},sleeve:{base:'#465036',camo:cm},fore:{base:sk,style:'zskin',blot:'#3a2a30'},shin:{base:'#424a32',camo:cm},
+      skin:{base:sk,style:'zskin',blot:'#3a2a30'},hand:{base:'#2a2a24',style:'rubber'},boot:{base:'#2a241c',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#3a2a30'},
+      vest:{base:'#2e3426',style:'plate',gloss:242},pouch:{base:'#363c2c'},nvg:{base:'#141618',style:'plate',gloss:246},tube:{base:'#1c1e20',style:'plate',gloss:247},
+      ghil:{base:'#3a4228',camo:['#222a16','#5a5e36']},ghil2:{base:'#4a4a2c',camo:['#2a2c18','#6a6440']}},goreM);
+    decor={torso:{front:[['tear',2,31,sk],['soak',.2,.7,'#4a0606',.6],['grime',.7]],back:[['tear',2,32,sk],['grime',.7]],side:[['grime',.6]]},
+      vest:{front:[['pocket',.06,.08,.28,.48,'#262c1e'],['pocket',.36,.08,.64,.48,'#262c1e'],['pocket',.72,.08,.94,.48,'#262c1e'],['rect',.3,.66,.7,.86,'#22281c'],['blood',3,33],['grime',.5]],
+        back:[['text','RT1-07',.18,.62,'#8a8e74'],['pocket',.22,.12,.78,.46,'#262c1e'],['grime',.5]],all:[['grime',.4]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#c8e870',tears:1,cheek:1}]],top:[['rect',0,0,1,1,'#1c1e18'],['wounds',1,34]],side:[['rect',0,.45,.55,1,'#1c1e18'],['blood',1,35]],back:[['rect',0,.4,1,1,'#1c1e18']],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.4],['drip',.5,.5,4,.8]],bottom:[['soak',0,1,'#4a0606',.85]]},
+      uaL:{all:[['text','RT-1',.18,.7,'#8a8e74'],['tear',1,36,sk],['grime',.6]]},uaR:{all:[['tear',2,37,sk],['blood',2,38],['grime',.6]]},
+      faL:{all:[['veins',2,'#3a2a3a'],['gash',.2,.8,.6,.3,3,.1]]},faR:{all:[['veins',2,'#3a2a3a'],['soak',0,.5,'#4a0606',.6]]},
+      thL:{all:[['tear',1,39,'#2a2a22'],['grime',.6]],side:[['pocket',.15,.35,.85,.7,'#363c2c']]},thR:{all:[['grime',.6],['soak',.4,1,'#4a0606',.5]]},
+      pelvis:{fb:[['belt',.72,.94,'#1e2018','#6a6a5a']]},nvg:{all:[['out',0,0,1,1,'#2a2c2e']]},tube:{all:[['band',.82,.92,'#3a3c3e']]},ghil:{all:[['grime',.6]]},ghil2:{all:[['grime',.5]]}};
+    // the plate carrier, the night-vision mount and its four tubes, and the ghillie rags hanging off the shoulders and the back
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2;
+      const L=[{n:'vest',b:1,c:[0,sY+o.torsoH*.56,0],s:[o.torsoW*1.1,o.torsoH*.72,o.torsoD*1.28],m:'vest'},
+        {n:'pouch',b:1,c:[-.16,sY+o.torsoH*.3,zf-.05],s:[.08,.11,.05],m:'pouch'},{n:'pouch',b:1,c:[.16,sY+o.torsoH*.3,zf-.05],s:[.08,.11,.05],m:'pouch'},
+        {n:'nvg',b:2,c:[0,hc[1]+.02,o.headZ-o.headD/2-.02],s:[.2,.07,.05],m:'nvg'}];
+      // four tubes: two inner straight ahead, two outer splayed (the lens ends face forward, -z)
+      for(const [x,y] of [[-.075,.0],[-.028,.012],[.028,.012],[.075,.0]])L.push({n:'tube',b:2,c:[x,hc[1]+y,o.headZ-o.headD/2-.085],s:[.038,.038,.1],m:'tube'});
+      for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=o.torsoW*.55;L.push({n:i%2?'ghil':'ghil2',b:1,c:[Math.cos(a)*r*.9,sY+o.torsoH*(.82-hash2(i,1,41)*.25),zb*.6+Math.sin(a)*.04+.03],s:[.05,.16+hash2(i,2,41)*.12,.02],m:i%2?'ghil':'ghil2'})}
+      for(const sd of [-1,1])for(let i=0;i<3;i++)L.push({n:i%2?'ghil':'ghil2',b:sd<0?3:5,c:[sd*(o.shX+.03),H.piv[3][1]-.06-i*.07,(i-1)*.03],s:[.03,.13,.04],m:i%2?'ghil':'ghil2'});
+      return L}}
+  // ▶ 1차 팀 분대원 좀비 (squad, 2·4챕터) — 감염된 1차 회수팀 대원
+  //    올리브 위장 전투복(한쪽 소매가 찢겨 회녹색 팔이 드러남), 앞주머니 달린 방탄조끼, 무전기, 야간투시경 마운트만 남은 헬멧,
+  //    깨진 고글, 피 묻은 입. 방탄조끼가 정면 총알을 30% 막는다(게임 쪽 규칙).
+  else if(k==='squad'){// 분대원 — an infected RT-1 trooper: camo fatigues, a plate carrier, a helmet with an empty NVG mount, a radio
+    o={hipY:.93,torsoW:.43,torsoD:.24,shX:.25,armW:.115,upper:.3,fore:.28,headW:.23,headH:.25,headD:.25,headZ:-.03,claw:.02,fingL:.52,curl:.5,curlJ:17,ears:[1,1]};
+    const sk='#727a66',cm=['#2c3424','#646a48'];
+    mats=Object.assign({top:{base:'#4a5438',camo:cm},legs:{base:'#465036',camo:cm},sleeve:{base:'#4a5438',camo:cm},fore:{base:'#4a5438',camo:cm},shin:{base:'#465036',camo:cm},
+      skin:{base:sk,style:'zskin',blot:'#3a2a30'},hand:{base:'#2a2a24',style:'rubber'},boot:{base:'#2a241c',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#3a2a30'},
+      vest:{base:'#5a5a3e',style:'plate',gloss:242},helm:{base:'#4a5038',style:'plate'},mount:{base:'#1a1c1e',style:'plate',gloss:246},radio:{base:'#262824',style:'plate'},gog:{base:'#202224'}},goreM);
+    decor={torso:{front:[['tear',2,51,sk],['soak',.3,.9,'#4a0606',.7],['grime',.7]],back:[['tear',1,52,sk],['grime',.7]],side:[['grime',.6]]},
+      vest:{front:[['pocket',.06,.06,.3,.45,'#4a4a32'],['pocket',.36,.06,.64,.45,'#4a4a32'],['pocket',.7,.06,.94,.45,'#4a4a32'],['blood',3,53],['grime',.5]],back:[['text','RT-1',.3,.62,'#2a2c20'],['pocket',.2,.2,.8,.6,'#4a4a32']],all:[['grime',.4]]},
+      helm:{all:[['out',0,0,1,1,'#2e3424'],['grime',.5]]},gog:{front:[['rect',.05,.2,.45,.8,'#3a4048'],['rect',.55,.2,.95,.8,'#3a4048'],['px',.3,.5,'#c8d8e8']]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#e8d860',tears:1}]],side:[['blood',1,54]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a0606',.8]]},
+      uaL:{all:[['text','RT-1',.18,.7,'#2a2c20'],['grime',.5]]},uaR:{all:[['tear',3,55,sk],['blood',2,56]]},faR:{all:[['rect',0,0,1,1,sk],['veins',2,'#3a2a3a'],['bite',.5,.5,.25]]},
+      thL:{side:[['pocket',.15,.35,.85,.7,'#3c4430']],all:[['grime',.6]]},thR:{side:[['pocket',.15,.35,.85,.7,'#3c4430']],all:[['soak',.4,1,'#4a0606',.5]]},pelvis:{fb:[['belt',.72,.94,'#24261c','#7a7a6a']]}};
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zf=o.belly*.25-(o.torsoD+o.belly)/2;
+      return [{n:'vest',b:1,c:[0,sY+o.torsoH*.56,0],s:[o.torsoW*1.1,o.torsoH*.72,o.torsoD*1.26],m:'vest'},{n:'helm',b:2,c:[0,hc[1]+o.headH*.42,o.headZ],s:[o.headW*1.18,o.headH*.46,o.headD*1.16],m:'helm'},
+        {n:'mount',b:2,c:[0,hc[1]+o.headH*.5,o.headZ-o.headD*.62],s:[.07,.06,.05],m:'mount'},{n:'gog',b:2,c:[0,hc[1]+o.headH*.72,o.headZ-o.headD*.5],s:[.2,.05,.05],m:'gog'},
+        {n:'radio',b:1,c:[.17,sY+o.torsoH*.86,zf+.02],s:[.06,.11,.045],m:'radio'},{n:'radio',b:1,c:[.19,sY+o.torsoH*.98,zf+.02],s:[.012,.14,.012],m:'mount'}]}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),

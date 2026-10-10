@@ -12,7 +12,7 @@
 --   * 친구 · 선물(v6.18): 친구 코드(또는 한 명만 쓰는 닉네임)로 친구를 맺고, 상점에서 파는 총을 친구에게 선물합니다(보낸 사람 코인).
 --   * 좀비 시나리오 챕터(v6.20): 클리어 기록은 ep_records(챕터 × 난이도)에. 판 보상은 (100 + 구역 150 + 클리어 400 + 탈출 300
 --     + 킬 5) × 난이도(쉬움 .7 · 보통 1 · 어려움 1.4 · 전문가 2), 판당 3,000 · 1분당 150까지. 난이도마다 첫 클리어 1번:
---     1,000 / 3,000 / 5,000 / 8,000 코인(하루 상한과 별개) + 보통 이상은 근하신년 해독기 1개. 클리어는 5분 이상 걸린 판이어야 하고,
+--     1,000 / 3,000 / 5,000 / 8,000 코인(하루 상한과 별개) + 보통 이상은 근하신년 해독기 1개. 클리어는 4분 이상 걸린 판이어야 하고(v6.21: 5분 → 4분),
 --     n챕터는 n-1챕터를 깬 계정만 기록됩니다.
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
 --     시즌 해독기 숫자는 같은 줄의 season_* 칸에 있습니다.
@@ -434,10 +434,10 @@ begin
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
   v_secs := extract(epoch from (now() - coalesce(p.last_claim, p.created_at, now() - interval '1 day')));   -- (an episode's clear time fits in it)
-  -- an episode's clear counts when it took 5 minutes at least and no longer than the time since the last paid match, and (from
+  -- an episode's clear counts when it took 4 minutes at least (v6.21; 5 before) and no longer than the time since the last paid match, and (from
   -- episode 2 on) the episode before it was cleared; only such a clear pays the clear and the escape
   if v_ep > 0 then
-    v_clear := coalesce(p_cleared, false) and v_time >= 300 and v_secs >= v_time * 0.9
+    v_clear := coalesce(p_cleared, false) and v_time >= 240 and v_secs >= v_time * 0.9
       and (v_ep = 1 or exists (select 1 from public.ep_records r where r.user_id = uid and r.ep = v_ep - 1 and r.clears > 0));
     raw := round((100 + 150 * least(greatest(coalesce(p_stage, 0), 0), 4) + case when v_clear then 400 else 0 end
          + case when v_clear and p_bonus then 300 else 0 end + 5 * k) * (array[0.7, 1.0, 1.4, 2.0])[v_diff + 1])::integer;

@@ -579,3 +579,28 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   A (≤ 1, ≤ 22 min) / B, and B for any clear without the escape (EP.medal is the same rule).
 - Test harness note: a headless run that steps gameUpdate itself must also call DL.update(dt, cam), or the dynamic light list never
   expires and the page eventually crashes.
+
+## v6.21 — zombie scenario chapter 2 「아르고스」 (argus.js, mapep2.js, epbase.js; multiplayer not tested here: the owner tests it)
+- The chapter framework moved out of aleph.js: epbase.js holds CHAP / EPZ and the shared toys (TELE floor warnings, epFx knockdown /
+  blind / dizzy, EPV screen overlays, ELAS laser sights, EBUL enemy bullets (m.s = shooter id → a.epKick recoil), EGREN thrown frag /
+  flashbang / smoke, ESMK smoke, EPK ammo boxes, epKin scripted leaps: a.kin flies a body along an arc and actorPhysics skips it,
+  epHid: a zombie flagged epHide is invisible to bots through / inside smoke). episode.js runs any CHAP[n] (stage kinds waves, terms,
+  act, hold, breach, boss, escape); aleph.js is now only ALEPH, the straitjacket zombie and CHAP[1].
+- New hooks in episode.js: EPZ[zc].ai(a,dt) returning true replaces the zombie AI altogether (ARGUS); a boss stage's own devices
+  (B.useNear / useInfo / botUse, held with epUse = 100 + index, so the host counts holders like act devices); C.botPost(a) for every
+  ally bot; B.goalTag(b) joins the bots' goal key. The local player with a .bot (the tests) skips useTick (its bot code holds E).
+- ai.js: a zombie's epAimY (aim height above its feet: ARGUS on a tower clears the sandbags), epPri (target priority multiplier:
+  lower = preferred), epHide. scenario.js: SCEN.unstick leaves zombies with their own brain alone (it used to teleport ARGUS).
+- argus.js: ARGUS (hp 14,000 × (0.6 + 0.4 × humans) × SC_DIFF.hp; phases at 75 % and 30 %; the header comment has every rule),
+  FLOOD (four floodlight heads on map poles: states 'p' plaza pool / 0–3 a tower / 'x' off; 3 s E at the box swings onto ARGUS's tower
+  → burnout: it falls off, 5 s down, the light spent 20 s), TRAP (phase 2 tripwires), SQUAD (the RT-1 squad zombie: −30 % frontal
+  bullets, grenades, ammo drops), a poseZombie wrapper (ARGUS aims, carries and throws with poseHuman holds on its zombie rig; beast /
+  down poses from the zombie set), CHAP[2] (stages: A waves, B act 'gen' ×3, C act 'rec' ×2 with the sniper meeting on the C tower,
+  D boss). Snapshot (bsPack): gauges, flags, lens bits, pose index, tower, seen human ids, the floodlights [state, progress, cd] × 4.
+  Events 'eag' (fxApply); client → host 'epfl' (its own flare burst near ARGUS: stagger +40).
+- Atlas: epNvg / epFlood (GA 90 of 104 slots used).
+- Balance from 4-bot simulations on normal: the boss fight 110–230 s (P1 35–55 s, P2 30–45 s, P3 45–125 s, often one wipe in P3),
+  the whole chapter 4:47–10 min; hard is a loss for bots more often than not. Bots dodge the laser to floor the tower cannot see
+  (ARGUS.hidNodes, per perch), take peek spots a step from it, close in while it is down, and one minds the floodlight that reaches it.
+- Server: a chapter clear counts from 240 s (was 300; schema.sql, re-run it).
+- Test harness note: yield with a MessageChannel, not setTimeout(0) — headless runs that yielded with timers sometimes stalled for good.

@@ -10,8 +10,7 @@
 // +20) floors it for 6.5 s (×1.5 damage) and fills 25 % slower each time. At 60 % it tears the north bulkhead out and carries it as a
 // shield (bullets from the front 110° −85 %, the shield has 12 % of its health, HE ×3 on it, breaking it floors it for 6 s); at 25 %
 // it drops it, the lights die and it goes wild. Every phase change is 3.5 s of invulnerability and gets the whole team back up.
-const EPD=v=>v*SC_DIFF.dmg[G.diff||0]/.75;// a pattern's damage on normal, scaled to the difficulty
-const EPTW=()=>[1.3,1,.9,.8][G.diff||0];// wind-up / warning time per difficulty
+// (EPD, EPTW, TELE and the other shared toys: epbase.js; the chapter's definition CHAP[1] is at the end of this file)
 const AL_PH=[1,.6,.25];// health at the start of each phase
 
 // ---------- atlas materials (the weapon atlas's last two free slots) ----------
@@ -47,7 +46,7 @@ Object.assign(GUNS,{
 GUNS.epChain={parts:(()=>{const P=[],n=29,s=.27,w=.16,t=.045;for(let i=0;i<n;i++){const z=i*s+s/2,e=w/2-t/2;
   if(i%2)P.push(Pt(0,e,z,t,t,s+.03,'gunmetal'),Pt(0,-e,z,t,t,s+.03,'gunmetal'));else P.push(Pt(e,0,z,t,t,s+.03,'forged'),Pt(-e,0,z,t,t,s+.03,'forged'))}return P})(),grip:[0,0,0],muzzle:[0,0,0]};
 const CHAIN={m:[],L:29*.27,A:[[-5.9,.2,46.1],[5.9,.2,46.1],[-5.9,.2,57.9],[5.9,.2,57.9]],_w:new THREE.Matrix4(),_v:new THREE.Vector3(),
-  on(){return EP.on&&EP.st===4&&EP.ph==='prep'&&EP.bossPh===1},
+  on(){return EP.on&&EP.id===1&&EP.st===4&&EP.ph==='prep'&&EP.bossPh===1},
   // (from ALEPH.attach, once its rig is posed for the frame)
   sync(a){const ch=a.ch;if(!this.on()||!a.alive||!ch.grp.visible||!ch.M)return;
     if(!this.m.length)for(let i=0;i<4;i++){const m=new THREE.Mesh(gunGeo('epChain'),matGun());m.frustumCulled=false;R.scene.add(m);this.m.push(m)}
@@ -62,34 +61,6 @@ const CHAIN={m:[],L:29*.27,A:[[-5.9,.2,46.1],[5.9,.2,46.1],[-5.9,.2,57.9],[5.9,.
           FX.spawn({x,y,z,vx:rr(-3,3),vy:rr(1,4),vz:rr(-3,3),life:rr(.2,.45),s0:.06,s1:.02,r:1,g:.8,b:.45,f:0,grav:9,add:1});if(i<4)FX.spawn({x,y,z,vx:rr(-2,2),vy:rr(2,4),vz:rr(-2,2),life:rr(.8,1.3),s0:.09,r:.3,g:.3,b:.32,f:7,grav:12,col:.3})}
         AU.at('imp_metal',e.x,e.y,e.z,{vol:.9,range:50})}
       R.scene.remove(m);m.material.dispose()}this.m=[]}};
-
-// ---------- floor warnings: a red outline and a fill that grows until the blow lands ----------
-const TELE={list:[],geo:null,tc:null,tr:null,id:0,
-  init(){if(this.geo)return;this.geo=new THREE.PlaneGeometry(1,1);this.geo.rotateX(-Math.PI/2);
-    const mk=(w,h,f)=>{const [cv,x]=mkCanvas(w,h);const id=x.createImageData(w,h),D=id.data;
-      for(let j=0;j<h;j++)for(let i=0;i<w;i++){const a=f((i+.5)/w*2-1,(j+.5)/h*2-1),k=(j*w+i)*4;D[k]=D[k+1]=D[k+2]=255;D[k+3]=clamp(a,0,1)*255}
-      x.putImageData(id,0,0);const t=new THREE.CanvasTexture(cv);t.generateMipmaps=false;t.minFilter=THREE.LinearFilter;return t};
-    this.tc=mk(128,128,(u,v)=>{const r=Math.hypot(u,v);return r>1?0:r>.9?1-(r-.9)*3:.2+.14*r});
-    this.tr=mk(32,128,(u,v)=>Math.max(Math.abs(u),Math.abs(v))>.88?1:.2)},
-  mat(tex){return new THREE.MeshBasicMaterial({map:tex,color:0xff2a14,transparent:true,opacity:.8,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})},
-  // o: {k:'c', x,y,z, r, d} or {k:'r', x,y,z, yaw, w, l, d}: a strip from x,z running l metres along yaw; d = seconds until it lands
-  add(o,remote){this.init();const T=Object.assign({},o,{t:0,id:++this.id});if(!(T.d>0))T.d=.6;
-    T.m=[0,1].map(()=>{const m=new THREE.Mesh(this.geo,this.mat(T.k==='c'?this.tc:this.tr));m.renderOrder=3;m.frustumCulled=false;R.scene.add(m);return m});
-    this.place(T,0);this.list.push(T);
-    if(NET.host&&!remote)netEv('ept',{k:T.k,x:r2(T.x),y:r2(T.y),z:r2(T.z),r:r2(T.r||0),w:r2(T.w||0),l:r2(T.l||0),yaw:r3(T.yaw||0),d:r2(T.d)});return T},
-  place(T,f){const [o,fl]=T.m;
-    if(T.k==='c'){o.position.set(T.x,T.y+.04,T.z);o.scale.set(T.r*2,1,T.r*2);const s=Math.max(.02,f)*T.r*2;fl.position.set(T.x,T.y+.05,T.z);fl.scale.set(s,1,s)}
-    else{const fx=-Math.sin(T.yaw),fz=-Math.cos(T.yaw),L=Math.max(.02,f)*T.l;o.position.set(T.x+fx*T.l/2,T.y+.04,T.z+fz*T.l/2);o.rotation.y=T.yaw;o.scale.set(T.w,1,T.l);
-      fl.position.set(T.x+fx*L/2,T.y+.05,T.z+fz*L/2);fl.rotation.y=T.yaw;fl.scale.set(T.w,1,L)}
-    const out=T.t>T.d?Math.max(0,1-(T.t-T.d)/.25):1;o.material.opacity=(.55+.4*Math.max(0,Math.sin(G.t*(f>.7?28:12))))*out;fl.material.opacity=(.25+.3*f)*out},
-  update(dt){for(let i=this.list.length-1;i>=0;i--){const T=this.list[i];T.t+=dt;if(T.t>T.d+.25){this.drop(T);this.list.splice(i,1);continue}this.place(T,clamp(T.t/T.d,0,1))}},
-  drop(T){for(const m of T.m){R.scene.remove(m);m.material.dispose()}},
-  clear(){for(const T of this.list)this.drop(T);this.list=[]},
-  // a live warning over this point and the way out of it (bots step out)
-  at(x,z,pad){pad=pad||0;for(const T of this.list){if(T.t>T.d)continue;
-      if(T.k==='c'){const dx=x-T.x,dz=z-T.z,d=Math.hypot(dx,dz);if(d<T.r+pad)return {ax:d>.05?dx/d:1,az:d>.05?dz/d:0}}
-      else{const fx=-Math.sin(T.yaw),fz=-Math.cos(T.yaw),rx=Math.cos(T.yaw),rz=-Math.sin(T.yaw),dx=x-T.x,dz=z-T.z,al=dx*fx+dz*fz,sd=dx*rx+dz*rz;
-        if(al>-pad&&al<T.l+pad&&Math.abs(sd)<T.w/2+pad){const s=sd>=0?1:-1;return {ax:rx*s,az:rz*s}}}}return null}};
 
 // ---------- thrown slabs: they fly, land, and stay 20 s as cover ----------
 const ROCK={list:[],id:0,
@@ -128,7 +99,36 @@ const STEAM={list:[],
 
 // ---------- ALEPH ----------
 const ALEPH={props:[],encNext:false,
+  zc:'aleph',name:['알레프','ALEPH'],code:'Q7-000',ticks:[60,25],g2:['분노','RAGE'],darkPh:3,
+  wake:['알레프 각성까지','ALEPH wakes in'],goText:['알레프가 구속을 끊었다!','ALEPH BREAKS ITS CHAINS'],deadText:['알레프 무력화 — 엘리베이터로!','ALEPH IS DOWN — GET TO THE LIFT'],
   hpFor(){const H=SCEN.H.length,d=G.diff||0;return Math.round(27000*(.6+.4*H)*SC_DIFF.hp[d])},
+  isEnc(a){return !!(a.al&&a.al.enc)},
+  // ---------- the chapter's hooks (episode.js) ----------
+  // the boss stage's prep: chained in the pit (a phase replay puts it back there at that phase's health)
+  prepSpawn(kind,bp){let b=EP.bossA();const C=MAP.ez.boss.ctr;if(!b)b=this.spawn([C[0],-.8,C[2]],Math.PI,false);else if(kind!=='phase')this.init(b,false);
+    if(b){if(kind==='phase')this.reset(b,bp);placeAt(b,C[0],-.8,C[2],Math.PI);b.yaw=Math.PI;b.al.idle=true}},
+  go(b){if(b.al){b.al.idle=false;b.al.pt=1.2;this.fx({k:'w',i:b.id,s:1.4,n:1})}},
+  // the first meeting in the lab corridor: through the specimen lab's wall, a charge or two, gone at −10 % (or after 35 s)
+  meetStart(E){EP.setGates(EP.gm|EP.bit('gW'),true);this.fx({k:'brk'});const W=MAP.ez.wallW;
+    const a=this.spawn([W[0],0,W[2]-1.9],Math.PI,true);if(a){E.a=a;a.al.idle=false;a.al.pt=.6;this.fx({k:'w',i:a.id,s:1.3,n:1})}
+    EP.say('enc');EP.later(2.2,()=>EP.say('enc2'))},
+  meetTick(E){const a=E.a;if(a&&a.alive&&a.al&&E.t>35)this.floorHit(a);if(!a||!a.alive)E.st='done'},
+  meetLeave(E){if(E.a&&E.a.alive&&E.a.al)this.floorHit(E.a)},
+  botGoal(a,i){const b=EP.bossA();if(!b)return null;const an=i*1.9+Math.floor(G.t/6)*.7;return [clamp(b.c.x+Math.cos(an)*12,-19,19),0,clamp(b.c.z+Math.sin(an)*12,33,71),1.5]},
+  update(dt){ROCK.update(dt);STEAM.update(dt);CHAIN.tick()},
+  stageClear(kind){if(kind!=='next')ROCK.clear();STEAM.clear()},
+  // the boss bar: the gauges and what it is doing (flags: 1 shield, 2 tank broken, 4 rage, 8 spent, 16 down, 32 invulnerable, 64 enraged, 128 first meeting)
+  bsOf(b){const S=b.al;return {id:b.id,ph:S.ph,grog:S.grog,gmax:S.grogMax,rage:S.rage,
+    f:(S.shield?1:0)|(S.tankB?2:0)|(S.frT>0?4:0)|(S.exT>0?8:0)|(S.mode==='down'||S.mode==='stun'?16:0)|(S.invT>0&&!S.enc?32:0)|(S.enr?64:0)|(S.enc?128:0),sh:S.shMax>0?S.sh/S.shMax*100:0,tank:S.tankMax>0?S.tank/S.tankMax*100:0}},
+  bsPack(b){if(!b.al)return 0;const B=this.bsOf(b);return [B.id,B.ph,Math.round(B.grog),Math.round(B.gmax),Math.round(B.rage),B.f,Math.round(B.sh),Math.round(B.tank)]},
+  bsUnpack(B){return {id:B[0],ph:B[1],grog:B[2],gmax:B[3],rage:B[4],f:B[5],sh:B[6],tank:B[7]}},
+  hud(B,L){const f=B.f;
+    return {ss:f&32?(L?'INVULNERABLE':'무적'):f&16?(L?'DOWN!':'그로기!'):f&4?(L?'RAGE!':'분노 폭주!'):f&8?(L?'SPENT — hit it!':'탈진 — 몰아쳐!'):f&1?(L?'SHIELD ':'방패 ')+Math.max(0,B.sh|0)+'%':f&64?(L?'ENRAGED':'광폭화'):'',
+      cls:f&4?'r':f&16||f&8?'y':'',sp:(f&128?(L?'FIRST CONTACT':'첫 조우'):(L?'PHASE ':'페이즈 ')+B.ph)+(f&2?(L?' · TANK BROKEN':' · 탱크 파괴'):''),
+      g1:B.grog/(B.gmax||100),g2:f&2||f&128?null:B.rage/100}},
+  // (a panel lights up while ALEPH stands next to it; the steam valves show when they are close)
+  markers(list,L,P){const M=MAP.ez,b=EP.bossA();for(const p of M.panels)if(!p.used){const hot=b&&Math.hypot(b.c.x-p.x,b.c.z-p.z)<4.8;list.push([p.x,p.y+.9,p.z,hot?(L?'⚡ SHOOT IT!':'⚡ 지금 쏴!'):(L?'⚡ panel':'⚡ 패널'),hot?'p hot':'p'])}
+    for(const v of M.valves)if(Math.hypot(v.x-P.c.x,v.z-P.c.z)<16)list.push([v.x,v.y+.8,v.z,L?'steam':'증기','s'])},
   // the boss slot of the pool comes back as ALEPH (no get-up: it is already standing, chained in the pit or behind a lab wall)
   spawn(p,yaw,enc){const a=SCEN.Z.find(z=>z.boss);if(!a)return null;if(a.alive)EP.despawn(a);a.zpick='aleph';a.deadT=99;this.encNext=!!enc;reviveZombie(a,p);a.yaw=yaw||0;this.encNext=false;return a},
   init(a,enc){const m=a.maxHp||1,tb=!!(a.al&&a.al.tankB&&!enc);
@@ -226,7 +226,7 @@ const ALEPH={props:[],encNext:false,
       if(S.shield){S.shield=false;this.fx({k:'shd',i:a.id,x:r2(c.x-Math.sin(a.yaw)*1.4),y:r2(c.y),z:r2(c.z-Math.cos(a.yaw)*1.4),yw:r3(a.yaw)})}this.summon(a,3,false);EP.say('aP3')}break}
     // the first meeting ends: a roar, a leap back through the hole it made, gone
     case 'ret':{a.an.skill=Math.max(a.an.skill,.6);if(S.mt<=0){const W=MAP.ez.wallW,T=this.leap(a,W[0],0,W[2]-5,2.2);this.start(a,'ret2',T+.8)}break}
-    case 'ret2':{if(!a.leapV||S.mt<=0){S.mode='gone';EP.encEnd(a)}break}}},
+    case 'ret2':{if(!a.leapV||S.mt<=0){S.mode='gone';EP.meetEnd(a)}break}}},
   slam(a,R,lo,hi){const c=a.c;SCEN.slamFx(c.x,c.y,c.z);if(NET.host)netEv('scsl',{x:r2(c.x),y:r2(c.y),z:r2(c.z)});
     for(const h of SCEN.H){if(!h.alive)continue;const dx=h.c.x-c.x,dz=h.c.z-c.z,d=Math.hypot(dx,dz);if(d>R||Math.abs(h.c.y-c.y)>2.5)continue;const f=1-d/R;
       SCEN.pushHuman(h,dx/(d||1)*10*f,4+5*f,dz/(d||1)*10*f);hurtHuman(h,EPD(lo+(hi-lo)*f),a,{})}},
@@ -266,7 +266,7 @@ const ALEPH={props:[],encNext:false,
   panel(i){const P=MAP.ez&&MAP.ez.panels[i];if(!P)return;const b=EP.bossA();const near=b&&b.al&&Math.hypot(b.c.x-P.x,b.c.z-P.z)<4.8;
     if(P.used||!near){this.fx({k:'pz',i});return}P.used=true;this.grog(b,35);this.fx({k:'pn',i});EP.say('aPanel')},
   // a shot (on the page that fired it) hit a panel or a valve
-  devShot(b,a){if(NET.ghost||!a||a.team!==TH||!EP.on||EP.st!==4)return;const o=b.o;
+  devShot(b,a){if(NET.ghost||!a||a.team!==TH||!EP.on||EP.id!==1||EP.st!==4)return;const o=b.o;
     if(o.epanel!=null){if(AU.throttle('epn'+o.epanel,250))return;if(NET.cli)netToHost({t:'eppn',i:o.epanel});else this.panel(o.epanel);return}
     if(o.esteam!=null){const V=MAP.ez.valves[o.esteam];if(!V||AU.throttle('epv'+o.esteam,300))return;if(NET.cli){netToHost({t:'epvl',i:o.esteam});return}if(G.t<(V.cd||0))return;V.cd=G.t+12;this.fx({k:'st',i:o.esteam})}},
   // ---------- every page: the tank and the shield on the rig, the slump, the tints ----------
@@ -292,7 +292,7 @@ const ALEPH={props:[],encNext:false,
   shieldSpark(t,o){if(!o||o.x==null||!o.dir||AU.throttle('epsh',60))return;const fx=-Math.sin(t.yaw),fz=-Math.cos(t.yaw),hl=Math.hypot(o.dir[0],o.dir[2])||1;if((o.dir[0]*fx+o.dir[2]*fz)/hl>=-.57)return;
     for(let i=0;i<6;i++)FX.spawn({x:o.x,y:o.y,z:o.z,vx:rr(-3,3)-o.dir[0]*2,vy:rr(0,3),vz:rr(-3,3)-o.dir[2]*2,life:rr(.15,.35),s0:.05,s1:.02,r:1,g:.85,b:.5,f:0,grav:9,add:1});AU.at('imp_metal',o.x,o.y,o.z,{vol:.5,range:30})},
   clear(){TELE.clear();ROCK.clear();STEAM.clear();CHAIN.off(false);for(const m of this.props){R.scene.remove(m);m.material.dispose()}this.props=[];
-    const E=MAP.ez;if(E){for(const p of E.panels)p.used=false;for(const v of E.valves)v.cd=0}},
+    const E=MAP.ez;if(E&&E.panels){for(const p of E.panels)p.used=false;for(const v of E.valves||[])v.cd=0}},
   // ---------- every page: what the events show ----------
   fxApply(m){const a=m.i!=null?byIdAny(m.i):null,P=G.player,L=LI(),E=MAP.ez;
     switch(m.k){
@@ -356,27 +356,120 @@ const STRAIT={
     if(v){v.grabT=0;v.rootT=0}a.staggerT=Math.max(a.staggerT,freed?1.2:.4);if(freed&&v){const dx=a.c.x-v.c.x,dz=a.c.z-v.c.z,d=Math.hypot(dx,dz)||1;a.kvx+=dx/d*5;a.kvz+=dz/d*5}
     ALEPH.fx({k:'ug',i:a.id,v:v?v.id:-1})}};
 
+// ---------- what the chapter's zombies do (episode.js dispatches through EPZ) ----------
+EPZ.aleph={hp:()=>ALEPH.hpFor(),init:a=>ALEPH.init(a,ALEPH.encNext),tick:(a,dt)=>ALEPH.tick(a,dt),
+  // its own moves own the controls; otherwise it swings at whoever is in reach
+  post(a){const S=a.al;if(!S)return;if(S.idle||S.mode){if(S.mode!=='lp'&&S.mode!=='p2l'&&S.mode!=='ret2'&&S.mode!=='tr'){a.cmd.f=a.cmd.s=0;a.cmd.jump=false}a.cmd.fire=a.cmd.alt=false;a.cmd.duck=false}
+    else{const t=a.bot&&a.bot.target;a.cmd.fire=!!(t&&t.alive&&Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z)<2.8&&Math.abs(t.c.y-a.c.y)<2.2&&Math.random()<.85)}
+    if(S.mode==='ch'||S.mode==='cw')a.yaw=Math.atan2(-S.dx,-S.dz)},
+  hit:(t,dmg,src,o)=>t.al?ALEPH.hit(t,dmg,src,o):dmg,after:(t,r)=>{if(t.al)ALEPH.after(t,r)},
+  spark(t,o){const shOn=NET.cli?!!(EP.bf&&EP.bf.f&1):!!(t.al&&t.al.shield);if(shOn)ALEPH.shieldSpark(t,o)},
+  // its claws hit hard and shove
+  claw(a,t,heavy){aimDir(a.yaw,0,_dv);const kb=heavy?7:4;if(t.isPlayer||!t.pup){t.kvx+=_dv.x*kb;t.kvz+=_dv.z*kb}else SCEN.pushHuman(t,_dv.x*kb,2,_dv.z*kb);a.scHit=G.t;hurtHuman(t,EPD(heavy?24:16),a,{claw:1});return true},
+  pre:(a,dt)=>ALEPH.pre(a,dt),attach:a=>ALEPH.attach(a),gone(a){if(a.al)a.al.mode='gone'}};
+EPZ.strait={init(a){a.st={mode:'',cd:rr(1,2.5),mt:0}},tick:(a,dt)=>STRAIT.tick(a,dt),
+  post(a){a.cmd.fire=a.cmd.alt=false;if(a.st&&(a.st.mode==='wind'||a.st.mode==='grab')){a.cmd.f=a.cmd.s=0;a.cmd.jump=false}},
+  // 150 damage from the victim's teammates shakes it off; no claws at all
+  after(t,r){if(t.st&&t.st.mode==='grab'){t.st.dmg+=r;if(t.st.dmg>=150)STRAIT.release(t,true)}},
+  claw(){return true},die(t){if(t.st&&t.st.mode==='grab')STRAIT.release(t,false)},gone(a){if(a.st&&a.st.mode==='grab')STRAIT.release(a,false);if(a.st)a.st.mode=''}};
+
+// ---------- chapter 1 「알레프」: the Q-7 research wing ----------
+//   1 the outer checkpoint — three waves; then the research wing's glass doors open
+//   2 the lobby — hold the two security terminals in turn (25 s each, a zombie inside the ring stops the count); then the inner door
+//   3 the lab corridor — hold out 60 s for the cargo lift. ALEPH bursts out of a lab, shows a charge or two and backs off once it has
+//     lost a tenth of its health (or after 35 s); then the team boards, rides down 15 s and steps out in B4
+//   4 B4 — the boss fight, three phases. A wipe replays the phase it reached, at that phase's health
+//   5 the escape — 60 s back to the lift (late still clears, without the bonus)
+CHAP[1]={id:1,k:'aleph',map:'ep1',code:'Q7-000',n:['알레프','ALEPH'],t:['좀비 시나리오: 알레프','Zombie Scenario: ALEPH'],
+  file:[['최초 감염자 Q7-000. 맞을수록 분노가 차올라 폭주한다','Patient zero, Q7-000: every hit feeds its rage until it snaps'],['등의 주황 혈청 탱크가 약점 · 기둥 패널로 감전','The orange tank on its back is the weak point · shock it at the pillars']],
+  cards:{place:['Q-7','Q-7'],who:['최초 감염자','PATIENT ZERO'],line:['강화 혈청 1호 피험자 — 통증을 못 느끼고, 맞을수록 분노한다','Serum subject no. 1 — feels no pain; every hit makes it angrier']},
+  boss:ALEPH,
+  // gates: A glass doors, B the inner security door, C / D the lift doors, N the B4 bulkhead, W the lab wall
+  gates:['gA','gB','gC','gD','gN','gW'],gateDur:{gA:.9,gB:1.6,gN:.25,gW:.25},
+  stages:[null,
+    {z:'A',k:'waves',n:['외곽 검문소','Outer checkpoint'],on:['검문소를 지켜라','Hold the checkpoint'],prep:18,clr:'s1c'},
+    {z:'B',k:'terms',n:['로비 · 보안실','Lobby · security'],on:['보안 단말 확보','Secure the terminals'],t:25,say:'s2',clr:'s2c',done1:'t1',intro:{zc:'strait',say:'strait',at:8},
+      mix:[['rager',52],['runner',24],['strait',14],['spitter',6],['scream',4]]},
+    {z:'C',k:'hold',n:['연구 복도','Lab corridor'],on:['엘리베이터 도착까지','The lift arrives in'],len:60,say:'s3',sayRetry:1,meet:{at:12,cap:.5},hp:[55,0,0,2.4],mk:[62.15,2.8,0,['엘리베이터','LIFT']],
+      mix:[['rager',44],['runner',28],['strait',14],['bomber',10],['brute',4]]},
+    {z:'D',k:'boss',n:['B4 격리 실험장','B4 isolation chamber'],on:['알레프를 쓰러뜨려라','Bring ALEPH down'],say:'s4',go:'b0',prepPt:[0,0,70,2]},
+    {z:'D',k:'escape',n:['탈출','The escape'],on:['탈출 — 엘리베이터까지','ESCAPE — the lift'],len:60,mix:[['runner',55],['rager',33],['strait',12]]}],
+  stageGates(n,kind,bp){const b=k=>EP.bit(k);let m=0;if(n>=2)m|=b('gA');if(n>=3)m|=b('gB');if(n>=4)m|=b('gW');
+    if(n===4&&kind!=='phase')m|=b('gD');if(n===4&&kind==='phase'&&bp>=2)m|=b('gN');if(n===5)m|=b('gD')|b('gN');return m},
+  // the cold room behind the bulkhead lets the infected out once it is open
+  zsp(n,Zn){return Zn.cold&&EP.gateIsOpen('gN')?Zn.zsp.concat(Zn.cold):Zn.zsp},
+  phaseStart(Zn){return Zn.start.map(s=>[s[0],s[1],s[2]-8.4,s[3]])},
+  strobes:[[-12,7,46],[12,7,58]],
+  setup(){const M=MAP.ez;M.exit=M.carD;M.exitMk=[M.door.D[0],2.8,M.door.D[2]+3];M.door.C=M.door.C||[62.15,1.5,0]},
+  // the lift: board (40 s), ride down (15 s), step out in B4
+  holdDone(){this.boardStart()},
+  boardStart(){this.trickleK=.75;EP.ph='board';EP.t=40;G.time=40;EP.setGates(EP.gm|EP.bit('gC'));this.boardFx();if(NET.host)netEv('epb',{})},
+  boardFx(){EP.radio('lift');AU.play('powerup',{vol:.8});HUD.announce(LI()?'THE LIFT IS HERE':'엘리베이터 도착','h',2.5)},
+  hostPh(ph,dt){if(ph==='ride'){EP.t-=dt;G.time=EP.t;if(EP.t<=0)this.rideEnd();return true}
+    if(ph==='board'){if(humansAlive()===0){EP.fail();return true}EP.t-=dt;G.time=EP.t;EP.trickle(dt,CHAP[1].stages[3].mix,.75);const C=MAP.ez.carC;let all=true;for(const h of SCEN.H)if(h.alive&&!EP.inCar(C,h))all=false;
+      if(all||EP.t<=0)this.rideStart();return true}return false},
+  rideStart(){const C=MAP.ez.carC,tp=[];let i=0;
+    // the last ones are pulled in as the doors close
+    for(const h of SCEN.H){if(!h.alive||EP.inCar(C,h))continue;const x=64+(i%3)*1.4,z=-1.6+Math.floor(i/3)*1.6;i++;placeAt(h,x,0,z,-Math.PI/2);tp.push([h.id,r2(x),0,r2(z),r3(-Math.PI/2)])}
+    const ids=[];for(const a of SCEN.Z)if(a.alive){EP.despawn(a);ids.push(a.id)}
+    EP.ph='ride';EP.t=15;G.st='fight';G.time=15;EP.setGates(EP.gm&~EP.bit('gC'));SCEN.closePick(false);this.rideBegin();if(NET.host)netEv('epr',{P:tp,z:ids})},
+  rideBegin(){EP.radio('ride');AU.play('blackout',{vol:.55,rate:.7});HUD.announce(LI()?'GOING DOWN TO B4':'B4로 하강','w',2.5);this.rideK=0},
+  update(dt){if(EP.ph==='ride')this.rideFx(dt);else if(this.rideL){this.rideL.dead=true;this.rideL=null}},
+  rideFx(dt){const P=G.player,C=MAP.ez&&MAP.ez.carC;if(!C)return;this.rideK=(this.rideK||0)+dt;
+    if(P&&P.alive&&EP.inCar(C,P,.5))FX.shake=Math.max(FX.shake,.16+.06*Math.sin(G.t*13));
+    if(!this.rideL)this.rideL=DL.add(65,2,0,'#ffe2b0',7,1.4,0);const L0=this.rideL;L0.x=65;L0.z=0;L0.y=4.4-((this.rideK*1.3)%1)*4.6;L0.i=1.1;
+    if(Math.floor(this.rideK/2.6)!==Math.floor((this.rideK-dt)/2.6))AU.at('land',65,1,0,{vol:.45,range:20,rate:.6})},
+  // (the car C → car D move: x_D = −z_C, z_D = 74 + (x_C − 62), yaw − π/2)
+  rideEnd(){if(this.rideL){this.rideL.dead=true;this.rideL=null}const C=MAP.ez.carC,D=MAP.ez.carD,arr={};
+    for(const h of SCEN.H){if(!h.alive)continue;const d=h.c.x-C.dx,l=h.c.z-C.dz;arr[h.id]=[D.dx-l,h.c.y,D.dz+d,wrapA(h.yaw-Math.PI/2)]}
+    EP.stageStart(4,'next',null,arr)},
+  // out of the car: the door shuts behind the team
+  bossGo(){const D=MAP.ez.carD,tp=[];let i=0;for(const h of SCEN.H){if(!h.alive||h.c.z<D.z0-.4)continue;const x=-3+(i%4)*2,z=70.4-Math.floor(i/4)*1.4;i++;placeAt(h,x,0,z,0);tp.push([h.id,r2(x),0,r2(z),0])}
+    EP.setGates(EP.gm&~EP.bit('gD'));return tp},
+  escapeStart(){EP.setGates(EP.gm|EP.bit('gD')|EP.bit('gN'));const Zn=EP.zone('D');SCEN.zsp=Zn.zsp.concat(Zn.cold)},
+  onFinish(win,bonus){if(win&&bonus)EP.setGates(EP.gm&~EP.bit('gD'))},
+  goal(a){if(EP.ph==='board'||EP.ph==='ride')return [65,0,0,1.1]},
+  markers(list,L){if(EP.ph==='board'){list.push([MAP.ez.door.C[0]+3,2.6,0,L?'LIFT':'엘리베이터','g']);return false}return false},
+  objText(L,ts){if(EP.ph==='board')return [(L?'Into the lift!':'엘리베이터 탑승!')+` · ${ts}${L?'s':'초'}`];if(EP.ph==='ride')return [L?'Going down to B4…':'B4로 하강 중…',1-EP.t/15];return null},
+  deadText(L){if(EP.ph==='ride')return L?'Down — back on your feet when the lift reaches B4 · spectating':'쓰러짐 — 엘리베이터가 B4에 닿으면 다시 일어나요 · 관전 중';return null},
+  radio:{
+    start:['2차 회수팀, Q-7 외곽 검문소 도착. 1차 회수팀(RT-1)은 4시간째 응답이 없다.','RT-2, you are at the Q-7 checkpoint. RT-1 has not answered for four hours.',0],
+    w1:['철조망이 뚫렸다! 검문소부터 정리해.','The wire is down! Clear the checkpoint first.',0],
+    s1c:['연구동 유리문 원격 해제. 안으로 들어가.','Research wing doors unlocked. Get inside.',0],
+    s2:['보안 단말 두 곳에서 출입 기록을 뽑아 — 1층 보안실, 2층 서버실.','Pull the access logs from both terminals: the security room, then the server room upstairs.',0],
+    strait:['구속복 입은 놈들이다! 붙잡히면 못 쏴 — 서로 떼어 줘!','Straitjackets! One pins you and you cannot shoot — get them off each other!',1],
+    t1:['첫 번째 단말 확보. 2층 서버실로.','First terminal done. Up to the server room.',0],
+    s2c:['기록 확보… RT-1이 지하 B4로 내려갔다. 안쪽 보안문 연다.','Got the logs… RT-1 went down to B4. Opening the inner door.',0],
+    s3:['복도 끝 화물 엘리베이터 호출 중. 60초만 버텨.','Calling the cargo lift at the end of the corridor. Hold out 60 seconds.',0],
+    enc:['벽 너머에 뭔가 있어—!','Something is behind that wall—!',1],
+    enc2:['저건… Q7-000, 알레프. 최초 감염자다!','That is… Q7-000. ALEPH. Patient zero!',0],
+    aRet:['놈이 물러난다! 엘리베이터는?','It is pulling back! Where is that lift?',1],
+    lift:['엘리베이터 도착. 전원 탑승!','The lift is here. Everybody in!',0],
+    ride:['B4 격리 실험장으로 내려간다. 알레프가 거기 있다.','Going down to the B4 isolation chamber. ALEPH is there.',0],
+    s4:['등의 주황 혈청 탱크가 약점이다. 기둥 전기 패널, 증기 배관도 써.','The orange tank on its back is the weak point. Use the pillar panels and the steam valves.',0],
+    b0:['구속이 끊어졌다—온다!','It broke loose—here it comes!',1],
+    aP2:['격벽을 뜯어 방패로 쓴다! 옆이나 뒤로 돌아, HE로 부숴!','It ripped the bulkhead off for a shield! Flank it, or break it with HE!',1],
+    aP3:['전력이 나갔다! 비상등뿐이다—놈이 날뛴다!','The power is out! Emergency lights only—it is going wild!',0],
+    aFren:['분노 폭주다! 거리 벌려!','It is raging! Get some distance!',1],
+    aExh:['지쳤다! 지금 몰아쳐!','It is spent! Hit it now!',1],
+    aDown:['쓰러졌다! 집중 사격!','It is down! Pour it on!',1],
+    aTank:['혈청 탱크 파괴! 더는 분노 못 한다!','Serum tank destroyed! No more rage!',1],
+    aShB:['방패가 깨졌다!','The shield broke!',1],
+    aWall:['벽에 박았다—지금이야!','It hit the wall—now!',1],
+    aPanel:['감전! 패널이 먹혔다!','Shocked! The panel worked!',1],
+    aEnr:['놈이 더 빨라진다—시간을 끌면 안 돼!','It is getting faster—we cannot drag this out!',0],
+    dead:['알레프 무력화 확인! 60초 안에 엘리베이터로 탈출해!','ALEPH is down! Back to the lift—60 seconds!',0],
+    esc:['2차 회수팀 탈출 확인. 수고했다.','RT-2 is out. Good work.',0],
+    late:['늦었지만… 살아 나왔군. 수고했다.','Late, but alive. Good work.',0]}};
+
 // ---------- hooks ----------
 (function(){
-  // damage in: the shield, the tank, the gauges, the phase floors (host); the episode's grabs come off with 150 damage
-  const da0=damageActor;damageActor=function(t,dmg,src,o){
-    if(!(EP.on&&t&&t.alive&&t.team===TZ&&t.scen))return da0(t,dmg,src,o);
-    if(t.zc==='aleph'&&src&&src.isPlayer){const shOn=NET.cli?!!(EP.bf&&EP.bf.f&1):!!(t.al&&t.al.shield);if(shOn)ALEPH.shieldSpark(t,o)}
-    if(NET.cli||NET.ghost)return da0(t,dmg,src,o);
-    if(t.zc==='aleph'&&t.al)dmg=ALEPH.hit(t,dmg,src,o||{});
-    const r=da0(t,dmg,src,o);
-    if(r>0){if(t.zc==='aleph'&&t.al)ALEPH.after(t,r);else if(t.zc==='strait'&&t.st&&t.st.mode==='grab'){t.st.dmg+=r;if(t.st.dmg>=150)STRAIT.release(t,true)}}
-    return r};
-  // ALEPH's claws hit hard and shove; the straitjacket zombie has none
-  const ca=clawApply;clawApply=function(a,t,heavy){if(EP.on&&a&&a.scen){if(a.zc==='strait')return;
-      if(a.zc==='aleph'){aimDir(a.yaw,0,_dv);const kb=heavy?7:4;if(t.isPlayer||!t.pup){t.kvx+=_dv.x*kb;t.kvz+=_dv.z*kb}else SCEN.pushHuman(t,_dv.x*kb,2,_dv.z*kb);a.scHit=G.t;hurtHuman(t,EPD(heavy?24:16),a,{claw:1});return}}
-    return ca(a,t,heavy)};
-  // the rig's extras every frame (all pages)
-  const uv0=updateVisual;updateVisual=function(a,dt){const al=a.zc==='aleph'&&a.team===TZ;if(al)ALEPH.pre(a,dt);uv0(a,dt);if(al)ALEPH.attach(a)};
   Object.assign(CLIH,{
     epx(L,m){ALEPH.fxApply(m)},
-    ept(L,m){TELE.add({k:m.k,x:m.x/100,y:m.y/100,z:m.z/100,r:m.r/100,w:m.w/100,l:m.l/100,yaw:m.yaw/1000,d:m.d/100},true)}});
+    epb(){EP.ph='board';EP.t=40;CHAP[1].boardFx()},
+    epr(L,m){const P=G.player;for(const q of m.P||[])if(P&&q[0]===P.id)placeAt(P,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);for(const i of m.z||[]){const a=byIdAny(i);if(a)EP.despawn(a)}
+      EP.ph='ride';EP.t=15;SCEN.closePick(false);CHAP[1].rideBegin()}});
   Object.assign(HOSTH,{
-    eppn(L,m){if(EP.on&&EP.st===4&&actorOfKey(L.key))ALEPH.panel(m.i|0)},
-    epvl(L,m){const V=EP.on&&MAP.ez&&MAP.ez.valves[m.i|0];if(V&&EP.st===4&&G.t>=(V.cd||0)){V.cd=G.t+12;ALEPH.fx({k:'st',i:m.i|0})}}});
+    eppn(L,m){if(EP.on&&EP.id===1&&EP.st===4&&actorOfKey(L.key))ALEPH.panel(m.i|0)},
+    epvl(L,m){const V=EP.on&&EP.id===1&&MAP.ez&&MAP.ez.valves[m.i|0];if(V&&EP.st===4&&G.t>=(V.cd||0)){V.cd=G.t+12;ALEPH.fx({k:'st',i:m.i|0})}}});
 })();

@@ -22,7 +22,11 @@ Object.assign(ZCLASS,{
 Object.assign(ZCLASS,{
   aleph:{n:['알레프','ALEPH'],sk:['분노','Rage'],d:['1챕터 보스 · Q7-000','Chapter 1 boss · Q7-000'],hp:30000,armor:0,speed:4.7,jump:8,kb:.05,dmg:70,skill:'none',cd:99,dur:0,hw:.4,h:2.05,eye:2},
   strait:{n:['구속복 좀비','Straitjacket Zombie'],sk:['덮치기','Pounce'],d:['1챕터 · 할퀴지 못하고 덮쳐서 붙잡는다 (동료가 떼어 줘야 함)','Chapter 1 · cannot claw: pounces and pins you (a teammate has to shoot it off)'],hp:1530,armor:40,speed:6.6,jump:7.4,kb:1.2,dmg:0,skill:'none',cd:99,dur:0,hw:.29,h:1.82,eye:1.66}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 2 (argus.js): ARGUS, RT-1's sniper (a tall soldier's body; its hits are worked out by the chapter), and the RT-1 squad zombie
+Object.assign(ZCLASS,{
+  argus:{n:['아르고스','ARGUS'],sk:['저격','Snipe'],d:['2챕터 보스 · RT1-07','Chapter 2 boss · RT1-07'],hp:14000,armor:0,speed:5.5,jump:8.5,kb:.25,dmg:28,skill:'none',cd:99,dur:0,hw:.32,h:1.9,eye:1.76},
+  squad:{n:['1차 팀 분대원 좀비','RT-1 Squad Zombie'],sk:['수류탄','Grenade'],d:['2·4챕터 · 방탄조끼(정면 총알 −30%), 가끔 수류탄, 쓰러지면 탄약','Chapters 2 and 4 · body armour (−30 % from the front), a grenade now and then, drops ammo'],hp:1700,armor:60,speed:5.5,jump:7.2,kb:.9,dmg:22,skill:'none',cd:99,dur:0,hw:.3,h:1.84,eye:1.7}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};

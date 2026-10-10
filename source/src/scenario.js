@@ -7,7 +7,7 @@
 const SCEN={POOL:30,STAGES:5,WAVES:3,on:false,stage:1,wave:0,ph:'',t:0,lives:3,queue:[],spawnT:0,remain:0,total:0,boss:null,bossId:-1,acid:[],tq:[],
   H:[],Z:[],pickOpen:false,picked:false,offer:null,best:0,win:false,chkT:0,PH:['prep','wave','break','fail','over']};
 // the horde walks a little slower than infection-mode zombies: there are many more of them
-SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9};
+SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9,argus:1,squad:.86};
 const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;
 Object.assign(STR.ko,{scen:'좀비 시나리오',scenD:'협동 PvE — 감염 없이 끝까지 인간으로 싸운다. 스테이지 5개 × 웨이브 3번, 마지막엔 거대 좀비. 팀 목숨 3개: 전멸하면 그 스테이지를 다시 하고, 다 쓰면 게임 오버. 죽어도 다음 웨이브에 부활.',scDead:'다음 웨이브에 부활 — 관전 중',allies:'아군 봇'});
@@ -119,7 +119,7 @@ SCEN.update=function(dt){if(!SCEN.on)return;SCEN.updateAcid(dt);
   for(const a of SCEN.Z)if(a.alive){if(a.zc==='bomber')SCEN.bomberTick(a,dt);else if(a.zc==='boss')SCEN.bossTick(a,dt)}};
 // a zombie that has neither hurt anyone nor been hurt for a while (stuck under a ledge, lost) comes back in at a fresh spawn point
 SCEN.unstick=function(dt){SCEN.chkT-=dt;if(SCEN.chkT>0)return;SCEN.chkT=2;
-  for(const a of SCEN.Z){if(!a.alive||a.zc==='aleph')continue;const idle=G.t-Math.max(a.scSeen||0,a.scHit||0,a.lastHurt||0);
+  for(const a of SCEN.Z){if(!a.alive||a.zc==='aleph'||typeof EPZ!=='undefined'&&EPZ[a.zc]&&EPZ[a.zc].ai)continue;const idle=G.t-Math.max(a.scSeen||0,a.scHit||0,a.lastHurt||0);
     if(idle>(a.zc==='boss'?30:22)||a.c.y<-30){a.scSeen=G.t;const p=SCEN.spawnPoint(a.zc==='boss');placeAt(a,p[0],p[1],p[2],a.yaw);if(a.bot)AI.onTeam(a)}}};
 // ally bots stay with the team: they hold a spot a few metres around the leader (the player, or the first human still standing), facing out
 SCEN.lead=a=>{const P=G.player;if(P&&P.alive&&!P.scen)return P;for(const h of SCEN.H)if(h.alive)return h;return null};
@@ -253,10 +253,10 @@ function byIdAny(id){for(const a of G.actors)if(a.id===id)return a;return null}
 // compact zombie state: [id, x, y, z, vx, vz, yaw, hp, maxHp, class (+16 airborne)]; near zombies every tick, far ones every third
 SCEN.encZ=function(k){const out=[];
   for(const a of SCEN.Z){if(!a.alive)continue;let near=false;for(const h of SCEN.H)if(h.alive&&Math.abs(h.c.x-a.c.x)+Math.abs(h.c.z-a.c.z)<34){near=true;break}if(!near&&(k+a.id)%3)continue;
-    const c=a.c;out.push([a.id,r2(c.x),r2(c.y),r2(c.z),r1(c.vx),r1(c.vz),r2(a.yaw),Math.ceil(a.hp),Math.round(a.maxHp),ZALL.indexOf(a.zc)|(c.onGround?0:16)])}return out};
-SCEN.decZ=function(Z,ts){for(const e of Z){const a=byId(e[0]);if(!a||!a.scen)continue;const zc=ZALL[e[9]&15]||'rager';
+    const c=a.c;out.push([a.id,r2(c.x),r2(c.y),r2(c.z),r1(c.vx),r1(c.vz),r2(a.yaw),Math.ceil(a.hp),Math.round(a.maxHp),ZALL.indexOf(a.zc)|(c.onGround?0:64)])}return out};// (the class index: 6 bits; 64 = in the air)
+SCEN.decZ=function(Z,ts){for(const e of Z){const a=byId(e[0]);if(!a||!a.scen)continue;const zc=ZALL[e[9]&63]||'rager';
     if(zc!==a.zc){a.zc=a.zpick=zc;setHull(a);ensureRig(a);a.name=ZCLASS[zc].n[LI()]}
-    if(!a.alive)continue;netSample(a,ts,e[1]/100,e[2]/100,e[3]/100,e[4]/10,e[5]/10,e[6]/100,0,3|((e[9]&16)?0:8),WI.claw);a.nsrc='h';a.hp=e[7];a.maxHp=e[8]}};
+    if(!a.alive)continue;netSample(a,ts,e[1]/100,e[2]/100,e[3]/100,e[4]/10,e[5]/10,e[6]/100,0,3|((e[9]&64)?0:8),WI.claw);a.nsrc='h';a.hp=e[7];a.maxHp=e[8]}};
 SCEN.encState=()=>[SCEN.stage,SCEN.wave,SCEN.PH.indexOf(SCEN.ph),Math.round(SCEN.t*10),SCEN.lives,SCEN.remain,SCEN.bossId];
 SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[0];SCEN.wave=s[1];SCEN.ph=SCEN.PH[s[2]]||SCEN.ph;SCEN.t=s[3]/10;SCEN.lives=s[4];SCEN.remain=s[5];SCEN.bossId=s[6];
   if(G.st!=='over'&&G.st!=='menu'){const st=SCEN.ph==='wave'?'fight':SCEN.ph==='fail'||SCEN.ph==='over'?'end':'prep';if(G.st!==st)G.st=st}};
