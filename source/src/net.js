@@ -197,7 +197,7 @@ function netFlags(a){const c=a.c;return (a.alive?1:0)|(a.team===TZ?2:0)|(a.duck?
   (a.sawCut?512:0)|(a.zoom>0?1024:0)|(a.permaDead?2048:0)|(a.reviving>0?4096:0)|(a.burnT>0?8192:0)|((a.spinV||0)>.5?16384:0)}
 function netEncA(a){const c=a.c,s=a.nraw;let F=netFlags(a);if(s)F=(F&~OWN_BITS)|(s.F&OWN_BITS);
   return [a.id,r2(s?s.x:c.x),r2(s?s.y:c.y),r2(s?s.z:c.z),r2(s?s.vx:c.vx),r2(s?s.vz:c.vz),r3(s?s.yaw:a.yaw),r3(s?s.pitch:a.pitch),F,s?s.cur:(WI[a.cur]??-1),
-    Math.ceil(a.hp),Math.ceil(a.armor),Math.round(a.maxHp),a.lvl,ZI[a.zc]|0,r1(a.skillT),r1(a.frozen),r1(a.rootT),a.money|0,r1(a.skillCD)]}
+    Math.ceil(a.hp),Math.ceil(a.armor),Math.round(a.maxHp),a.lvl,ZI[a.zc]|0,r1(a.skillT),r1(a.frozen),r1(a.rootT),G.mode==='scen'?a.money|0:0,r1(a.skillCD)]}// [18]: the scenario's upgrade money (0 elsewhere)
 function netEncSelf(P){const c=P.c;return [r2(c.x),r2(c.y),r2(c.z),r2(c.vx),r2(c.vz),r3(P.yaw),r3(P.pitch),netFlags(P)&OWN_BITS,WI[P.cur]??-1,r1(P.frozen),r1(P.rootT),P.nyFree||0,ZI[P.zpick]|0]}
 function netSample(a,t,x,y,z,vx,vz,yaw,pitch,F,cur){const B=a.nb||(a.nb=[]);if(B.length&&t<=B[B.length-1].t)return;B.push({t,x,y,z,vx,vz,yaw,pitch,F,cur});if(B.length>40)B.splice(0,B.length-40)}
 
@@ -343,7 +343,6 @@ const HOSTH={
   claw(L,m){const a=actorOfKey(L.key),t=byId(m.i);if(!a||!t||!a.alive||a.team!==TZ||!t.alive||t.team!==TH)return;clawApply(a,t,!!m.h)},
   fall(L,m){const a=actorOfKey(L.key);if(a&&a.alive&&a.team===TH)hurtHuman(a,clamp(+m.d||0,0,500),null,{fall:1})},
   eff(L,m){const src=actorOfKey(L.key),t=byId(m.i);if(t&&src)netApplyEff(t,m,src)},
-  addm(L,m){const a=actorOfKey(L.key);if(a)a.money+=ADD_MONEY},
   buy(L,m){const a=actorOfKey(L.key);const ok=!!(a&&buy(a,m.w));netSend(L.key,{t:ok?'buyok':'buyno',w:m.w})},
   // a skill pressed just before the cooldown ends (the client's view of it lags a little) fires the moment it is ready
   sk(L){const a=actorOfKey(L.key);if(!a||!a.alive||a.team!==TZ)return;if(a.skillCD>0&&a.skillCD<.6)a.skPend=G.t+.7;else useSkill(a)}};
@@ -364,8 +363,8 @@ const CLIH={
   over(){G.st='over';UI.showResults()},
   bo(L,m){if(m.on)BO.start(m.d||20,true);else BO.stop(true)},
   tolobby(){netToLobby()},
-  buyok(L,m){const P=G.player;if(P&&buy(P,m.w,true)&&Main.overlay==='buy')UI.renderBuy()},
-  buyno(){HUD.note(T('noMoney'),1.2);AU.play('dry',{vol:.5})},
+  buyok(L,m){ldBuyOk(m.w)},
+  buyno(L,m){ldBuyNo(m.w)},
   eff(L,m){const P=G.player;if(P&&m.i===P.id)netApplyEff(P,m,null)},
   sk(L,m){const a=byId(m.i);if(a){NET.ghost++;try{skillFx(a,m.k)}finally{NET.ghost--}}},
   trap(L,m){const a=byId(m.o);if(a)nyTrapAdd(a,m.x/100,m.y/100,m.z/100,m.r/1000,m.i)},
@@ -381,7 +380,7 @@ function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=C
 const NET_FIXED_CODE='1234';
 NET.create=async function(){netTables();const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
   NET.on=true;NET.host=true;NET.cli=false;NET.ui='lobby';NET.links.clear();NET.out.clear();NET.inQ=[];NET.msg=T('mpConnecting');
-  NET.lob={cfg:Object.assign({mode:CFG.mode,bots:8,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time},CFG.mpCfg||{}),pl:[]};if(!MAPDEFS[NET.lob.cfg.map])NET.lob.cfg.map=MAPDEFS[CFG.map]?CFG.map:'q7';if(MAP.id!==NET.lob.cfg.map)loadMapUI(NET.lob.cfg.map);
+  NET.lob={cfg:Object.assign({mode:CFG.mode,bots:8,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,blackout:1},CFG.mpCfg||{}),pl:[]};if(!MAPDEFS[NET.lob.cfg.map])NET.lob.cfg.map=MAPDEFS[CFG.map]?CFG.map:'q7';if(MAP.id!==NET.lob.cfg.map)loadMapUI(NET.lob.cfg.map);
   // the room code is always the same (NET_FIXED_CODE): friends just press create / join. If a room with it is already open, join that one instead.
   NET.code=NET_FIXED_CODE;try{if(kind==='room'){NET.me='k'+netKey(9);await RSIG.open()}else await PJ.host()}
   catch(e){PJ.close();NET.on=false;NET.ui='';
@@ -408,7 +407,7 @@ NET.start=function(){if(!NET.host||NET.ui!=='lobby')return;const cfg=Object.assi
 // every page builds the same actors from the host's roster
 function netBegin(cfg,ro){netTables();AU.init();MAP.want=MAPDEFS[cfg.map]?cfg.map:'q7';loadMap(MAP.want);Main.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);
   NET.ui='game';NET.k=0;NET.lastK=0;NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.tAcc=0;UI.hideAll();
-  startMatch(Object.assign({},cfg,{money:6000,ro}));for(const a of G.actors)NET.ids.set(a.id,a);
+  startMatch(Object.assign({},cfg,{ro}));for(const a of G.actors)NET.ids.set(a.id,a);
   HUD.show(true);Main.paused=false;Main.overlay=null;if(NET.host)Main.lock();else HUD.note(T('clickToPlay'),4);window.onbeforeunload=e=>{if(NET.on){e.preventDefault();e.returnValue='';return ''}}}
 function netToLobby(){if(NET.host)netEv('tolobby');for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);G.actors=[];G.player=null;clearNades();NY.clear();FX.clearDecals();
   AU.stopAll('countdown');Main.closeOverlay(true);Main.paused=false;R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;NET.ui='lobby';NET.ids.clear();NET.fxQ=[];

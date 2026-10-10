@@ -421,4 +421,4 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   MAP.cam=(t,cam)=>{const a=Math.sin(t*.045)*.6;cam.position.set(28.5+a*3,8.6+Math.sin(t*.07)*.5,18.5-a);cam.lookAt(18+a*2,2.6,-4)};
 }
 MAPDEFS.militia={n:['밀리샤','Militia'],d:['달빛 아래 붉은 협곡의 민병대 목장. 2층 목조 주택과 차고 옥상, 협곡 사이 좁은 통로, 콘크리트 배수로와 터널.','A militia ranch in a red-rock canyon under a cold moon: a two-storey wooden house, a garage roof terrace, narrow canyon passages, concrete drainage channels and a culvert tunnel.'],
-  env:{sky:1,sun:0,skyTex:'milSky',rain:0,storm:0,fog:'#121a2a',fogD:.022,ambOut:'#2e3852',ambIn:'#1a1820'},bounds:[-43,-27,43,28],probeY:[-1.0,.9,2.4,4.3,6.2],tex:bakeMilTex,build:buildMilitia};
+  env:{sky:1,sun:0,skyTex:'milSky',rain:0,storm:0,fog:'#121a2a',fogD:.022,ambOut:'#2e3852',ambIn:'#1a1820',boAmb:.4},bounds:[-43,-27,43,28],probeY:[-1.0,.9,2.4,4.3,6.2],tex:bakeMilTex,build:buildMilitia};

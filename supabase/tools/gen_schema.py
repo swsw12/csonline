@@ -1,4 +1,12 @@
--- ============================================================================================================
+# generates ../schema.sql from prices.py:  python3 supabase/tools/gen_schema.py
+import sys,os
+HERE=os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0,HERE)
+from prices import *
+rows=[f"  ('{g}',0,true,true,null)" for g in FREE]+[f"  ('{g}',{p},false,true,null)" for g,p in PRICES]+[f"  ('{g}',0,false,false,null)" for g in NOT_SOLD]\
+    +[f"  ('{g}',0,false,false,'{t}')" for t in ('S','A') for g in GACHA[t]]
+seed=",\n".join(rows)
+sql=r"""-- ============================================================================================================
 -- QUARANTINE Z — accounts, coins, the gun shop and the decoder bingos: 근하신년 + season (Supabase)
 -- Supabase 대시보드 → SQL Editor → New query → 이 파일 전체를 붙여넣고 Run. 여러 번 실행해도 안전합니다.
 --
@@ -164,50 +172,7 @@ create policy "read own season card" on public.season_boards for select to authe
 
 -- ---------- price list (re-running updates it; tier S / A = pouch only) ----------
 insert into public.gun_prices (gun_id, price, free, sold, tier) values
-  ('knife',0,true,true,null),
-  ('p9',0,true,true,null),
-  ('sg8',0,true,true,null),
-  ('k5',0,true,true,null),
-  ('g35',0,true,true,null),
-  ('f7',1200,false,true,null),
-  ('d50',1500,false,true,null),
-  ('tw9',1800,false,true,null),
-  ('r6',2000,false,true,null),
-  ('db2',1500,false,true,null),
-  ('m14',3500,false,true,null),
-  ('as12',4500,false,true,null),
-  ('k9',1200,false,true,null),
-  ('um45',1800,false,true,null),
-  ('pd50',3000,false,true,null),
-  ('br3',2500,false,true,null),
-  ('kv47',3500,false,true,null),
-  ('ar7',4000,false,true,null),
-  ('ar5c',4500,false,true,null),
-  ('hr17',5500,false,true,null),
-  ('sr8',2500,false,true,null),
-  ('r700',6500,false,true,null),
-  ('dm14',7000,false,true,null),
-  ('mg6',6000,false,true,null),
-  ('hmg',6500,false,true,null),
-  ('gx6',10000,false,true,null),
-  ('airb',4500,false,true,null),
-  ('gl40',5500,false,true,null),
-  ('axe',1500,false,true,null),
-  ('hammer',4000,false,true,null),
-  ('skull9',9000,false,true,null),
-  ('bhole',0,false,false,null),
-  ('rdc',0,false,false,'S'),
-  ('mdrill',0,false,false,'S'),
-  ('mlaunch',0,false,false,'S'),
-  ('volc',0,false,false,'S'),
-  ('bdc',0,false,false,'S'),
-  ('gaebolg',0,false,false,'S'),
-  ('xdz',0,false,false,'A'),
-  ('ripper',0,false,false,'A'),
-  ('xbowa',0,false,false,'A'),
-  ('xbow',0,false,false,'A'),
-  ('sterling',0,false,false,'A'),
-  ('duckfoot',0,false,false,'A')
+__SEED__
 on conflict (gun_id) do update set price = excluded.price, free = excluded.free, sold = excluded.sold, tier = excluded.tier;
 
 -- ---------- helpers ----------
@@ -807,3 +772,6 @@ grant execute on function public.qz_season_reset() to authenticated;
 grant execute on function public.qz_season_shuffle() to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;
 grant execute on function public.qz_import_rec(integer, integer, integer, integer, integer) to authenticated;
+"""
+open(os.path.join(HERE,'..','schema.sql'),'w').write(sql.replace('__SEED__',seed))
+print('schema written')

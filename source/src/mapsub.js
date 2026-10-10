@@ -353,4 +353,4 @@ function buildSubway(){const N='none',GL={pass:1};
   MAP.cam=(t,cam)=>{const u=t*.035,z=11*Math.sin(u);cam.position.set(2.4,1.9+.12*Math.sin(t*.4),z);cam.lookAt(-6,1.3,z+7*Math.cos(u))};
 }
 MAPDEFS.sub={n:['새벽역','Saebyeok Station'],d:['버려진 지하철역. 섬식 승강장과 멈춘 전동차, 대합실·개찰구·역무실 — 좀비는 양쪽 터널에서 몰려온다.','An abandoned subway station: an island platform with a dead train, the concourse, ticket gates and the station office — zombies pour in from both tunnels.'],
-  env:{sky:0,rain:0,storm:0,under:1,fog:'#0b0d0d',fogD:.042,ambIn:'#141820'},probeY:[0,1.1,2.5,4,6.6,8],tex:bakeSubTex,build:buildSubway};
+  env:{sky:0,rain:0,storm:0,under:1,fog:'#0b0d0d',fogD:.042,ambIn:'#141820',boAmb:.4},probeY:[0,1.1,2.5,4,6.6,8],tex:bakeSubTex,build:buildSubway};

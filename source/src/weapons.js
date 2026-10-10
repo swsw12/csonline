@@ -61,12 +61,18 @@ const BUY_MENU=[
 const EQUIP={armor:{n:['방탄복 + 헬멧','Kevlar + Helmet'],cost:1000},ammo:{n:['탄약 보충','Refill Ammo'],cost:200}};
 const HOLDS={rifle:{off:[-.13,-.1,-.16]},pistol:{off:[-.21,-.05,-.36]},dual:{off:[-.06,-.05,-.36]},knife:{off:[-.06,-.24,-.22]},axe:{off:[-.05,-.26,-.2],rx:1.05,rz:Math.PI},hammer:{off:[-.02,-.3,-.16],rx:1.15,rz:Math.PI,ham:1},nade:{off:[-.04,-.16,-.2]}};
 function holdFor(id){const W=WPN[id];if(!W||!W.model)return null;const Gd=GUNS[W.model];const H=HOLDS[W.hold]||HOLDS.rifle;
-  return {kind:W.kind==='melee'?'melee':W.kind==='nade'?'nade':W.hold,grip:Gd.grip,sup:W.hold==='rifle'||W.hold==='pistol'||W.hold==='hammer'?Gd.sup:null,off:H.off,rx:H.rx||0,rz:H.rz||0,ham:!!H.ham,mag:Gd.mag,dual:!!W.dual}}
+  return {kind:W.kind==='melee'?'melee':W.kind==='nade'?'nade':W.hold,grip:Gd.grip,sup:W.hold==='rifle'||W.hold==='pistol'||H.ham?Gd.sup:null,off:H.off,rx:H.rx||0,rz:H.rz||0,ham:!!H.ham,kA:H.kA,kH:H.kH,twA:H.twA,mag:Gd.mag,dual:!!W.dual}}
 // ---------- hit tests ----------
 const _hd=new THREE.Vector3();
 function raySphere(ox,oy,oz,dx,dy,dz,cx,cy,cz,r,tmax){const lx=cx-ox,ly=cy-oy,lz=cz-oz;const tc=lx*dx+ly*dy+lz*dz;if(tc<0)return -1;const d2=lx*lx+ly*ly+lz*lz-tc*tc;if(d2>r*r)return -1;const t=tc-Math.sqrt(r*r-d2);return t>=0&&t<tmax?t:-1}
 function rayAABB(ox,oy,oz,dx,dy,dz,x0,y0,z0,x1,y1,z1,tmax){let t0=0,t1=tmax;
   for(const [o,d,a,b] of [[ox,dx,x0,x1],[oy,dy,y0,y1],[oz,dz,z0,z1]]){if(Math.abs(d)<1e-9){if(o<a||o>b)return -1;continue}let ta=(a-o)/d,tb=(b-o)/d;if(ta>tb){const q=ta;ta=tb;tb=q}if(ta>t0)t0=ta;if(tb<t1)t1=tb;if(t0>t1)return -1}return t0}
+// a zombie's arms: three spheres along each upper arm and forearm (kept fresh by updateVisual; -1 = missed)
+// (the arm points are set by updateVisual at the end of the last frame)
+function rayArms(t,ox,oy,oz,dx,dy,dz,tmax,grow){if(!t.arms||!(t.armT>G.t-.25))return -1;let best=-1,bt=tmax;
+  for(let s=0;s<2;s++){const r=t.armR[s]*(grow||1),A=t.arms;for(let g=0;g<2;g++){const p=A[s*3+g],q=A[s*3+g+1];
+    for(const f of [.15,.5,.85]){const th=raySphere(ox,oy,oz,dx,dy,dz,p.x+(q.x-p.x)*f,p.y+(q.y-p.y)*f,p.z+(q.z-p.z)*f,r,bt);if(th>=0){bt=th;best=th}}}}
+  return best}
 // nearest enemy hit along a ray before tmax: {a, t, part}
 function rayActors(src,ox,oy,oz,dx,dy,dz,tmax,teamMask){let best=null,bt=tmax,part=null;
   for(const t of G.actors){if(!t.alive||t===src||t.team===src.team)continue;const c=t.c;
@@ -74,7 +80,8 @@ function rayActors(src,ox,oy,oz,dx,dy,dz,tmax,teamMask){let best=null,bt=tmax,pa
     const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h,bt);if(th>=0){bt=th;best=t;part='head'}
     const hw=(t.hitW||c.hw)+.02,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);
-    if(tb>=0&&tb<bt){bt=tb;best=t;const hy=oy+dy*tb;part=hy<c.y+(top-c.y)*.45?'legs':'body'}}
+    if(tb>=0&&tb<bt){bt=tb;best=t;const hy=oy+dy*tb;part=hy<c.y+(top-c.y)*.45?'legs':'body'}
+    if(t.team===TZ){const ta=rayArms(t,ox,oy,oz,dx,dy,dz,bt);if(ta>=0&&ta<bt){bt=ta;best=t;part='body'}}}
   return best?{a:best,t:bt,part}:null}
 // ---------- firing ----------
 const _dv=new THREE.Vector3(),_rv=new THREE.Vector3(),_uv=new THREE.Vector3();
@@ -132,9 +139,9 @@ function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
   // near-miss whiz for the local player
   if(!a.isPlayer&&G.player&&G.player.alive&&pi===0){const P=actorEye(G.player);const lx=P.x-ox,ly=P.y-oy,lz=P.z-oz;const tc=lx*dx+ly*dy+lz*dz;if(tc>3&&tc<tEnd){const d2=lx*lx+ly*ly+lz*lz-tc*tc;if(d2<1.2&&!AU.throttle('whiz',120))AU.play('whiz',{vol:.6,pan:rr(-.6,.6)})}}
   if(ha){const t=ha.a;let dmg=W.dmg;if(W.pellets){const fall=clamp(1-(ha.t-10)/25,.35,1);dmg*=fall}
-    const hs=ha.part==='head';dmg*=hs?(W.hs||3):ha.part==='legs'?.75:1;
+    const ds=hsForce(a,ha),hs=ha.part==='head';dmg*=hs?(W.hs||3):ha.part==='legs'?.75:1;
     const pb=1+Math.max(0,(4-ha.t)/4)*.8;// point-blank shots shove harder
-    damageActor(t,dmg,a,{w:a.cur,hs,dir:[dx,dy,dz],kb:W.kb*pb,stag:W.stag,x:ex,y:ey,z:ez});
+    damageActor(t,dmg,a,{w:a.cur,hs,ds,dir:[dx,dy,dz],kb:W.kb*pb,stag:W.stag,x:ex,y:ey,z:ez});
     FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
     if(hs&&!t.isPlayer&&a.isPlayer)AU.play('headshot',{vol:.7});else if(!a.isPlayer&&t.isPlayer){}else if(Math.random()<.5)AU.at('imp_flesh',ex,ey,ez,{vol:.6});
     return {hit:true,hs,dmg}}
@@ -151,6 +158,8 @@ function meleeHit(a,range,cone){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_dv);
   const hw=rayCast(eye.x,eye.y,eye.z,_dv.x,_dv.y,_dv.z,range);if(hw)return {wall:hw,x:eye.x+_dv.x*hw.t,y:eye.y+_dv.y*hw.t,z:eye.z+_dv.z*hw.t,n:[hw.nx,hw.ny,hw.nz]};return null}
 function meleeW(a,w){const W=WPN[w||a.cur];return W&&W.kind==='melee'?W:WPN.knife}
 function meleeSwing(a,heavy){const W=meleeW(a);NET.on&&netFxPush(['m',a.id,heavy?1:0,a.an.atkSide||1,WI[a.cur]]);
+  // a weapon with its own whoosh (swS) plays it as the stroke comes through, not at the start of the wind-up (the view model's clip times it for the player)
+  if(W.swS){if(a.isPlayer)VM.melee(heavy);else nyLater(Math.max(0,W.hitT[heavy?1:0]-.12),()=>AU.at(W.swS,a.c.x,a.c.y+1.4,a.c.z,{vol:.6,rate:heavy?.9:1}));return}
   if(a.isPlayer){AU.play('kswing',{vol:.7,rate:(heavy?.8:1)*(W.sw||1)});VM.melee(heavy)}else AU.at('kswing',a.c.x,a.c.y+1.4,a.c.z,{vol:.5,rate:W.sw||1})}
 // every enemy in reach in front, nearest first (the hammer's overhead smash catches several)
 function meleeHits(a,range,cone,n){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_dv);const out=[];
@@ -158,15 +167,18 @@ function meleeHits(a,range,cone,n){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_d
     const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z;const d=Math.hypot(dx,dy,dz)-c.hw;if(d>range)continue;const dot=(dx*_dv.x+dy*_dv.y+dz*_dv.z)/Math.max(.01,Math.hypot(dx,dy,dz));
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;out.push({t,d})}
   out.sort((p,q)=>p.d-q.d);return out.slice(0,n).map(o=>o.t)}
-function meleeStrike(a,heavy,w){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;const W=meleeW(a,w),hi=heavy?1:0;const many=heavy&&W.cleave?meleeHits(a,W.range[1],.6,W.cleave):null;
+// cleave: how many one blow can hit (a number = the heavy attack only; [light, heavy] = per attack), arc: the cone of that blow (cosine, per attack)
+function meleeStrike(a,heavy,w){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;const W=meleeW(a,w),hi=heavy?1:0;const cl=Array.isArray(W.cleave)?W.cleave[hi]:heavy?W.cleave:0;
+  const many=cl?meleeHits(a,W.range[hi],W.arc?W.arc[hi]:.6,cl):null;
   const r=many&&many.length?{t:many[0]}:meleeHit(a,W.range[hi],heavy?.8:.65);const list=many&&many.length?many:r&&r.t?[r.t]:[];
-  if(list.length){aimDir(a.yaw,0,_dv);let hsAny=false;
+  if(list.length){aimDir(a.yaw,0,_dv);const sl=W.kbL?W.kbL[hi]:0;if(sl){_dv.x-=Math.cos(a.yaw)*sl;_dv.z+=Math.sin(a.yaw)*sl;_dv.normalize()}let hsAny=false;
     for(const t of list){const hs=Math.abs(a.pitch)<.6&&Math.random()<(heavy?.25:.12);hsAny=hsAny||hs;
       damageActor(t,W.dmg[hi]*(hs?2:1),a,{w,hs,dir:[_dv.x,0,_dv.z],kb:W.kb[hi],stag:W.stag?W.stag[hi]:.5,up:W.up?W.up[hi]:0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
       FX.blood(t.c.x,t.c.y+1.2,t.c.z,_dv.x,0,_dv.z,1.6*(W.sw<1?1.6:1),false)}
-    const snd=W.blunt?'hamhit':'khit',t0=list[0];
-    if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt?1:W.sw||1});HUD.hitmark(hsAny);VM.meleeHit&&VM.meleeHit(heavy,1);if(W.sw<1)FX.shake=Math.max(FX.shake,W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}
-  else if(r&&r.wall){if(r.wall.box&&r.wall.box.coffin&&a.team===TH)COFF.hurt(r.wall.box.coffin,W.dmg[hi]*1.5,a);FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer){AU.play('kwall',{vol:.6,rate:W.sw||1});VM.meleeHit&&VM.meleeHit(heavy,2)}else AU.at('kwall',r.x,r.y,r.z,{vol:.5})}}
+    const snd=W.hitS||(W.blunt?'hamhit':'khit'),t0=list[0];
+    if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt||W.hitS?1:W.sw||1});HUD.hitmark(hsAny);VM.meleeHit&&VM.meleeHit(heavy,1);if(W.sw<1)FX.shake=Math.max(FX.shake,W.shk?W.shk[hi]:W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}
+  else if(r&&r.wall){if(r.wall.box&&r.wall.box.coffin&&a.team===TH)COFF.hurt(r.wall.box.coffin,W.dmg[hi]*1.5,a);FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer){AU.play('kwall',{vol:.6,rate:W.sw||1});VM.meleeHit&&VM.meleeHit(heavy,2)}else AU.at('kwall',r.x,r.y,r.z,{vol:.5})}
+  if(heavy&&W.slam)meleeSlam(a,W,list)}// a slam also hits the ground in front (skull9.js)
 function knifeAttack(a,heavy){meleeSwing(a,heavy);meleeStrike(a,heavy)}
 // ---------- grenades ----------
 const NADES=[];
@@ -181,7 +193,8 @@ function launchProj(a,W,eye,dir){if(NET.ghost)return;if(W.proj==='vortex'){vorte
   const m=new THREE.Mesh(gunGeo('glnade'),matGun());m.position.set(n.x,n.y,n.z);R.scene.add(m);n.mesh=m;NADES.push(n);
   NET.on&&netFxPush(['p',a.id,WI[a.cur],'gl',r2(n.x),r2(n.y),r2(n.z),r2(n.vx),r2(n.vy),r2(n.vz)])}
 // contact check against zombies for impact rounds
-function projHitsActor(n,x,y,z){for(const t of G.actors){if(!t.alive||t.team===n.owner.team)continue;const c=t.c;if(Math.abs(c.x-x)<c.hw+.15&&Math.abs(c.z-z)<c.hw+.15&&y>c.y-.1&&y<t.head.y+.2)return t}return null}
+function projHitsActor(n,x,y,z){for(const t of G.actors){if(!t.alive||t.team===n.owner.team)continue;const c=t.c;if(Math.abs(c.x-x)<c.hw+.15&&Math.abs(c.z-z)<c.hw+.15&&y>c.y-.1&&y<t.head.y+.2)return t;
+    if(t.arms&&t.armT>G.t-.25)for(let s=0;s<2;s++)for(let k=0;k<3;k++){const p=t.arms[s*3+k],r=t.armR[s]+.12;if((p.x-x)**2+(p.y-y)**2+(p.z-z)**2<r*r)return t}}return null}
 function updateNades(dt){for(let i=NADES.length-1;i>=0;i--){const n=NADES[i];if(!n)continue;if(n.ghost){NET.ghost++;try{updNade(n,i,dt)}finally{NET.ghost--}}else updNade(n,i,dt)}}
 function updNade(n,i,dt){{n.t+=dt;if(n.upd){if(n.upd(n,dt))removeNade(i);return}
     if(n.impact){const steps=4;let boom=false;for(let s=0;s<steps&&!boom;s++){const h=dt/steps;n.vy-=GRAV*.35*h;const d=Math.hypot(n.vx,n.vy,n.vz)*h;if(d<1e-5)continue;

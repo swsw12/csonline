@@ -336,6 +336,7 @@ function buildVM(id,skinKey,U,dual){const G=GUNS[id];const mat=matVM(GA.texVM,U)
   let gun2=null,tags2=null;
   if(dual){const B=vmGun(G.alt?GUNS[G.alt]:G,mat);gun2=B.gun;tags2=B.tags;root.add(gun2);gun2.add(armL);lookArm(armL,[gr[0]-.012,gr[1]-.02,gr[2]+.02],[-.35,-.42,1])}
   else{gun.add(armL);if(G.sup){lookArm(armL,G.sup,G.armL||[-.45,-.6,.75])}else{armL.visible=false}}
+  if(G.vmFix)G.vmFix(armR,armL);// a model may place its hands itself (the Skull-9's fists round its haft)
   return {id,root,gun,tags:A.tags,armR,armL,mat,gun2,tags2}}
 // zombie claws: two arms only
 function buildClaws(zk,U){const mat=matVM(GA.texVM,U);const root=new THREE.Group();const sk='zs_'+zk;

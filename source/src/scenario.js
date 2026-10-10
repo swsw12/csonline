@@ -38,8 +38,9 @@ SCEN.stageStart=function(kind,plan){if(NET.cli&&!plan)return;
     if(q)placeAt(a,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);else{const p=sp[k++%sp.length];placeAt(a,p[0],p[2]||0,p[1],p[3]!=null?p[3]+rr(-.4,.4):Math.PI+rr(-.6,.6))}
     ensureRig(a);equip(a,bestWeapon(a),true);a.drawT=0;if(NET.host)out.push([a.id,r2(a.c.x),r2(a.c.y),r2(a.c.z),r3(a.yaw)]);
     if(a.isPlayer){VM.set(a.cur,a.skin);R.PU.uInfect.value=0}if(a.bot)AI.onRound(a)
-    // bots put spare money into their primary (they keep enough for armour and grenades)
-    if(a.bot&&!NET.cli&&kind!=='fresh'){const id=a.inv[1];while(id&&a.money>=SCEN.upCost(a,id)+1500&&SCEN.upgrade(a,id,true)){}}}
+    // bots put their money into their primary (weapons and gear are free)
+    if(a.bot&&!NET.cli&&kind!=='fresh'){const id=a.inv[1];while(id&&a.money>=SCEN.upCost(a,id)&&SCEN.upgrade(a,id,true)){}}
+    ldKitReset(a)}// grenades and armour can be taken again (once each per wave)
   if(G.player&&MAP.spawnYaw!=null&&!plan)G.player.yaw=MAP.spawnYaw;
   FX.clearDecals();HUD.feedL=[];HUD.el.hFeed.innerHTML='';HUD.clearDmg();
   const L=LI(),fin=SCEN.stage===SCEN.STAGES,sn=(L?'STAGE ':'스테이지 ')+SCEN.stage+'/'+SCEN.STAGES+(fin?(L?' · FINAL':' · 최종'):'');
@@ -54,7 +55,7 @@ SCEN.waveFx=function(w){const boss=SCEN.stage===SCEN.STAGES&&w===SCEN.WAVES,L=LI
 SCEN.waveClear=function(){for(const a of SCEN.H)a.money=Math.min(16000,a.money+500+SCEN.stage*100);
   if(SCEN.wave<SCEN.WAVES){SCEN.ph='break';SCEN.t=8;G.st='prep';G.time=SCEN.t;G.beepAt=6;SCEN.breakFx();if(NET.host)netEv('scwc',{})}
   else SCEN.stageClear()};
-SCEN.breakFx=function(){HUD.announce(LI()?'WAVE CLEAR':'웨이브 클리어','h',2);AU.play('morale',{vol:.5});AU.muSet&&AU.muSet('prep')};
+SCEN.breakFx=function(){for(const a of SCEN.H)ldKitReset(a);HUD.announce(LI()?'WAVE CLEAR':'웨이브 클리어','h',2);AU.play('morale',{vol:.5});AU.muSet&&AU.muSet('prep')};
 SCEN.stageClear=function(){SCEN.best=Math.max(SCEN.best,SCEN.stage);for(const a of SCEN.H)a.money=Math.min(16000,a.money+1500);
   if(SCEN.stage>=SCEN.STAGES){SCEN.finish(true);return}
   SCEN.stage++;SCEN.stageStart('next');
@@ -265,7 +266,7 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
   const kz=killZombie;killZombie=function(t,src,o){const was=t.alive;kz(t,src,o);if(G.mode!=='scen'||!t.scen)return;t.permaDead=true;t.respawnT=1e9;t.reviveT=1e9;
     if(t.ch)t.ch.grp.scale.setScalar(t.zc==='boss'?BOSS_S:1);
     if(was&&t.zc==='bomber'&&!NET.cli&&!t.scBlown)SCEN.bomberBlow(t,0);if(t===SCEN.boss)SCEN.boss=null};
-  const rz=reviveZombie;reviveZombie=function(a,at){if(a.scen)a.scBlown=false;rz(a,at);if(G.mode==='scen')SCEN.onRevive(a)};
+  const rz=reviveZombie;reviveZombie=function(a,at,rise){if(a.scen)a.scBlown=false;rz(a,at,rise);if(G.mode==='scen')SCEN.onRevive(a)};
   const er=ensureRig;ensureRig=function(a){er(a);if(a.ch)a.ch.grp.scale.setScalar(a.team===TZ&&a.zc==='boss'?BOSS_S:1)};
   const pc=AI.pickCamp.bind(AI);AI.pickCamp=function(a){pc(a);if(G.mode==='scen')SCEN.spotNear(a)};
   const au=AI.update.bind(AI);AI.update=function(a,dt){

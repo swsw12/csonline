@@ -5,9 +5,12 @@
 ## 1. 프로젝트 만들기
 1. https://supabase.com 에서 새 프로젝트 생성 (무료 플랜으로 충분)
 2. 왼쪽 **SQL Editor → New query** → `supabase/schema.sql` 내용 전체 붙여넣기 → **Run**
-   - 테이블(`profiles`, `owned_guns`, `gun_prices`, `coin_log`, `gacha_config`, `gacha_log`), 보안 규칙, 함수, 가입 트리거, 가격표가 한 번에 만들어집니다.
-   - 여러 번 실행해도 안전합니다(가격표는 파일 값으로 다시 맞춰짐, 이미 산 총 · 코인 · 조각은 그대로).
+   - 테이블(`profiles`, `owned_guns`, `gun_prices`, `coin_log`, `gacha_config`, `gacha_log`, `bingo_boards`, `season_boards`), 보안 규칙, 함수, 가입 트리거, 가격표가 한 번에 만들어집니다.
+   - 여러 번 실행해도 안전합니다(가격표는 파일 값으로 다시 맞춰짐, 이미 산 총 · 코인 · 조각 · 빙고판은 그대로).
    - **v6.7에서 이미 실행했다면 v6.8 `schema.sql`을 한 번 더 실행**하세요. 복주머니 테이블과 함수가 추가되고, 근하신년 무기가 판매 목록에서 빠집니다(이미 산 사람은 계속 보유).
+   - **v6.11(시즌 해독기)도 `schema.sql`을 한 번 더 실행해야 합니다.** `season_boards` 테이블, `gacha_config`의 `season_*` 칸, `profiles`의 `dec_tickets`(보유 근하신년 해독기) · `season_shuffle_day` · `season_shuffles`,
+     함수 `qz_season*`가 추가되고, `qz_decode`가 인자 3개(`p_count`, `p_free`, `p_ticket`)로 바뀝니다(옛 2개짜리는 지워짐). 기존 코인 · 총 · 조각 · 근하신년 빙고판은 그대로예요.
+     실행 전에는 게임의 시즌 해독기 탭에 "서버 업데이트가 필요해요"가 뜨고, 근하신년 해독기는 예전처럼 코인으로 열 수 있어요.
 
 ## 2. 게임에 키 넣기
 필요한 건 두 개: **Project URL**과 **Publishable key**(공개 키).
@@ -50,7 +53,7 @@ const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
 
 - 보상은 판이 끝나고 결과 화면이 뜰 때 받습니다(사격장 제외). 중간에 나가면 없음.
 - 기본 지급(무료): 씰 나이프, USP, M3, MP5, 갈릴. 수류탄·방탄복·탄약은 언제나 판돈으로 구매 가능.
-- 이벤트 호라이즌은 보급상자 전용(상점 판매 안 함).
+- 이벤트 호라이즌은 시즌 해독기 빙고로만 영구 보유(상점 판매 · 조각 교환 없음, 아래 8번).
 - 근하신년 무기 12종은 해독기 빙고 전용(아래 7번).
 
 ## 4-1. 레벨 · 전적 (v6.9)
@@ -62,6 +65,7 @@ const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
 ## 5. 가격 바꾸기
 **Table Editor → gun_prices**에서 `price`를 고치면 바로 적용됩니다 (게임 상점도 이 값을 읽음).
 `free=true`면 기본 지급, `sold=false`면 상점에서 안 팜, `tier`가 `S`/`A`면 해독기 빙고 전용(코인으로 못 삼).
+이벤트 호라이즌(`bhole`)은 `sold=false`, `tier` 비움 그대로 두세요(근하신년 판에 안 나오고 교환도 안 됨) — 시즌 해독기의 줄 보상(`season_lines`)으로만 나옵니다.
 게임 코드의 `shop.js` 가격표는 서버가 응답하기 전 잠깐 보여주는 예비용입니다.
 
 ## 6. 운영 팁
@@ -70,11 +74,16 @@ const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
   ```sql
   update public.profiles set coins = coins + 5000 where nickname = '닉네임';
   ```
-- 빙고 · 교환 기록: `gacha_log` 테이블 (줄 보상 하나당 한 줄, `src` = decode / free / exchange; 옛 복주머니 기록은 pull)
-- 각자의 빙고판: `bingo_boards` 테이블
+- 빙고 · 교환 기록: `gacha_log` 테이블 (줄 보상 하나당 한 줄, `src` = decode / free / ticket(보유 해독기로 연 근하신년) / season / exchange; 옛 복주머니 기록은 pull,
+  `kind` = gun / coins / frags / tickets)
+- 각자의 빙고판: `bingo_boards`(근하신년), `season_boards`(시즌) 테이블
 - 특정 유저에게 조각 주기:
   ```sql
   update public.profiles set fragments = fragments + 100 where nickname = '닉네임';
+  ```
+- 특정 유저에게 근하신년 해독기 주기 (근하신년 해독기 탭에서 코인 대신 열림):
+  ```sql
+  update public.profiles set dec_tickets = dec_tickets + 10 where nickname = '닉네임';
   ```
 
 ## 7. 근하신년 해독기 빙고
@@ -85,6 +94,7 @@ const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
 | 빙고판 | 0~49 중 25개 숫자, 5×5 (계정마다 하나, `bingo_boards` 테이블) |
 | 줄 보상 | 12줄(가로 5 · 세로 5 · 대각 2)마다 근하신년 무기 1개 (S 6 · A 6, 자리는 무작위) |
 | 해독기 | 1개 600 / 10개 5,400 코인, 하루 1개 무료 (한국 시간 자정 초기화) |
+| 보유 해독기 | 시즌 해독기 빙고에서 받은 근하신년 해독기 — 코인 대신 1개 / 10개씩 열기 (`profiles.dec_tickets`) |
 | 숫자 | 0~49 중 이 판에서 안 나온 숫자 하나 (중복 없음 → 50개면 판 전체 완성) |
 | 이미 가진 무기의 줄 | S줄 3,000 코인, A줄 조각 30개 |
 | 해독 조각 | 해독기마다 1~3개 |
@@ -100,3 +110,35 @@ const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
 `cost1` · `rate_s` · `pity` 같은 칸은 옛 복주머니용이라 이제 안 씁니다.
 
 **무기 목록 바꾸기**: `gun_prices`의 `tier`를 `S` / `A`로 하면 다음 판부터 줄 보상에 들어가요(한 판에 12개까지). 게임 코드 `shop.js`의 `SHOP_GACHA`도 같이 고치세요.
+
+## 8. 시즌 해독기 빙고 (이벤트 호라이즌, v6.11)
+상점의 **시즌 해독기** 탭. 이벤트 호라이즌을 영구 보유하는 유일한 방법이에요. 근하신년 판과 같은 방식인데 숫자가 0~99라 훨씬 덜 맞습니다
+(첫 해독기가 판에 맞을 확률 25% — 근하신년은 50%).
+
+| 항목 | 기본값 |
+|---|---|
+| 빙고판 | 0~99 중 25개 숫자, 5×5 (계정마다 하나, `season_boards` 테이블 — 근하신년 판과 따로) |
+| 줄 보상 | 12줄: 이벤트 호라이즌 1줄 · 코인 1,000 3줄 · 2,000 2줄 · 5,000 1줄 · 조각 30개 2줄 · 근하신년 해독기 3개 3줄 (판마다 자리 무작위) |
+| 해독기 | 1개 1,000 / 10개 9,000 코인, 무료 없음 |
+| 숫자 | 0~99 중 이 판에서 안 나온 숫자 하나 (100개면 판 전체 완성) |
+| 이미 가진 이벤트 호라이즌의 줄 | 10,000 코인 |
+| 근하신년 해독기 줄 | 보유 해독기(`profiles.dec_tickets`) +3 → 근하신년 해독기 탭에서 코인 대신 1개 / 10개씩 열기 |
+| 해독 조각 | 해독기마다 1~3개 |
+| 판 완성 | 25칸이 다 차면 바로 새 판 (10개 열기의 나머지는 새 판에) |
+| 초기화 / 뒤섞기 | 새 판(무료) / 안 찍힌 숫자 자리 섞기 (하루 3번, 근하신년 판과 따로 셈) |
+
+- 평균(시뮬레이션 4만 판): 첫 줄 약 58개, **이벤트 호라이즌 줄 약 84개**(정확히 5×101/6 ≈ 84.2 — 10개씩 열면 약 75,600 코인, 아무리 늦어도 100개 = 90,000 코인이면 완성),
+  6줄 약 86개, 판 전체 약 97개(최대 100개). 중앙값은 88개라 대부분 평균보다 조금 더 걸려요(50개 안에 완성할 확률 약 2.8%, 84개 안에 약 41%).
+- 판 하나를 다 채우면(평균 97개, 10개씩 약 87,300 코인) 코인 12,000 + 근하신년 해독기 9개 + 조각 60개(+ 해독기마다 1~3개, 평균 약 194개)가 같이 나옵니다.
+- 숫자 · 줄 판정 · 보상은 서버 함수(`qz_season`, `qz_season_decode`, `qz_season_reset`, `qz_season_shuffle`)가 하고 `gacha_log`(`src` = season) · `coin_log`(season_decoder / season_win)에
+  기록합니다. 보유 해독기로 근하신년 판을 여는 건 `qz_decode(p_count, p_free, p_ticket)`의 `p_ticket = true` (`src` = ticket).
+
+**값 바꾸기**: **Table Editor → gacha_config** — `season_cost1` / `season_cost10`(가격), `season_hi`(숫자 범위 0~이 값, 24 이상), `season_frag_min` / `season_frag_max`(조각),
+`season_owned_coins`(이미 가진 총의 줄 대신 주는 코인), `season_lines`(줄 보상 목록, 아래). 뒤섞기 횟수는 근하신년과 같은 `shuffle_free`(세는 건 따로).
+
+**줄 보상 바꾸기 (`season_lines`)**: 글자 배열, 항목 하나가 줄 하나 — `gun:<총 id>`(그 총, 이미 가졌으면 `season_owned_coins` 코인), `coins:<n>`, `frags:<n>`, `tickets:<n>`(근하신년 해독기 n개).
+12개보다 적으면 `coins:1000`으로 채우고, 많으면 판마다 무작위 12개. 바꾼 값은 **다음 판부터** 적용돼요(지금 판은 그대로). 기본값:
+```
+{gun:bhole,coins:1000,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}
+```
+게임 코드 `shop.js`의 `GACHA_DEF.season_*`는 서버 값이 오기 전에 잠깐 보이는 예비값이에요.

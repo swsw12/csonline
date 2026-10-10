@@ -411,3 +411,27 @@
   (BINGO!, NEW, line label) with again. Skip button. Hover a reward → .hl on its cells. Mock: __MOCK_SEQ / __MOCK_CARD.
   Test: scratch shop/bt1.json (free + forced ten finishing row 1 + col 1, shuffle, NY buy refused), bt2 phone.
 
+## v6.11 — playtest fixes, free weapons + loadouts, human skills, Skull-9, season decoder, bot tactics
+Built from parallel agent branches merged into v611 (base 59769a1 = my core fixes), then squashed onto main.
+- Core (game.js/weapons.js/nyw.js/models.js): actorEye() returns a fresh vector (the shared one let fireGun's pellets 2..n start
+  at the player's head → "wallbangs" + bot gunshots at the player's ear). The local player's a.head/headR are set in updateVisual
+  even though its body isn't drawn (claws reach the player again; bot bullets hit a player zombie → knockback/stagger work).
+  Zombie arm hit volumes: charArms(ch,out) (models.js) → a.arms/armR/armT, rayArms() in rayActors / rayActorsX / projHitsActor.
+  CLAW_R=[1.75,2.0], AI swing at 1.35+hw, ZSPD .95, stagger = stag + min(.1, dealt/500). infect() only in 'fight'; AI.zombie idles
+  outside 'fight' (except scen); endRound clears pendingClaw. Original: every zombie death is permanent, all dead → human win.
+  Fixes: becomeZombie resets swallowed by a comment, scenario reviveZombie wrapper dropped `rise`, gun_prices select lacked tier.
+- Bots (ai.js, agent B): camp occupancy fixed + caps, roaming on own bearings, relocation 20-55 s, kiting from 9 m, scatter after an
+  infection nearby, aim settle error by distance, LOS before firing; zombie pack AI.zPack (stage out of sight 13-20 m, rush on quorum
+  / triggers, flank via navPath penalties, retreat to heal); ZBAL: hosts clamp(round(N/5),2,4), host hp +300/human/host, gunfire
+  knockback caps, Mutation comeback rule, regen 4 %/s after 4 s, morale ≤ +50 % and −1 level per infection. ZPACK/HBOT tables.
+- Buying (loadout.js, agent C): buy()/buyCheck() moved here, free, BUY_MENU whitelist (host checks client buys too), grenades and armor
+  once per round (a.kit), ldSnap/ldRestore carry-over (snap before dropDeath in becomeZombie/hurtHuman, at round end), 3 sets
+  (CFG.sets, Shift+1-3 in the buy menu, touch buttons), Event Horizon for owners (ehOK: ACC.on && owned, once per round, 3/0),
+  scenario keeps money (scEarn, start 1000). Blackout 20 %, 12-18 s, MAP.env.boAmb floors, lamps .18, auto flashlight, CFG.blackout.
+- Human skills (hskill.js, agent D): 5 Sprint ×1.45 10 s → ×.4 5 s, 6 Deadshot 5 s all hits = head; once per round; HUD, touch,
+  bots (wraps AI.human), net 'hsk' + claim flag bit 256 honoured inside the window; NET_VER suffix -hsk1.
+- Skull-9 (skull9.js, agent E): dmg [230,520], cleave [3,2], arcs, kb/up/stag, slam FX; atlas mats 72-75; price 9000.
+- Season decoder (agent F): season_boards + qz_season*, 0..99, 1000/9000 coins, lines EH ×1 / coins / frags / 3 NY decoders;
+  dec_tickets + qz_decode(p_count,p_free,p_ticket). README §8. schema.sql must be re-run.
+- Test assets: source/test/mock.js (fake Supabase), supabase/tools/gen_schema.py + prices.py (python3 supabase/tools/gen_schema.py).
+

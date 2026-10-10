@@ -48,22 +48,18 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
       TOUCH.assist(dt);if(TOUCH.autoF&&!M.overlay)c.fire=true}},
   // buy menu: a touch grid (big cards, category chips) instead of the keyboard list
   patchUI(){const rb=UI.renderBuy.bind(UI);UI.renderBuy=function(){if(!TOUCH.on)return rb();const P=G.player;const L=LI();const cat=BUY_MENU[this.buyCat];
-      const items=cat.items.map(id=>{const W=WPN[id],E=EQUIP[id];const nm=(W||E).n[L],cost=(W||E).cost;const own=W&&(W.kind==='nade'?P.inv[id]>0:P.inv[W.slot]===id)||(id==='armor'&&P.armor>=100);const free=!!(W&&W.ny&&P.nyFree>0);const ok=(P.money>=cost||free)&&!own;
+      const items=cat.items.map(id=>{const W=WPN[id],E=EQUIP[id];if(!W&&!E)return '';const nm=(W||E).n[L],st=ldItemState(P,id);
         const icon=W&&W.model?`<img src="${gunIcon(W.model,30)}">`:id==='armor'?'<b class="ico">◆</b>':'<b class="ico">▤</b>';
-        return `<div class="mbi${ok?'':' na'}${own?' own':''}" data-act="buy" data-v="${id}">${icon}<b>${nm}</b><span class="c">${own?T('owned'):free?T('nyFree'):'$'+cost}</span></div>`}).join('');
-      $('buy').innerHTML=`<div class="mbh"><b>${T('buyT')}</b><span class="money">$ ${P.money}</span><button class="addm" data-act="addmoney">${L?'+$3000':'+3000'}</button><button class="mbq" data-act="tquick">${L?'Quick buy':'추천 구매'}</button></div>
+        // a gun the account does not own shows its lock (shop.js); the Event Horizon's rule is checked when tapped
+        return `<div class="mbi${st.ok?'':' na'}${st.own?' own':''}${st.lk?' lk':''}" data-act="${st.lk&&id!=='bhole'?'buylk':'buy'}" data-v="${id}">${icon}<b>${nm}</b><span class="c">${st.t}</span></div>`}).join('');
+      $('buy').innerHTML=`<div class="mbh"><b>${T('buyT')}</b><span class="bfree">${T('ldFree')}</span><small>${L?'Grenades and armour: once a round':'수류탄 · 방탄복은 라운드마다 1번'}</small></div>${ldSetsHTML(P,true)}
         <div class="mcats">${BUY_MENU.map((c,i)=>`<button class="${i===this.buyCat?'on':''}" data-act="buycat" data-v="${i}">${c.n[L]}</button>`).join('')}</div><div class="mitems">${items}</div>`};
-    const a0=UI.act.bind(UI);UI.act=function(a,v,el){if(a==='tquick'){TOUCH.quickBuy();return}if(a==='tfull'){FS.toggle();return}
+    const a0=UI.act.bind(UI);UI.act=function(a,v,el){if(a==='tfull'){FS.toggle();return}
       // starting a match on a phone: go fullscreen (Android) so the address bar does not eat the screen
       if(TOUCH.on&&(a==='go'||a==='again'||a==='mpstart'||a==='mpcreate'||a==='mpjoin'))TOUCH.full(false);return a0(a,v,el)};
     const oo=Main.openOverlay.bind(Main),co=Main.closeOverlay.bind(Main);Main.openOverlay=function(k){oo(k);TOUCH.st=-1;TOUCH.update()};Main.closeOverlay=function(s){co(s);TOUCH.st=-1;TOUCH.update()}},
   full(toggle){const d=document.documentElement;try{if(document.fullscreenElement){if(toggle)document.exitFullscreen();return}if(!d.requestFullscreen)return;const p=d.requestFullscreen({navigationUI:'hide'});
       if(p&&p.then)p.then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{})}catch(_){}},
-  // one tap: the best rifle the money allows, armour, a grenade
-  quickBuy(){const P=G.player;if(!P||P.team!==TH)return;const want=[];
-    const prim=['hmg','ar7','kv47','m14','g35','um45','k9'].filter(id=>WPN[id]);
-    if(!P.inv[1]){const pick=prim.find(id=>WPN[id].cost<=P.money-1000)||prim.find(id=>WPN[id].cost<=P.money);if(pick)want.push(pick)}
-    want.push('armor');if(WPN.he)want.push('he');for(const id of want)if(WPN[id]||EQUIP[id])buy(P,id);UI.renderBuy();AU.play('buy',{vol:.6})},
   // ---------- pointers ----------
   down(e){const t=e.target.closest('[data-t]'),z=e.target.closest('.tzone');AU.init();
     if(t){e.preventDefault();try{t.setPointerCapture(e.pointerId)}catch(_){}t.classList.add('on');const id=t.dataset.t;this.btn.set(e.pointerId,{id,el:t,x:e.clientX,y:e.clientY,v:t.dataset.v});this.press(id,true,t.dataset.v);return}
@@ -144,5 +140,5 @@ const _tdir=new THREE.Vector3();
   const hm=HUD.hitmark.bind(HUD);HUD.hitmark=function(hs){hm(hs);if(TOUCH.on)TOUCH.buzz(hs?22:10)};
   const hr=HUD.hurt.bind(HUD);HUD.hurt=function(k){hr(k);if(TOUCH.on)TOUCH.buzz(Math.round(20+k*40))};
   // keyboard hints become button hints
-  const rs=HUD.roundStart.bind(HUD);HUD.roundStart=function(){rs();if(TOUCH.on)HUD.note(LI()?'Tap BUY → Quick buy · aim near a zombie and it fires for you':'구매 → 추천 구매 한 번이면 끝 · 좀비 근처로 조준하면 자동 사격',4)};
+  const rs=HUD.roundStart.bind(HUD);HUD.roundStart=function(){rs();if(TOUCH.on)HUD.note(LI()?'Tap BUY → put a set on · aim near a zombie and it fires for you':'구매 → 세트 장착 한 번이면 끝 · 좀비 근처로 조준하면 자동 사격',4)};
   const inf=HUD.infected.bind(HUD);HUD.infected=function(s){inf(s);if(TOUCH.on)HUD.note(LI()?'Run at humans — claws swing by themselves · ⚡ skill':'사람에게 달려가면 자동으로 할퀴어요 · ⚡ 스킬',6)}})();

@@ -337,10 +337,11 @@ function buildSky(scene){
   scene.add(SG);MAP.sky=SG;
 }
 // ---------- map registry ----------
-// env: sky (dome + sky light), rain, storm (thunder and lightning), under (underground ambience), fog colour/density, ambIn (indoor ambient)
+// env: sky (dome + sky light), rain, storm (thunder and lightning), under (underground ambience), fog colour/density, ambIn (indoor ambient),
+// boAmb (the share of the baked light left in a blackout: night maps keep more, they are dark already; .3 when not given)
 const MAPDEFS={
   q7:{n:['격리구역 Q-7','Quarantine Zone Q-7'],d:['비 내리는 밤의 격리시설. 창고 중2층·사무동 2층·펌프장 옥상·감시탑과 넓은 마당.','A rainy night at the quarantine facility: warehouse mezzanine, two-storey office, pump-house roof, a watchtower and a wide yard.'],
-    env:{sky:1,rain:1,storm:1,fog:'#0a0c12',fogD:.045},build:buildQ7},
+    env:{sky:1,rain:1,storm:1,fog:'#0a0c12',fogD:.045,boAmb:.5},build:buildQ7},
 };
 const MAPLIST=()=>Object.keys(MAPDEFS).filter(k=>!MAPDEFS[k].practice);// (the shooting range is not a match map)
 function buildMapData(id){const D=MAPDEFS[id];

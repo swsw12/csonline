@@ -31,7 +31,8 @@ function navNode(x,y,z){const N=NAV;const i=Math.floor((x-N.X0)/N.S),j=Math.floo
 // A*: returns array of node ids (start excluded) or null. maxJump limits jump links, maxDrop (if set) the height of drops.
 // partial: when the target cannot be reached, return the way to the reachable node closest to it instead (array flagged .partial;
 // empty when the start already is that node) — zombies then wait right under a roof camp instead of running into the wall below it.
-function navPath(s,t,maxJump,maxIter,maxDrop,partial){const N=NAV;if(!s||!t)return null;if(s===t)return [t.id];N.stamp++;const st=N.stamp,H=N.heap;let hn=0;
+// pen: optional extra cost per node (Float32Array by node id, not negative) — the zombie pack uses it to spread out over routes and keep off gun lines.
+function navPath(s,t,maxJump,maxIter,maxDrop,partial,pen){const N=NAV;if(!s||!t)return null;if(s===t)return [t.id];N.stamp++;const st=N.stamp,H=N.heap;let hn=0;
   const h=n=>Math.hypot(n.x-t.x,n.z-t.z)+Math.abs(n.y-t.y)*.5;
   // heap entries keep their own key (HF): a node re-pushed with a lower f leaves a stale entry behind, skipped when popped
   const HF=N.hf;let pf=0;
@@ -40,7 +41,7 @@ function navPath(s,t,maxJump,maxIter,maxDrop,partial){const N=NAV;if(!s||!t)retu
   N.mark[s.id]=st;N.g[s.id]=0;N.f[s.id]=h(s);N.came[s.id]=-1;push(s.id);let it=0;maxIter=maxIter||Math.max(6000,N.nodes.length*1.5|0);let bestId=s.id,bestH=h(s);
   while(hn>0&&it++<maxIter){const cid=pop();if(cid===t.id)break;if(pf>N.f[cid]+1e-4)continue;const c=N.nodes[cid],e=c.e;const gc=N.g[cid];
     if(partial){const hc=h(c);if(hc<bestH-1e-4||(hc<bestH+1e-4&&gc<N.g[bestId])){bestH=hc;bestId=cid}}
-    for(let k=0;k<e.length;k+=3){const nid=e[k],cost=e[k+1],typ=e[k+2];if(typ>0&&typ>maxJump)continue;if(typ<0&&maxDrop&&-typ>maxDrop)continue;const g=gc+cost;
+    for(let k=0;k<e.length;k+=3){const nid=e[k],cost=e[k+1],typ=e[k+2];if(typ>0&&typ>maxJump)continue;if(typ<0&&maxDrop&&-typ>maxDrop)continue;const g=gc+cost+(pen&&pen[nid]>0?pen[nid]:0);
       if(N.mark[nid]===st&&g>=N.g[nid])continue;N.mark[nid]=st;N.g[nid]=g;N.f[nid]=g+h(N.nodes[nid])*1.05;N.came[nid]=cid;if(hn<H.length-1)push(nid)}}
   let end=t.id,part=false;if(N.mark[t.id]!==st){if(!partial)return null;end=bestId;part=true}
   const out=[];let c=end;while(c!==-1&&c!==s.id){out.push(c);c=N.came[c]}out.reverse();if(part)out.partial=true;return out}

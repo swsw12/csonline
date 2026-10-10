@@ -1,3 +1,5 @@
 source/dist/
 __pycache__/
 .DS_Store
+source/play.py
+source/shots/

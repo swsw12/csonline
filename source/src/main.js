@@ -4,7 +4,7 @@ function applyCfg(){if(R.ok){R.setScale(CFG.scale);R.setFov(CFG.fov);R.bloom=CFG
 const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,overlay:null,paused:false,last:0,dtAvg:16,mx:0,my:0,boardOn:false,demo:[],shakeP:0,shakeY:0,camT:0,specCam:new THREE.Vector3(),fpsT:0,
   async boot(){const step=async(t,p)=>{$('loadT').textContent=t;$('loadFill').style.width=(p*100)+'%';await new Promise(r=>setTimeout(r,16))};
     try{
-      await step(T('lTex'),.05);bakeTextures();paintGunAtlas();paintNYAtlas();paintSupAtlas();
+      await step(T('lTex'),.05);bakeTextures();paintGunAtlas();paintNYAtlas();paintSupAtlas();paintSkAtlas();
       if(!R.init($('cv'))){$('loadT').textContent='WebGL is not available on this device.';return}
       {const an=Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1);for(const k in TEX)TEX[k].anisotropy=an}
       buildSky(R.scene);{const g=MAP.gen=mapLoader(MAPDEFS[CFG.map]?CFG.map:'q7');let p=.15;for(;;){const r=g.next();if(r.done)break;p+=.15;await step(T(r.value),p)}MAP.gen=null}
@@ -29,7 +29,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
   demoUpdate(dt){for(const a of this.demo){a.cmd.f=a.cmd.s=0;a.cmd.jump=false;AI.wander(a,dt);a.cmd.f*=.45;a.cmd.s*=.45;actorPhysics(a,dt);Object.assign(a.pc,a.cmd);
       a.bot.growlT-=dt;if(a.bot.growlT<=0){a.bot.growlT=rr(4,10);AU.at('zgrowl',a.c.x,a.c.y+1.5,a.c.z,{vol:.5,range:30})}}},
   async startGame(){AU.init();const mid=MAPDEFS[CFG.map]?CFG.map:'q7';if(MAP.id!==mid){await loadMapUI(mid);if(MAP.id!==mid)return}this.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);
-    startMatch({mode:CFG.mode,bots:CFG.mode==='scen'?(CFG.scBots??3):CFG.bots,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,skin:CFG.skin,zclass:CFG.zclass,money:6000,name:T('you')});
+    startMatch({mode:CFG.mode,bots:CFG.mode==='scen'?(CFG.scBots??3):CFG.bots,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,skin:CFG.skin,zclass:CFG.zclass,blackout:CFG.blackout??1,name:T('you')});
     HUD.show(true);this.paused=false;this.overlay=null;this.lock();window.onbeforeunload=e=>{if(G.st!=='menu'&&G.st!=='over'){e.preventDefault();e.returnValue='';return ''}}},
   toTitle(){if(NET.on)NET.leave();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);G.actors=[];G.player=null;clearNades();NY.clear();FX.clearDecals();this.closeOverlay(true);this.paused=false;
     R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;window.onbeforeunload=null;AU.stopAll('countdown');this.menuDemo();UI.buildTitle();UI.show('menu');AU.muSet&&AU.muSet('calm')},
@@ -44,10 +44,12 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     if(k==='zsel'){UI.renderZsel();$('zsel').classList.remove('off')}
     this.overlay=k;this.unlock()},
   closeOverlay(silent){if(!this.overlay)return;$('buy').classList.add('off');$('zsel').classList.add('off');this.overlay=null;if(!silent&&!this.paused)this.lock()},
-  buyItem(id){const P=G.player;if(!P)return;
-    if(NET.cli){const W=WPN[id],E=EQUIP[id];if(!W&&!E)return;if(P.team!==TH||!P.alive){HUD.note(T('zOnly'));return}const free=W&&W.ny&&P.nyFree>0;
-      if(!free&&P.money<(W||E).cost){HUD.note(T('noMoney'),1.2);AU.play('dry',{vol:.5});return}netToHost({t:'buy',w:id});if(W&&W.slot<=2)this.closeOverlay();return}
-    if(buy(P,id)){UI.renderBuy();if(WPN[id]&&WPN[id].slot<=2)this.closeOverlay()}else{HUD.note(P.team!==TH?T('zOnly'):T('noMoney'),1.2);AU.play('dry',{vol:.5})}},
+  // free: the same check runs here and on the host (loadout.js buyCheck); a gun already in the bag is simply taken in hand
+  buyItem(id){const P=G.player;if(!P)return;const W=WPN[id],why=buyCheck(P,id);
+    if(why==='own'&&W&&W.kind!=='nade'){if(P.cur!==id)equip(P,id);if(W.slot<=2)this.closeOverlay();return}
+    if(why){ldWhy(why,id);return}
+    if(NET.cli){ldAsk(P,id,null);if(W&&W.slot<=2)this.closeOverlay();return}
+    if(buy(P,id)){UI.renderBuy();if(W&&W.slot<=2)this.closeOverlay()}else ldWhy('na',id)},
   pickZ(k){const P=G.player;P.zpick=k;CFG.zclass=k;saveCfg();UI.renderZsel();AU.play('uiok',{vol:.4});setTimeout(()=>this.closeOverlay(),150)},
   // ---------- input ----------
   setupInput(){const cv=$('cv');
@@ -76,6 +78,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
         if(performance.now()-(this.lockAt||0)<350||performance.now()-(this.pausedAt||0)<350){if(!this.paused)this.pause();return}
         if(this.paused){if(UI.open==='pause')this.resume();else UI.act('back');return}this.pause();return}
       if(this.paused)return;
+      if(this.overlay==='buy'&&e.shiftKey&&/^Digit[1-3]$/.test(k)){ldEquipSet(+k[5]-1);return}// Shift+1-3: put a saved set on
       if(this.overlay==='buy'){let n=+k.replace('Digit','').replace('Numpad','');if(k==='Digit0'||k==='Numpad0')n=10;if(n>=1&&n<=10){if(UI.buyStage===0){if(n<=BUY_MENU.length){UI.buyCat=n-1;UI.buyStage=1;UI.renderBuy()}}else{const it=BUY_MENU[UI.buyCat].items[n-1];if(it)this.buyItem(it);UI.buyStage=0}return}if(k==='KeyB'){this.closeOverlay();return}}
       if(this.overlay==='zsel'){const n=+k.replace('Digit','');if(n>=1&&n<=4){this.pickZ(ZLIST[n-1]);return}if(k==='KeyM'){this.closeOverlay();return}}
       if(!P)return;
@@ -84,7 +87,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(k==='KeyM')this.openOverlay('zsel');
       if(k==='KeyH'){this.pause();UI.ret='pause';UI.buildHelp();UI.show('help')}
       if(!P.alive)return;
-      if(k.startsWith('Digit')){const n=+k.slice(5);if(n>=1&&n<=4)P.cmd.slot=n}
+      if(k.startsWith('Digit')){const n=+k.slice(5);if(n>=1&&n<=4)P.cmd.slot=n;else if((n===5||n===6)&&!this.overlay)P.cmd.hsk=n===5?'sp':'ds'}
       if(k==='KeyQ')P.cmd.lastInv=true;
       if(k==='KeyF'&&P.team===TH){P.flash=!P.flash;AU.play('ui',{vol:.35,rate:.6})}
       if(k==='KeyN'&&P.team===TZ){P.nv=!P.nv;AU.play('ui',{vol:.35,rate:.5})}});
@@ -136,11 +139,12 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
   // ---------- lights & post per frame ----------
   look(dt){const P=G.player;const PU=R.PU;
     // the flashlight rides the gun: a little right of and below the eye, aimed to cross the line of sight ~7 m out, so its shadows show beside things
-    let beam=0;
+    // in a blackout it shines brighter and further (26 → 32 m)
+    let beam=0;const bk=this.boK=approach(this.boK||0,BO.on&&G.st!=='menu'?1:0,dt*1.5),rng=26+6*bk;LU.uSpotK.value.z=rng;
     if(P&&G.st!=='menu'&&P.alive&&!G.spec&&P.team===TH&&P.flash){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
       const sp=LU.uSpotP.value.set(e.x+_dv.x*.3+rx*.15,e.y-.15+_dv.y*.3,e.z+_dv.z*.3+rz*.15);
-      const h=rayCast(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,24),far=h?h.t:24,aim=Math.min(7,far);
-      LU.uSpotD.value.set(e.x+_dv.x*aim-sp.x,e.y+_dv.y*aim-sp.y,e.z+_dv.z*aim-sp.z).normalize();LU.uSpotK.value.w=1.55;
+      const h=rayCast(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,rng-2),far=h?h.t:rng-2,aim=Math.min(7,far);
+      LU.uSpotD.value.set(e.x+_dv.x*aim-sp.x,e.y+_dv.y*aim-sp.y,e.z+_dv.z*aim-sp.z).normalize();LU.uSpotK.value.w=1.55+.65*bk;
       beam=1-Math.exp(-far/7)}
     else LU.uSpotK.value.w=0;
     // a hot barrel keeps smoking for a moment after a burst

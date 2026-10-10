@@ -47,10 +47,10 @@ function equip(a,id,instant){if(!id||a.cur===id&&!instant)return;const W=WPN[id]
   const quick=!fd&&!instant&&id===a.awayId&&G.t-(a.awayT==null?-9:a.awayT)<QUICK_BACK;
   if(a.cur&&a.cur!==id){a.prev=a.cur;a.awayId=a.cur;a.awayT=G.t;if(!instant)a.swapT=G.t}
   a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1)+(fd?fd.x||.5:0);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.dualB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
-  if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(fd)VM.firstDraw(W.draw||.5,fd.x||.5,fd);else if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.kind==='melee'?'kdraw':'draw',{vol:.5,rate:(id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
+  if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(fd)VM.firstDraw(W.draw||.5,fd.x||.5,fd);else if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.drawS||(W.kind==='melee'?'kdraw':'draw'),{vol:.5,rate:(W.drawS?1:id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
   // 칼 챈샷 (draw cut): a blade drawn within a second of a gunshot, with an enemy in reach in front, comes out as an instant heavy cut —
   // full heavy damage and knockback on top of the shot that was just fired
-  if(!instant&&W.kind==='melee'&&a.team===TH&&a.alive&&G.t-(a.lastFire==null?-9:a.lastFire)<DRAW_CUT_WIN){const r=meleeHit(a,W.range[1],.8);
+  if(!instant&&W.kind==='melee'&&!W.noDC&&a.team===TH&&a.alive&&G.t-(a.lastFire==null?-9:a.lastFire)<DRAW_CUT_WIN){const r=meleeHit(a,W.range[1],.8);
     if(r&&r.t){a.drawT=0;a.nextFire=G.t+W.rate[1]*.8;a.an.atk=1;a.an.heavy=true;a.an.atkD=meleeAtkD(W,true)*.85;if(a.isPlayer)VM.draw(.12);meleeSwing(a,true);meleePend(a,.06,true);a.drawCuts=(a.drawCuts||0)+1}}}
 const DRAW_CUT_WIN=1;
 // a melee swing lands hitT after it starts with the weapon that swung it, even if the player switches weapons in between
@@ -64,23 +64,12 @@ function slotPick(a,slot){if(a.team===TZ){if(slot===4&&a.bombs>0)equip(a,'zbomb'
   if(slot===4){const order=['he','frost','flare'].filter(k=>a.inv[k]>0);if(!order.length)return;const i=order.indexOf(a.cur);equip(a,order[(i+1)%order.length]);return}
   const id=slot===3?(a.inv[3]||'knife'):a.inv[slot];if(id)equip(a,id)}
 function bestWeapon(a){return a.inv[1]||a.inv[2]||a.inv[3]||'knife'}
-// test button in the buy menu: +$3000 (in multiplayer the host adds it, money is the host's)
-const ADD_MONEY=3000;
-function addMoney(a){if(!a)return;if(NET.cli){netToHost({t:'addm'});return}a.money+=ADD_MONEY;if(a.isPlayer)AU.play('buy',{vol:.6})}
-function buy(a,id,force){if(a.team!==TH||!a.alive||G.st==='end'||G.st==='over')return false;const pay=c=>{if(!force)a.money-=c};
-  if(EQUIP[id]){const E=EQUIP[id];if(!force&&a.money<E.cost)return false;
-    if(id==='armor'){if(a.armor>=100&&!force)return false;a.armor=100}
-    if(id==='ammo'){let any=false;for(const k in a.ammo){const W=WPN[k];if(a.ammo[k].res<W.res){a.ammo[k].res=W.res;any=true}}if(!any&&!force)return false}
-    pay(E.cost);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
-  const W=WPN[id];if(!W||W.cost==null)return false;const free=!!(W.ny&&a.nyFree>0&&a.inv[W.slot]!==id);if(!force&&!free&&a.money<W.cost)return false;
-  if(W.kind==='nade'){if(a.inv[id]>=1)return false;a.inv[id]=1;pay(W.cost);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
-  if(W.kind==='melee'){if(a.inv[3]===id)return false;a.inv[3]=id;pay(W.cost);equip(a,id);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
-  if(a.inv[W.slot]===id){if(!a.ammo[id])fillAmmo(a,id);if(a.ammo[id].res>=W.res)return false;a.ammo[id].res=W.res;pay(Math.round(W.cost*.1));return true}
-  a.inv[W.slot]=id;fillAmmo(a,id);gunFresh(a,id);if(free)a.nyFree--;else pay(W.cost);equip(a,id);if(a.isPlayer)AU.play('buy',{vol:.6});return true}
+// buying (free: buy / buyCheck), the loadout carried between rounds and the saved sets: loadout.js
 // ---------- geometry helpers ----------
 const _eye=new THREE.Vector3(),_mz=new THREE.Vector3();
 function eyeH(a){if(a.team===TZ){const Z=ZCLASS[a.zc];return a.duck?Z.eye*.68:Z.eye}return a.duck?1.1:1.64}
-function actorEye(a){return _eye.set(a.c.x,a.c.y+eyeH(a),a.c.z)}
+// a fresh vector every call: callers keep it across other calls (fireGun's pellets once started from the player's head when it was shared)
+function actorEye(a){return new THREE.Vector3(a.c.x,a.c.y+eyeH(a),a.c.z)}
 function muzzleWorld(a){const W=WPN[a.cur];if(a.isPlayer&&!G.spec){aimDir(a.yaw,a.pitch,_dv);const e=actorEye(a);const rx=Math.cos(a.yaw),rz=-Math.sin(a.yaw);const sd=W&&W.dual?(a.dualSide>0?.12:-.12):.1;
     return _mz.set(e.x+_dv.x*.75+rx*sd,e.y+_dv.y*.75-.09,e.z+_dv.z*.75+rz*sd)}
   const g=W&&W.dual&&a.dualSide<0&&a.gun2?a.gun2:a.gun;
@@ -99,6 +88,25 @@ function zRandomSpawn(){const H=G.actors.filter(t=>t.alive&&t.team===TH),N=NAV.n
   if(N.length)for(const lim of [12,8])for(let k=0;k<60;k++){const n=N[(Math.random()*N.length)|0];if(n.e.length<15)continue;let ok=true;
     for(const h of H)if(dist2(n.x,n.z,h.c.x,h.c.z)+Math.abs(n.y-h.c.y)*2<lim){ok=false;break}if(ok)return [n.x,n.y+.02,n.z]}
   const p=zSpawnPoint();return [p[0],p[2]||0,p[1]]}
+// zombie-side round balance (tuned with a bot-only round simulator, 16 players):
+//   hostHp: host hp per human it faces (shared between the hosts); regen: share of max hp healed per second once nobody has hurt the zombie
+//   for regenWait s; kbCap: most knockback (m/s) sustained gunfire can pile on a zombie / a host; moraleMax: morale levels (+10 % each),
+//   moraleDrop: levels lost per infection;
+//   cbRevive / cbKb: in a comeback, how much faster the dead rise and how much of the shove still lands; cbStuck: see zComeback
+const ZBAL={hostHp:240,regen:.04,regenWait:4,kbCap:[5,3.5],moraleMax:5,moraleDrop:1,cbRevive:1.6,cbKb:.6,cbStuck:60,
+  origHp:1.6,origArmor:1.3,origHostHp:420,origHostDiv:4};// Original: one life each, so every zombie is tougher and there are more hosts
+// hosts: about a fifth of the room, 2–4 (one in a room of five or fewer)
+function hostsFor(N){const o=G.mode==='orig';return N<6?1:clamp(Math.round(N/(o?ZBAL.origHostDiv:5)),2,o?5:4)}
+// comeback (Mutation): two zombies or fewer on their feet against six humans or more, or the zombies still stuck at one infection or none
+// ZBAL.cbStuck s into the round against ten humans or more — the dead rise sooner (5 s instead of 8), whole and armoured, near the rest
+// of the pack and out of sight, and bullets shove them less (ZBAL.cbRevive / cbKb)
+function zComeback(){if(G.mode!=='mut'||G.st!=='fight')return false;if(G.cbT===G.t)return G.cb;let z=0,h=0,n=0;for(const a of G.actors){if(a.team===TZ)n++;if(!a.alive)continue;if(a.team===TZ)z++;else h++}
+  G.cbT=G.t;G.cb=z<=2&&h>=6||ZBAL.cbStuck>0&&G.roundTime-G.time>ZBAL.cbStuck&&n<=(G.hostN||2)+1&&h>=10;return G.cb}
+// where a zombie rises in a comeback: 6–18 m from another zombie on its feet (else anywhere), 12 m or more from every human and out of their sight
+function zPackSpawn(a){const H=G.actors.filter(t=>t.alive&&t.team===TH),Z=G.actors.filter(t=>t!==a&&t.alive&&t.team===TZ),N=NAV.nodes;if(!N.length)return zRandomSpawn();
+  for(let k=0;k<80;k++){const b=Z.length&&k<50?rpick(Z):null;const n=b?navAround(b.c.x,b.c.z,6,18):N[(Math.random()*N.length)|0];if(!n||n.e.length<15)continue;let ok=true;
+    for(const h of H)if(dist2(n.x,n.z,h.c.x,h.c.z)+Math.abs(n.y-h.c.y)*2<12){ok=false;break}if(ok&&!hSees(H,n,40))return [n.x,n.y+.02,n.z]}
+  return zRandomSpawn()}
 function zSpawnPoint(){const H=G.actors.filter(t=>t.alive&&t.team===TH);let best=null,bd=-1;
   const pts=MAP.zspawns.length?MAP.zspawns:MAP.spawns;
   for(const p of pts){let md=1e9;for(const h of H)md=Math.min(md,dist2(p[0],p[1],h.c.x,h.c.z)+Math.abs((p[2]||0)-h.c.y)*2);if(md>bd){bd=md;best=p}}return best||MAP.spawns[0]}
@@ -115,7 +123,9 @@ function ensureGun(a){const W=WPN[a.cur];const want=a.team===TH&&W&&W.model?W.mo
   if(W.dual){const m2=new THREE.Mesh(gunGeo(GUNS[W.model].alt||W.model),a.gunMat);m2.matrixAutoUpdate=false;a.ch.grp.add(m2);a.gun2=m2}}
 const _pr=new THREE.Color(),_fyo=[0,0,0,0];
 function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.isPlayer&&!G.spec&&a.alive)&&(a.alive||a.deadT<60||!a.permaDead||G.st!=='menu');
-  ch.grp.visible=show&&(a.alive||a.an.dead>0);if(!ch.grp.visible){if(a.gun)a.gun.visible=false;return}
+  ch.grp.visible=show&&(a.alive||a.an.dead>0);if(!ch.grp.visible){if(a.gun)a.gun.visible=false;
+    // the local player's body is not drawn, but its head (the hit sphere, and where claws and bot bullets aim) must still follow it
+    if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:a.zc==='boss'?.16*BOSS_S:.14):.14}return}
   const an=a.an;an.atk=Math.max(0,an.atk-dt/(an.atkD||.42));an.flinch=Math.max(0,an.flinch-dt*4);an.flx=(an.flx||0)*Math.exp(-dt*5);an.skill=Math.max(0,an.skill-dt);
   if(!a.alive)an.dead=Math.min(1,an.dead+dt*2.2);else if(a.reviving>0){an.dead=a.reviving/1.2}else an.dead=0;
   // locomotion state for animation: body-space velocity, a stride clock tied to distance, turn rate, acceleration, smoothed crouch / air / sprint
@@ -156,6 +166,8 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   ensureGun(a);if(a.gun){a.gun.visible=!!ch.gunOn;if(ch.gunOn){a.gun.matrix.multiplyMatrices(ch.M[1],ch.gunM);a.gun.material.uniforms.uProbe.value.copy(U.uProbe.value)}}
   if(a.gun2){a.gun2.visible=!!ch.gunOn2;if(ch.gunOn2)a.gun2.matrix.multiplyMatrices(ch.M[1],ch.gunM2)}
   charHead(ch,a.head);a.headR=a.team===TZ?(a.zc==='brute'?.16:a.zc==='boss'?.16*BOSS_S:.14):.14;
+  // a zombie's arms are hit volumes too (the Heavy's reach well outside its body box)
+  if(a.team===TZ&&a.alive){if(!a.arms)a.arms=[0,1,2,3,4,5].map(()=>new THREE.Vector3());a.armR=charArms(ch,a.arms);a.armT=G.t}else a.armT=-1e9;
   // flashlight beam for human bots
   if(a.team===TH&&a.alive&&!a.isPlayer&&a.flash&&a.gun&&a.gun.visible){if(!a.beam){a.beam=mkBeam();a.gun.add(a.beam)}a.beam.visible=true}else if(a.beam)a.beam.visible=false}
 let BEAM_GEO=null,BEAM_MAT=null;
@@ -165,9 +177,10 @@ function mkBeam(){if(!BEAM_GEO){BEAM_GEO=new THREE.ConeGeometry(1.5,9,10,1,true)
       uniforms:{uFogD:LU.uFogD},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})}
   const m=new THREE.Mesh(BEAM_GEO,BEAM_MAT);m.position.set(0,.06,-.3);m.renderOrder=7;return m}
 // ---------- movement ----------
+const ZSPD=.95;// every zombie class runs 5 % below its table speed
 function maxSpeed(a){if(a.frozen>0)return 0;let s;
-  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1)*(a.spdMul||1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.5;if(a.holdT>0)s*=a.host?.3:.12;if(a.duck)s*=.45}
-  else{const W=WPN[a.cur];s=5.15*(W?W.speed:1);if(W&&W.stance&&a.hamB)s*=W.stanceSpd;if(a.zoom>0)s*=.6;if(a.duck)s*=.36;else if(a.cmd.walk)s*=.52;if(a.shriekT>0)s*=.6}
+  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*ZSPD*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1)*(a.spdMul||1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.5;if(a.holdT>0)s*=a.host?.3:.12;if(a.duck)s*=.45}
+  else{const W=WPN[a.cur];s=5.15*(a.hsk?hskSpeed(a,W):W?W.speed:1);if(W&&W.stance&&a.hamB)s*=W.stanceSpd;if(W&&W.atkSpd&&G.t<a.nextFire)s*=W.atkSpd[a.an.heavy?1:0];if(a.zoom>0)s*=.6;if(a.duck)s*=.36;else if(a.cmd.walk)s*=.52;if(a.shriekT>0)s*=.6}
   return s}
 function jumpV(a){if(a.team===TZ)return ZCLASS[a.zc].jump;return 6.3}
 function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy;
@@ -290,7 +303,8 @@ function zbombUpdate(a,dt){const cmd=a.cmd,pc=a.pc;
   if(a.bSt===3)return;
   if(want&&(!(pc.fire||pc.alt)||!a.isPlayer)&&a.drawT<=0&&a.bombs>0){a.bSt=1;a.bT=BOMB_PULL;a.bSoft=!cmd.fire&&!!cmd.alt;
     if(a.isPlayer){VM.bombPull(BOMB_PULL);AU.play('zatk',{vol:.35,rate:1.5})}else AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.4,range:20,rate:1.5})}}
-function clawStrike(a,heavy){const r=meleeHit(a,heavy?2.3:2.0,heavy?.6:.5);
+const CLAW_R=[1.75,2.0];// claw reach (light, heavy): eye to the target's body; the bots swing from 1.35 m + the target's half width (ai.js)
+function clawStrike(a,heavy){const r=meleeHit(a,heavy?CLAW_R[1]:CLAW_R[0],heavy?.6:.5);
   if(r&&r.t){if(!NET.ghost){if(NET.cli)netToHost({t:'claw',i:r.t.id,h:heavy?1:0});else clawApply(a,r.t,heavy)}
     if(a.isPlayer)HUD.hitmark(false)}
   else if(r&&r.wall){FX.impact(r.x,r.y,r.z,r.n[0],r.n[1],r.n[2],r.wall.box.mat);if(a.isPlayer)AU.play('kwall',{vol:.4,rate:.7})}}
@@ -311,6 +325,10 @@ function useSkill(a){if(NET.cli&&!NET.ev){if(a===G.player&&a.skillCD<=0&&(G.st==
 // ---------- damage & infection ----------
 function humansAlive(){let n=0;for(const a of G.actors)if(a.alive&&a.team===TH)n++;return n}
 function zombiesAlive(){let n=0;for(const a of G.actors)if(a.team===TZ&&(a.alive||!a.permaDead))n++;return n}
+// gunfire cannot pile the shove up without end: past a cap (ZBAL.kbCap — a bit more for each extra gun on the zombie in the last 0.6 s, so a few
+// humans together still hold one back) the push stops growing; a single big hit (sniper, launcher) still lands in full
+function kbCap(t,src,kb){const sh=t.kbSh||(t.kbSh={});sh[src?src.id:-1]=G.t;let n=0;for(const k in sh)if(G.t-sh[k]<.6)n++;
+  const cp=Math.max(kb,ZBAL.kbCap[t.host?1:0]*(1+.35*(n-1))),v=Math.hypot(t.kvx,t.kvz);if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}
 function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==='end'||G.st==='over'?0:netClaimHit(t,dmg,src,o);if(!t.alive||G.st==='end'||G.st==='over')return;
   if(t.team===TH){return}
   if(t.reviving>0)return;
@@ -320,13 +338,13 @@ function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==
   if(t.armor>0){const ab=Math.min(t.armor,dmg*.5);t.armor-=ab;dmg-=ab}
   t.hp-=dmg;t.lastHurt=G.t;
   const dealt=(ar0-t.armor)+(hp0-Math.max(0,t.hp));// what actually came off (armour + health), overkill excluded
-  let kb=(o.kb||0)*ZCLASS[t.zc].kb*(t.host?.75:1)*(t.lvl>=3?.8:t.lvl>=2?.9:1);if(t.skillT>0&&(t.zc==='brute'))kb=0;if(t.skillT>0&&t.zc==='rager')kb*=.5;if(t.frozen>0)kb*=.2;
-  if(!t.c.onGround)kb*=1.5;t.kvx+=o.dir[0]*kb;t.kvz+=o.dir[2]*kb;{const W=WPN[o.w];if(W&&W.air){const v=Math.hypot(t.kvx,t.kvz),cp=W.air.cap;if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}}// the air gun shoves hard but never launches anyone across the map
+  let kb=(o.kb||0)*ZCLASS[t.zc].kb*(t.host?.75:1)*(t.lvl>=3?.8:t.lvl>=2?.9:1);if(t.skillT>0&&(t.zc==='brute'))kb=0;if(t.skillT>0&&t.zc==='rager')kb*=.5;if(t.frozen>0)kb*=.2;if(zComeback())kb*=ZBAL.cbKb;
+  if(!t.c.onGround)kb*=1.5;t.kvx+=o.dir[0]*kb;t.kvz+=o.dir[2]*kb;{const W=WPN[o.w];if(W&&W.air){const v=Math.hypot(t.kvx,t.kvz),cp=W.air.cap;if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}else if(W&&W.mag&&!o.knife&&!o.he)kbCap(t,src,kb)}// the air gun shoves hard but never launches anyone across the map
   if(o.up){t.c.vy=Math.max(t.c.vy,o.up);t.c.onGround=false;t.c.jumped=true}
-  if(t.skillT<=0||t.zc!=='brute')t.staggerT=Math.max(t.staggerT,(o.stag||.2)*.8);
+  if(t.skillT<=0||t.zc!=='brute')t.staggerT=Math.max(t.staggerT,(o.stag||.2)+Math.min(.1,dealt/500));
   {const W=WPN[o.w];if(W&&W.kind==='saw'&&!(t.skillT>0&&t.zc==='brute')){t.holdT=Math.max(t.holdT||0,(o.kb||0)>0?.7:.32);t.mvx*=.3;t.mvz*=.3}}// the Ripper pins whoever it bites (a swing pins longer); a hardened Heavy shrugs it off
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(o.dir)t.an.flx=clamp((t.an.flx||0)+(o.dir[0]*Math.cos(t.yaw)-o.dir[2]*Math.sin(t.yaw))*.6,-1,1);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
-  if(src){src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;src.score+=dealt/100;const m=Math.round(dealt/8);if(m>0)src.money=Math.min(16000,src.money+m);if(src.isPlayer)HUD.dmgNum(t,dealt,!!o.hs,t.hp<=0)}
+  if(src){src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;src.score+=dealt/100;scEarn(src,Math.round(dealt/8));if(src.isPlayer)HUD.dmgNum(t,dealt,!!o.hs,t.hp<=0)}
   if(t.isPlayer){HUD.hurt(clamp(dmg/600,.15,.8));FX.shake=Math.max(FX.shake,.15)}
   if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});
   if(t.bot)AI.onHurt(t,src);
@@ -335,13 +353,14 @@ function hurtHuman(t,dmg,src,o){if(NET.ghost)return;if(NET.cli&&!NET.ev){if(t===
   t.hp-=dmg;t.lastHurt=G.t;
   if(src){const dealt=(ar0-t.armor)+(hp0-Math.max(0,t.hp));src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;if(src.isPlayer)HUD.dmgNum(t,dealt,false,t.hp<=0)}if(t.isPlayer){HUD.hurt(clamp(dmg/40,.25,1));FX.shake=Math.max(FX.shake,.3)}AU.at('hurt',t.c.x,t.c.y+1.5,t.c.z,{vol:.8});if(o.claw)AU.at('clawhit',t.c.x,t.c.y+1.2,t.c.z,{vol:.9});
   FX.blood(t.c.x,t.c.y+1.2,t.c.z,rr(-1,1),0,rr(-1,1),1,false);
-  if(t.hp<=0){dropDeath(t);t.hp=0;t.alive=false;t.permaDead=true;t.deadT=0;t.deaths++;t.an.dead=Math.max(t.an.dead,.001);t.deadDir=Math.random()<.5?1:-1;AU.at('hdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1});
-    if(src){src.kills++;src.score+=3;src.money=Math.min(16000,src.money+500)}HUD.feed(src,src?'claw':'fall',t,{});if(t.isPlayer)onPlayerDeath(src);if(NET.host)netEv('hdie',{i:t.id,s:src?src.id:-1})}}
+  if(t.hp<=0){ldSnap(t);dropDeath(t);t.hp=0;t.alive=false;t.permaDead=true;t.deadT=0;t.deaths++;t.an.dead=Math.max(t.an.dead,.001);t.deadDir=Math.random()<.5?1:-1;AU.at('hdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1});
+    if(src){src.kills++;src.score+=3}HUD.feed(src,src?'claw':'fall',t,{});if(t.isPlayer)onPlayerDeath(src);if(NET.host)netEv('hdie',{i:t.id,s:src?src.id:-1})}}
 function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.deadT=0;t.deaths++;t.frozen=0;t.skillT=0;t.reviving=0;t.an.dead=Math.max(t.an.dead,.001);// keeps the body drawn while it falls
   aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;
-  const perma=G.mode==='mut'&&(o.knife||(!t.host&&(o.hs||o.he)));
-  if(G.mode==='mut'){if(perma)t.permaDead=true;else t.reviveT=8}else{t.respawnT=5}
-  if(src){src.kills++;src.score+=perma?3:2;src.money=Math.min(16000,src.money+(o.hs?500:300))}
+  // Original: every dead zombie stays down this round. Mutation: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
+  const perma=G.mode==='orig'||G.mode==='mut'&&(o.knife||(!t.host&&(o.hs||o.he)));
+  if(perma)t.permaDead=true;else if(G.mode==='mut')t.reviveT=8;else t.respawnT=5
+  if(src){src.kills++;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}
   HUD.feed(src,o.w,t,{hs:o.hs,perma});nyOnKill(t,src);
   AU.at('zdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1,range:55});
   // gore: headshot kills burst the head, explosions tear the body; every body leaves a pool
@@ -350,7 +369,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
   dismember(t,o,perma);
   t.poolT=.75;t.poolN=0;
   if(src&&src.isPlayer){HUD.killConfirm(o.hs);if(o.hs)AU.play('hsding',{vol:.5})}
-  if(G.mode==='mut'&&src&&src.team===TH&&!NET.cli){G.moralePts+=perma?2:1;const nl=Math.min(10,Math.floor(G.moralePts/3));if(nl>G.moraleLvl){G.moraleLvl=nl;HUD.announce(T('moraleUp',nl*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}}
+  if(G.mode==='mut'&&src&&src.team===TH&&!NET.cli){G.moralePts+=perma?2:1;const nl=Math.min(ZBAL.moraleMax,Math.floor(G.moralePts/3));if(nl>G.moraleLvl){G.moraleLvl=nl;HUD.announce(T('moraleUp',nl*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}}
   if(t.isPlayer)onPlayerDeath(src);
   if(NET.host)netEv('kill',{i:t.id,s:src?src.id:-1,w:o.w||'',hs:o.hs?1:0,d:o.dir?[r2(o.dir[0]),r2(o.dir[1]),r2(o.dir[2])]:0,k:o.knife?1:0,h:o.heavy?1:0,he:o.he?1:0})}
 // dismemberment: only on bodies that stay down (perma kills, or the classic mode where the dead respawn elsewhere).
@@ -360,17 +379,18 @@ function dismember(t,o,perma){if(!t.ch||!o.dir||!(G.mode!=='mut'||perma))return;
   const cut=(k,d,sp)=>{if(SEVER[k]&&!(t.ch.hide>>SEVER[k].root&1)){FX.limb(t,k,d,sp);severLimb(t.ch,k);(t.spurts=t.spurts||[]).push({b:SEVER[k].stump,t:2.6,ph:Math.random()*6})}};
   if(o.hs&&!o.knife){if(big&&Math.random()<.55){severLimb(t.ch,'head');(t.spurts=t.spurts||[]).push({b:14,t:2.6,ph:0})}else cut('head',o.dir,rr(3,5.5))}
   else if(o.he||o.w==='gl40'){const ks=shuffle(['armL','armR','legL','legR','head','armL','armR']);const n=Math.random()<.45?2:1;for(let i=0,c=0;i<ks.length&&c<n;i++)if(!(t.ch.hide>>SEVER[ks[i]].root&1)){cut(ks[i],[o.dir[0],.7,o.dir[2]],rr(4.5,7.5));c++}}
-  else if(o.knife&&o.heavy&&!o.blunt&&(o.w==='axe'||Math.random()<.4))cut(o.hs||Math.random()<.35?'head':Math.random()<.5?'armL':'armR',[o.dir[0],.2,o.dir[2]],rr(2.5,4));
+  else if(o.knife&&!o.blunt&&(o.heavy?o.w==='axe'||o.w==='skull9'||Math.random()<.4:o.w==='skull9'&&Math.random()<.5))cut(o.hs||Math.random()<.35?'head':Math.random()<.5?'armL':'armR',[o.dir[0],.2,o.dir[2]],rr(2.5,4));
   else if(W.kind==='shotgun'&&Math.random()<.3&&G.player&&Math.hypot(t.c.x-G.player.c.x,t.c.z-G.player.c.z)<6)cut(Math.random()<.5?'armL':'armR',o.dir,rr(3,5))}
 const SPURT_D=[[0,1,-.2],[-1,.35,0],[1,.35,0],[-.2,-1,0],[.2,-1,0]],_sv=new THREE.Vector3(),_sd=new THREE.Vector3();
-function infect(t,src){if(NET.ghost||(NET.cli&&!NET.ev))return;if(t.team!==TH||!t.alive)return;
+function infect(t,src){if(NET.ghost||(NET.cli&&!NET.ev))return;if(t.team!==TH||!t.alive)return;if(G.st!=='fight'&&!NET.ev)return;// not on the result card between rounds
   HUD.feed(src,'claw',t,{infect:1});
-  if(src){src.infects++;src.infR++;src.score+=2;src.money=Math.min(16000,src.money+500);src.hp=Math.min(src.maxHp,src.hp+src.maxHp*.1);
+  if(src){src.infects++;src.infR++;src.score+=2;src.hp=Math.min(src.maxHp,src.hp+src.maxHp*.1);
     if(G.mode==='mut'){const nl=src.infR>=5?3:src.infR>=2?2:1;if(nl>src.lvl){src.lvl=nl;const mh=Math.round(zBaseHp(src)*(nl===3?1.5:1.25));src.maxHp=Math.max(src.maxHp,mh);src.hp=src.maxHp;src.armor+=100;
         if(src.isPlayer){HUD.announce(T('lvlUp',nl),'z',2);AU.play('lvlup',{vol:.6})}AU.at('zroar',src.c.x,src.c.y+1.5,src.c.z,{vol:.8})}}}
   AU.at('clawhit',t.c.x,t.c.y+1.2,t.c.z,{vol:1});AU.at('hscream',t.c.x,t.c.y+1.5,t.c.z,{vol:1,range:60});
   FX.blood(t.c.x,t.c.y+1.4,t.c.z,0,0,0,2,false);
   t.deaths++;becomeZombie(t,false);infectFx(t);if(NET.host)netEv('infect',{i:t.id,s:src?src.id:-1,z:t.zc});
+  if(!NET.cli){AI.onInfect(t);if(G.mode==='mut'&&G.moraleLvl>0){G.moraleLvl=Math.max(0,G.moraleLvl-ZBAL.moraleDrop);G.moralePts=G.moraleLvl*3}}// bots next to it scatter; an infection costs the humans morale
   if(t.isPlayer){HUD.infected(src);R.PU.uInfect.value=1;FX.shake=Math.max(FX.shake,.8);AU.play('heart',{vol:.9});AU.play('heart',{vol:.7,delay:.75})}
   const n=humansAlive();if(n===1&&G.st==='fight'){const last=G.actors.find(a=>a.alive&&a.team===TH);G.lastHuman=last;HUD.announce(T('lastHuman',last.name),'h',3);AU.play('stingL',{vol:.6})}}
 // someone turns: a burst of blood mist and rising green spores, a red ring on the ground and a red glow; the new zombie roars as it straightens up
@@ -381,10 +401,11 @@ function infectFx(t,big){const c=t.c,x=c.x,y=c.y,z=c.z,s=big?1.4:1;
   DL.add(x,y+1.2,z,'#ff2a18',7*s,2.2,.8);
   nyLater(t.turning?Math.max(.4,t.turning-.3):1,()=>{if(t.alive&&t.team===TZ)AU.at('zroar',t.c.x,t.c.y+1.6,t.c.z,{vol:.9,range:55})})}
 function zBaseHp(a){return ZCLASS[a.zc].hp}
-function becomeZombie(a,host){if(a.team===TH)dropDeath(a);const nh=G.actors.filter(x=>x.team===TH&&x!==a).length;
+function becomeZombie(a,host){if(a.team===TH){ldSnap(a);dropDeath(a)}const nh=G.actors.filter(x=>x.team===TH&&x!==a).length;
   a.team=TZ;a.host=host;a.zc=a.zpick||'rager';const Z=ZCLASS[a.zc];a.lvl=host?2:1;a.infR=0;
-  a.maxHp=host?Math.round(Z.hp*1.05+160*Math.max(1,nh)/Math.max(1,G.hostN)):Z.hp;if(a.bot)a.maxHp=Math.round(a.maxHp*DIFF_Z.hp[G.diff||0]);a.hp=a.maxHp;a.armor=host?300:Z.armor;
-  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomba.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
+  const om=G.mode==='orig';a.maxHp=host?Math.round(Z.hp*1.05+160*Math.max(1,nh)/Math.max(1,G.hostN)):Math.round(Z.hp*(om?ZBAL.origHp:1));if(a.bot)a.maxHp=Math.round(a.maxHp*DIFF_Z.hp[G.diff||0]);a.hp=a.maxHp;a.armor=host?300:Math.round(Z.armor*(om?ZBAL.origArmor:1));
+  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomb
+  a.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
   a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.an.skill=1;a.permaDead=false;a.alive=true;a.turning=host?2:1.4;
   if(a.isPlayer){a.nv=false;VM.set('claw','z_'+a.zc);VM.draw(.9)}
   if(a.bot)AI.onTeam(a)}
@@ -405,47 +426,56 @@ function startMatch(cfg){G.cfg=cfg;G.mode=cfg.mode;G.rounds=cfg.rounds;G.roundTi
   else{const P=mkActor(cfg.name||T('you'),true,cfg.skin||'guard');P.zpick=cfg.zclass||'rager';G.player=P;G.actors.push(P);
     const names=shuffle(BOT_NAMES.slice()),nb=cfg.mode==='scen'?Math.min(7,cfg.bots|0):cfg.bots;for(let i=0;i<nb;i++){const b=mkActor(names[i%names.length],false,rpick(HSKINS));b.zpick=rpick(ZLIST);b.bot=AI.mk(b);G.actors.push(b)}
     if(cfg.mode==='scen')for(let i=0;i<=SCEN.POOL;i++){const z=mkActor('Z',false,'guard');z.scen=true;z.bot=AI.mk(z);G.actors.push(z)}}
-  for(const a of G.actors){a.money=a.scen?0:(cfg.money||4000);a.survived=false}
+  // weapons are free: money is only the scenario's upgrade budget (a little to start with)
+  for(const a of G.actors){a.money=cfg.mode==='scen'&&!a.scen?1000:0;a.survived=false;a.ldo=null;a.ehBuy=0;a.bq=[];ldKitReset(a)}
   if(cfg.mode==='scen'){const pl=G.actors.filter(a=>a.scen);if(pl.length)pl[pl.length-1].boss=true;SCEN.initPool()}else SCEN.on=false;
   if(NET.cli){G.st='prep';G.time=G.prepTime;return}
   if(cfg.mode==='scen')SCEN.begin();else startRound()}
 function startRound(plan){if(NET.cli&&!plan)return;AU.stopAll('countdown');dropsClear();G.round=plan?plan.n:G.round+1;G.st='prep';FX.clearLimbs();G.time=G.prepTime;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=11;G.hostN=0;
   clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
   const sp=shuffle(MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
-  for(const a of G.actors){const q=pm[a.id];const keep=plan?!!(q&&q[5]):a.survived&&a.team===TH;a.nb=null;a.r0={k:a.kills,i:a.infects,dm:a.dmgDealt};a.rBonus=0;a.team=TH;a.host=false;a.alive=true;a.dmgRound=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.permaDead=false;a.hp=100;a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;
-    a.an.dead=0;a.an.atk=0;a.pendingClaw=null;a.zoom=0;a.flash=false;a.nv=false;
-    if(!keep){giveDefault(a);a.armor=0}else{for(const id in a.ammo){const W=WPN[id];a.ammo[id].mag=W.mag;a.ammo[id].res=W.res}a.cur=bestWeapon(a)}
+  for(const a of G.actors){const q=pm[a.id];const keep=plan?!!(q&&q[5]):a.survived&&a.team===TH;if(keep)ldSnap(a);a.nb=null;a.r0={k:a.kills,i:a.infects,dm:a.dmgDealt};a.team=TH;a.host=false;a.alive=true;a.dmgRound=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.permaDead=false;a.hp=100;a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;
+    a.an.dead=0;a.an.atk=0;a.pendingClaw=null;a.zoom=0;a.flash=false;a.nv=false;a.turning=0;a.holdT=0;a.bSt=0;a.throwT=0;
+    // everyone gets the loadout he had (survivors: what they hold now; the rest: what was noted as they went down or turned)
+    ldRestore(a);
     if(q)placeAt(a,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);else{const p=sp[k++%sp.length];placeAt(a,p[0],p[2]||0,p[1],p[3]!=null?p[3]+rr(-.4,.4):Math.PI+rr(-.6,.6))}ensureRig(a);equip(a,bestWeapon(a),true);a.drawT=0;
     if(NET.host)out.push([a.id,r2(a.c.x),r2(a.c.y),r2(a.c.z),r3(a.yaw),keep?1:0]);
     if(a.isPlayer){VM.set(a.cur,a.skin);R.PU.uInfect.value=0}if(a.bot)AI.onRound(a)}
   if(G.player&&MAP.spawnYaw!=null&&!plan){G.player.yaw=MAP.spawnYaw}
   BO.reset();SUP.reset();FX.clearDecals();HUD.roundStart();AU.play('siren',{vol:.5});AU.muSet&&AU.muSet('prep');if(NET.host)netEv('round',{n:G.round,P:out})}
-function selectHosts(ids){if(NET.cli&&!NET.ev)return;let H=G.actors.filter(a=>a.alive&&a.team===TH);const n=ids?Math.max(1,ids.length):Math.max(1,Math.min(3,Math.ceil(G.actors.length/10)));G.hostN=n;
-  // prefer players who were not host recently
-  if(ids)H=ids.map(byId).filter(a=>a&&a.alive&&a.team===TH);else{shuffle(H);H.sort((a,b)=>(a.hostCount||0)-(b.hostCount||0))}const picked=[];
+function selectHosts(ids){if(NET.cli&&!NET.ev)return;let H=G.actors.filter(a=>a.alive&&a.team===TH);const n=ids?Math.max(1,ids.length):hostsFor(G.actors.length);G.hostN=n;const nh=Math.max(1,H.length-n);
+  // prefer players who were not host recently, then ones standing apart (few humans within 6 m, not next to another new host)
+  if(ids)H=ids.map(byId).filter(a=>a&&a.alive&&a.team===TH);else{shuffle(H);const L=[],sc=a=>{let k=(a.hostCount||0)*100;for(const b of G.actors)if(b!==a&&b.alive&&b.team===TH&&dist3(a.c,b.c)<6)k++;for(const p of L)if(dist3(a.c,p.c)<12)k+=4;return k};
+    while(L.length<n&&H.length){let bi=0,bs=1e9;for(let j=0;j<H.length;j++){const v=sc(H[j]);if(v<bs){bs=v;bi=j}}L.push(H.splice(bi,1)[0])}H=L}const picked=[];
   for(let i=0;i<n&&i<H.length;i++){const a=H[i];picked.push(a);a.hostCount=(a.hostCount||0)+1;a.zc=a.zpick||'rager';becomeZombie(a,true);
+    a.maxHp=Math.round((ZCLASS[a.zc].hp*1.05+(G.mode==='orig'?ZBAL.origHostHp:ZBAL.hostHp)*nh/n)*(a.bot?DIFF_Z.hp[G.diff||0]:1));a.hp=a.maxHp;if(!NET.cli)AI.onInfect(a);// bots next to a new host scatter too
     AU.at('zinfect',a.c.x,a.c.y+1.5,a.c.z,{vol:1,range:80,occ:false});FX.blood(a.c.x,a.c.y+1.4,a.c.z,0,0,0,2,false);infectFx(a,true);if(a.isPlayer){HUD.infected(null);R.PU.uInfect.value=1}}
   HUD.announce(T('hostAppear'),'z',3.5);AU.play('stingZ',{vol:.8});AU.muSet&&AU.muSet('fight');if(NET.host)netEv('hosts',{i:picked.map(a=>a.id),z:picked.map(a=>a.zc)})}
 function endRound(win){if(NET.cli&&!NET.ev)return;if(G.st!=='fight'&&G.st!=='prep')return;G.st='end';G.endT=6;G.winner=win;G.score[win]++;BO.stop(true,true);
-  for(const a of G.actors){a.survived=a.team===TH&&a.alive;
-    a.rBonus=win===TH?(a.team===TH&&a.alive?2500:1400):(a.team===TZ?2200:1400);a.money=Math.min(16000,a.money+a.rBonus)}
+  for(const a of G.actors){a.pendingClaw=null;a.survived=a.team===TH&&a.alive;if(a.survived)ldSnap(a)}
   HUD.announce(win===TH?T('winH'):T('winZ'),win===TH?'h':'z',5);AU.play(win===TH?'stingH':'stingZ',{vol:.7});AU.muSet&&AU.muSet(win===TH?'win':'dead');if(G.mode!=='scen')HUD.roundResult(win);if(NET.host)netEv('end',{w:win,sc:G.score.slice()})}
 // ---------- blackout: now and then the power fails mid-round ----------
-// The baked lamp light, glowing windows/signs and the map's own lamps go out for ~20 s (fires, flares, muzzle flashes and flashlights
-// still work); the lights stutter on the way out and back. The host rolls it once per round (45 %) and tells everyone.
-const BO={on:false,t:0,dur:0,amb:1,lamp:1,next:1e9,out:0,
-  reset(){this.on=false;this.t=0;this.out=0;this.amb=this.lamp=1;this.next=G.mode!=='scen'&&Math.random()<.45?rr(25,Math.max(30,G.roundTime-45)):1e9},
-  start(d,remote){if(this.on)return;this.on=true;this.t=0;this.dur=d;this.out=0;AU.play('blackout',{vol:.9});
-    if(G.player&&G.player.team===TH)HUD.announce(LI()?'BLACKOUT!':'정전!','z',3);HUD.note(LI()?'The power is out — flashlight (F) / night vision (N)':'전력 차단 — 손전등(F) · 야간투시경(N)을 켜세요',4);
+// The baked lamp light, glowing windows/signs and the map's own lamps drop to a dim emergency level for 12-18 s (fires, flares, muzzle
+// flashes and flashlights still work); the lights stutter on the way out and back. The host rolls it once per round (20 %; never when the
+// room has blackouts off) and tells everyone. A map keeps a share of its light (MAP.env.boAmb): the night maps are dark to begin with.
+// Humans get their flashlight switched on, and it reaches further while the power is out (main.js).
+const BO={on:false,t:0,dur:0,amb:1,lamp:1,next:1e9,out:0,CHANCE:.2,EMERG:.18,
+  floor(){return (MAP.env&&MAP.env.boAmb)||.3},
+  reset(){const off=!!G.cfg&&(G.cfg.blackout===0||G.cfg.blackout===false);this.on=false;this.t=0;this.out=0;this.amb=this.lamp=1;
+    this.next=G.mode!=='scen'&&!off&&Math.random()<this.CHANCE?rr(25,Math.max(30,G.roundTime-45)):1e9},
+  start(d,remote){if(this.on)return;this.on=true;this.t=0;this.dur=d;this.out=0;AU.play('blackout',{vol:.9});const P=G.player,L=LI();
+    if(P&&P.team===TH){HUD.announce(L?'BLACKOUT!':'정전!','z',3);if(!P.alive)HUD.note(L?'The power is out':'전력 차단',3);
+      else{if(!P.flash){P.flash=true;AU.play('ui',{vol:.35,rate:.6})}HUD.note(L?'The power is out — your flashlight is on (F)':'전력 차단 — 손전등을 켰어요 (F)',4)}}
+    else if(P)HUD.note(L?'The power is out — night vision (N)':'전력 차단 — 야간투시(N)를 켜세요',4);
     if(NET.host&&!remote)netEv('bo',{on:1,d:Math.round(d)})},
   stop(remote,quiet){if(!this.on)return;this.on=false;this.t=0;this.out=1;if(!quiet){AU.play('powerup',{vol:.8});HUD.note(LI()?'Power restored':'전력 복구',2.5)}
     if(NET.host&&!remote)netEv('bo',{on:0})},
   update(dt){this.t+=dt;
-    if(!NET.cli&&G.st==='fight'&&!this.on&&this.out===0&&G.roundTime-G.time>=this.next)this.start(rr(18,26));
+    if(!NET.cli&&G.st==='fight'&&!this.on&&this.out===0&&G.roundTime-G.time>=this.next)this.start(rr(12,18));
     if(this.on&&!NET.cli&&this.t>=this.dur)this.stop();
-    let a=1,l=1;
-    if(this.on){const t=this.t;if(t<1.3){const on=Math.sin(t*37)+Math.sin(t*23.7)>.4*(1+t);a=on?1:.35;l=on?1:0}else{const k=Math.min(1,(t-1.3)/.4);a=lerp(.35,.2,k);l=0}}
-    else if(this.out===1){const t=this.t;if(t<1){const on=Math.sin(t*41)+Math.sin(t*19.3)>1-t*1.4;a=on?.8:.15;l=on?.8:0}else{a=l=1;this.out=2}}
+    const fl=this.floor(),E=this.EMERG;let a=1,l=1;
+    if(this.on){const t=this.t;if(t<1.3){const on=Math.sin(t*37)+Math.sin(t*23.7)>.4*(1+t);a=on?1:fl+.12;l=on?1:E}else{const k=Math.min(1,(t-1.3)/.4);a=lerp(fl+.12,fl,k);l=E}}
+    else if(this.out===1){const t=this.t;if(t<1){const on=Math.sin(t*41)+Math.sin(t*19.3)>1-t*1.4;a=on?.8:fl;l=on?.8:E}else{a=l=1;this.out=2}}
     this.amb=a;this.lamp=l}};
 function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors)updateVisual(a,dt);return}
   G.t+=dt;
@@ -454,14 +484,14 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
   else if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=10){const rec=AU.fromFile.countdown;if(s===10&&rec)AU.play('countdown',{vol:1,rev:0});if(!rec)AU.play(s<=3?'beep2':'beep',{vol:.5});HUD.countdown(s)}}
     if(G.time<=0){if(NET.cli)G.time=0;else{selectHosts();G.st='fight';G.time=G.roundTime}}}
   else if(G.st==='fight'){G.time-=dt;const h=humansAlive();BO.update(dt);SUP.update(dt);
-    if(!NET.cli){if(h===0)endRound(TZ);else if(G.time<=0)endRound(TH);else if(G.mode==='mut'&&zombiesAlive()===0)endRound(TH)}
+    if(!NET.cli){if(h===0)endRound(TZ);else if(G.time<=0)endRound(TH);else if((G.mode==='mut'||G.mode==='orig')&&zombiesAlive()===0)endRound(TH)}
     if(G.st==='fight'&&(G.time<30||h===1))AU.muSet&&AU.muSet('intense')}
   else if(G.st==='end'){if(BO.on||BO.out===1)BO.update(dt);if(SUP.list.length)SUP.update(dt);G.endT-=dt;if(G.endT<=0&&!NET.cli){if(G.round>=G.rounds||Math.max(G.score[0],G.score[1])>G.rounds/2){G.st='over';UI.showResults();if(NET.host)netEv('over')}else startRound()}}
   for(const a of G.actors){
     if(a.alive){
       if(a.bot&&!a.pup)AI.update(a,dt);
       a.frozen=Math.max(0,a.frozen-dt);if(a.holdT>0)a.holdT=Math.max(0,a.holdT-dt);if(a.rootT>0)a.rootT=Math.max(0,a.rootT-dt);a.staggerT=Math.max(0,a.staggerT-dt);a.dizzy=Math.max(0,a.dizzy-dt);a.shriekT=Math.max(0,a.shriekT-dt);a.skillCD=Math.max(0,a.skillCD-dt);a.skillT=Math.max(0,a.skillT-dt);
-      if(a.team===TZ&&!NET.cli&&!a.scen&&G.t-a.lastHurt>5&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*.02*dt);
+      if(a.team===TZ&&!NET.cli&&!a.scen&&G.t-a.lastHurt>ZBAL.regenWait&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*ZBAL.regen*dt);// zombies left alone heal
       // badly hurt zombies leave a trail of blood
       if(a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
       if(a.turning>0){a.turning-=dt;a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=a.cmd.jump=a.cmd.skill=false;a.mvx*=.8;a.mvz*=.8}
@@ -472,7 +502,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       Object.assign(a.pc,a.cmd)}
     else{a.deadT+=dt;
       if(a.poolT>0){a.poolT-=dt;if(a.poolT<=0&&a.poolN<2){aimDir(a.yaw,0,_dv);const k=(a.deadDir>0?-.6:.6);FX.pool(a.c.x+_dv.x*k,a.c.y,a.c.z+_dv.z*k,a.poolN?rr(1.05,1.35):rr(.6,.85));a.poolN++;a.poolT=a.poolN<2?1.6:0}}
-      if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){a.reviveT-=dt;if(a.reviveT<=0)reviveZombie(a,zRandomSpawn(),true)}else{a.respawnT-=dt;if(a.respawnT<=0)reviveZombie(a,zRandomSpawn())}}}
+      if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){const cb=zComeback();a.reviveT-=dt*(cb?ZBAL.cbRevive:1);if(a.reviveT<=0){reviveZombie(a,cb?zPackSpawn(a):zRandomSpawn(),true);if(cb){a.hp=a.maxHp;a.armor=Math.max(a.armor,Math.round(ZCLASS[a.zc].armor*.75))}}}else{a.respawnT-=dt;if(a.respawnT<=0)reviveZombie(a,zRandomSpawn())}}}
     // dead bodies still settle under gravity
     if(!a.alive&&a.deadT<3){a.c.vy-=GRAV*dt;a.c.vx*=.9;a.c.vz*=.9;a.c.vx+=a.kvx*.3;a.c.vz+=a.kvz*.3;a.kvx*=.8;a.kvz*=.8;moveChar(a.c,dt)}}
   separate(dt);updateNades(dt);nyUpdate(dt);dropsUpdate(dt);

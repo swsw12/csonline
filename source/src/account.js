@@ -9,7 +9,7 @@
 // SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
 const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
 if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
-const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
+const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
   sub(fn){this.subs.push(fn)},
@@ -41,10 +41,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,prices:null,gcfg:nu
     if(this.ses){try{await this.fresh();if(!this.ses.user)this.ses.user=await this.req('GET','/auth/v1/user',null,true);await this.loadMe()}catch(e){if(!e.net){this.setSes(null);this.me=null}}}
     else this.me=null;
     this.ready=true;this.emit();return kind},
-  async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
+  async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,pity:r.pity|0,freeToday:!!r.free_today,rec:r.rec||null,email:this.ses&&this.ses.user&&this.ses.user.email||''};
+      frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,freeToday:!!r.free_today,rec:r.rec||null,email:this.ses&&this.ses.user&&this.ses.user.email||''};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
@@ -60,17 +60,25 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,prices:null,gcfg:nu
   oauth(p){location.assign(SB.url.replace(/\/+$/,'')+'/auth/v1/authorize?provider='+encodeURIComponent(p)+(this.here()?'&redirect_to='+encodeURIComponent(this.here()):''))},
   async recover(email){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';await this.req('POST','/auth/v1/recover'+q,{email},false)},
   async newPassword(pw){await this.call('PUT','/auth/v1/user',{password:pw})},
-  async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.ls('qz_me',null);this.emit()},
+  async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.ls('qz_me',null);this.emit()},
   async setNick(n){const r=await this.rpc('qz_set_nickname',{p_nick:n});if(this.me){this.me.nickname=r;this.ls('qz_me',{...this.ls('qz_me'),nickname:r})}this.emit();return r},
   async buy(id){const r=await this.rpc('qz_buy',{p_gun:id});if(this.me){this.me.coins=r.coins;this.me.owned.add(id);this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,owned:[...this.me.owned]})}this.emit();return r},
   // the 근하신년 decoder bingo: the player's card {nums[25], marked[25], drawn[], rewards[12], done[12], boards, shuffles_left}
   async loadBingo(){const r=await this.rpc('qz_bingo');this.bingo=r;this.emit();return r},
-  // open n (1 or 10) decoders, or today's free one. Returns {draws:[{n,cell,lines:[{line,kind,gun,tier,amount}],frags,card}],card,coins,fragments,free_today}
-  async decode(n,free){const r=await this.rpc('qz_decode',{p_count:n,p_free:!!free});const me=this.me;
-    if(me){me.coins=r.coins;me.frags=r.fragments;me.freeToday=!!r.free_today;for(const d of r.draws||[])for(const x of d.lines||[])if(x.kind==='gun'&&x.gun)me.owned.add(x.gun);this.saveMe()}
-    this.bingo=r.card;return r},
+  // open n (1 or 10) decoders, or today's free one, or (ticket) n of the ones kept from the season card.
+  // Returns {draws:[{n,cell,lines:[{line,kind,gun,tier,amount}],frags,card}],card,coins,fragments,tickets,free_today}
+  async decode(n,free,ticket){const a={p_count:n,p_free:!!free};if(ticket)a.p_ticket=true;// (p_ticket only when used: a database without it still opens coin decoders)
+    const r=await this.rpc('qz_decode',a);this.gotDraws(r);this.bingo=r.card;return r},
+  gotDraws(r){const me=this.me;if(!me)return;me.coins=r.coins;me.frags=r.fragments;if(r.tickets!=null)me.tickets=r.tickets|0;if(r.free_today!=null)me.freeToday=!!r.free_today;
+    for(const d of r.draws||[])for(const x of d.lines||[])if(x.kind==='gun'&&x.gun)me.owned.add(x.gun);this.saveMe()},
   async bingoReset(){this.bingo=await this.rpc('qz_bingo_reset');this.emit();return this.bingo},
   async bingoShuffle(){this.bingo=await this.rpc('qz_bingo_shuffle');this.emit();return this.bingo},
+  // the season decoder bingo: the same card, numbers 0..season_hi, rewards[12] are items ('gun:bhole', 'coins:1000', 'frags:30', 'tickets:3')
+  async loadSeason(){const r=await this.rpc('qz_season');this.season=r;this.emit();return r},
+  // n (1 or 10) season decoders for coins. Lines: {line,kind (gun|coins|frags|tickets),gun,amount,item}; an owned gun's line pays coins (gun set)
+  async seasonDecode(n){const r=await this.rpc('qz_season_decode',{p_count:n});this.gotDraws(r);this.season=r.card;return r},
+  async seasonReset(){this.season=await this.rpc('qz_season_reset');this.emit();return this.season},
+  async seasonShuffle(){this.season=await this.rpc('qz_season_shuffle');this.emit();return this.season},
   async exchange(id){const r=await this.rpc('qz_exchange',{p_gun:id});const me=this.me;if(me){me.frags=r.fragments;me.owned.add(id);this.saveMe()}this.emit();return r},
   async history(){return await this.call('GET','/rest/v1/gacha_log?select=at,src,kind,tier,gun_id,amount,pity_hit&order=id.desc&limit=50',null)},
   saveMe(){const me=this.me;if(!me)return;this.ls('qz_me',{...this.ls('qz_me'),coins:me.coins,owned:[...me.owned],nickname:me.nickname})},
@@ -101,12 +109,13 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,prices:null,gcfg:nu
     if(/signup_disabled|Signups not allowed/i.test(c+m))return T2('지금은 가입을 받지 않아요','Sign-ups are closed right now');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
     if(/not_enough_frags/.test(m))return T2('해독 조각이 부족해요','Not enough fragments');
+    if(/not_enough_tickets/.test(m))return T2('보유한 근하신년 해독기가 부족해요','Not enough decoders kept');
     if(/gacha_only/.test(m))return T2('근하신년 무기는 해독기 빙고에서만 얻을 수 있어요','근하신년 guns only come from the decoder bingo');
     if(/free_used/.test(m))return T2('오늘 무료 해독기는 이미 열었어요','Today\'s free decoder is used');
     if(/no_shuffles/.test(m))return T2('오늘 뒤섞기를 다 썼어요','No shuffles left today');
     if(/not_for_exchange/.test(m))return T2('교환할 수 없는 총이에요','That gun cannot be exchanged');
     if(/bad_count|no_config/.test(m))return T2('해독기 설정을 확인해 주세요','Decoder settings are off');
-    if(/qz_decode|qz_bingo|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/qz_decode|qz_bingo|qz_season|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');

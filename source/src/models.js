@@ -457,7 +457,7 @@ function poseHuman(ch,st){const R=ch.R,A=ch.A,P=A.piv;const sc=P[0][1]/.93;ch.gu
   // body: lean into the run and into acceleration, bank into turns, breathe, flinch away from hits
   const breathe=Math.sin(st.t*1.7)*.012;let lean=-(.05+.17*g.run)*g.amp-crouch*.12-(st.accel||0)*.06+breathe;let twistAct=0;
   if(H&&a>0){if(H.kind==='melee'&&!H.rx){if(st.heavy){lean+=kf1(KF.lungeH,a)}else twistAct=kf1(st.atkSide>0?KF.twistA:KF.twistB,a)}
-    else if(H.kind==='melee'&&H.rx)lean+=kf1(KF.axeSpine,a);
+    else if(H.kind==='melee'&&H.rx){if(H.twA&&!st.heavy)twistAct=kf1(KF[H.twA],a);else lean+=kf1(KF.axeSpine,a)}// a sweep (twA) turns the shoulders instead of bending
     else if(H.kind==='nade'){twistAct=kf1(KF.throwTwist,a);lean+=kf1(KF.throwLean,a)}}
   ch.root.set(g.sway*sc,-g.drop*sc,rootZ*sc);
   const spP=clamp(st.pitch*.35,-.35,.4)+lean+(st.flinch||0)*.32;const bank=clamp(-(st.turnRate||0)*.035,-.12,.12)-(st.flinchX||0)*.18;
@@ -469,7 +469,7 @@ function poseHuman(ch,st){const R=ch.R,A=ch.A,P=A.piv;const sc=P[0][1]/.93;ch.gu
   const sR=_sh.set(P[5][0]-P[1][0],P[5][1]-P[1][1],P[5][2]-P[1][2]);const pr=st.pitch-spP;
   const sprint=st.sprint||0,rel=st.reload||0;
   const act=_kv;act.fill(0);
-  if(a>0&&H.kind==='melee'){kfv(H.ham?(st.heavy?KF.hamH:KF.hamA):H.rx?(st.heavy?KF.axeH:KF.axeA):(st.heavy?KF.knifeH:(st.atkSide>0?KF.knifeA:KF.knifeB)),a,act)}
+  if(a>0&&H.kind==='melee'){kfv(H.ham?(st.heavy?KF[H.kH||'hamH']:KF[H.kA||'hamA']):H.rx?(st.heavy?KF.axeH:KF.axeA):(st.heavy?KF.knifeH:(st.atkSide>0?KF.knifeA:KF.knifeB)),a,act)}
   else if(a>0&&H.kind==='nade'){kfv(KF.throw,a,act)}
   else if(rel>0&&st.relKind==='mag'){kfv(st.brk?KF.relBrk:KF.relGun,rel,act);const slap=Math.exp(-Math.pow((rel-.76)/.025,2));act[1]+=slap*.018;act[3]+=slap*.08}
   else if(st.relKind==='shell'||st.relKind==='start'){const k=st.relKind==='start'?smooth(clamp(st.shellP||0,0,1)):1;act[1]=-.04*k;act[3]=-.06*k;act[5]=.32*k;act[0]=.02*k;if(st.relKind==='shell'){const q=st.shellP||0;act[1]+=Math.sin(q*Math.PI)*.012}}
@@ -592,4 +592,10 @@ function poseDead(ch,st){const R=ch.R,P=ch.A.piv,o=ch.A.def.o;const sc=P[0][1]/.
   ch.gunOn=false;ch.gunOn2=false}
 // world-space head centre and approximate head radius for hit tests
 const _hv=new THREE.Vector3();
+// the arms as hit segments in world space: out[0..2] = left shoulder, elbow, hand; out[3..5] the right; returns the two arm radii
+function charArms(ch,out){const D=ch.A.def,o=D.o,P=D.piv,W=ch.grp.matrixWorld;let k=0;const r=[];
+  for(const [b,sd] of [[3,-1],[5,1]]){out[k++].set(P[b][0],P[b][1],P[b][2]).applyMatrix4(ch.uB[b]).applyMatrix4(W);
+    out[k++].set(P[b+1][0],P[b+1][1],P[b+1][2]).applyMatrix4(ch.uB[b+1]).applyMatrix4(W);
+    out[k++].set(sd*o.shX,P[b+1][1]-o.fore-o.hand*.5,0).applyMatrix4(ch.uB[b+1]).applyMatrix4(W);r.push(o.armW*(sd>0?(o.arm2||1):1)*.6+.02)}
+  return r}
 function charHead(ch,out){const A=ch.A;const c=A.def.headC;_hv.set(c[0],c[1],c[2]).applyMatrix4(ch.uB[2]);out.copy(_hv).applyMatrix4(ch.grp.matrixWorld);return out}

@@ -354,4 +354,4 @@ function buildRest(){const N='none',SN='rsSnow',CV={nosolid:true};
   MAP.cam=(t,cam)=>{const a=Math.sin(t*.04)*.7;cam.position.set(-6+a*8,7+Math.sin(t*.06)*.6,-16+a*2);cam.lookAt(-4+a*4,2,14)};
 }
 MAPDEFS.rest={n:['영동 휴게소','Yeongdong Rest Stop'],d:['눈 내리는 한겨울 밤의 고속도로 휴게소. 버려진 차들이 눈에 묻힌 주차장, 편의점·푸드코트·포장마차, 올라갈 수 있는 주유소 지붕과 세차장 옥상, 화물차 주차장, 화장실과 놀이터가 있는 뒷길, 정자와 전망대가 있는 숲, 고속도로를 건너는 육교.','A highway rest stop on a snowy winter night: a car park of snowed-in cars, a store, food court and snack stalls, a climbable gas-station canopy and car-wash roof, a truck park, a back road with restrooms and a playground, woods with a pavilion and a lookout, and an overbridge across the jammed highway.'],
-  env:{sky:1,snow:1,rain:0,storm:0,fog:'#1a2232',fogD:.018,ambOut:'#3a4660',ambIn:'#2a2c30'},bounds:[-58,-33,58,50],probeY:[.9,2.4,4.4,6.4],tex:bakeRestTex,build:buildRest};
+  env:{sky:1,snow:1,rain:0,storm:0,fog:'#1a2232',fogD:.018,ambOut:'#3a4660',ambIn:'#2a2c30',boAmb:.4},bounds:[-58,-33,58,50],probeY:[.9,2.4,4.4,6.4],tex:bakeRestTex,build:buildRest};

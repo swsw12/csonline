@@ -177,7 +177,8 @@ function nyProj(a,W,eye,dir,kind){const sp={bolt:78,harpoon:56,disc:24,slug:46}[
 function rayActorsX(n,ox,oy,oz,dx,dy,dz,tmax){const src=n.owner;let best=null,bt=tmax,part=null;
   for(const t of G.actors){if(!t.alive||t===src||t.team===src.team||n.hit.has(t))continue;const c=t.c;const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h*1.15,bt);if(th>=0){bt=th;best=t;part='head'}
-    const hw=(t.hitW||c.hw)+.04,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);if(tb>=0&&tb<bt){bt=tb;best=t;part=(oy+dy*tb)<c.y+(top-c.y)*.45?'legs':'body'}}
+    const hw=(t.hitW||c.hw)+.04,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);if(tb>=0&&tb<bt){bt=tb;best=t;part=(oy+dy*tb)<c.y+(top-c.y)*.45?'legs':'body'}
+    if(t.team===TZ){const ta=rayArms(t,ox,oy,oz,dx,dy,dz,bt,1.15);if(ta>=0&&ta<bt){bt=ta;best=t;part='body'}}}
   return best?{a:best,t:bt,part}:null}
 // move a projectile through the world for dt: onActor/onWorld answer 'go' (keep flying), 'stop' (stay where it is) or 'kill' (remove)
 function projStep(n,dt,grav,onActor,onWorld){const sp0=Math.hypot(n.vx,n.vy,n.vz);const steps=Math.max(1,Math.ceil(sp0*dt/.5));const h=dt/steps;
@@ -193,7 +194,7 @@ function projWallFx(n,wn,box,snd){const m=box&&(box.o.f&&box.o.f[nf(wn)]||box.ma
 const PROJ_UPD={
   bolt(n,dt){const W=WPN[n.w]||WPN.xbow;
     if(n.stuck){n.life-=dt;return n.life<=0}
-    const r=projStep(n,dt,2.5,(n,ha,dx,dy,dz)=>{const t=ha.a,hs=ha.part==='head';damageActor(t,W.dmg*(hs?W.hs:ha.part==='legs'?.75:1),n.owner,{w:n.w,hs,dir:[dx,dy,dz],kb:W.kb,stag:W.stag,x:n.x,y:n.y,z:n.z});
+    const r=projStep(n,dt,2.5,(n,ha,dx,dy,dz)=>{const t=ha.a,ds=hsForce(n.owner,ha),hs=ha.part==='head';damageActor(t,W.dmg*(hs?W.hs:ha.part==='legs'?.75:1),n.owner,{w:n.w,hs,ds,dir:[dx,dy,dz],kb:W.kb,stag:W.stag,x:n.x,y:n.y,z:n.z});
         n.hit.add(t);projHitFx(n,ha,dx,dy,dz,hs?1.4:.8);return W.pierce&&n.hit.size<W.pierce?'go':'kill'},
       (n,wn,box)=>{projWallFx(n,wn,box);n.stuck=true;n.life=8;return 'stop'});
     if(r==='kill')return true;
@@ -215,7 +216,7 @@ const PROJ_UPD={
     if(!n.out){if(!o.alive)return true;const e=actorEye(o);const dx=e.x-n.x,dy=e.y-.3-n.y,dz=e.z-n.z,d=Math.hypot(dx,dy,dz);if(d<.8){if(o.isPlayer)AU.play('pickup',{vol:.35,rate:1.4});return true}
       const sp=28,k=Math.min(1,dt*7);n.vx=lerp(n.vx,dx/d*sp,k);n.vy=lerp(n.vy,dy/d*sp,k);n.vz=lerp(n.vz,dz/d*sp,k)}
     const x0=n.x,z0=n.z;
-    const r=projStep(n,dt,0,(n,ha,dx,dy,dz)=>{const t=ha.a,hs=ha.part==='head';damageActor(t,hs?W.hsDmg:W.dmg*(ha.part==='legs'?.75:1),n.owner,{w:'xdz',hs,dir:[dx,0,dz],kb:W.kb,stag:.45,x:n.x,y:n.y,z:n.z});
+    const r=projStep(n,dt,0,(n,ha,dx,dy,dz)=>{const t=ha.a,ds=hsForce(n.owner,ha),hs=ha.part==='head';damageActor(t,hs?W.hsDmg:W.dmg*(ha.part==='legs'?.75:1),n.owner,{w:'xdz',hs,ds,dir:[dx,0,dz],kb:W.kb,stag:.45,x:n.x,y:n.y,z:n.z});
         n.hit.add(t);projHitFx(n,ha,dx,dy,dz,hs?2:1);if(!AU.throttle('dh'+n.owner.id,60))AU.at('dischit',n.x,n.y,n.z,{vol:.7});return 'go'},
       (n,wn,box,dx,dy,dz)=>{projWallFx(n,wn,box,'dischit');for(let i=0;i<6;i++)FX.spark(n.x,n.y,n.z,wn[0]*rr(2,5)+rr(-2,2),rr(0,3),wn[2]*rr(2,5)+rr(-2,2),rr(.1,.3));
         if(n.out){n.out=false;n.hit.clear();const vn=n.vx*wn[0]+n.vy*wn[1]+n.vz*wn[2];n.vx-=2*vn*wn[0];n.vy-=2*vn*wn[1];n.vz-=2*vn*wn[2];return 'stop'}return 'kill'});

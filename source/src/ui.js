@@ -90,8 +90,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     let el=$('hRRes');if(!el){el=document.createElement('div');el.id='hRRes';$('hud').appendChild(el)}
     el.innerHTML=`<div class="rhd ${win===TH?'h':'z'}"><b>${T('round')} ${G.round} · ${win===TH?T('winH'):T('winZ')}</b><span>${T('human')} ${G.score[TH]} : ${G.score[TZ]} ${T('zombie')}</span></div>
       <div class="rmvps">${card(hm&&(hm.dm>0||hm.k>0)?hm:null,'h',L?'Human MVP':'인간 MVP',`${T('kills')} ${hm?hm.k:0} · ${T('dmg')} ${hm?n(hm.dm):0}`)}${card(zm,'z',L?'Zombie MVP':'좀비 MVP',`${T('infects')} ${zm?zm.i:0} · ${T('kills')} ${zm?zm.k:0}`)}</div>
-      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('infects')}</th><th>${T('dmg')}</th></tr>${rows.map(r=>{const f=fate(r.a);return `<tr class="${r.a===P?'me':''}"><td>${esc(r.a.name)}</td><td class="f ${f[0]}">${f[1]}</td><td>${r.k}</td><td>${r.i}</td><td>${n(r.dm)}</td></tr>`}).join('')}</table>
-      ${P&&P.rBonus?`<div class="rbonus">${L?'Round bonus':'라운드 보상'} <b>+$${n(P.rBonus)}</b></div>`:''}`;
+      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('infects')}</th><th>${T('dmg')}</th></tr>${rows.map(r=>{const f=fate(r.a);return `<tr class="${r.a===P?'me':''}"><td>${esc(r.a.name)}</td><td class="f ${f[0]}">${f[1]}</td><td>${r.k}</td><td>${r.i}</td><td>${n(r.dm)}</td></tr>`}).join('')}</table>`;
     this.annT=0;this.ann=null;$('hBig').className='a off';// the card carries the result itself
     el.classList.remove('off');el.style.animation='none';void el.offsetWidth;el.style.animation=''},
   resOff(){const el=$('hRRes');if(el)el.classList.add('off')},
@@ -184,7 +183,6 @@ const UI={open:null,
     else if(a==='again'){this.hideAll();Main.startGame()}
     else if(a==='buy'){Main.buyItem(v)}
     else if(a==='buycat'){this.buyCat=+v;this.renderBuy()}
-    else if(a==='addmoney'){addMoney(G.player);this.renderBuy()}
     else if(a==='zsel'){Main.pickZ(v)}
     else if(a==='closeov'){Main.closeOverlay()}},
   buildTitle(){$('menu').innerHTML=`<div class="logo"><div class="lz">QUARANTINE<b>Z</b></div><div class="ls">${T('sub')}</div></div>
@@ -248,10 +246,12 @@ const UI={open:null,
     if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.burst)t.push(L?'3-round burst':'3점사');if(W.dual)t.push(L?'Akimbo':'쌍권총');if(W.zoom)t.push(L?'Scope':'조준경');
     if(W.spin)t.push(L?'Spin-up':'예열 회전');if(W.proj)t.push(L?'Explosive':'폭발 유탄');if(W.bolt)t.push(L?'Bolt-action':'볼트액션');if(W.kind==='melee')t.push(L?'Melee · RMB chop':'근접 · 우클릭 강타');
     if(W.mag)t.push((L?'Mag ':'탄창 ')+W.mag+(W.semi&&!W.burst&&!W.bolt?(L?' · semi':' · 반자동'):!W.semi&&!W.burst?(L?' · auto':' · 자동'):''));return t.join(' · ')},
+  // everything is free: the right-hand column tells what the player has, what is used up this round and what is locked (loadout.js);
+  // the three saved sets sit over the categories
   renderBuy(){const P=G.player;const L=LI();const cat=BUY_MENU[this.buyCat];
-    const items=cat.items.map((id,i)=>{const W=WPN[id],E=EQUIP[id];const nm=(W||E).n[L],cost=(W||E).cost;const own=W&&(W.kind==='nade'?P.inv[id]>0:P.inv[W.slot]===id)||(id==='armor'&&P.armor>=100);const free=!!(W&&W.ny&&P.nyFree>0);const ok=(P.money>=cost||free)&&!own;
+    const items=cat.items.map((id,i)=>{const W=WPN[id],E=EQUIP[id];if(!W&&!E)return '';const nm=(W||E).n[L],st=ldItemState(P,id);
       const icon=W&&W.model?`<img src="${gunIcon(W.model,26)}">`:id==='armor'?'<b class="ico">◆</b>':'<b class="ico">▤</b>';
-      return `<div class="bi${ok?'':' na'}${own?' own':''}" data-act="buy" data-v="${id}"><span class="n">${i+1}</span>${icon}<div class="bn"><b>${nm}</b><small>${this.wTags(W||{},id)}</small></div>${W&&(W.dmg||W.kind==='melee')?this.statBars(W):'<span class="sbs"></span>'}<span class="c">${own?T('owned'):free?T('nyFree'):'$'+cost}</span></div>`}).join('');
-    $('buy').innerHTML=`<h3>${T('buyT')} <span class="money">$ ${P.money}</span> <button class="addm" data-act="addmoney">${L?'+$3000':'돈 추가 +3000'}</button></h3><div class="bwrap"><div class="cats">${BUY_MENU.map((c,i)=>`<div class="cat${i===this.buyCat?' on':''}" data-act="buycat" data-v="${i}"><span class="n">${i+1}</span>${c.n[L]}</div>`).join('')}</div><div class="items">${items}</div></div><p class="hint">${T('buyHint')}</p>`},
+      return `<div class="bi${st.ok?'':' na'}${st.own?' own':''}${st.lk?' lk':''}" data-act="buy" data-v="${id}"><span class="n">${i+1}</span>${icon}<div class="bn"><b>${nm}</b><small>${this.wTags(W||{},id)}</small></div>${W&&(W.dmg||W.kind==='melee')?this.statBars(W):'<span class="sbs"></span>'}<span class="c">${st.t}</span></div>`}).join('');
+    $('buy').innerHTML=`<h3>${T('buyT')} <span class="bfree">${T('ldFree')}</span></h3>${ldSetsHTML(P,false)}<div class="bwrap"><div class="cats">${BUY_MENU.map((c,i)=>`<div class="cat${i===this.buyCat?' on':''}" data-act="buycat" data-v="${i}"><span class="n">${i+1}</span>${c.n[L]}</div>`).join('')}</div><div class="items">${items}</div></div><p class="hint">${T('buyHint')}</p>`},
   renderZsel(){const L=LI();const P=G.player;$('zsel').innerHTML=`<h3>${T('zselT')}</h3><div class="cards wide">${ZLIST.map((k,i)=>{const Z=ZCLASS[k];return `<div class="card z${P.zpick===k?' on':''}" data-act="zsel" data-v="${k}"><span class="n">${i+1}</span><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${Z.n[L]}</span><small>HP ${Z.hp} · ${L?'SPD':'속도'} ${Z.speed}</small><p>${Z.d[L]}</p></div>`}).join('')}</div><p class="hint">${T('zselHint')}</p>`},
 };

@@ -96,7 +96,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
   shellIn(){this.rel={t:0,d:.4,kind:'shell'};this.sp.py.v+=.12},
   stopReload(){this.rel=null},
   stance(b){this.sp.py.v-=.2;this.sp.rx.v+=b?.8:-.6},
-  melee(heavy){if(this.id==='knife'&&this.knSwing&&this.knSwing(heavy))return;const W=WPN[this.id];/* the knife swings on a clip (vmknife.js) */this.mel={t:0,d:W&&W.anD?W.anD[heavy?1:0]:(heavy?.75:.42),heavy,side:this.mel&&this.mel.side>0?-1:1};this.trail.S.length=0},
+  melee(heavy){if(this.id==='knife'&&this.knSwing&&this.knSwing(heavy))return;if(this.id==='skull9'&&this.skSwing&&this.skSwing(heavy))return;const W=WPN[this.id];/* the knife swings on a clip (vmknife.js) */this.mel={t:0,d:W&&W.anD?W.anD[heavy?1:0]:(heavy?.75:.42),heavy,side:this.mel&&this.mel.side>0?-1:1};this.trail.S.length=0},
   claw(heavy,side){this.mel={t:0,d:heavy?.75:.46,heavy,side:side||1};this.trail.S.length=0},
   // voodoo zombie: the right fist holds the doll, the left fist sits just behind it on the doll's legs; light = overhead bash, heavy = bigger slam
   vdPose(A,dt,m){const M=this.mel;let tr=false;const K=_vdk;
@@ -112,7 +112,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
   landed(k){const S=this.sp;S.py.v-=k*.55;S.rx.v+=k*1.4},
   jumped(){this.sp.py.v+=.25;this.sp.rx.v-=.3},
   update(dt,a,cam){if(!this.cur)return;const m=this.cur,W=WPN[this.id]||WPN.knife,S=this.sp;this.t+=dt;
-    const kind=this.id==='claw'?'claw':W.kind==='melee'?(this.id==='axe'||this.id==='hammer'?this.id:'knife'):W.kind==='nade'?'nade':W.hold;
+    const kind=this.id==='claw'?'claw':W.kind==='melee'?(this.id==='axe'||this.id==='hammer'||this.id==='skull9'?this.id:'knife'):W.kind==='nade'?'nade':W.hold;
     let VP=VM_POS[this.id]||VM_POS[kind]||VM_POS.rifle;
     // hammer stance: blend the upright A pose into the braced B pose
     if(this.id==='hammer'){const tgt=a.hamB?1:0;this.stB=(this.stB||0)+(tgt-(this.stB||0))*Math.min(1,dt*11);const k=smooth(clamp(this.stB,0,1)),A=VM_POS.hammer,B=VM_POS.hammerB;
@@ -130,7 +130,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     let rx=VP.r[0]+S.rx.x+Math.sin(this.t*1.6+.5)*.004+Math.abs(Math.cos(ph))*.012*bobA,ry=VP.r[1]+S.ry.x+Math.sin(ph)*.01*bobA,rz=VP.r[2]+S.rz.x+Math.sin(ph)*.016*bobA;
     this.camRoll=0;this.camYaw=0;this.camPitch=0;
     // ---- draw ----
-    let drY=0,drX=0;if(this.drawT>0){this.drawT=Math.max(0,this.drawT-dt);const p=1-this.drawT/this.drawD;const D=kind==='knife'?VMK.drK:kind==='axe'?VMK.drA:kind==='hammer'?VMK.drH:kind==='claw'?VMK.drC:(kind==='pistol'||kind==='dual')?VMK.drP:VMK.drR;
+    let drY=0,drX=0;if(this.drawT>0){this.drawT=Math.max(0,this.drawT-dt);const p=1-this.drawT/this.drawD;const D=kind==='knife'?VMK.drK:kind==='axe'?VMK.drA:kind==='hammer'?VMK.drH:kind==='skull9'?VMK.drS:kind==='claw'?VMK.drC:(kind==='pistol'||kind==='dual')?VMK.drP:VMK.drR;
       kfv(D,p,_vk);x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];drY=_vk[1];drX=_vk[3]}
     // reset animated parts
     const tags=m.tags;for(const T of [tags,m.tags2])if(T)for(const t in T){const b=T[t].userData.base;T[t].position.copy(b);T[t].rotation.set(0,0,0);T[t].scale.set(1,1,1)}
@@ -212,6 +212,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       else if(kind==='claw'){const M=this.mel;const arms=M&&M.heavy?[m.armR,m.armL]:[M&&M.side>0?m.armR:m.armL];const am=arms[0].children[0];am.localToWorld(_vv.set(0,-.02,-.08));am.localToWorld(_vw.set(0,-.05,-.22));this.trailPush(_vv,_vw)}
       else if(kind==='axe'){m.gun.localToWorld(_vv.set(0,.03,-.49));m.gun.localToWorld(_vw.set(0,.15,-.49));this.trailPush(_vv,_vw)}
       else if(kind==='hammer'){m.gun.localToWorld(_vv.set(0,-.13,-.81));m.gun.localToWorld(_vw.set(0,.13,-.81));this.trailPush(_vv,_vw)}
+      else if(kind==='skull9'){const q=GUNS.skull9.trail;m.gun.localToWorld(_vv.set(q[0],q[1],q[2]));m.gun.localToWorld(_vw.set(q[3],q[4],q[5]));this.trailPush(_vv,_vw)}
       else{m.gun.localToWorld(_vv.set(0,.006,-.1));m.gun.localToWorld(_vw.set(0,.006,-.28));this.trailPush(_vv,_vw)}}
     const T=this.trail;T.mat.uniforms.uCol.value.set(kind==='claw'?'#7a0a08':'#e8eef4');T.mat.uniforms.uOp.value=kind==='claw'?.6:.42;this.trailUpdate(dt,.11);
     // muzzle flash + lights
