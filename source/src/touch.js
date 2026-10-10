@@ -56,7 +56,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
         <div class="mcats">${BUY_MENU.map((c,i)=>`<button class="${i===this.buyCat?'on':''}" data-act="buycat" data-v="${i}">${c.n[L]}</button>`).join('')}</div><div class="mitems">${items}</div>`};
     const a0=UI.act.bind(UI);UI.act=function(a,v,el){if(a==='tfull'){FS.toggle();return}
       // starting a match on a phone: go fullscreen (Android) so the address bar does not eat the screen
-      if(TOUCH.on&&(a==='go'||a==='again'||a==='mpstart'||a==='mpcreate'||a==='mpjoin'))TOUCH.full(false);return a0(a,v,el)};
+      if(TOUCH.on&&(a==='go'||a==='again'||a==='mpstart'||a==='mpcreate'||a==='mpjoin'||a==='mproom'))TOUCH.full(false);return a0(a,v,el)};
     const oo=Main.openOverlay.bind(Main),co=Main.closeOverlay.bind(Main);Main.openOverlay=function(k){oo(k);TOUCH.st=-1;TOUCH.update()};Main.closeOverlay=function(s){co(s);TOUCH.st=-1;TOUCH.update()}},
   full(toggle){const d=document.documentElement;try{if(document.fullscreenElement){if(toggle)document.exitFullscreen();return}if(!d.requestFullscreen)return;const p=d.requestFullscreen({navigationUI:'hide'});
       if(p&&p.then)p.then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{})}catch(_){}},

@@ -9,7 +9,7 @@
 // SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
 const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
 if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
-const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
+const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
   sub(fn){this.subs.push(fn)},
@@ -22,6 +22,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,prices:
   // a call that needs the player: refreshes the token first when it is about to run out, retries once after a 401
   async call(method,path,body){await this.fresh();try{return await this.req(method,path,body,true)}catch(e){if(e.status===401&&this.ses){await this.refresh();return await this.req(method,path,body,true)}throw e}},
   rpc(name,args){return this.call('POST','/rest/v1/rpc/'+name,args||{})},
+  // fire and forget, and it survives the page closing (keepalive): for the last word on pagehide
+  beacon(name,args){if(!this.on||!this.ses)return;try{fetch(SB.url.replace(/\/+$/,'')+'/rest/v1/rpc/'+name,{method:'POST',keepalive:true,headers:{apikey:SB.key,'Content-Type':'application/json',Authorization:'Bearer '+this.ses.access_token},body:JSON.stringify(args||{})}).catch(()=>{})}catch(e){}},
   setSes(s){if(!s||!s.access_token){this.ses=null;this.ls('qz_ses',null);return}
     this.ses={access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at||Math.floor(Date.now()/1000)+(+s.expires_in||3600),user:s.user||this.ses&&this.ses.user||null};this.ls('qz_ses',this.ses)},
   async fresh(){const s=this.ses;if(s&&s.expires_at-Date.now()/1000<90)await this.refresh()},
@@ -46,7 +48,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,prices:
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
       frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,freeToday:!!r.free_today,rec:r.rec||null,email:this.ses&&this.ses.user&&this.ses.user.email||''};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
-    this.importRec();return this.me},
+    this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
   async importRec(){const me=this.me,uid=this.ses&&this.ses.user&&this.ses.user.id;if(!me||!me.rec||me.rec.imported||!uid||this.ls('qz_recFor'))return;
     const L=this.ls('qz_rec');if(!L||!(L.g>0))return;this.ls('qz_recFor',uid);
@@ -60,7 +62,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,prices:
   oauth(p){location.assign(SB.url.replace(/\/+$/,'')+'/auth/v1/authorize?provider='+encodeURIComponent(p)+(this.here()?'&redirect_to='+encodeURIComponent(this.here()):''))},
   async recover(email){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';await this.req('POST','/auth/v1/recover'+q,{email},false)},
   async newPassword(pw){await this.call('PUT','/auth/v1/user',{password:pw})},
-  async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.ls('qz_me',null);this.emit()},
+  async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.mis=null;this.ls('qz_me',null);this.emit()},
   async setNick(n){const r=await this.rpc('qz_set_nickname',{p_nick:n});if(this.me){this.me.nickname=r;this.ls('qz_me',{...this.ls('qz_me'),nickname:r})}this.emit();return r},
   async buy(id){const r=await this.rpc('qz_buy',{p_gun:id});if(this.me){this.me.coins=r.coins;this.me.owned.add(id);this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,owned:[...this.me.owned]})}this.emit();return r},
   // the 근하신년 decoder bingo: the player's card {nums[25], marked[25], drawn[], rewards[12], done[12], boards, shuffles_left}
@@ -83,9 +85,21 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,prices:
   async history(){return await this.call('GET','/rest/v1/gacha_log?select=at,src,kind,tier,gun_id,amount,pity_hit&order=id.desc&limit=50',null)},
   saveMe(){const me=this.me;if(!me)return;this.ls('qz_me',{...this.ls('qz_me'),coins:me.coins,owned:[...me.owned],nickname:me.nickname})},
   gc(){return Object.assign({},GACHA_DEF,this.gcfg||{})},
-  async claim(st){const r=await this.rpc('qz_claim',{p_mode:st.mode,p_rounds:st.rounds|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
-      p_won:!!st.won,p_mvp:!!st.mvp,p_stage:st.stage|0,p_cleared:!!st.cleared,p_score:st.score|0});
+  async claim(st){const a={p_mode:st.mode,p_rounds:st.rounds|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
+      p_won:!!st.won,p_mvp:!!st.mvp,p_stage:st.stage|0,p_cleared:!!st.cleared,p_score:st.score|0,p_hs:st.hs|0};let r;
+    try{r=await this.rpc('qz_claim',a)}catch(e){if(!/Could not find the function|PGRST202/i.test(e.message+' '+e.code))throw e;delete a.p_hs;r=await this.rpc('qz_claim',a)}// a database before v6.12 (no p_hs)
+    if(r.missions){let all=!!(this.mis&&this.mis.missions);for(const x of r.missions){const m=all&&this.mis.missions.find(y=>y.slot===x.slot&&y.kind===x.kind&&y.goal===x.goal);if(m)m.progress=x.progress;else all=false}
+      if(!all)this.loadMissions().catch(()=>{})}
     if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;if(r.rec)this.me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:this.me.rec})}this.emit();return r},
+  // daily missions (v6.12): {day,resets_in,missions:[{slot,id,tier,kind,goal,progress,coins,tickets,ko,en,claimed}]}, the time it came (at)
+  async loadMissions(){if(!this.ses)return null;const r=await this.rpc('qz_missions');this.mis={...r,at:Date.now()};this.emit();return this.mis},
+  async misClaim(slot){const r=await this.rpc('qz_mission_claim',{p_slot:slot});this.mis={...r.missions,at:Date.now()};const me=this.me;
+    if(me){me.coins=r.coins;me.tickets=r.tickets|0;me.earned=(me.earned||0)+(r.got|0);this.saveMe()}this.emit();return r},
+  // a mission is done and not claimed yet (the lobby's red dot); a stale day (past midnight in Korea) counts as nothing
+  misReady(){const M=this.mis;if(!this.signed()||!M||!M.missions)return 0;if(M.resets_in!=null&&Date.now()-M.at>M.resets_in*1000)return 0;
+    return M.missions.filter(m=>!m.claimed&&m.progress>=m.goal).length},
+  // the ranking (anyone, signed in or not): kind level | kills | infects | best → {kind,top:[{rank,nickname,value,xp,games,me}],me,total}
+  ranking(kind){return this.rpc('qz_ranking',{p_kind:kind})},
   // ---- questions the game asks ----
   signed(){return !!(this.on&&this.ses&&this.me&&!this.me.cached)},
   price(id){const P=this.prices&&this.prices[id];if(P)return P;if(SHOP_FREE.includes(id))return {gun_id:id,price:0,free:true,sold:true};
@@ -115,7 +129,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,prices:
     if(/no_shuffles/.test(m))return T2('오늘 뒤섞기를 다 썼어요','No shuffles left today');
     if(/not_for_exchange/.test(m))return T2('교환할 수 없는 총이에요','That gun cannot be exchanged');
     if(/bad_count|no_config/.test(m))return T2('해독기 설정을 확인해 주세요','Decoder settings are off');
-    if(/qz_decode|qz_bingo|qz_season|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/not_done/.test(m))return T2('아직 미션을 다 못 했어요','That mission is not finished yet');
+    if(/already_claimed/.test(m))return T2('이미 받은 보상이에요','Already claimed');
+    if(/no_mission/.test(m))return T2('오늘의 미션이 바뀌었어요. 다시 열어 주세요','Today\'s missions changed — open them again');
+    if(/qz_decode|qz_bingo|qz_season|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');

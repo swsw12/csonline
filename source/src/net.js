@@ -381,12 +381,12 @@ const NET_FIXED_CODE='1234';
 NET.create=async function(){netTables();const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
   NET.on=true;NET.host=true;NET.cli=false;NET.ui='lobby';NET.links.clear();NET.out.clear();NET.inQ=[];NET.msg=T('mpConnecting');
   NET.lob={cfg:Object.assign({mode:CFG.mode,bots:8,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,blackout:1},CFG.mpCfg||{}),pl:[]};if(!MAPDEFS[NET.lob.cfg.map])NET.lob.cfg.map=MAPDEFS[CFG.map]?CFG.map:'q7';if(MAP.id!==NET.lob.cfg.map)loadMapUI(NET.lob.cfg.map);
-  // the room code is always the same (NET_FIXED_CODE): friends just press create / join. If a room with it is already open, join that one instead.
-  NET.code=NET_FIXED_CODE;try{if(kind==='room'){NET.me='k'+netKey(9);await RSIG.open()}else await PJ.host()}
-  catch(e){PJ.close();NET.on=false;NET.ui='';
-    if(e&&e.type==='unavailable-id'){NET.msg=LI()?'Room '+NET_FIXED_CODE+' is already open — joining it':NET_FIXED_CODE+' 방이 이미 열려 있어서 그 방에 참가합니다';UI.mpRender();setTimeout(()=>NET.join(NET_FIXED_CODE),600);return}
-    NET.msg=T('mpFail')+(e&&e.type?' ('+e.type+')':'');UI.mpRender();return}
-  NET.lob.pl=[{k:NET.me,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,h:1}];NET.msg='';UI.mpLobby()};
+  // inside claude.ai the room code is always the same (NET_FIXED_CODE): friends just press create / join.
+  // Through PeerJS every room gets a random 4-letter code (no 0/O/1/I); a code someone already holds is redrawn a few times.
+  try{if(kind==='room'){NET.code=NET_FIXED_CODE;NET.me='k'+netKey(9);await RSIG.open()}
+    else for(let i=0;;i++){NET.code=netKey(4);try{await PJ.host();break}catch(e){PJ.close();if(!(e&&e.type==='unavailable-id')||i>=4)throw e}}}
+  catch(e){PJ.close();NET.on=false;NET.ui='';NET.msg=T('mpFail')+(e&&e.type?' ('+e.type+')':'');UI.mpRender();return}
+  NET.lob.pl=[{k:NET.me,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,h:1}];NET.msg='';ROOMS.pubOn=kind==='peerjs'&&CFG.mpPub!==false;UI.mpLobby();ROOMS.tick()};
 NET.join=async function(code){netTables();code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){NET.msg=T('mpBad');UI.mpRender();return}
   const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
   NET.on=true;NET.host=false;NET.cli=true;NET.ui='join';NET.code=code;NET.hostKey='';NET.links.clear();NET.out.clear();NET.inQ=[];NET.lastK=0;NET.msg=T('mpConnecting');UI.mpRender();
@@ -394,7 +394,7 @@ NET.join=async function(code){netTables();code=String(code||'').toUpperCase().re
   try{if(kind==='room'){NET.me='k'+netKey(9);await RSIG.open();setTimeout(()=>{if(NET.on&&NET.cli&&!NET.hostKey)netFatal(T('mpNotFound'))},8000)}
     else await PJ.join()}
   catch(e){netFatal(e&&e.type==='peer-unavailable'?T('mpNotFound'):e&&(e.type==='nat'||e.type==='timeout')?T('mpNatPJ'):T('mpFail')+(e&&e.type?' ('+e.type+')':''))}};
-NET.leave=function(){if(!NET.on)return;netAll({t:'bye'});netFlushR();if(NET.kind==='room'){RSIG.dirty=true;RSIG.flush()}
+NET.leave=function(){ROOMS.down();if(!NET.on)return;netAll({t:'bye'});netFlushR();if(NET.kind==='room'){RSIG.dirty=true;RSIG.flush()}
   const links=[...NET.links.values()];NET.links.clear();const kind=NET.kind;
   setTimeout(()=>{for(const L of links)try{L.dead=true;L.close()}catch(e){}if(kind==='room')RSIG.close();else PJ.close()},150);
   NET.on=NET.host=NET.cli=false;NET.ui='';NET.out.clear();NET.inQ=[];NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.hostKey=''};
@@ -413,15 +413,48 @@ function netToLobby(){if(NET.host)netEv('tolobby');for(const a of G.actors)for(c
   AU.stopAll('countdown');Main.closeOverlay(true);Main.paused=false;R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;NET.ui='lobby';NET.ids.clear();NET.fxQ=[];
   Main.menuDemo();Main.unlock();UI.mpLobby();if(NET.host)netLobbyCast()}
 
+// ---------- the public room list (v6.12): a signed-in PeerJS host lists its room (supabase: rooms, qz_room_up / qz_room_down / qz_rooms) ----------
+// The host refreshes its row every 10 s (and at once when players, map, mode or lobby/playing change); the server drops a row after 30 s
+// without one. The list is read by anyone (signed in or not) and refreshed every 5 s while the multiplayer menu is open.
+const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:false,bad:'',pubOn:false,
+  srv(){return typeof ACC!=='undefined'&&ACC.on},
+  can(){return NET.on&&NET.host&&NET.kind==='peerjs'&&this.pubOn&&this.srv()&&ACC.signed()&&this.bad!==NET.code},
+  st(){const c=NET.lob.cfg;return {p_code:NET.code,p_name:CFG.mpName||'',p_map:c.map||'',p_mode:c.mode||'mut',p_players:NET.lob.pl.length,p_max:NET_MAXP,p_status:NET.ui==='game'?'playing':'lobby'}},
+  async up(){const a=this.st(),s=JSON.stringify(a);this.upBusy=true;this.upT=Date.now();
+    try{const r=await ACC.rpc('qz_room_up',a);this.pub=a.p_code;if(!(r&&r.skipped))this.last=s}
+    catch(e){if(/room_taken|bad_code/.test(e&&e.message||''))this.bad=a.p_code;console.warn('rooms: up',e&&e.message)}
+    this.upBusy=false;if(!this.can()||NET.code!==a.p_code)this.down()},
+  down(keep){const c=this.pub;this.last='';if(!c)return;this.pub='';if(!this.srv())return;if(keep)ACC.beacon('qz_room_down',{p_code:c});else ACC.rpc('qz_room_down',{p_code:c}).catch(()=>{})},
+  tick(){const now=Date.now();
+    if(this.can()){if(!this.upBusy&&(JSON.stringify(this.st())!==this.last&&now-this.upT>1000||now-this.upT>10000))this.up()}
+    else if(this.pub&&!this.upBusy)this.down();
+    if(UI.open==='mp'&&!NET.on&&now-this.refT>5000)this.load()},
+  async load(){this.refT=Date.now();if(!this.srv()||NET.kind==='room'||this.busy){this.render();return}this.busy=true;this.render();
+    try{const r=await ACC.rpc('qz_rooms');this.list=Array.isArray(r)?r:[];this.err=''}
+    catch(e){const m=String(e&&e.message||'')+(e&&e.code||'');this.err=/Could not find the function|PGRST202/.test(m)?(LI()?'The database needs the new schema.sql':'서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)'):ACC.errText(e)}
+    this.busy=false;this.render()},
+  label(){const L=LI();return !this.pubOn?(L?'Private':'비공개'):this.srv()&&ACC.signed()?(L?'Public room':'공개 방'):(L?'Private (sign in to list it)':'비공개 (로그인하면 목록에 떠요)')},
+  html(){const L=LI();if(!this.srv())return `<p class="rempty">${L?'Not connected to the account server yet':'계정 서버 연결 전'}</p>`;
+    if(this.err&&!(this.list&&this.list.length))return `<p class="rempty bad">${esc(this.err)}</p>`;if(!this.list)return `<p class="rempty">${L?'Loading…':'불러오는 중…'}</p>`;
+    if(!this.list.length)return `<p class="rempty">${L?'No public rooms right now — make one!':'지금 열린 공개 방이 없어요 — 방을 만들어 보세요'}</p>`;
+    return this.list.map(r=>{const pl=r.status==='playing',n=r.players|0,mx=r.max_players|0;
+      return `<div class="rrow${pl?' play':''}${n>=mx?' full':''}" data-act="mproom" data-v="${esc(String(r.code||''))}"><div class="rh"><b>${esc(r.host_name||'?')}</b><i>${esc(String(r.code||''))}</i></div>
+        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${T(r.mode==='scen'?'scen':r.mode==='orig'?'orig':'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
+  render(){const el=$('mpRooms');if(el)el.innerHTML=this.html();const b=document.querySelector('[data-act="mprooms"]');if(b)b.classList.toggle('busy',this.busy)}};
+setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
+
 // ---------- screens ----------
-UI.mpMenu=function(){const L=LI();const inC=NET.kind==='room',inP=NET.kind==='peerjs';
-  $('mp').innerHTML=`<h2>${T('mp')}</h2><div class="mpbox">
+UI.mpMenu=function(){const L=LI();const inC=NET.kind==='room',inP=NET.kind==='peerjs',pub=CFG.mpPub!==false,noR=inC||NET.detected&&!NET.kind;
+  $('mp').innerHTML=`<h2>${T('mp')}</h2><div class="mpwrap"><div class="mpbox">
     <label>${T('mpName')}</label><input id="mpName" maxlength="14" value="${esc(CFG.mpName||'')}" autocomplete="off" spellcheck="false">
     <button data-act="mpcreate" class="big">${T('mpCreate')}</button>
-    <label>${T('mpCode')}</label><div class="mprow"><input id="mpCode" maxlength="4" value="${NET_FIXED_CODE}" placeholder="${T('mpCodePh')}" autocomplete="off" spellcheck="false"><button data-act="mpjoin">${T('mpJoin')}</button></div>
+    ${!noR&&ROOMS.srv()?`<div class="seg mppub"><button data-act="mppub" data-v="1" class="${pub?'on':''}">${L?'Public room':'공개 방'}</button><button data-act="mppub" data-v="0" class="${pub?'':'on'}">${L?'Private':'비공개'}</button></div>
+      ${ACC.signed()?'':`<p class="hint mpnote">${L?'Sign in and your room shows up in the list':'로그인하면 방이 목록에 떠요'}</p>`}`:''}
+    <label>${T('mpCode')}</label><div class="mprow"><input id="mpCode" maxlength="4" value="${inC?NET_FIXED_CODE:''}" placeholder="${T('mpCodePh')}" autocomplete="off" spellcheck="false"><button data-act="mpjoin">${T('mpJoin')}</button></div>
     ${inC?`<label class="ck${CFG.p2pOnly?' on':''}" data-act="mpp2p"><i></i>${T('mpP2POnly')}</label>`:''}
     <p class="mpmsg" id="mpMsg">${esc(NET.msg||'')}</p>
     <p class="hint">${inC?T('mpViaRoom'):inP?T('mpViaPJ'):NET.detecting?T('mpChecking'):NET.detected?T('mpNone'):''}</p></div>
+    ${noR?'':`<div class="mprooms"><div class="mprh"><b>${L?'Public rooms':'공개 방 목록'}</b><button class="mini" data-act="mprooms">${L?'Refresh':'새로고침'}</button></div><div id="mpRooms" class="rlist">${ROOMS.html()}</div></div>`}</div>
     <div class="mbtns row"><button data-act="back">${T('back')}</button></div>`;
   const nm=$('mpName');nm.addEventListener('change',()=>{CFG.mpName=nm.value.trim().slice(0,14)||CFG.mpName;saveCfg()});
   const cd=$('mpCode');cd.addEventListener('keydown',e=>{if(e.key==='Enter'){UI.act('mpjoin')}});cd.addEventListener('input',()=>{cd.value=cd.value.toUpperCase().replace(/[^A-Z0-9]/g,'')})};
@@ -444,9 +477,11 @@ UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.
     <div class="mbtns row"><button data-act="mpleave">${T('mpLeave')}</button>${H?`<button data-act="mpstart" class="big">${T('mpStart')}</button>`:`<span class="mpwait">${T('mpWait')}</span>`}</div>`;
   UI.show('lobby')};
 UI.mpAct=function(a,v){
-  if(a==='mp'){UI.ret=null;UI.show('mp');UI.mpMenu();if(!NET.kind&&!NET.detecting){NET.detecting=true;netDetect().then(()=>{NET.detecting=false;NET.detected=true;if(UI.open==='mp')UI.mpMenu()})}}
-  else if(a==='mpcreate'||a==='mpjoin'){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg();
-    if(NET.on)return;if(a==='mpcreate')NET.create();else NET.join(($('mpCode')||{}).value)}
+  if(a==='mp'){UI.ret=null;UI.show('mp');UI.mpMenu();ROOMS.load();if(!NET.kind&&!NET.detecting){NET.detecting=true;netDetect().then(()=>{NET.detecting=false;NET.detected=true;if(UI.open==='mp')UI.mpMenu()})}}
+  else if(a==='mpcreate'||a==='mpjoin'||a==='mproom'){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg();
+    if(NET.on)return;if(a==='mpcreate')NET.create();else if(a==='mproom'){const cd=$('mpCode');if(cd)cd.value=v||'';NET.join(v)}else NET.join(($('mpCode')||{}).value)}
+  else if(a==='mppub'){CFG.mpPub=v!=='0';saveCfg();for(const b of document.querySelectorAll('[data-act="mppub"]'))b.classList.toggle('on',(b.dataset.v!=='0')===CFG.mpPub)}
+  else if(a==='mprooms'){ROOMS.load()}
   else if(a==='mpleave'){NET.leave();NET.msg='';Main.toTitle();UI.act('mp')}
   else if(a==='mpstart'){NET.start()}
   else if(a==='mpp2p'){CFG.p2pOnly=!CFG.p2pOnly;saveCfg();UI.mpMenu()}
@@ -475,7 +510,7 @@ function netHud(dt){const el=$('hNet');if(!el)return;if(!NET.on||NET.ui!=='game'
     e.style.transform=`translate(${((_dn.x*.5+.5)*W).toFixed(1)}px,${((-_dn.y*.5+.5)*H).toFixed(1)}px) translate(-50%,-100%)`;e.style.opacity=clamp(1.3-d/45,.35,1).toFixed(2)}
   for(let i=n;i<NTAG.pool.length;i++)NTAG.pool[i].style.display='none'}
 
-addEventListener('pagehide',()=>{if(NET.on)NET.leave()});
+addEventListener('pagehide',()=>{ROOMS.down(true);if(NET.on)NET.leave()});
 // ---------- keep running in a background tab: a worker ticks while requestAnimationFrame sleeps ----------
 (function(){let w=null;try{const src='setInterval(()=>postMessage(0),50)';w=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})))}catch(e){w=null}
   // browsers stop animation frames for hidden or covered windows; the game keeps stepping (without drawing) so friends never freeze

@@ -464,13 +464,14 @@ function shopLocked(P,id){if(id==='bhole'||!ACC.on||!P||G.mode==='range')return 
 // ---------- after a match: the coins ----------
 function shopMatchStats(){const P=G.player,A=G.actors.filter(a=>!a.scen&&!a.rg),best=A.slice().sort((a,b)=>(b.score||0)-(a.score||0))[0];
   return {mode:G.mode,rounds:G.round|0,kills:P.kills|0,infects:P.infects|0,damage:P.dmgDealt||0,won:(G.score&&G.score[TH]>G.score[TZ]),mvp:best===P&&(P.score||0)>0,
-    stage:typeof SCEN!=='undefined'?(SCEN.best||SCEN.stage||0):0,cleared:typeof SCEN!=='undefined'&&!!SCEN.win,score:Math.round(P.score||0)}}
+    stage:typeof SCEN!=='undefined'?(SCEN.best||SCEN.stage||0):0,cleared:typeof SCEN!=='undefined'&&!!SCEN.win,score:Math.round(P.score||0),hs:P.hsKills|0}}
 function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.mode==='range')return;const L=LI();
   const box=document.createElement('div');box.className='coinRes';const put=()=>{const fs=res.querySelector('.finalScore');if(fs)fs.after(box);else res.prepend(box)};
-  if(G.coinDone){if(G.coinBox){box.innerHTML=G.coinBox;put()}return}G.coinDone=true;// shown again, never paid twice
+  if(G.coinDone){if(G.coinBox){box.innerHTML=G.coinBox;put();if(G.misBox)misResPut(box,G.misBox)}return}G.coinDone=true;// shown again, never paid twice
   if(!ACC.signed())box.innerHTML=`${COIN}<span>${L?'Sign in to earn coins from every match and buy guns for good.':'로그인하면 매치마다 코인을 받고 총을 영구 구매할 수 있어요.'}</span><button data-act="acc">${L?'Sign in':'로그인'}</button>`;
   else{box.innerHTML=`${COIN}<span>${L?'Counting your coins…':'코인 정산 중…'}</span>`;
-    ACC.claim(shopMatchStats()).then(r=>{G.coinBox=box.innerHTML=`${COIN}<span><b>+${fmtC(r.got)}</b> ${L?'coins':'코인'}${r.bonus?` <small>(${L?'first match today':'오늘 첫 판'} +${fmtC(r.bonus)})</small>`:''}${r.day_left<=0?` <small>${L?'— daily limit reached':'— 오늘 받을 수 있는 만큼 다 받았어요'}</small>`:''}${r.xp_got?` <small>· +${fmtC(r.xp_got)} XP</small>`:''}</span><span class="crh">${L?'You have':'보유'} ${COIN}${fmtC(r.coins)}</span><button data-act="shop">${L?'Shop':'상점'}</button>`;AU.play('buy',{vol:.6})})
+    ACC.claim(shopMatchStats()).then(r=>{G.coinBox=box.innerHTML=`${COIN}<span><b>+${fmtC(r.got)}</b> ${L?'coins':'코인'}${r.bonus?` <small>(${L?'first match today':'오늘 첫 판'} +${fmtC(r.bonus)})</small>`:''}${r.day_left<=0?` <small>${L?'— daily limit reached':'— 오늘 받을 수 있는 만큼 다 받았어요'}</small>`:''}${r.xp_got?` <small>· +${fmtC(r.xp_got)} XP</small>`:''}</span><span class="crh">${L?'You have':'보유'} ${COIN}${fmtC(r.coins)}</span><button data-act="shop">${L?'Shop':'상점'}</button>`;AU.play('buy',{vol:.6});
+      const mh=misResHtml(r.missions);if(mh){G.misBox=mh;misResPut(box,mh)}})
       .catch(e=>{G.coinBox=box.innerHTML=`${COIN}<span>${esc(ACC.errText(e))}</span>`})}
   put()}
 
@@ -491,7 +492,7 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
     return r};
   const bi=Main.buyItem;Main.buyItem=function(id){const P=G.player;if(shopLocked(P,id)){UI.act('buylk',id);return}return bi.call(this,id)};
   const sr=UI.showResults;UI.showResults=function(){const r=sr.apply(this,arguments);try{shopReward()}catch(e){console.error(e)}return r};
-  const sm=startMatch;startMatch=function(cfg){G.coinDone=false;G.coinBox=null;return sm(cfg)};
+  const sm=startMatch;startMatch=function(cfg){G.coinDone=false;G.coinBox=null;G.misBox=null;return sm(cfg)};
   // the signed-in nickname is the name other players see
   const mn=myName;myName=function(){return ACC.signed()&&ACC.me.nickname||mn()};
   ACC.sub(()=>{if(G.st==='menu'&&UI.open==='menu')UI.buildTitle();if($('shopWin'))SHOP.render();if($('accWin')&&!ACCW.busy)ACCW.render()});
@@ -501,6 +502,6 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
     if(ACC.signed()&&kind){shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname);return}
     // first visit: offer to sign in once the lobby is on screen (the boot can still be painting characters)
     let seen=null;try{seen=LS.get('accSeen',null)}catch(e){}
-    const ask=n=>{if(ACC.ses||ACC.signed()||$('accWin')||$('shopWin')||G.st!=='menu')return;if(UI.open==='menu')ACCW.open('in');else if(n<60)setTimeout(()=>ask(n+1),700)};
+    const ask=n=>{if(ACC.ses||ACC.signed()||$('accWin')||$('shopWin')||$('rkWin')||G.st!=='menu')return;if(UI.open==='menu')ACCW.open('in');else if(n<60)setTimeout(()=>ask(n+1),700)};
     if(ACC.on&&!ACC.signed()&&!seen)setTimeout(()=>ask(0),700)}).catch(e=>console.error(e));
 })();

@@ -7,7 +7,7 @@ rows=[f"  ('{g}',0,true,true,null)" for g in FREE]+[f"  ('{g}',{p},false,true,nu
     +[f"  ('{g}',0,false,false,'{t}')" for t in ('S','A') for g in GACHA[t]]
 seed=",\n".join(rows)
 sql=r"""-- ============================================================================================================
--- QUARANTINE Z — accounts, coins, the gun shop and the decoder bingos: 근하신년 + season (Supabase)
+-- QUARANTINE Z — accounts, coins, the gun shop and the decoder bingos: 근하신년 + season, the public room list (Supabase)
 -- Supabase 대시보드 → SQL Editor → New query → 이 파일 전체를 붙여넣고 Run. 여러 번 실행해도 안전합니다.
 --
 -- 규칙
@@ -282,10 +282,12 @@ begin
   return jsonb_build_object('coins', c, 'gun', p_gun);
 end $$;
 
--- the coins for a finished match: worked out here from the match's numbers, every one of them capped
+-- the coins for a finished match: worked out here from the match's numbers, every one of them capped. The same numbers
+-- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills)
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean);
+drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer);   -- v6.11, before p_hs
 create or replace function public.qz_claim(p_mode text, p_rounds integer, p_kills integer, p_infects integer, p_damage integer,
-  p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0) returns jsonb
+  p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0, p_hs integer default 0) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
@@ -300,6 +302,8 @@ declare
   inf integer := least(greatest(coalesce(p_infects, 0), 0), 30);
   sc integer := least(greatest(coalesce(p_score, 0), 0), 30000);
   gx integer;
+  v_gain jsonb;
+  v_mis jsonb;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform 1 from public.profiles where id = uid for update;
@@ -327,9 +331,22 @@ begin
   p := (select t from public.profiles t where t.id = uid);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', p_mode,
     'rounds', p_rounds, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'mvp', p_mvp,
-    'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'raw', raw, 'bonus', bonus, 'xp', gx));
+    'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'hs', p_hs, 'raw', raw, 'bonus', bonus, 'xp', gx));
+  -- daily missions (v6.12): what this match adds to each kind, clamped like the coins above
+  perform public.qz_missions_make(uid, today);
+  v_gain := jsonb_build_object('play', 1,
+    'win', case when coalesce(p_won, false) or (p_mode = 'scen' and coalesce(p_cleared, false)) then 1 else 0 end,
+    'kills', k, 'infects', inf, 'damage', least(greatest(coalesce(p_damage, 0), 0), 60000),
+    'rounds', case when p_mode = 'scen' then least(greatest(coalesce(p_stage, 0), 0), 5) else least(greatest(coalesce(p_rounds, 0), 0), 10) end,
+    'hs', least(greatest(coalesce(p_hs, 0), 0), k));
+  v_mis := (select coalesce(jsonb_agg(jsonb_build_object('slot', m.slot, 'kind', m.kind, 'goal', m.goal, 'from', m.progress,
+      'progress', least(m.goal, m.progress + coalesce((v_gain ->> m.kind)::integer, 0)), 'claimed', m.claimed_at is not null,
+      'ko', m.ko, 'en', m.en) order by m.slot), '[]'::jsonb)
+    from public.daily_missions m where m.user_id = uid and m.day = today);
+  update public.daily_missions m set progress = least(m.goal, m.progress + coalesce((v_gain ->> m.kind)::integer, 0))
+  where m.user_id = uid and m.day = today and m.progress < m.goal;
   return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 8000 - p.day_earned,
-    'xp_got', gx, 'rec', public.qz_rec(p));
+    'xp_got', gx, 'rec', public.qz_rec(p), 'missions', v_mis);
 end $$;
 
 -- once per account: the record this browser kept before accounts (games, kills, ...) is added in, within sane limits
@@ -355,6 +372,188 @@ begin
   p := (select t from public.profiles t where t.id = uid);
   return jsonb_build_object('rec', public.qz_rec(p));
 end $$;
+
+-- ---------- ranking (v6.12) ----------
+-- the top 50 of one record (level = xp, kills, infects, best = best score) and where the caller stands. Only nicknames and records
+-- come out (never an id or an e-mail), so guests (anon) may ask too. Accounts that have not finished a match yet are left out.
+create or replace function public.qz_rank_value(p public.profiles, k text) returns integer
+language sql immutable set search_path = '' as $$
+  select case k when 'kills' then p.rec_kills when 'infects' then p.rec_infects when 'best' then p.rec_best else p.xp end
+$$;
+create or replace function public.qz_ranking(p_kind text default 'level') returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  k text := case when p_kind in ('level', 'kills', 'infects', 'best') then p_kind else 'level' end;
+  p public.profiles;
+  v_top jsonb;
+  v_me jsonb := null;
+  v_val integer;
+begin
+  -- equal values share a rank (1, 2, 2, 4); within a tie the higher xp, then the older account, is listed first
+  v_top := (select coalesce(jsonb_agg(jsonb_build_object('rank', r.rk, 'nickname', r.nickname, 'value', r.v, 'xp', r.xp, 'games', r.rec_games,
+      'me', coalesce(r.id = uid, false)) order by r.n), '[]'::jsonb)
+    from (select t.id, t.nickname, t.xp, t.rec_games, s.v, rank() over (order by s.v desc) as rk,
+            row_number() over (order by s.v desc, t.xp desc, t.created_at, t.id) as n
+          from public.profiles t cross join lateral (select public.qz_rank_value(t, k) as v) s
+          where t.rec_games > 0 order by n limit 50) r);
+  if uid is not null then
+    p := (select t from public.profiles t where t.id = uid);
+    if p.id is not null then
+      v_val := public.qz_rank_value(p, k);
+      v_me := jsonb_build_object('nickname', p.nickname, 'value', v_val, 'xp', p.xp, 'games', p.rec_games,
+        'rank', case when p.rec_games > 0 then 1 + (select count(*) from public.profiles t where t.rec_games > 0 and public.qz_rank_value(t, k) > v_val) end);
+    end if;
+  end if;
+  return jsonb_build_object('kind', k, 'top', v_top, 'me', v_me, 'total', (select count(*) from public.profiles t where t.rec_games > 0));
+end $$;
+revoke all on function public.qz_rank_value(public.profiles, text) from public, anon, authenticated;
+revoke all on function public.qz_ranking(text) from public;
+grant execute on function public.qz_ranking(text) to anon, authenticated;
+
+-- ---------- daily missions (v6.12) ----------
+-- 3 missions per account per Korean day (Asia/Seoul): one easy (tier 1), one normal (2), one hard (3), each of a different kind, picked
+-- from mission_pool by weight when the day's first qz_missions / qz_claim comes in. qz_claim moves them on with the match's numbers
+-- (clamped exactly like its coins: kills 80, infects 30, damage 60,000, rounds 10 / stages 5, headshot kills at most the kills);
+-- qz_mission_claim pays a finished one once. Mission coins are not counted in the 8,000 a day from matches.
+-- kinds: play (finished matches), win (the humans won / the scenario cleared), kills, infects (as a zombie), damage, rounds, hs (headshot kills)
+create table if not exists public.mission_pool (
+  id      text primary key,
+  tier    smallint not null check (tier between 1 and 3),
+  kind    text not null check (kind in ('play', 'win', 'kills', 'infects', 'damage', 'rounds', 'hs')),
+  goal    integer not null check (goal > 0),
+  coins   integer not null default 0 check (coins between 0 and 5000),
+  tickets integer not null default 0 check (tickets between 0 and 1),   -- 근하신년 decoders; paid only on the day's hard slot (one a day at most)
+  weight  integer not null default 1 check (weight >= 0),            -- how often it is picked (0: never)
+  active  boolean not null default true,
+  ko      text,   -- own wording; empty: the game writes it from kind + goal
+  en      text
+);
+-- each player's missions of the day: a copy of the pool row (editing the pool changes the next day's, not today's)
+create table if not exists public.daily_missions (
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  day        date not null,
+  slot       smallint not null check (slot between 0 and 2),
+  mission_id text not null,
+  tier       smallint,
+  kind       text not null,
+  goal       integer not null,
+  coins      integer not null default 0,
+  tickets    integer not null default 0,
+  ko         text,
+  en         text,
+  progress   integer not null default 0,
+  claimed_at timestamptz,
+  primary key (user_id, day, slot)
+);
+alter table public.mission_pool   enable row level security;
+alter table public.daily_missions enable row level security;
+drop policy if exists "read mission pool" on public.mission_pool;
+create policy "read mission pool" on public.mission_pool for select to anon, authenticated using (true);
+drop policy if exists "read own missions" on public.daily_missions;
+create policy "read own missions" on public.daily_missions for select to authenticated using ((select auth.uid()) = user_id);
+-- the pool (a row already there is left as it is: edit it in the Table Editor)
+insert into public.mission_pool (id, tier, kind, goal, coins, tickets) values
+  ('play1',    1, 'play',    1,      150, 0),
+  ('kills20',  1, 'kills',   20,     150, 0),
+  ('dmg20k',   1, 'damage',  20000,  150, 0),
+  ('rounds5',  1, 'rounds',  5,      150, 0),
+  ('hs3',      1, 'hs',      3,      200, 0),
+  ('play3',    2, 'play',    3,      300, 0),
+  ('win1',     2, 'win',     1,      300, 0),
+  ('kills60',  2, 'kills',   60,     350, 0),
+  ('inf3',     2, 'infects', 3,      350, 0),
+  ('hs12',     2, 'hs',      12,     400, 0),
+  ('dmg60k',   2, 'damage',  60000,  350, 0),
+  ('win3',     3, 'win',     3,      500, 1),
+  ('inf10',    3, 'infects', 10,     500, 1),
+  ('hs30',     3, 'hs',      30,     500, 1),
+  ('kills150', 3, 'kills',   150,    550, 0),
+  ('dmg150k',  3, 'damage',  150000, 550, 0),
+  ('play5',    3, 'play',    5,      600, 0)
+on conflict (id) do nothing;
+-- today's 3 for one player, made once (rows older than a week are cleared then)
+create or replace function public.qz_missions_make(uid uuid, d date) returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  m public.mission_pool;
+  v_kinds text[] := '{}';
+  v_ids text[] := '{}';
+begin
+  if exists (select 1 from public.daily_missions x where x.user_id = uid and x.day = d) then return; end if;
+  delete from public.daily_missions x where x.user_id = uid and x.day < d - 7;
+  for s in 0..2 loop
+    m := (select q from public.mission_pool q where q.active and q.weight > 0 and q.tier = s + 1 and not (q.kind = any(v_kinds))
+          order by -ln(1.0 - random()) / q.weight limit 1);
+    if m.id is null then
+      m := (select q from public.mission_pool q where q.active and q.weight > 0 and not (q.id = any(v_ids)) and not (q.kind = any(v_kinds))
+            order by -ln(1.0 - random()) / q.weight limit 1);
+    end if;
+    if m.id is null then
+      m := (select q from public.mission_pool q where q.active and q.weight > 0 and not (q.id = any(v_ids)) order by random() limit 1);
+    end if;
+    if m.id is not null then
+      v_kinds := v_kinds || m.kind;
+      v_ids := v_ids || m.id;
+      insert into public.daily_missions (user_id, day, slot, mission_id, tier, kind, goal, coins, tickets, ko, en)
+      values (uid, d, s, m.id, m.tier, m.kind, m.goal, least(greatest(m.coins, 0), 5000),
+        case when s = 2 then least(greatest(m.tickets, 0), 1) else 0 end, nullif(btrim(m.ko), ''), nullif(btrim(m.en), ''))
+      on conflict do nothing;
+    end if;
+  end loop;
+end $$;
+-- the day's missions as the game reads them; resets_in = seconds to the next midnight in Korea
+create or replace function public.qz_missions_json(uid uuid, d date) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('day', d,
+    'resets_in', greatest(0, floor(extract(epoch from (((d + 1)::timestamp at time zone 'Asia/Seoul') - now())))::integer),
+    'missions', coalesce((select jsonb_agg(jsonb_build_object('slot', m.slot, 'id', m.mission_id, 'tier', m.tier, 'kind', m.kind, 'goal', m.goal,
+      'progress', m.progress, 'coins', m.coins, 'tickets', m.tickets, 'ko', m.ko, 'en', m.en, 'claimed', m.claimed_at is not null) order by m.slot)
+      from public.daily_missions m where m.user_id = uid and m.day = d), '[]'::jsonb))
+$$;
+-- my missions today (made on the spot the first time each day)
+create or replace function public.qz_missions() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  today date := (now() at time zone 'Asia/Seoul')::date;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  perform public.qz_missions_make(uid, today);
+  return public.qz_missions_json(uid, today);
+end $$;
+-- the reward of a finished mission of today (slot 0..2), once
+create or replace function public.qz_mission_claim(p_slot integer) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  today date := (now() at time zone 'Asia/Seoul')::date;
+  m public.daily_missions;
+  p public.profiles;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  m := (select x from public.daily_missions x where x.user_id = uid and x.day = today and x.slot = p_slot);
+  if m.user_id is null then raise exception 'no_mission'; end if;
+  if m.claimed_at is not null then raise exception 'already_claimed'; end if;
+  if m.progress < m.goal then raise exception 'not_done'; end if;
+  update public.daily_missions set claimed_at = now() where user_id = uid and day = today and slot = p_slot;
+  update public.profiles set coins = coins + m.coins, earned_total = earned_total + m.coins, dec_tickets = dec_tickets + m.tickets where id = uid;
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, m.coins, 'mission',
+    jsonb_build_object('mission', m.mission_id, 'kind', m.kind, 'goal', m.goal, 'tickets', m.tickets));
+  p := (select t from public.profiles t where t.id = uid);
+  return jsonb_build_object('got', m.coins, 'got_tickets', m.tickets, 'coins', p.coins, 'tickets', p.dec_tickets,
+    'missions', public.qz_missions_json(uid, today));
+end $$;
+revoke all on function public.qz_missions_make(uuid, date) from public, anon, authenticated;
+revoke all on function public.qz_missions_json(uuid, date) from public, anon, authenticated;
+revoke all on function public.qz_missions() from public, anon;
+revoke all on function public.qz_mission_claim(integer) from public, anon;
+grant execute on function public.qz_missions() to authenticated;
+grant execute on function public.qz_mission_claim(integer) to authenticated;
 
 -- ---------- the 근하신년 decoder bingo ----------
 drop function if exists public.qz_pull(integer, boolean);   -- the old lucky pouch
@@ -755,7 +954,7 @@ revoke all on function public.qz_on_signup() from public, anon, authenticated;
 revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
-revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer) from public, anon;
+revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer) from public, anon;
 revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo_json(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo() from public, anon;
@@ -774,7 +973,7 @@ revoke all on function public.qz_rec(public.profiles) from public, anon, authent
 grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
-grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer) to authenticated;
+grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer) to authenticated;
 grant execute on function public.qz_bingo() to authenticated;
 grant execute on function public.qz_decode(integer, boolean, boolean) to authenticated;
 grant execute on function public.qz_bingo_reset() to authenticated;
@@ -785,6 +984,93 @@ grant execute on function public.qz_season_reset() to authenticated;
 grant execute on function public.qz_season_shuffle() to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;
 grant execute on function public.qz_import_rec(integer, integer, integer, integer, integer) to authenticated;
+
+-- ---------- public rooms (v6.12) ----------
+-- 공개 방 목록: 로그인한 방장이 자기 방(PeerJS 방 코드)을 올리고 ~10초마다 갱신합니다. 30초 동안 갱신이 없으면 목록에서 빠지고,
+-- 45초가 지나면 지워져서 그 코드를 다른 방장이 쓸 수 있습니다. 방장 한 명당 방 하나. 테이블은 직접 읽고 쓸 수 없고 아래 함수로만.
+create table if not exists public.rooms (
+  code        text primary key check (code ~ '^[A-Z0-9]{4}$'),
+  host        uuid not null references auth.users(id) on delete cascade,
+  host_name   text not null default '생존자',
+  map         text not null default '',
+  mode        text not null default 'mut',
+  players     integer not null default 1 check (players between 0 and 20),
+  max_players integer not null default 8 check (max_players between 1 and 20),
+  status      text not null default 'lobby' check (status in ('lobby', 'playing')),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create unique index if not exists rooms_host on public.rooms(host);
+create index if not exists rooms_updated on public.rooms(updated_at);
+alter table public.rooms enable row level security;
+revoke all on table public.rooms from anon, authenticated;
+-- publish / refresh the room this player hosts. A code held by another host (refreshed in the last 45 s) is refused (room_taken).
+-- Refreshes count at most once a second, and once every 5 s when nothing changed (those return skipped = true).
+create or replace function public.qz_room_up(p_code text, p_name text, p_map text, p_mode text, p_players integer, p_max integer, p_status text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_code text := upper(left(coalesce(p_code, ''), 8));
+  v_name text := public.qz_clean_nick(left(coalesce(p_name, ''), 64));
+  v_map text := left(regexp_replace(left(coalesce(p_map, ''), 64), '[^A-Za-z0-9_-]', '', 'g'), 16);
+  v_mode text := left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 8);
+  v_max integer := least(greatest(coalesce(p_max, 8), 1), 20);
+  v_players integer := least(greatest(coalesce(p_players, 1), 0), 20);
+  v_status text := case when p_status = 'playing' then 'playing' else 'lobby' end;
+  r public.rooms;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if v_code !~ '^[A-Z0-9]{4}$' then raise exception 'bad_code'; end if;
+  if v_mode = '' then v_mode := 'mut'; end if;
+  v_players := least(v_players, v_max);
+  delete from public.rooms where updated_at < now() - interval '45 seconds';
+  r := (select t from public.rooms t where t.code = v_code);
+  if r.code is not null and r.host <> uid then raise exception 'room_taken'; end if;
+  if r.code is not null and (r.updated_at > now() - interval '1 second' or (r.updated_at > now() - interval '5 seconds'
+      and r.host_name = v_name and r.map = v_map and r.mode = v_mode and r.players = v_players and r.max_players = v_max and r.status = v_status)) then
+    return jsonb_build_object('ok', true, 'code', v_code, 'skipped', true);
+  end if;
+  if r.code is null then
+    -- a new code: not more often than every 3 s per host (the old room goes), and at most 500 rooms open at once
+    if exists (select 1 from public.rooms t where t.host = uid and t.updated_at > now() - interval '3 seconds') then raise exception 'too_soon'; end if;
+    delete from public.rooms where host = uid;
+    if (select count(*) from public.rooms) >= 500 then raise exception 'too_many_rooms'; end if;
+  end if;
+  insert into public.rooms (code, host, host_name, map, mode, players, max_players, status, created_at, updated_at)
+  values (v_code, uid, v_name, v_map, v_mode, v_players, v_max, v_status, now(), now())
+  on conflict (code) do update set host_name = excluded.host_name, map = excluded.map, mode = excluded.mode, players = excluded.players,
+    max_players = excluded.max_players, status = excluded.status, updated_at = now()
+  where public.rooms.host = excluded.host;
+  if not found then raise exception 'room_taken'; end if;
+  return jsonb_build_object('ok', true, 'code', v_code);
+end $$;
+-- take my room off the list (the host left or closed it)
+create or replace function public.qz_room_down(p_code text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  delete from public.rooms where host = uid and code = upper(left(coalesce(p_code, ''), 8));
+  return jsonb_build_object('ok', true, 'gone', found);
+end $$;
+-- the list: rooms refreshed in the last 30 s, newest room first, 50 at most (no host ids). Anyone may read it, signed in or not.
+create or replace function public.qz_rooms() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+begin
+  begin
+    delete from public.rooms where updated_at < now() - interval '45 seconds';
+  exception when read_only_sql_transaction then null;
+  end;
+  return coalesce((select jsonb_agg(jsonb_build_object('code', s.code, 'host_name', s.host_name, 'map', s.map, 'mode', s.mode,
+      'players', s.players, 'max_players', s.max_players, 'status', s.status) order by s.created_at desc)
+    from (select t.* from public.rooms t where t.updated_at > now() - interval '30 seconds' order by t.created_at desc limit 50) s), '[]'::jsonb);
+end $$;
+revoke all on function public.qz_room_up(text, text, text, text, integer, integer, text) from public, anon;
+revoke all on function public.qz_room_down(text) from public, anon;
+revoke all on function public.qz_rooms() from public;
+grant execute on function public.qz_room_up(text, text, text, text, integer, integer, text) to authenticated;
+grant execute on function public.qz_room_down(text) to authenticated;
+grant execute on function public.qz_rooms() to anon, authenticated;
 """
 open(os.path.join(HERE,'..','schema.sql'),'w').write(sql.replace('__SEED__',seed))
 print('schema written')

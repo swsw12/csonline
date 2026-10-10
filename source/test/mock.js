@@ -16,6 +16,19 @@ const GCFG={id:1,dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_fr
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
   season_lines:['gun:bhole','gun:skull9','coins:1000','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3']};
 const today=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+// daily missions (same pool and rules as schema.sql, v6.12); window.__MOCK_MIS = [3 pool ids] forces the next day's picks
+const MPOOL=[['play1',1,'play',1,150,0],['kills20',1,'kills',20,150,0],['dmg20k',1,'damage',20000,150,0],['rounds5',1,'rounds',5,150,0],['hs3',1,'hs',3,200,0],
+  ['play3',2,'play',3,300,0],['win1',2,'win',1,300,0],['kills60',2,'kills',60,350,0],['inf3',2,'infects',3,350,0],['hs12',2,'hs',12,400,0],['dmg60k',2,'damage',60000,350,0],
+  ['win3',3,'win',3,500,1],['inf10',3,'infects',10,500,1],['hs30',3,'hs',30,500,1],['kills150',3,'kills',150,550,0],['dmg150k',3,'damage',150000,550,0],['play5',3,'play',5,600,0]]
+  .map(([id,tier,kind,goal,coins,tickets])=>({id,tier,kind,goal,coins,tickets,ko:null,en:null}));
+const misMake=(db,uid)=>{db.mis=db.mis||{};const d=today(),L=db.mis[uid]||[];if(L.some(m=>m.day===d))return;const keep=L.filter(m=>m.day>=new Date(Date.parse(d)-7*864e5).toISOString().slice(0,10));
+  const kinds=[],ids=[],pick=window.__MOCK_MIS;window.__MOCK_MIS=null;
+  for(let s=0;s<3;s++){let c=pick?MPOOL.filter(q=>q.id===pick[s]):MPOOL.filter(q=>q.tier===s+1&&!kinds.includes(q.kind));if(!c.length)c=MPOOL.filter(q=>!ids.includes(q.id)&&!kinds.includes(q.kind));if(!c.length)continue;
+    const m=c[Math.floor(Math.random()*c.length)];kinds.push(m.kind);ids.push(m.id);keep.push({day:d,slot:s,id:m.id,tier:m.tier,kind:m.kind,goal:m.goal,coins:m.coins,tickets:s===2?Math.min(m.tickets,1):0,ko:m.ko,en:m.en,progress:0,claimed:false})}
+  db.mis[uid]=keep};
+const misJ=(db,uid)=>{const d=today(),mid=Date.parse(d+'T00:00:00Z')+864e5-9*3600e3;
+  return {day:d,resets_in:Math.max(0,Math.floor((mid-Date.now())/1000)),missions:(db.mis&&db.mis[uid]||[]).filter(m=>m.day===d).sort((a,b)=>a.slot-b.slot).map(m=>({slot:m.slot,id:m.id,tier:m.tier,kind:m.kind,goal:m.goal,progress:m.progress,coins:m.coins,tickets:m.tickets,ko:m.ko,en:m.en,claimed:m.claimed}))}};
+const rankV=(R,k)=>k==='kills'?R.k:k==='infects'?R.inf:k==='best'?R.best:R.xp;
 const of=window.fetch.bind(window);
 window.fetch=async function(input,init){const url=typeof input==='string'?input:input.url;if(!url.startsWith(URL0))return of(input,init);
   init=init||{};const m=(init.method||'GET').toUpperCase(),u=new URL(url),p=u.pathname,body=init.body?JSON.parse(init.body):null,H=init.headers||{};
@@ -40,22 +53,54 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
   if(p==='/rest/v1/gun_prices'&&m==='GET'){return res(200,PRICES)}
   if(p==='/rest/v1/gacha_config'&&m==='GET'){return res(200,[GCFG])}
   if(p==='/rest/v1/gacha_log'&&m==='GET'){if(!uid)return err(401,{message:'JWT expired'});return res(200,(db.glog||[]).filter(x=>x.uid===uid).slice(-50).reverse())}
-  if(p.startsWith('/rest/v1/rpc/')){const fn=p.slice(13);if(!uid)return err(401,{code:'PGRST301',message:'JWT expired'});const P=db.prof[uid];
-    // window.__MOCK_OFF = ['qz_season', ...]: a database that has not been updated yet
+  // ---- public rooms (same rules as qz_room_up / qz_room_down / qz_rooms); window.__MOCK_ROOMS_AGE = seconds added to every room's age
+  const RM=()=>{db.rooms=db.rooms||{};const now=Date.now(),age=r=>(now-r.upd)/1000+(window.__MOCK_ROOMS_AGE||0);for(const c in db.rooms)if(age(db.rooms[c])>45)delete db.rooms[c];return age};
+  if(p==='/rest/v1/rpc/qz_rooms'){if(window.__MOCK_OFF&&window.__MOCK_OFF.includes('qz_rooms'))return err(404,{code:'PGRST202',message:'Could not find the function public.qz_rooms without parameters in the schema cache'});const age=RM();save(db);
+    return res(200,Object.values(db.rooms).filter(r=>age(r)<30).sort((a,b)=>b.made-a.made).slice(0,50).map(r=>({code:r.code,host_name:r.host_name,map:r.map,mode:r.mode,players:r.players,max_players:r.max_players,status:r.status})))}
+  if(p==='/rest/v1/rpc/qz_room_up'&&uid){if(window.__MOCK_OFF&&window.__MOCK_OFF.includes('qz_room_up'))return err(404,{code:'PGRST202',message:'Could not find the function public.qz_room_up'});
+    const age=RM(),b=body||{},code=String(b.p_code||'').slice(0,8).toUpperCase(),cl=(v,lo,hi,d)=>Math.min(Math.max(v==null?d:v|0,lo),hi);if(!/^[A-Z0-9]{4}$/.test(code))return pgerr('bad_code');
+    const mx=cl(b.p_max,1,20,8),o={code,host:uid,host_name:clean(String(b.p_name||'').slice(0,64)),map:String(b.p_map||'').slice(0,64).replace(/[^A-Za-z0-9_-]/g,'').slice(0,16),
+      mode:String(b.p_mode||'').slice(0,64).replace(/[^a-z]/g,'').slice(0,8)||'mut',players:Math.min(cl(b.p_players,0,20,1),mx),max_players:mx,status:b.p_status==='playing'?'playing':'lobby'};
+    const r=db.rooms[code];if(r&&r.host!==uid)return pgerr('room_taken');
+    if(r&&(age(r)<1||age(r)<5&&['host_name','map','mode','players','max_players','status'].every(k=>r[k]===o[k]))){save(db);return res(200,{ok:true,code,skipped:true})}
+    if(!r){if(Object.values(db.rooms).some(x=>x.host===uid&&age(x)<3))return pgerr('too_soon');for(const c in db.rooms)if(db.rooms[c].host===uid)delete db.rooms[c];
+      if(Object.keys(db.rooms).length>=500)return pgerr('too_many_rooms')}
+    db.rooms[code]=Object.assign(o,{made:r?r.made:Date.now(),upd:Date.now()});window.__mockRoomUps=(window.__mockRoomUps||0)+1;save(db);return res(200,{ok:true,code})}
+  if(p==='/rest/v1/rpc/qz_room_down'&&uid){RM();const code=String((body||{}).p_code||'').slice(0,8).toUpperCase(),r=db.rooms[code],gone=!!(r&&r.host===uid);if(gone)delete db.rooms[code];save(db);return res(200,{ok:true,gone})}
+  if(p.startsWith('/rest/v1/rpc/')){const fn=p.slice(13);
     if(window.__MOCK_OFF&&window.__MOCK_OFF.includes(fn))return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+' without parameters in the schema cache'});
+    // the ranking: anyone (a guest too); nicknames and records only, accounts without a finished match left out
+    if(fn==='qz_ranking'){const k=['level','kills','infects','best'].includes(body&&body.p_kind)?body.p_kind:'level',ids=Object.keys(db.prof);
+      const all=ids.map((id,i)=>({id,i,R:REC(db.prof[id]),n:db.prof[id].nickname})).filter(x=>x.R.g>0).map(x=>({...x,v:rankV(x.R,k)}));
+      all.sort((a,b)=>b.v-a.v||b.R.xp-a.R.xp||a.i-b.i);const rk=v=>1+all.filter(x=>x.v>v).length;
+      const top=all.slice(0,50).map(x=>({rank:rk(x.v),nickname:x.n,value:x.v,xp:x.R.xp,games:x.R.g,me:x.id===uid}));
+      let me=null;if(uid&&db.prof[uid]){const R=REC(db.prof[uid]),v=rankV(R,k);me={nickname:db.prof[uid].nickname,value:v,xp:R.xp,games:R.g,rank:R.g>0?rk(v):null}}
+      return res(200,{kind:k,top,me,total:all.length})}
+    if(!uid)return err(401,{code:'PGRST301',message:'JWT expired'});const P=db.prof[uid];
+    // window.__MOCK_OFF = ['qz_season', ...]: a database that has not been updated yet (checked above)
     if(fn==='qz_me'){if(!P)newProfile(db,uid,db.users[uid].email.split('@')[0]);const Q=db.prof[uid];save(db);
       return res(200,{nickname:Q.nickname,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:8000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,pity:Q.pity|0,tickets:Q.tickets|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid]})}
     if(fn==='qz_set_nickname'){P.nickname=clean(body.p_nick);save(db);return res(200,P.nickname)}
     if(fn==='qz_buy'){const r=PM[body.p_gun];if(r&&r.tier)return pgerr('gacha_only');if(!r||!r.sold)return pgerr('not_for_sale');if(r.free||db.own[uid].includes(body.p_gun))return pgerr('already_owned');
       if(P.coins<r.price)return pgerr('not_enough_coins');P.coins-=r.price;db.own[uid].push(body.p_gun);db.log.push([uid,-r.price,'buy']);save(db);return res(200,{coins:P.coins,gun:body.p_gun})}
-    if(fn==='qz_claim'){const mins=(Date.now()-(P.last||Date.now()-15*60e3))/60e3*(window.__MOCK_TIMEWARP||1);if(mins<1.5)return pgerr('too_soon');
+    if(fn==='qz_claim'){if(window.__MOCK_NOHS&&'p_hs' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_cleared, p_damage, p_hs, ...) in the schema cache'});
+      const mins=(Date.now()-(P.last||Date.now()-15*60e3))/60e3*(window.__MOCK_TIMEWARP||1);if(mins<1.5)return pgerr('too_soon');
       const cl=(v,a)=>Math.min(Math.max(v|0,0),a),k=cl(body.p_kills,80);let raw=body.p_mode==='scen'?80+40*cl(body.p_stage,5)+(body.p_cleared?150:0)+4*k
         :80+12*cl(body.p_rounds,10)+6*Math.min(k,60)+10*cl(body.p_infects,30)+4*Math.floor(cl(body.p_damage,60000)/1000)+(body.p_won?100:0)+(body.p_mvp?60:0);
       raw=Math.min(raw,900,Math.floor(mins*80));const d0=P.day===today()?P.dayE:0,bonus=P.day!==today()?200:0,got=Math.max(0,Math.min(raw+bonus,8000-d0));
       P.coins+=got;P.earned+=got;P.matches++;P.last=Date.now();P.day=today();P.dayE=d0+got;db.log.push([uid,got,'match']);save(db);
       const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false}),sc=cl(body.p_score,30000),inf=cl(body.p_infects,30),gx=Math.min(3000,Math.max(20,Math.round(sc*.6+k*8+inf*12)));
-      R0.g++;R0.k+=k;R0.inf+=inf;R0.best=Math.max(R0.best,sc);R0.xp+=gx;save(db);
-      return res(200,{got,coins:P.coins,bonus,raw,day_left:8000-P.dayE,xp_got:gx,rec:REC(P)})}
+      R0.g++;R0.k+=k;R0.inf+=inf;R0.best=Math.max(R0.best,sc);R0.xp+=gx;
+      // daily missions: this match's numbers, clamped the same way (headshot kills at most the kills). window.__MOCK_NOHS: a database before p_hs
+      misMake(db,uid);const scen=body.p_mode==='scen',gain={play:1,win:body.p_won||(scen&&body.p_cleared)?1:0,kills:k,infects:inf,damage:cl(body.p_damage,60000),
+        rounds:scen?cl(body.p_stage,5):cl(body.p_rounds,10),hs:Math.min(cl(body.p_hs,1e9),k)};
+      const missions=misJ(db,uid).missions.map(m=>({slot:m.slot,kind:m.kind,goal:m.goal,from:m.progress,progress:Math.min(m.goal,m.progress+(gain[m.kind]|0)),claimed:m.claimed,ko:m.ko,en:m.en}));
+      for(const m of db.mis[uid])if(m.day===today())m.progress=Math.min(m.goal,m.progress+(gain[m.kind]|0));save(db);
+      return res(200,{got,coins:P.coins,bonus,raw,day_left:8000-P.dayE,xp_got:gx,rec:REC(P),missions})}
+    if(fn==='qz_missions'){misMake(db,uid);save(db);return res(200,misJ(db,uid))}
+    if(fn==='qz_mission_claim'){const m=(db.mis&&db.mis[uid]||[]).find(x=>x.day===today()&&x.slot===(body.p_slot|0));if(!m)return pgerr('no_mission');if(m.claimed)return pgerr('already_claimed');
+      if(m.progress<m.goal)return pgerr('not_done');m.claimed=true;P.coins+=m.coins;P.earned+=m.coins;P.tickets=(P.tickets|0)+m.tickets;db.log.push([uid,m.coins,'mission']);save(db);
+      return res(200,{got:m.coins,got_tickets:m.tickets,coins:P.coins,tickets:P.tickets,missions:misJ(db,uid)})}
     if(fn==='qz_import_rec'){const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false});if(R0.imported)return pgerr('already_imported');
       const cl=(v,a)=>Math.min(Math.max(v|0,0),a),g=cl(body.p_games,5000);R0.imported=true;R0.g+=g;R0.k+=cl(body.p_kills,g*80);R0.inf+=cl(body.p_infects,g*30);R0.best=Math.max(R0.best,cl(body.p_best,30000));R0.xp+=cl(body.p_xp,Math.min(g*3000,300000));
       save(db);return res(200,{rec:REC(P)})}

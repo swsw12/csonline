@@ -183,6 +183,21 @@ html.touch #hHsk{display:none!important}
 #mp input,#lobby input{font-family:var(--font);font-size:16px;color:var(--fg);background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);padding:9px 12px;outline:none;letter-spacing:1px;user-select:text;-webkit-user-select:text}
 #mp input:focus{border-color:var(--y)}#mpCode{text-transform:uppercase;letter-spacing:6px;font-weight:bold}
 .mpmsg{min-height:18px;margin:2px 0 0;color:#ffb08a;font-size:12px}
+/* public room list (v6.12) */
+.mpwrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:flex-start;max-width:100%}
+.mppub button{flex:1}.mprow input{min-width:0}.mpnote{margin:-2px 0 0}
+.mprooms{width:min(440px,92vw);display:flex;flex-direction:column;gap:6px}
+.mprh{display:flex;align-items:center;justify-content:space-between;margin-top:6px}.mprh b{color:var(--dim);font-size:12px;font-weight:normal}
+.mprh button.busy{opacity:.55}
+.rlist{display:flex;flex-direction:column;gap:4px;max-height:min(330px,52vh);overflow:auto;overscroll-behavior:contain}
+.rrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,1fr) 40px 52px;align-items:center;gap:8px;padding:7px 10px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:12px;cursor:pointer}
+.rrow:hover{border-color:var(--y);background:rgba(255,210,74,.08)}
+.rrow .rh{display:flex;flex-direction:column;min-width:0}.rrow b,.rrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow b{color:var(--fg);font-size:13px}.rrow i{font-style:normal;color:var(--dim);font-size:10px;letter-spacing:2px}.rrow span{color:#c8c4b8}
+.rrow .rn{text-align:right;color:var(--fg)}.rrow em{font-style:normal;text-align:center;font-size:11px;padding:2px 0;border:1px solid rgba(120,220,140,.5);color:#8fe0a0}
+.rrow.play em{border-color:rgba(255,120,90,.5);color:#ffb08a}.rrow.full .rn{color:#ffb08a}
+.rempty{margin:0;padding:14px 10px;text-align:center;color:var(--dim);font-size:12px;border:1px dashed var(--line)}.rempty.bad{color:#ffb08a}
+@media (max-width:520px){.rrow{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 36px 48px}.rrow span:nth-of-type(2){display:none}}
 .mpcode{display:inline-block;margin-left:8px;padding:2px 12px;background:rgba(255,210,74,.14);border:1px solid var(--y);color:#fff;letter-spacing:6px;user-select:text;-webkit-user-select:text}
 button.mini{min-width:0;padding:4px 10px;font-size:12px;vertical-align:middle}
 .plist{display:flex;flex-direction:column;gap:4px}
@@ -874,3 +889,76 @@ html.touch #hRange .rgK{display:none}
 #gFx .gln{position:absolute;left:0;right:0;bottom:5px;font-style:normal;font-size:10px;color:#9aa4b2;text-align:center}
 #gFx .gback .mini{height:62%}
 
+/* ===== the ranking and the daily missions (rank.js): the shop window's look ===== */
+#rkWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;padding:10px}
+#rkWin .swin{width:min(760px,100%);height:min(620px,100%);display:flex;flex-direction:column;background:#1e2126;border:1px solid #4a4e58;box-shadow:0 12px 50px #000}
+#rkWin .swh{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(#2e3138,#24272d);border-bottom:2px solid #e8a33a}
+#rkWin .swh>b{font-size:17px;color:#ffd890;letter-spacing:.04em}#rkWin .swh>small{color:#8a8f98;font-size:11px;letter-spacing:.2em}#rkWin .sgap{flex:1}
+#rkWin .scoin{display:flex;align-items:center;gap:2px;padding:5px 10px;background:#141619;border:1px solid #5a4a20;border-radius:3px}#rkWin .scoin b{color:#ffd24a;font-size:15px}
+#rkWin .scoin.tkc{border-color:#8a3a20}#rkWin .scoin.tkc b{color:#ffb090}#rkWin .tki{height:18px;flex:none}
+#rkWin button{min-width:0;box-shadow:none;font:inherit;cursor:pointer}
+#rkWin .sacc{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px;background:#2c3036;border:1px solid #4a4e58;border-radius:3px;color:#e6e2d6}
+#rkWin .sacc svg{width:14px;height:14px}#rkWin .sacc.hl{background:linear-gradient(#5a4310,#3a2a08);border-color:#c8901e;color:#ffe2a0}
+#rkWin .sacc span{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rkWin .sx{flex:none;width:34px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff}
+#rkWin .spages{display:flex;gap:2px;padding:6px 10px 0;background:#1a1d21;border-bottom:1px solid #3a3e46}
+#rkWin .spages button{position:relative;flex:none;display:flex;align-items:center;gap:6px;font-size:13px;padding:8px 16px;background:#22252a;border:1px solid #3a3e46;border-bottom:0;color:#a8acb4;border-radius:3px 3px 0 0}
+#rkWin .spages button.on{background:#2c2410;color:#ffd890;border-color:#e8a33a}#rkWin .spages svg{width:14px;height:14px}
+#rkWin .spages .dot,.tbtns .tmis .dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+#rkWin .stabs{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #33373e;background:#1a1d21}
+#rkWin .stl{display:flex;gap:3px;overflow-x:auto;flex:1;scrollbar-width:thin}
+#rkWin .stl button{flex:none;font-size:12px;padding:6px 11px;white-space:nowrap;background:#262a30;border:1px solid #3a3e46;color:#b8bcc4;border-radius:2px}
+#rkWin .stl button.on{background:#3a2e12;border-color:#e8a33a;color:#ffd890}
+#rkWin .rktot{font-size:11px;color:#8a8f98;white-space:nowrap}
+#rkWin .rkref{flex:none;font-size:12px;padding:5px 10px;background:#2c3036;border:1px solid #4a4e58;color:#d0d4da;border-radius:3px;white-space:nowrap}#rkWin .rkref:disabled{opacity:.5;cursor:default}
+#rkWin .sbb{display:flex;align-items:center;justify-content:center;gap:4px;font-size:14px;padding:9px 18px;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;font-weight:bold;border-radius:3px}
+#rkWin .sbm{margin:6px 10px;font-size:12px;padding:6px 8px;border-radius:2px}#rkWin .sbm.ok{background:#1e3320;color:#a8e89a}#rkWin .sbm.bad{background:#3a1e1a;color:#f0a090}
+#rkWin .sfoot{padding:7px 12px;font-size:11px;color:#8a8f98;border-top:1px solid #33373e;background:#1a1d21;line-height:1.4}
+#rkWin .rkempty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 16px;text-align:center;color:#a8acb4;font-size:13px;line-height:1.5}
+/* ranking rows: place · nickname · level · value; the top 3 in gold, silver and bronze, my row in blue */
+#rkWin .rkhd,#rkWin .rkr{display:grid;grid-template-columns:52px minmax(0,1fr) 64px 112px;align-items:center;gap:8px;padding:0 14px}
+#rkWin .rkhd{height:26px;font-size:11px;color:#8a8f98;background:#191b1f;border-bottom:1px solid #2c2f35}#rkWin .rkhd b{font-weight:normal}
+#rkWin .rklist{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch}
+#rkWin .rkr{height:34px;font-size:13px;color:#d8d4c8;border-bottom:1px solid #26292e}#rkWin .rklist .rkr:nth-child(even){background:#202328}
+#rkWin .rkr b{font-weight:normal;color:#ece8dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#rkWin .rkn{text-align:center;color:#9a968c;font-variant-numeric:tabular-nums}
+#rkWin .rkn i{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-style:normal;font-weight:bold;font-size:13px;color:#2a1a04}
+#rkWin .rklv{font-size:11px;color:#9ab8e0;text-align:center}
+#rkWin .rkv{text-align:right;color:#ffd890;font-variant-numeric:tabular-nums;white-space:nowrap}#rkWin .rkv small{font-size:10px;color:#9a8a60}
+#rkWin .rkr.r1{background:linear-gradient(90deg,#4a3a10,#2a2410 60%,#202328)!important}#rkWin .rkr.r1 .rkn i{background:radial-gradient(circle at 35% 30%,#fff6c0,#f6cf3a 45%,#b8820e)}
+#rkWin .rkr.r2{background:linear-gradient(90deg,#3a3e46,#26292e 60%,#202328)!important}#rkWin .rkr.r2 .rkn i{background:radial-gradient(circle at 35% 30%,#ffffff,#c8ccd4 45%,#7a808a)}
+#rkWin .rkr.r3{background:linear-gradient(90deg,#4a2c18,#2a2018 60%,#202328)!important}#rkWin .rkr.r3 .rkn i{background:radial-gradient(circle at 35% 30%,#ffd8b0,#d08a4a 45%,#7a4a1e)}
+#rkWin .rkr.r1,#rkWin .rkr.r2,#rkWin .rkr.r3{height:40px;font-size:14px}#rkWin .rkr.r1 b{color:#ffe7a0;font-weight:bold}
+#rkWin .rkr.me{box-shadow:inset 3px 0 0 #4aa0ff}#rkWin .rkr.me b{color:#a8d4ff}
+#rkWin .rkme{flex:none;border-top:2px solid #4aa0ff;background:#18222e}#rkWin .rkme .rkr{border-bottom:0;background:none}
+#rkWin .rkme.nt{display:flex;align-items:center;justify-content:center;gap:10px;padding:9px 14px;font-size:12px;color:#a8b4c4}
+#rkWin .rkme.nt button{font-size:12px;padding:5px 12px;background:linear-gradient(#5a4310,#3a2a08);border:1px solid #c8901e;color:#ffe2a0;border-radius:3px}
+/* mission cards: tier · what to do + progress · reward · claim */
+#rkWin .swin.pmis{height:auto;max-height:100%}
+#rkWin .mbody{flex:1 1 auto;overflow-y:auto;min-height:0;padding:12px;display:flex;flex-direction:column;gap:9px}
+#rkWin .mcard{display:grid;grid-template-columns:64px minmax(0,1fr) auto 108px;align-items:center;gap:12px;padding:11px 12px;background:linear-gradient(#2a2e34,#22252a);border:1px solid #383c44;border-left:4px solid #5a8a4a;border-radius:3px}
+#rkWin .mcard.t2{border-left-color:#4a7ac8}#rkWin .mcard.t3{border-left-color:#d8582e}
+#rkWin .mtier{font-style:normal;font-size:11px;font-weight:bold;text-align:center;padding:3px 0;border-radius:2px;background:#2e4a28;color:#bfe8a8}
+#rkWin .t2 .mtier{background:#23395e;color:#b8d4ff}#rkWin .t3 .mtier{background:#5a2414;color:#ffc8a8}
+#rkWin .mtx{display:flex;flex-direction:column;gap:5px;min-width:0}#rkWin .mtx b{font-size:14px;color:#ece8dc;font-weight:normal}
+#rkWin .mbar{height:8px;background:#16181b;border:1px solid #33373e;border-radius:4px;overflow:hidden}#rkWin .mbar u{display:block;height:100%;background:linear-gradient(90deg,#c88a1e,#ffd24a)}
+#rkWin .mtx small{font-size:11px;color:#9a968c;font-variant-numeric:tabular-nums}
+#rkWin .mrw{display:flex;align-items:center;gap:8px;font-size:14px;color:#ffd24a;white-space:nowrap}#rkWin .mtk{display:inline-flex;align-items:center;gap:2px;color:#ffb090}
+#rkWin .mcl{font-size:13px;padding:8px 6px;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;font-weight:bold;border-radius:3px}
+#rkWin .mcl:disabled{background:#2c2f35;border-color:#3e424a;color:#8a8e96;font-weight:normal;cursor:default}
+#rkWin .mcard.done:not(.got){border-color:#c8901e;box-shadow:0 0 0 1px #8a6a1e inset}#rkWin .mcard.done:not(.got) .mcl{animation:gfree 1.4s ease-in-out infinite}
+#rkWin .mcard.done .mbar u{background:linear-gradient(90deg,#4aa83a,#9be07a)}
+#rkWin .mcard.got{opacity:.62}#rkWin .mcard.got .mcl:disabled{color:#9be07a}
+#rkWin .mrs{float:right;margin-left:12px;color:#c8b080}#rkWin .mrs b{color:#ffd890;font-variant-numeric:tabular-nums}
+.tbtns .tmis,.tbtns .trank{position:relative}
+@media (max-height:520px){.tbtns .trank{display:none}}/* phones: the ranking is the second tab of the missions window */
+@media (max-width:620px){#rkWin .mcard{grid-template-columns:52px minmax(0,1fr) 92px;gap:8px}#rkWin .mrw{grid-column:2;grid-row:2}#rkWin .mcl{grid-row:1/3;grid-column:3}
+  #rkWin .rkhd,#rkWin .rkr{grid-template-columns:40px minmax(0,1fr) 52px 92px;padding:0 8px;gap:6px}}
+@media (max-height:520px){#rkWin{padding:4px}#rkWin .swh{padding:5px 10px}#rkWin .spages button{padding:5px 12px}#rkWin .stabs{padding:4px 8px}#rkWin .sfoot{padding:4px 10px}
+  #rkWin .mbody{padding:7px 10px;gap:6px}#rkWin .mcard{padding:6px 10px}#rkWin .mcl{padding:6px}#rkWin .rkr{height:28px}#rkWin .rkr.r1,#rkWin .rkr.r2,#rkWin .rkr.r3{height:32px}#rkWin .sfoot{font-size:10px}}
+/* the results screen: today's missions moved by this match */
+.misRes{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 12px;margin:0 auto 6px;padding:7px 14px;max-width:560px;background:linear-gradient(#1c2430,#141a22);border:1px solid #3a5a8a;border-radius:3px;font-size:12px;color:#c8d8ec}
+.misRes .mrh{display:flex;align-items:center;gap:5px;color:#a8d4ff;font-size:12px}.misRes .mrh svg{width:13px;height:13px}
+.misRes .mri{display:inline-flex;align-items:center;gap:5px}.misRes .mri u{text-decoration:none}.misRes .mri i{font-style:normal;color:#ffd890}.misRes .mri small{color:#9be07a}
+.misRes .mri em{font-style:normal;font-size:10px;font-weight:bold;padding:1px 5px;border-radius:2px;background:#3f7a3a;color:#fff}
+.misRes button{font:inherit;font-size:12px;padding:4px 10px;min-width:0;box-shadow:none;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;font-weight:bold;border-radius:3px;cursor:pointer;pointer-events:auto}

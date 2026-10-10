@@ -449,3 +449,12 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   one vertical line on screen; the blade turns 35 degrees about the haft on the way down (its face shows) and lands square (8 degrees);
   impact pose: head at about NDC (.13, -.45), hands just under the bottom edge. SK_FX.heavy: no yaw/roll, pitch dip -.12 at the hit.
   Third person (KF.skH) was already a pure pitch swing. window.__SKT = {heavy: {K, F}} still overrides the keys for tuning.
+
+## v6.12 — public room list, daily missions, ranking, claw lock
+- Rooms (agent, net.js ROOMS): random 4-char PeerJS codes (retry on unavailable-id), public/private toggle, signed-in hosts
+  heartbeat qz_room_up every 10 s (+ on change), qz_room_down on leave / pagehide (ACC.beacon); list in the mp menu (5 s refresh).
+  SQL section "public rooms (v6.12)": rooms table (RLS, no direct access), qz_room_up / qz_room_down / qz_rooms (anon too).
+- Missions + ranking (agent, rank.js, after shop in build.py): mission_pool table, 3 a day (easy/normal/hard), progress inside
+  qz_claim (new p_hs = headshot kills, old 10-arg signature dropped; client retries without p_hs on an old DB), qz_missions /
+  qz_mission_claim; qz_ranking(level|kills|infects|best) top 50 + my place (anon too). P.hsKills counted in killZombie.
+- CLAW_LOCK (game.js): a newly infected zombie (not a host) can't start a claw for 2 s; the player gets a note.

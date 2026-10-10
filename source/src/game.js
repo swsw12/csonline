@@ -25,7 +25,7 @@ const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,
 let ACTOR_ID=0;
 function mkActor(name,isPlayer,skin){const a={id:ACTOR_ID++,name,isPlayer,skin,zpick:rpick(ZLIST),team:TH,alive:false,
   c:{x:0,y:0,z:0,vx:0,vy:0,vz:0,hw:.3,h:1.8,onGround:false,stepH:.5,jumped:false},yaw:0,pitch:0,duck:false,
-  hp:100,maxHp:100,armor:0,money:0,kills:0,infects:0,deaths:0,score:0,dmgDealt:0,
+  hp:100,maxHp:100,armor:0,money:0,kills:0,hsKills:0,infects:0,deaths:0,score:0,dmgDealt:0,
   inv:{1:null,2:'p9',3:'knife',he:0,frost:0,flare:0},ammo:{},cur:'p9',prev:'knife',nextFire:0,reloadT:0,relKind:null,shellT:0,drawT:0,shots:0,recoilSpread:0,punchP:0,punchY:0,kick:0,zoom:0,zoomWas:0,boltT:0,pumpT:0,throwT:0,throwKind:null,
   zc:'rager',lvl:1,infR:0,host:false,skillCD:0,skillT:0,bombs:0,frozen:0,staggerT:0,dizzy:0,shriekT:0,lastHurt:-99,
   deadT:0,permaDead:false,reviveT:0,respawnT:0,deadDir:1,reviving:0,mvx:0,mvz:0,kvx:0,kvz:0,
@@ -289,6 +289,7 @@ function zombieAttack(a,dt){const cmd=a.cmd,pc=a.pc,Z=ZCLASS[a.zc];
   if(cmd.skill&&!pc.skill)useSkill(a);
   if(a.pendingClaw){a.pendingClaw.t-=dt;if(a.pendingClaw.t<=0){clawStrike(a,a.pendingClaw.heavy);a.pendingClaw=null}}
   if(a.drawT>0||G.t<a.nextFire||a.pendingClaw)return;
+  if(G.t<(a.clawLock||0)){if(a.isPlayer&&(cmd.fire||cmd.alt)&&!pc.fire&&!pc.alt)HUD.note(LI()?'Still turning — claws in a moment':'아직 변이 중 — 잠시 후 공격 가능',1);return}
   if(cmd.fire||cmd.alt){const heavy=!cmd.fire&&cmd.alt;a.nextFire=G.t+(heavy?1.1:.62);a.an.atk=1;a.an.atkD=heavy?.78:.48;a.an.heavy=heavy;a.an.atkSide=-a.an.atkSide;
     if(a.isPlayer){VM.claw(heavy,a.an.atkSide);AU.play('claw',{vol:.6})}else AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.7,range:30});
     a.pendingClaw={t:heavy?.4:.19,heavy};NET.on&&netFxPush(['c',a.id,heavy?1:0,a.an.atkSide])}}
@@ -303,6 +304,7 @@ function zbombUpdate(a,dt){const cmd=a.cmd,pc=a.pc;
   if(a.bSt===3)return;
   if(want&&(!(pc.fire||pc.alt)||!a.isPlayer)&&a.drawT<=0&&a.bombs>0){a.bSt=1;a.bT=BOMB_PULL;a.bSoft=!cmd.fire&&!!cmd.alt;
     if(a.isPlayer){VM.bombPull(BOMB_PULL);AU.play('zatk',{vol:.35,rate:1.5})}else AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.4,range:20,rate:1.5})}}
+const CLAW_LOCK=2;// seconds a newly infected zombie (not a host) waits before its first claw
 const CLAW_R=[1.75,2.0];// claw reach (light, heavy): eye to the target's body; the bots swing from 1.35 m + the target's half width (ai.js)
 function clawStrike(a,heavy){const r=meleeHit(a,heavy?CLAW_R[1]:CLAW_R[0],heavy?.6:.5);
   if(r&&r.t){if(!NET.ghost){if(NET.cli)netToHost({t:'claw',i:r.t.id,h:heavy?1:0});else clawApply(a,r.t,heavy)}
@@ -360,7 +362,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
   // Original: every dead zombie stays down this round. Mutation: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
   const perma=G.mode==='orig'||G.mode==='mut'&&(o.knife||(!t.host&&(o.hs||o.he)));
   if(perma)t.permaDead=true;else if(G.mode==='mut')t.reviveT=8;else t.respawnT=5
-  if(src){src.kills++;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}
+  if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills
   HUD.feed(src,o.w,t,{hs:o.hs,perma});nyOnKill(t,src);
   AU.at('zdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1,range:55});
   // gore: headshot kills burst the head, explosions tear the body; every body leaves a pool
@@ -407,6 +409,7 @@ function becomeZombie(a,host){if(a.team===TH){ldSnap(a);dropDeath(a)}const nh=G.
   a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomb
   a.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
   a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.an.skill=1;a.permaDead=false;a.alive=true;a.turning=host?2:1.4;
+  a.clawLock=host?0:G.t+CLAW_LOCK;// a freshly infected zombie can't claw at once: no chain infections through a crowd
   if(a.isPlayer){a.nv=false;VM.set('claw','z_'+a.zc);VM.draw(.9)}
   if(a.bot)AI.onTeam(a)}
 function reviveZombie(a,at,rise){if(NET.cli&&!NET.ev)return;
