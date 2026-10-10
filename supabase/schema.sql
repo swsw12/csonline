@@ -458,7 +458,7 @@ create table if not exists public.mission_pool (
   kind    text not null check (kind in ('play', 'win', 'kills', 'infects', 'damage', 'rounds', 'hs')),
   goal    integer not null check (goal > 0),
   coins   integer not null default 0 check (coins between 0 and 5000),
-  tickets integer not null default 0 check (tickets between 0 and 1),   -- 근하신년 decoders; paid only on the day's hard slot (one a day at most)
+  tickets integer not null default 0 check (tickets between 0 and 5),   -- 근하신년 decoders; paid only on the day's hard slot
   weight  integer not null default 1 check (weight >= 0),            -- how often it is picked (0: never)
   active  boolean not null default true,
   ko      text,   -- own wording; empty: the game writes it from kind + goal
@@ -487,6 +487,9 @@ drop policy if exists "read mission pool" on public.mission_pool;
 create policy "read mission pool" on public.mission_pool for select to anon, authenticated using (true);
 drop policy if exists "read own missions" on public.daily_missions;
 create policy "read own missions" on public.daily_missions for select to authenticated using ((select auth.uid()) = user_id);
+-- v6.12.1: up to 5 decoders a mission (an older table still checks 0..1)
+alter table public.mission_pool drop constraint if exists mission_pool_tickets_check;
+alter table public.mission_pool add constraint mission_pool_tickets_check check (tickets between 0 and 5);
 -- the pool (a row already there is left as it is: edit it in the Table Editor)
 insert into public.mission_pool (id, tier, kind, goal, coins, tickets) values
   ('play1',    1, 'play',    1,      150, 0),
@@ -500,13 +503,17 @@ insert into public.mission_pool (id, tier, kind, goal, coins, tickets) values
   ('inf3',     2, 'infects', 3,      350, 0),
   ('hs12',     2, 'hs',      12,     400, 0),
   ('dmg60k',   2, 'damage',  60000,  350, 0),
-  ('win3',     3, 'win',     3,      500, 1),
+  ('win3',     3, 'win',     3,      500, 3),
   ('inf10',    3, 'infects', 10,     500, 1),
   ('hs30',     3, 'hs',      30,     500, 1),
   ('kills150', 3, 'kills',   150,    550, 0),
   ('dmg150k',  3, 'damage',  150000, 550, 0),
   ('play5',    3, 'play',    5,      600, 0)
 on conflict (id) do nothing;
+-- v6.12.1: 3 wins pays 3 decoders (also today's unclaimed copies), only while win3 still holds the shipped 1
+update public.daily_missions set tickets = 3 where mission_id = 'win3' and tickets = 1 and claimed_at is null
+  and exists (select 1 from public.mission_pool q where q.id = 'win3' and q.tickets = 1);
+update public.mission_pool set tickets = 3 where id = 'win3' and tickets = 1;
 -- today's 3 for one player, made once (rows older than a week are cleared then)
 create or replace function public.qz_missions_make(uid uuid, d date) returns void
 language plpgsql security definer set search_path = '' as $$
@@ -532,7 +539,7 @@ begin
       v_ids := v_ids || m.id;
       insert into public.daily_missions (user_id, day, slot, mission_id, tier, kind, goal, coins, tickets, ko, en)
       values (uid, d, s, m.id, m.tier, m.kind, m.goal, least(greatest(m.coins, 0), 5000),
-        case when s = 2 then least(greatest(m.tickets, 0), 1) else 0 end, nullif(btrim(m.ko), ''), nullif(btrim(m.en), ''))
+        case when s = 2 then least(greatest(m.tickets, 0), 5) else 0 end, nullif(btrim(m.ko), ''), nullif(btrim(m.en), ''))
       on conflict do nothing;
     end if;
   end loop;

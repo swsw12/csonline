@@ -19,12 +19,12 @@ const today=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
 // daily missions (same pool and rules as schema.sql, v6.12); window.__MOCK_MIS = [3 pool ids] forces the next day's picks
 const MPOOL=[['play1',1,'play',1,150,0],['kills20',1,'kills',20,150,0],['dmg20k',1,'damage',20000,150,0],['rounds5',1,'rounds',5,150,0],['hs3',1,'hs',3,200,0],
   ['play3',2,'play',3,300,0],['win1',2,'win',1,300,0],['kills60',2,'kills',60,350,0],['inf3',2,'infects',3,350,0],['hs12',2,'hs',12,400,0],['dmg60k',2,'damage',60000,350,0],
-  ['win3',3,'win',3,500,1],['inf10',3,'infects',10,500,1],['hs30',3,'hs',30,500,1],['kills150',3,'kills',150,550,0],['dmg150k',3,'damage',150000,550,0],['play5',3,'play',5,600,0]]
+  ['win3',3,'win',3,500,3],['inf10',3,'infects',10,500,1],['hs30',3,'hs',30,500,1],['kills150',3,'kills',150,550,0],['dmg150k',3,'damage',150000,550,0],['play5',3,'play',5,600,0]]
   .map(([id,tier,kind,goal,coins,tickets])=>({id,tier,kind,goal,coins,tickets,ko:null,en:null}));
 const misMake=(db,uid)=>{db.mis=db.mis||{};const d=today(),L=db.mis[uid]||[];if(L.some(m=>m.day===d))return;const keep=L.filter(m=>m.day>=new Date(Date.parse(d)-7*864e5).toISOString().slice(0,10));
   const kinds=[],ids=[],pick=window.__MOCK_MIS;window.__MOCK_MIS=null;
   for(let s=0;s<3;s++){let c=pick?MPOOL.filter(q=>q.id===pick[s]):MPOOL.filter(q=>q.tier===s+1&&!kinds.includes(q.kind));if(!c.length)c=MPOOL.filter(q=>!ids.includes(q.id)&&!kinds.includes(q.kind));if(!c.length)continue;
-    const m=c[Math.floor(Math.random()*c.length)];kinds.push(m.kind);ids.push(m.id);keep.push({day:d,slot:s,id:m.id,tier:m.tier,kind:m.kind,goal:m.goal,coins:m.coins,tickets:s===2?Math.min(m.tickets,1):0,ko:m.ko,en:m.en,progress:0,claimed:false})}
+    const m=c[Math.floor(Math.random()*c.length)];kinds.push(m.kind);ids.push(m.id);keep.push({day:d,slot:s,id:m.id,tier:m.tier,kind:m.kind,goal:m.goal,coins:m.coins,tickets:s===2?Math.min(m.tickets,5):0,ko:m.ko,en:m.en,progress:0,claimed:false})}
   db.mis[uid]=keep};
 const misJ=(db,uid)=>{const d=today(),mid=Date.parse(d+'T00:00:00Z')+864e5-9*3600e3;
   return {day:d,resets_in:Math.max(0,Math.floor((mid-Date.now())/1000)),missions:(db.mis&&db.mis[uid]||[]).filter(m=>m.day===d).sort((a,b)=>a.slot-b.slot).map(m=>({slot:m.slot,id:m.id,tier:m.tier,kind:m.kind,goal:m.goal,progress:m.progress,coins:m.coins,tickets:m.tickets,ko:m.ko,en:m.en,claimed:m.claimed}))}};

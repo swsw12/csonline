@@ -9940,6 +9940,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.12.1','2026-10-10',[
+ ['UP','일일 미션 「3승 하기」 보상 — 500 코인 + 근하신년 해독기 1개 → 3개 (오늘 받은 미션에도 바로 적용)','Daily mission "win 3 matches": 500 coins + 3 근하신년 decoders (was 1), today\'s missions included.']]],
 ['v6.12','2026-10-10',[
  ['NEW','공개 방 목록 — 멀티플레이 메뉴에 지금 열린 방이 떠요 (방장 · 맵 · 모드 · 인원 · 대기중/게임중, 5초마다 갱신). 누르면 바로 참가. 방 코드는 이제 방마다 랜덤 4자리, 방 만들 때 공개/비공개 선택 (공개 방은 로그인한 방장만)','Public room list: the multiplayer menu lists the open rooms (host, map, mode, players, waiting / playing, refreshed every 5 s); click one to join. Every room gets its own random 4-character code; pick public or private when you create one (public rooms need a signed-in host).'],
  ['NEW','일일 미션 — 매일(한국 시간) 쉬움 · 보통 · 어려움 미션 3개. 판 수 · 승리 · 킬 · 헤드샷 킬 · 감염 · 피해량 · 라운드. 보상 150~600 코인, 어려움은 근하신년 해독기 1개도. 진행도는 판이 끝날 때 서버에서 계산, 결과창에 표시','Daily missions: three a day (Korean time), easy / normal / hard: matches, wins, kills, headshot kills, infections, damage, rounds. 150-600 coins each, the hard one a 근하신년 decoder too. Progress is counted on the server when a match ends and shown on the result card.'],
@@ -10127,7 +10129,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.12 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.12.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
