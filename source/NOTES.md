@@ -531,3 +531,15 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   buyCheck → 'lock' / 'crate', ldLocked, ldKeep (an owned one carries over). The range's own crate row is gone.
 - Granting a gun by hand (Supabase SQL Editor): insert into public.owned_guns (user_id, gun_id, price_paid) select id, 'dmp7', 0 from auth.users
   where email = '...' on conflict do nothing;
+
+## v6.19 — in-game chat (multiplayer not tested here: the owner tests it)
+- chat.js (last in build order). CHAT.where(): 'lobby' in a multiplayer waiting room, 'game' in a match and its results, else hidden.
+  #chatBox (lines: fade after 9 s, the last 14 while typing or in the waiting room) and #chatBar (input, send, all / my-side toggle).
+- Keys (capture-phase keydown, not while typing in an input, paused, an overlay open, or on the solo results): Enter / Y = everyone,
+  U = own side; the waiting room takes Enter only. Inside the box: Enter sends (empty = close), Esc closes. While open the player's cmd is
+  zeroed (Main.playerCmd wrapper) and Main.keys cleared. Main.pause wrapper: Esc or a lost mouse lock while typing closes the box instead of
+  pausing (alt-tab still pauses).
+- Network: client → netToHost {t:'chat', m, tm}; HOSTH.chat (4 lines / 5 s per link, cleaned, 90 chars, name and side from the actor in a
+  match, L.name in the lobby) → CHAT.relay: every link (a team line only to links whose actor is on the sender's side; the sender gets its
+  own line back with me:1). Joins / leaves: HOSTH.hello and netDropPlayer wrappers → CHAT.sys → netAll {t:'chat', s:1}.
+- Phones: TOUCH.build adds a 💬 button to .ttop (also shown while dead); TOUCH.press('chat') toggles the box.

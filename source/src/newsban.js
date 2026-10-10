@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'✉',tag:['신규 기능','New'],t:['인게임 채팅','In-game chat'],
+    d:['매치 중 Enter(또는 Y)로 전체 채팅, U로 우리 편 채팅. 멀티 대기실에서도 바로 대화할 수 있고, 입장 · 퇴장도 채팅창에 떠요. 폰은 위쪽 💬 버튼.','Enter (or Y) talks to everyone and U to your own side, in a match and in the multiplayer waiting room; joins and leaves show in the chat too. On phones, the 💬 button at the top.']},
   {kind:'feature',ico:'♥',tag:['신규 기능','New'],t:['친구 · 선물하기','Friends · gifts'],
     d:['로비의 「친구」 버튼에서 친구 코드로 친구를 맺고, 상점에서 파는 총을 내 코인으로 친구에게 선물할 수 있어요. 받은 선물은 로비에 오면 알림이 떠요.','Make friends by friend code from the lobby’s Friends button, and buy any gun the shop sells for a friend with your coins. Gifts that come in show up in the lobby.']},
   {kind:'weapon',ref:'ak60r',tag:['보급상자 전용','Supply crates only'],t:['AK-47 60R','AK-47 60R'],
