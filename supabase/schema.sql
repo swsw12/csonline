@@ -219,7 +219,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('gl40',5500,false,true,null),
   ('axe',1500,false,true,null),
   ('hammer',4000,false,true,null),
-  ('killknife',3000,false,true,null),
+  ('killknife',12000,false,true,null),
   ('blaze8',6000,false,true,null),
   ('winchester',4500,false,true,null),
   ('bhole',0,false,false,null),

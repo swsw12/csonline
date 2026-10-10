@@ -81,7 +81,7 @@ function kkParts(){const P=[],N=26,z0=-.045,z1=-.37;
   P.push(Pt(0,-.002,.108,.026,.04,.016,'steel'),Pt(0,-.004,.118,.022,.03,.008,'steel'),Pt(0,-.004,.112,.0285,.008,.008,'blk'));
   return P}
 GUNS.killknife={parts:kkParts(),grip:[0,0,0],muzzle:[0,.03,-.36],trail:[0,.0,-.12,0,.028,-.35]};
-WPN.killknife={slot:3,kind:'melee',n:['킬나이프','Kill Knife'],cost:3000,dmg:[42,150],rate:[.5,1.1],range:[2.7,2.2],kb:[4.5,14],stag:[1.3,1.6],cleave:[1,2],arc:[.55,.6],
+WPN.killknife={slot:3,kind:'melee',n:['킬나이프','Kill Knife'],cost:12000,dmg:[95,330],rate:[.5,1.1],range:[2.7,2.2],kb:[5,15],stag:[2.2,3],cleave:[1,2],arc:[.55,.6],
   speed:1,draw:.65,model:'killknife',hold:'knife',sw:1,hitT:[.15,.32]};
 VM_POS.killknife={p:[.16,-.17,-.34],r:[.15,.25,-.15]};
 

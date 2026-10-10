@@ -15,7 +15,7 @@ PRICES=[
  # machine guns
  ('mg6',6000),('hmg',6500),('gx6',10000),
  # special + melee
- ('airb',4500),('gl40',5500),('axe',1500),('hammer',4000),('killknife',3000),
+ ('airb',4500),('gl40',5500),('axe',1500),('hammer',4000),('killknife',12000),
  ('blaze8',6000),('winchester',4500),
 ]
 GACHA={'S':['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],'A':['xdz','ripper','xbowa','xbow','sterling','duckfoot']}
