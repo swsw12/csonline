@@ -148,7 +148,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     else{e.hSkill.style.display='none';const am=P.ammo[P.cur];const Wn=WPN[P.cur];e.hWName.textContent=Wn?Wn.n[LI()]+(Wn.dual&&P.dualB?(LI()?' · full auto':' · 연사'):'')+(Wn.stance?(P.hamB?(LI()?' · B knock-away':' · B 날리기'):(LI()?' · A pound':' · A 떡찧기')):'')+spTag(P,Wn):'';
       if(am){e.hAmmo.style.display='flex';e.hMag.textContent=am.mag;e.hRes.textContent='/ '+am.res;e.hMag.className=am.mag<=Math.ceil(Wn.mag*.2)?'low':''}else e.hAmmo.style.display='none';
       e.hNades.textContent=['he','frost','flare'].filter(k=>P.inv[k]>0).map(k=>({he:'HE',frost:'FROST',flare:'FLARE'})[k]).join(' · ')+(P.flash?'  ☀':'')+nyHud(P)}
-    {const Ls=P.nyL||{};const s=P.team===TH?NY_CH.map(c=>`<b class="${Ls[c]?'on':''}">${c}</b>`).join('')+(P.nyFree>0?`<small>${T('nyFree')} ×${P.nyFree}</small>`:''):'';if(this.nyS!==s){this.nyS=s;$('hNY').innerHTML=s}}
+    {const M=P.nyM||[0,0,0,0];const s=P.team===TH?NY_CH.map((c,i)=>`<b class="${M[i]?'on':''}">${c}${M[i]>1?`<sub>${M[i]}</sub>`:''}</b>`).join('')+(P.nyFree>0?`<small>${T('nyFree')} ×${P.nyFree}</small>`:''):'';if(this.nyS!==s){this.nyS=s;$('hNY').innerHTML=s}}
     // spectate / revive info
     let sp='';if(!P.alive){if(P.team===TZ&&!P.permaDead&&G.st==='fight'){sp=G.mode==='mut'?T('reviveIn',Math.max(1,Math.ceil(P.reviveT))):T('respawnIn',Math.max(1,Math.ceil(P.respawnT)))}else if(G.st==='fight'||G.st==='end')sp=T('permaDead')
       if(G.spec)sp+=`<br><small>${T('spec')}: <b class="${G.spec.team===TZ?'z':'h'}">${esc(G.spec.name)}</b> — ${T('specHint')}</small>`;else if(G.killer)sp+=`<br><small>${T('killedBy',esc(G.killer.name))}</small>`}

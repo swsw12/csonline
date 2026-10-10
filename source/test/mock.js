@@ -79,7 +79,11 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(!uid)return err(401,{code:'PGRST301',message:'JWT expired'});const P=db.prof[uid];
     // window.__MOCK_OFF = ['qz_season', ...]: a database that has not been updated yet (checked above)
     if(fn==='qz_me'){if(!P)newProfile(db,uid,db.users[uid].email.split('@')[0]);const Q=db.prof[uid];save(db);
-      return res(200,{nickname:Q.nickname,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:8000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,pity:Q.pity|0,tickets:Q.tickets|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid]})}
+      return res(200,{nickname:Q.nickname,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:8000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid]})}
+    if(fn==='qz_ny_add'){let q=Math.max(P.nyQ|0,0);const v=[body.p_g,body.p_h,body.p_s,body.p_n].map(x=>Math.min(Math.max(x|0,0),8)),ad=v.map(x=>{const t=Math.min(x,q);q-=t;return t});
+      P.ny=(P.ny||[0,0,0,0]).map((x,i)=>x+ad[i]);P.nyQ=0;save(db);return res(200,{added:ad,ny:P.ny})}
+    if(fn==='qz_ny_exchange'){const c=body.p_choice;if(c!=='ny'&&c!=='season')return pgerr('bad_choice');const N=P.ny||[0,0,0,0];if(Math.min(...N)<1)return pgerr('no_set');
+      P.ny=N.map(x=>x-1);if(c==='ny')P.tickets=(P.tickets|0)+2;else P.sTk=(P.sTk|0)+1;save(db);return res(200,{ny:P.ny,tickets:P.tickets|0,season_tickets:P.sTk|0})}
     if(fn==='qz_set_nickname'){P.nickname=clean(body.p_nick);save(db);return res(200,P.nickname)}
     if(fn==='qz_buy'){const r=PM[body.p_gun];if(r&&r.tier)return pgerr('gacha_only');if(!r||!r.sold)return pgerr('not_for_sale');if(r.free||db.own[uid].includes(body.p_gun))return pgerr('already_owned');
       if(P.coins<r.price)return pgerr('not_enough_coins');P.coins-=r.price;db.own[uid].push(body.p_gun);db.log.push([uid,-r.price,'buy']);save(db);return res(200,{coins:P.coins,gun:body.p_gun})}
@@ -88,7 +92,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       const cl=(v,a)=>Math.min(Math.max(v|0,0),a),k=cl(body.p_kills,80);let raw=body.p_mode==='scen'?80+40*cl(body.p_stage,5)+(body.p_cleared?150:0)+4*k
         :80+12*cl(body.p_rounds,10)+6*Math.min(k,60)+10*cl(body.p_infects,30)+4*Math.floor(cl(body.p_damage,60000)/1000)+(body.p_won?100:0)+(body.p_mvp?60:0);
       raw=Math.min(raw,900,Math.floor(mins*80));const d0=P.day===today()?P.dayE:0,bonus=P.day!==today()?200:0,got=Math.max(0,Math.min(raw+bonus,8000-d0));
-      P.coins+=got;P.earned+=got;P.matches++;P.last=Date.now();P.day=today();P.dayE=d0+got;db.log.push([uid,got,'match']);save(db);
+      P.coins+=got;P.earned+=got;P.matches++;P.last=Date.now();P.day=today();P.dayE=d0+got;P.nyQ=Math.min(8,2+Math.floor(k/6));db.log.push([uid,got,'match']);save(db);
       const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false}),sc=cl(body.p_score,30000),inf=cl(body.p_infects,30),gx=Math.min(3000,Math.max(20,Math.round(sc*.6+k*8+inf*12)));
       R0.g++;R0.k+=k;R0.inf+=inf;R0.best=Math.max(R0.best,sc);R0.xp+=gx;
       // daily missions: this match's numbers, clamped the same way (headshot kills at most the kills). window.__MOCK_NOHS: a database before p_hs
@@ -138,7 +142,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_season_reset'){newSCard();save(db);return res(200,scardJ())}
     if(fn==='qz_season_shuffle'){const used=P.sShufDay===today()?(P.sShufs|0):0;if(used>=GCFG.shuffle_free)return pgerr('no_shuffles');if(!db.season||!db.season[uid])newSCard();
       const b=db.season[uid],idx=b.marked.map((m,i)=>m?-1:i).filter(i=>i>=0),vals=shuf(idx.map(i=>b.nums[i]));idx.forEach((i,j)=>b.nums[i]=vals[j]);P.sShufDay=today();P.sShufs=used+1;save(db);return res(200,scardJ())}
-    if(fn==='qz_season_decode'){const n=body.p_count|0,g=GCFG;if(n!==1&&n!==10)return pgerr('bad_count');const cost=n===10?g.season_cost10:g.season_cost1;if(P.coins<cost)return pgerr('not_enough_coins');
+    if(fn==='qz_season_decode'){const n=body.p_count|0,g=GCFG,tk=!!body.p_ticket;if(n!==1&&n!==10)return pgerr('bad_count');const cost=tk?0:n===10?g.season_cost10:g.season_cost1;if(P.coins<cost)return pgerr('not_enough_coins');if(tk&&(P.sTk|0)<n)return pgerr('no_tickets');if(tk)P.sTk-=n;
       if(!db.season||!db.season[uid])newSCard();const owned=new Set(db.own[uid]);let cw=0,fw=0,tw=0,card=0;const out=[];db.glog=db.glog||[];
       for(let i=0;i<n;i++){const b=db.season[uid];const left=[...Array(g.season_hi+1).keys()].filter(x=>!b.drawn.includes(x));
         let num=window.__MOCK_SEQ&&window.__MOCK_SEQ.length?window.__MOCK_SEQ.shift():left[Math.floor(Math.random()*left.length)];if(!left.includes(num))num=left[0];
@@ -151,7 +155,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
         const f=g.season_frag_min+Math.floor(Math.random()*(Math.max(g.season_frag_max-g.season_frag_min,0)+1));fw+=f;out.push({n:num,cell:c>=0?c:null,lines,frags:f,card});
         if(b.marked.every(Boolean)||b.drawn.length>g.season_hi){newSCard();card++}}
       P.coins=P.coins-cost+cw;P.frags=(P.frags|0)+fw;P.tickets=(P.tickets|0)+tw;save(db);
-      return res(200,{draws:out,card:scardJ(),coins:P.coins,fragments:P.frags,tickets:P.tickets,cost})}
+      return res(200,{draws:out,card:scardJ(),coins:P.coins,fragments:P.frags,tickets:P.tickets,season_tickets:P.sTk|0,cost})}
     if(fn==='qz_pull'){const n=body.p_count|0,free=!!body.p_free,g=GCFG,td=today();if(n!==1&&n!==10)return pgerr('bad_count');
       if(free){if(n!==1)return pgerr('bad_count');if(P.freeDay===td)return pgerr('free_used')}const cost=free?0:(n===10?g.cost10:g.cost1);if(P.coins<cost)return pgerr('not_enough_coins');
       const owned=new Set(db.own[uid]);let pity=P.pity|0,cw=0,fw=0,sa=false;const out=[];const R=window.__MOCK_RNG||Math.random;db.glog=db.glog||[];

@@ -110,6 +110,14 @@ alter table public.gacha_config add column if not exists season_owned_coins inte
 alter table public.gacha_config add column if not exists season_lines text[] not null
   default '{gun:bhole,gun:skull9,gun:salamander,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
 alter table public.profiles add column if not exists dec_tickets integer not null default 0 check (dec_tickets >= 0);  -- 근하신년 decoders to open
+-- v6.15: the 근·하·신·년 letters picked up in matches, kept on the account (a full set trades for 2 근하신년 decoders or 1 season decoder);
+-- ny_quota = letters the last finished match may still add (set by qz_claim, used by qz_ny_add); season_tickets = season decoders kept
+alter table public.profiles add column if not exists ny_g integer not null default 0 check (ny_g >= 0);
+alter table public.profiles add column if not exists ny_h integer not null default 0 check (ny_h >= 0);
+alter table public.profiles add column if not exists ny_s integer not null default 0 check (ny_s >= 0);
+alter table public.profiles add column if not exists ny_n integer not null default 0 check (ny_n >= 0);
+alter table public.profiles add column if not exists ny_quota integer not null default 0;
+alter table public.profiles add column if not exists season_tickets integer not null default 0 check (season_tickets >= 0);
 alter table public.profiles add column if not exists season_shuffle_day date;                          -- the season card's own shuffles
 alter table public.profiles add column if not exists season_shuffles    integer not null default 0;
 create table if not exists public.season_boards (
@@ -292,6 +300,7 @@ begin
   return jsonb_build_object('nickname', p.nickname, 'coins', p.coins, 'earned', p.earned_total, 'matches', p.matches,
     'day_left', 8000 - case when p.day = today then p.day_earned else 0 end,
     'fragments', p.fragments, 'pity', p.pity, 'tickets', p.dec_tickets,
+    'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'season_tickets', p.season_tickets,
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
     'rec', public.qz_rec(p),
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
@@ -377,7 +386,8 @@ begin
   gx := least(3000, greatest(20, round(sc * 0.6 + k * 8 + inf * 12)::integer));  -- the same xp the game showed before accounts
   update public.profiles set coins = coins + got, earned_total = earned_total + got, matches = matches + 1,
     last_claim = now(), day = today, day_earned = day0 + got,
-    rec_games = rec_games + 1, rec_kills = rec_kills + k, rec_infects = rec_infects + inf, rec_best = greatest(rec_best, sc), xp = xp + gx
+    rec_games = rec_games + 1, rec_kills = rec_kills + k, rec_infects = rec_infects + inf, rec_best = greatest(rec_best, sc), xp = xp + gx,
+    ny_quota = least(8, 2 + k / 6)   -- letters this match may add (qz_ny_add): a few, more with more kills
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', p_mode,
@@ -458,6 +468,57 @@ begin
   end if;
   return jsonb_build_object('kind', k, 'top', v_top, 'me', v_me, 'total', (select count(*) from public.profiles t where t.rec_games > 0));
 end $$;
+
+-- ---------- 근·하·신·년 letters (v6.15) ----------
+-- the letters a player picked up in the match just finished (after qz_claim): at most ny_quota of them, then the quota is spent
+create or replace function public.qz_ny_add(p_g integer, p_h integer, p_s integer, p_n integer) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  p public.profiles;
+  q integer;
+  g integer := least(greatest(coalesce(p_g, 0), 0), 8);
+  h integer := least(greatest(coalesce(p_h, 0), 0), 8);
+  s integer := least(greatest(coalesce(p_s, 0), 0), 8);
+  n integer := least(greatest(coalesce(p_n, 0), 0), 8);
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
+  q := greatest(p.ny_quota, 0);
+  -- over the quota: keep the letters in the order 근 하 신 년 until it runs out
+  g := least(g, q); q := q - g;
+  h := least(h, q); q := q - h;
+  s := least(s, q); q := q - s;
+  n := least(n, q); q := q - n;
+  update public.profiles set ny_g = ny_g + g, ny_h = ny_h + h, ny_s = ny_s + s, ny_n = ny_n + n, ny_quota = 0 where id = uid;
+  p := (select t from public.profiles t where t.id = uid);
+  return jsonb_build_object('added', jsonb_build_array(g, h, s, n), 'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n));
+end $$;
+-- one full set (one of each letter) for p_choice: 'ny' = 2 근하신년 decoders, 'season' = 1 season decoder (kept, opened on the season tab)
+create or replace function public.qz_ny_exchange(p_choice text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  p public.profiles;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if p_choice is null or p_choice not in ('ny', 'season') then raise exception 'bad_choice'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
+  if p.ny_g < 1 or p.ny_h < 1 or p.ny_s < 1 or p.ny_n < 1 then raise exception 'no_set'; end if;
+  update public.profiles set ny_g = ny_g - 1, ny_h = ny_h - 1, ny_s = ny_s - 1, ny_n = ny_n - 1,
+    dec_tickets = dec_tickets + case when p_choice = 'ny' then 2 else 0 end,
+    season_tickets = season_tickets + case when p_choice = 'season' then 1 else 0 end
+  where id = uid;
+  p := (select t from public.profiles t where t.id = uid);
+  insert into public.gacha_log (user_id, src, kind, tier, gun_id, amount) values (uid, 'letters', case when p_choice = 'ny' then 'tickets' else 'season_ticket' end, null, null,
+    case when p_choice = 'ny' then 2 else 1 end);
+  return jsonb_build_object('ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'tickets', p.dec_tickets, 'season_tickets', p.season_tickets);
+end $$;
+
 revoke all on function public.qz_rank_value(public.profiles, text) from public, anon, authenticated;
 revoke all on function public.qz_ranking(text) from public;
 grant execute on function public.qz_ranking(text) to anon, authenticated;
@@ -836,7 +897,8 @@ end $$;
 -- open one or ten season decoders (coins only, no free one): the same draw as qz_decode, on the season card. A finished line pays its
 -- item: gun:<id> the gun (owned already: season_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (근하신년 decoders to open later).
 -- Every season decoder also gives season_frag_min..season_frag_max fragments. A full card is replaced by a new one at once.
-create or replace function public.qz_season_decode(p_count integer) returns jsonb
+drop function if exists public.qz_season_decode(integer);   -- v6.11-6.14, before p_ticket
+create or replace function public.qz_season_decode(p_count integer, p_ticket boolean default false) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
@@ -860,11 +922,12 @@ begin
   cfg := (select g from public.gacha_config g where g.id = 1);
   if cfg.id is null then raise exception 'no_config'; end if;
   hi := greatest(cfg.season_hi, 24);
-  v_cost := case when n = 10 then cfg.season_cost10 else cfg.season_cost1 end;
+  v_cost := case when coalesce(p_ticket, false) then 0 when n = 10 then cfg.season_cost10 else cfg.season_cost1 end;
   perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
   p := (select t from public.profiles t where t.id = uid);
   if p.coins < v_cost then raise exception 'not_enough_coins'; end if;
+  if coalesce(p_ticket, false) and p.season_tickets < n then raise exception 'no_tickets'; end if;
   perform 1 from public.season_boards where user_id = uid for update;
   if not found then perform public.qz_season_new(uid); end if;
   v_nums := (select b.nums from public.season_boards b where b.user_id = uid);
@@ -930,13 +993,14 @@ begin
     end if;
   end loop;
   update public.season_boards set marked = v_marked, drawn = v_drawn, done = v_done, updated_at = now() where user_id = uid;
-  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, dec_tickets = dec_tickets + tickets_won
+  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, dec_tickets = dec_tickets + tickets_won,
+    season_tickets = season_tickets - case when coalesce(p_ticket, false) then n else 0 end
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
-  insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'season_decoder', jsonb_build_object('count', n));
+  if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'season_decoder', jsonb_build_object('count', n)); end if;
   if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'season_win'); end if;
   return jsonb_build_object('draws', v_res, 'card', public.qz_season_json(uid), 'coins', p.coins, 'fragments', p.fragments,
-    'tickets', p.dec_tickets, 'cost', v_cost);
+    'tickets', p.dec_tickets, 'season_tickets', p.season_tickets, 'cost', v_cost);
 end $$;
 -- a fresh season card (what was stamped on this one is gone)
 create or replace function public.qz_season_reset() returns jsonb
@@ -1022,7 +1086,9 @@ revoke all on function public.qz_bingo_shuffle() from public, anon;
 revoke all on function public.qz_season_new(uuid) from public, anon, authenticated;
 revoke all on function public.qz_season_json(uuid) from public, anon, authenticated;
 revoke all on function public.qz_season() from public, anon;
-revoke all on function public.qz_season_decode(integer) from public, anon;
+revoke all on function public.qz_season_decode(integer, boolean) from public, anon;
+revoke all on function public.qz_ny_add(integer, integer, integer, integer) from public, anon;
+revoke all on function public.qz_ny_exchange(text) from public, anon;
 revoke all on function public.qz_season_reset() from public, anon;
 revoke all on function public.qz_season_shuffle() from public, anon;
 revoke all on function public.qz_exchange(text) from public, anon;
@@ -1037,7 +1103,9 @@ grant execute on function public.qz_decode(integer, boolean, boolean) to authent
 grant execute on function public.qz_bingo_reset() to authenticated;
 grant execute on function public.qz_bingo_shuffle() to authenticated;
 grant execute on function public.qz_season() to authenticated;
-grant execute on function public.qz_season_decode(integer) to authenticated;
+grant execute on function public.qz_season_decode(integer, boolean) to authenticated;
+grant execute on function public.qz_ny_add(integer, integer, integer, integer) to authenticated;
+grant execute on function public.qz_ny_exchange(text) to authenticated;
 grant execute on function public.qz_season_reset() to authenticated;
 grant execute on function public.qz_season_shuffle() to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;

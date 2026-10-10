@@ -991,3 +991,45 @@ html.touch #hRange .rgK{display:none}
 #nbWin button.nbar{flex:0 0 34px;width:34px;min-width:0;max-width:34px;padding:0;margin:0}
 #nbWin button.nbx{flex:0 0 34px;width:34px;min-width:0;max-width:34px;padding:0;margin:0}
 #nbWin button.nbgo,#nbWin button.nbh2{width:auto;min-width:0;flex:none}
+
+/* ---- inventory (inv.js) ---- */
+#hNY b sub{font-size:9px;vertical-align:baseline;margin-left:1px;color:#ffd56a}
+#invWin{position:fixed;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;background:rgba(4,6,10,.6)}
+#invWin .ivw{width:min(900px,96vw);height:min(600px,94vh);display:flex;flex-direction:column;background:linear-gradient(#1c2027,#14171c);border:1px solid #3a3f48;border-top:2px solid #e2b54a;border-radius:4px;box-shadow:0 18px 60px rgba(0,0,0,.6);overflow:hidden}
+#invWin .ivh{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #2c3038}#invWin .ivh b{color:#ffd56a;font-size:19px}#invWin .ivh small{color:#7a828e;letter-spacing:.12em}#invWin .sgap{flex:1}
+#invWin button.ivx{flex:0 0 34px;width:34px;height:34px;min-width:0;padding:0;border:1px solid #4a505a;background:#22262d;color:#cfd5de;font-size:22px;border-radius:3px;cursor:pointer}
+#invWin .ivt{display:flex;gap:4px;padding:8px 12px 0;border-bottom:1px solid #2c3038}#invWin .ivt button{width:auto;min-width:0;padding:8px 14px;border:1px solid #2f343c;border-bottom:none;background:#181b20;color:#aab2bd;border-radius:3px 3px 0 0;cursor:pointer}
+#invWin .ivt button.on{background:#262a31;color:#ffd56a;border-color:#e2b54a}
+#invWin .ivb{flex:1;overflow:auto;padding:14px 16px}#invWin .ivd{margin:0 0 12px;color:#aab2bd;font-size:13px;line-height:1.5}#invWin .ivd b{color:#fff}
+#invWin .ivm{padding:8px 16px;font-size:13px;border-top:1px solid #2c3038}#invWin .ivm.ok{color:#8fe08a}#invWin .ivm.bad{color:#ff8a7a}
+#invWin .ivls{display:flex;gap:14px;justify-content:center;margin:8px 0}
+#invWin .ivl{width:96px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#15181c;border:1px solid #2f343c;border-radius:4px;opacity:.55}
+#invWin .ivl.on{opacity:1;border-color:#ffb030;background:radial-gradient(#3a2810,#15181c 75%);box-shadow:0 0 18px rgba(255,160,40,.18)}
+#invWin .ivl b{font-size:44px;color:#ffe08a;text-shadow:0 0 10px #ff8a00}#invWin .ivl span{color:#fff;font-weight:bold}
+#invWin .ivsets{text-align:center;color:#aab2bd;margin:6px 0 12px}#invWin .ivsets b{color:#ffd56a;font-size:20px;margin-left:4px}
+#invWin .ivex{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+#invWin button.ivbtn{width:auto;min-width:220px;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:4px;cursor:pointer;color:#fff;border:1px solid #555;background:#22262d;text-align:left}
+#invWin button.ivbtn.gold{border-color:#e2b54a;background:linear-gradient(#5a3e12,#2e200a)}#invWin button.ivbtn.vio{border-color:#9a6af0;background:linear-gradient(#3e2470,#1e1238)}
+#invWin button.ivbtn:disabled{opacity:.4;cursor:default}#invWin button.ivbtn span{display:flex;flex-direction:column}#invWin button.ivbtn small{color:#cfc4a8;font-size:11px}
+#invWin button.ivbtn.big{margin:10px auto;justify-content:center}
+#invWin .ivbtn svg,#invWin .ivkept svg{width:26px;height:26px}
+#invWin .ivkept{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;max-width:460px;margin:16px auto 0;color:#cfd5de;font-size:13px}
+#invWin .ivkept span{display:flex;align-items:center;gap:6px}#invWin .ivkept b{color:#ffd56a}#invWin .ivkept button{width:auto;min-width:0;padding:5px 10px;border:1px solid #3a3f48;background:#1a1d22;color:#ffd56a;border-radius:3px;cursor:pointer}
+#invWin .ivn{text-align:center;color:#8b93a0}
+#invWin .ivgs{margin-bottom:12px}#invWin .ivgk{color:#ffd56a;font-weight:bold;margin:4px 0 6px}#invWin .ivgk small{color:#7a828e;font-weight:normal}
+#invWin .ivgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
+#invWin button.ivg{position:relative;width:auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border:1px solid #2f343c;background:#181b20;color:#dfe4ea;border-radius:3px;cursor:pointer;font-size:12px}
+#invWin button.ivg:hover{border-color:#e2b54a}#invWin .ivg img{height:28px;max-width:100%;image-rendering:pixelated}#invWin .ivg .nyb{position:absolute;top:3px;left:3px}
+#invWin .ivsetl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+#invWin .ivset{background:#181b20;border:1px solid #2f343c;border-radius:4px;padding:10px}#invWin .ivsh{display:flex;align-items:center;gap:8px;margin-bottom:8px}#invWin .ivsh b{color:#ffd56a}
+#invWin .ivsh kbd{font-size:11px;color:#8b93a0;border:1px solid #3a3f48;padding:1px 4px;border-radius:2px}#invWin .ivsh button{margin-left:auto;width:auto;min-width:0;padding:3px 8px;font-size:11px;border:1px solid #3a3f48;background:#1a1d22;color:#aab2bd;border-radius:3px;cursor:pointer}
+#invWin .ivrow{display:grid;grid-template-columns:64px 34px 1fr;align-items:center;gap:6px;margin:5px 0;font-size:12px;color:#aab2bd}
+#invWin .ivrow select{width:100%;min-width:0}#invWin .ivic img{height:20px;max-width:34px;image-rendering:pixelated}
+#invWin .ivnd{grid-column:2 / 4;display:flex;flex-wrap:wrap;gap:4px}#invWin .ivnd button{width:auto;min-width:0;padding:4px 8px;font-size:11px;border:1px solid #3a3f48;background:#1a1d22;color:#8b93a0;border-radius:3px;cursor:pointer}
+#invWin .ivnd button.on{color:#1a1408;background:#e2b54a;border-color:#e2b54a}
+#invWin .ivck{margin-bottom:14px}#invWin .ivcc{display:flex;flex-wrap:wrap;gap:8px}
+#invWin button.ivc{width:110px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:1px solid #2f343c;background:#181b20;color:#dfe4ea;border-radius:4px;cursor:pointer}
+#invWin button.ivc.on{border-color:#e2b54a;background:#2a2414;box-shadow:0 0 0 1px #e2b54a inset}#invWin .ivc img{height:86px}#invWin .ivc b{font-size:12px}#invWin .ivc small{font-size:11px;color:#8b93a0}
+#invWin .ivzd{color:#aab2bd;font-size:12px;margin:8px 0 0}
+@media (max-width:760px),(max-height:480px){#invWin .ivsetl{grid-template-columns:1fr}#invWin .ivl{width:70px;height:80px}#invWin .ivl b{font-size:32px}#invWin .ivh{padding:6px 10px}#invWin .ivb{padding:10px}
+  #invWin .ivt button{padding:6px 9px;font-size:12px}#invWin .ivc{width:88px}#invWin .ivc img{height:64px}}

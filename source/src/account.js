@@ -46,7 +46,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,freeToday:!!r.free_today,rec:r.rec||null,email:this.ses&&this.ses.user&&this.ses.user.email||''};
+      frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,email:this.ses&&this.ses.user&&this.ses.user.email||''};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
@@ -78,7 +78,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
   // the season decoder bingo: the same card, numbers 0..season_hi, rewards[12] are items ('gun:bhole', 'coins:1000', 'frags:30', 'tickets:3')
   async loadSeason(){const r=await this.rpc('qz_season');this.season=r;this.emit();return r},
   // n (1 or 10) season decoders for coins. Lines: {line,kind (gun|coins|frags|tickets),gun,amount,item}; an owned gun's line pays coins (gun set)
-  async seasonDecode(n){const r=await this.rpc('qz_season_decode',{p_count:n});this.gotDraws(r);this.season=r.card;return r},
+  async seasonDecode(n,ticket){const a={p_count:n};if(ticket)a.p_ticket=true;const r=await this.rpc('qz_season_decode',a);this.gotDraws(r);if(r.season_tickets!=null&&this.me)this.me.sTickets=r.season_tickets|0;this.season=r.card;return r},
+  // 근·하·신·년 letters (v6.15): the ones picked up in the match just claimed go to the account; a full set trades for decoders
+  async nyAdd(L){const r=await this.rpc('qz_ny_add',{p_g:L[0]|0,p_h:L[1]|0,p_s:L[2]|0,p_n:L[3]|0});if(this.me&&r.ny){this.me.ny=r.ny.map(v=>v|0);this.emit()}return r},
+  async nyExchange(choice){const r=await this.rpc('qz_ny_exchange',{p_choice:choice});if(this.me){this.me.ny=r.ny.map(v=>v|0);this.me.tickets=r.tickets|0;this.me.sTickets=r.season_tickets|0;this.emit()}return r},
   async seasonReset(){this.season=await this.rpc('qz_season_reset');this.emit();return this.season},
   async seasonShuffle(){this.season=await this.rpc('qz_season_shuffle');this.emit();return this.season},
   async exchange(id){const r=await this.rpc('qz_exchange',{p_gun:id});const me=this.me;if(me){me.frags=r.fragments;me.owned.add(id);this.saveMe()}this.emit();return r},
@@ -132,7 +135,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     if(/not_done/.test(m))return T2('아직 미션을 다 못 했어요','That mission is not finished yet');
     if(/already_claimed/.test(m))return T2('이미 받은 보상이에요','Already claimed');
     if(/no_mission/.test(m))return T2('오늘의 미션이 바뀌었어요. 다시 열어 주세요','Today\'s missions changed — open them again');
-    if(/qz_decode|qz_bingo|qz_season|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/no_set/.test(m))return T2('근·하·신·년 한 세트가 아직 모자라요','You need one of each letter first');if(/no_tickets/.test(m))return T2('보유한 해독기가 없어요','No kept decoders left');
+    if(/qz_ny_|qz_decode|qz_bingo|qz_season|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');

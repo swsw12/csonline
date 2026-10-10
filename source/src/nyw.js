@@ -341,13 +341,14 @@ function updTraps(dt){for(let i=NY.traps.length-1;i>=0;i--){const T0=NY.traps[i]
     for(const h of G.actors){if(!h.alive||h.team!==TH)continue;if(Math.abs(h.c.x-T0.x)>.5||Math.abs(h.c.z-T0.z)>.5||Math.abs(h.c.y-T0.y)>.5)continue;
       h.rootT=4;h.c.vx=h.c.vz=0;h.mvx=h.mvz=h.kvx=h.kvz=0;nyTrapSnap(T0.id,h);if(NET.host)netEv('tsnap',{i:T0.id,v:h.id});break}}}
 
-// ---------- 근·하·신·년 letters: zombies you kill sometimes drop one; collect all four for a free 근하신년 weapon ----------
+// ---------- 근·하·신·년 letters: zombies you kill sometimes drop one; every letter picked up goes to the account inventory at the end
+// of the match (P.nyM counts this match's, ACC.nyAdd after the claim); a full set trades there for 2 근하신년 decoders or 1 season decoder
 const NY_CH=['근','하','신','년'];
 function letterTex(ch){if(NY.tex[ch])return NY.tex[ch];const [cv,x]=mkCanvas(64,64);x.clearRect(0,0,64,64);x.font="bold 44px 'Galmuri11',sans-serif";x.textAlign='center';x.textBaseline='middle';
   x.shadowColor='#ff8a00';x.shadowBlur=14;x.fillStyle='#ffe08a';x.fillText(ch,32,35);x.shadowBlur=0;x.lineWidth=2;x.strokeStyle='#8a4400';x.strokeText(ch,32,35);
   const t=new THREE.CanvasTexture(cv);t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;return NY.tex[ch]=t}
 function nyOnKill(t,src){if(!src||src.team!==TH||!src.isPlayer||G.st!=='fight')return;if(Math.random()>.28)return;
-  const have=src.nyL||{};const miss=NY_CH.filter(c=>!have[c]);const ch=miss.length&&Math.random()<.65?rpick(miss):rpick(NY_CH);
+  const have=src.nyM||[0,0,0,0];const miss=NY_CH.filter((c,i)=>!have[i]);const ch=miss.length&&Math.random()<.65?rpick(miss):rpick(NY_CH);
   const fl=floorBelow(t.c.x,t.c.y+.5,t.c.z,.05);const y=(fl>-50?fl:t.c.y)+.9;
   const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:letterTex(ch),transparent:true,depthWrite:false,fog:false}));spr.scale.set(.55,.55,.55);spr.position.set(t.c.x,y,t.c.z);spr.renderOrder=8;R.scene.add(spr);
   NY.letters.push({ch,x:t.c.x,y,z:t.c.z,t:25,spr,owner:src,light:DL.add(t.c.x,y,t.c.z,'#ffb030',3,1,0)})}
@@ -355,9 +356,10 @@ function updLetters(dt){for(let i=NY.letters.length-1;i>=0;i--){const L=NY.lette
     if(Math.random()<dt*6)FX.spawn({x:L.x+rr(-.2,.2),y:L.y+bob+rr(-.2,.2),z:L.z+rr(-.2,.2),vy:rr(.2,.6),life:rr(.4,.8),s0:.06,s1:.02,r:1,g:.8,b:.3,f:8,add:1});
     const P=L.owner;let got=false;if(P&&P.alive&&P.team===TH&&Math.hypot(P.c.x-L.x,P.c.z-L.z)<1.2&&Math.abs(P.c.y+1-L.y)<1.6){got=true;nyCollect(P,L.ch)}
     if(got||L.t<=0){R.scene.remove(L.spr);L.spr.material.dispose();if(L.light)L.light.dead=true;NY.letters.splice(i,1)}}}
-function nyCollect(P,ch){P.nyL=P.nyL||{};const fresh=!P.nyL[ch];P.nyL[ch]=1;AU.play('nyletter',{vol:.7});
-  if(NY_CH.every(c=>P.nyL[c])){P.nyL={};P.nyFree=(P.nyFree||0)+1;HUD.announce(T('nyComplete'),'h',3);AU.play('stingH',{vol:.6})}
-  else HUD.note(fresh?T('nyGot',ch):T('nyDup',ch),1.6)}
+function nyCollect(P,ch){const M=P.nyM||(P.nyM=[0,0,0,0]),i=NY_CH.indexOf(ch);if(i<0)return;M[i]++;AU.play('nyletter',{vol:.7});
+  const L=LI(),saved=typeof ACC!=='undefined'&&ACC.signed&&ACC.signed();
+  if(M.every(v=>v>0)&&M.reduce((x,y)=>x+y,0)===4){HUD.announce(L?'근·하·신·년 — a full set! Trade it in your inventory':'근·하·신·년 한 세트! 인벤토리에서 해독기로 교환','h',3);AU.play('stingH',{vol:.6})}
+  else HUD.note(`'${ch}' ${L?'picked up':'획득'} ×${M[i]}${saved?(L?' — goes to your inventory':' — 인벤토리에 저장돼요'):(L?' — sign in to keep it':' — 로그인하면 인벤토리에 저장')}`,1.8)}
 
 // ---------- per frame ----------
 function nyUpdate(dt){for(let i=NY.pend.length-1;i>=0;i--){const p=NY.pend[i];p.t-=dt;if(p.t<=0){NY.pend.splice(i,1);if(p.g)NET.ghost++;try{p.fn()}catch(e){console.error(e)}finally{if(p.g)NET.ghost--}}}

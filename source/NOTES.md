@@ -491,3 +491,9 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   NEW button on the notice panel (UI.act 'nbopen'); the first-visit sign-in prompt waits while the banner is open.
 - Shop prices: killknife 3000, blaze8 6000, winchester 4500 (prices.py, SHOP_PRICE, mock.js).
 - v6.14.x: Kill Knife blood is dyed into the steel (kkS1..kkS3 stained-steel materials, fading toward the handle). The gun atlas grew to 8 x 11 slots (GA_SLOTS); skull9/salamander painters check GA_SLOTS.
+
+## v6.15 — New-Year letters in the inventory, the inventory window
+- Letters picked up in a match count into G.player.nyM; after qz_claim the client sends them with qz_ny_add (server clamps each to 0..8 and to profiles.ny_quota, which qz_claim sets to least(8, 2 + kills/6), then zeroes the quota). The in-match free weapon pick (nyFree) is gone.
+- profiles.ny_g/ny_h/ny_s/ny_n hold the letters; qz_ny_exchange('ny'|'season') takes one of each for dec_tickets +2 or season_tickets +1 (gacha_log src 'letters').
+- qz_season_decode(p_count, p_ticket default false): with a ticket it costs no coins and uses season_tickets.
+- inv.js: INV window (z 55), tabs ny / guns / sets (CFG.sets, slots 1-3, grenades, armor) / char (CFG.zclass, CFG.skin). The lobby bag button shows a dot when a set can be traded. The NEW banner waits while #invWin is open, and opening the inventory closes the banner.

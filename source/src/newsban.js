@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'▣',tag:['신규 기능','New'],t:['인벤토리 · 근하신년 글자','Inventory · New-Year letters'],
+    d:['매치에서 주운 근 · 하 · 신 · 년 글자가 인벤토리에 저장돼요. 한 세트를 모으면 근하신년 해독기 2개 또는 시즌 해독기 1개로 교환. 보유 무기, 장비 프리셋 3세트, 좀비 · 생존자 캐릭터도 여기서 미리 설정.','Letters you pick up in a match are kept in your inventory; a full set trades for 2 New-Year decoders or 1 season decoder. Owned weapons, three loadout presets and your zombie / survivor character are set here too.']},
   {kind:'weapon',ref:'blaze8',tag:['상점 6,000 코인','Shop · 6,000 coins'],t:['블레이즈-8','Blaze-8'],
     d:['골드 각인 반자동 샷건. 8발을 한 발씩 장전하고 장전 도중 쏘면 바로 끊고 발사. 3발 쏠 때마다 특수칸에 특수탄이 1발씩 (최대 8발) 쌓이고, 우클릭하면 부채꼴로 넓게 퍼지는 경직 · 넉백탄 발사.','A gold-engraved semi-auto shotgun: 8 shells loaded one by one, firing mid-reload shoots at once. Every 3 shells one special shell goes into its own slot (up to 8); right click fires it as a wide fan that staggers and blows zombies back.']},
   {kind:'weapon',ref:'winchester',tag:['상점 4,500 코인','Shop · 4,500 coins'],t:['윈체스터 M1887','Winchester M1887'],
@@ -38,7 +40,7 @@ const NBAN={i:0,timer:null,shown:false,
   close(){const o=$('nbWin');if(o)o.remove();clearInterval(this.timer);this.timer=null},
   // first lobby of this page load: wait for the lobby and for a sign-in window already open to close
   boot(){if(this.shown||this.hidden()||!this.list().length)return;this.shown=true;let n=0;
-    const tryOpen=()=>{if(G.st!=='menu'||UI.open!=='menu'||$('accWin')||$('shopWin')||$('rkWin')){if(++n<120)setTimeout(tryOpen,800);return}this.open()};setTimeout(tryOpen,1200)}};
+    const tryOpen=()=>{if(G.st!=='menu'||UI.open!=='menu'||$('accWin')||$('shopWin')||$('rkWin')||$('invWin')){if(++n<120)setTimeout(tryOpen,800);return}this.open()};setTimeout(tryOpen,1200)}};
 (function(){const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{NBAN.boot()}catch(e){console.error(e)}return r};
   const act0=UI.act;UI.act=function(a,v,el){if(a==='nbopen'){NBAN.open();return}return act0.call(this,a,v,el)};
   addEventListener('keydown',e=>{if(e.key==='Escape'&&$('nbWin'))NBAN.close()});

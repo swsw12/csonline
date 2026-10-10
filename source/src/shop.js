@@ -146,7 +146,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
   // ---- the decoder bingos: 'gacha' = the 근하신년 card (guns), 'season' = the season card (Event Horizon, Skull-9 and items) ----
   // what a page needs from its card: the account's card, its numbers and prices, the server calls
   bk(k){const g=ACC.gc();return k==='season'?{k,s:1,card:ACC.season,hi:g.season_hi,c1:g.season_cost1,c10:g.season_cost10,f0:g.season_frag_min,f1:g.season_frag_max,
-      load:()=>ACC.loadSeason(),dec:n=>ACC.seasonDecode(n),reset:()=>ACC.seasonReset(),shuf:()=>ACC.seasonShuffle()}
+      load:()=>ACC.loadSeason(),dec:(n,m)=>ACC.seasonDecode(n,m==='ticket'),reset:()=>ACC.seasonReset(),shuf:()=>ACC.seasonShuffle()}
     :{k,s:0,card:ACC.bingo,hi:g.bingo_hi,c1:g.dec_cost1,c10:g.dec_cost10,f0:g.dec_frag_min,f1:g.dec_frag_max,
       load:()=>ACC.loadBingo(),dec:(n,m)=>ACC.decode(n,m==='free',m==='ticket'),reset:()=>ACC.bingoReset(),shuf:()=>ACC.bingoShuffle()}},
   // the animation playing on this card, if any
@@ -178,13 +178,13 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
   bingoPage(kind){const L=LI(),g=ACC.gc(),K=this.bk(kind),S=K.s,signed=ACC.signed(),me=ACC.me,coins=signed?me.coins:0,A=this.banim(kind);
     // load the card once; a failed load (offline, or a database without this card yet) waits until the page is opened again
     if(signed&&!K.card&&!this.bLoad[kind]){this.bLoad[kind]=1;K.load().then(()=>{this.bLoad[kind]=0},e=>{this.msg=ACC.errText(e);this.msgOk=false}).finally(()=>this.render())}
-    const B=this.bview(kind),hi=K.hi,lines=B.done.filter(Boolean).length,free=!S&&signed&&me.freeToday&&g.daily_free,tk=!S&&signed?me.tickets|0:0;
+    const B=this.bview(kind),hi=K.hi,lines=B.done.filter(Boolean).length,free=!S&&signed&&me.freeToday&&g.daily_free,tk=signed?(S?me.sTickets|0:me.tickets|0):0;
     const can1=signed&&coins>=K.c1,can10=signed&&coins>=K.c10,dis=this.busy||!!this.anim,sa=S?'sdec':'dec';
     const btns=!ACC.on?`<div class="sbn">${L?'Decoders open once accounts are set up.':'계정 서버가 연결되면 해독기를 열 수 있어요.'}</div>`
       :!signed?`<button class="gbtn big" data-sa="login">${L?'Sign in to open decoders':'로그인하고 해독기 열기'}</button>`
       :A?`<button class="gbtn big skip" data-sa="bskip">${L?'Skip':'건너뛰기'}</button>`
       :`${free?`<button class="gbtn free" data-sa="dec" data-v="free"${dis?' disabled':''}>${L?'Today\'s free decoder':'오늘의 무료 해독기'}</button>`:''}
-        ${tk>0?`<div class="gtk"><span title="${L?'Won on the season decoder card':'시즌 해독기 빙고에서 받은 해독기'}">${decoderSvg('tki')}<i><u>${L?'Kept':'보유 해독기'} </u><b>${fmtC(tk)}</b>${L?'':'개'}</i></span><button class="gbtn tk" data-sa="dec" data-v="t1"${dis?' disabled':''}>${L?'Open 1':'1개 열기'}</button>${tk>=10?`<button class="gbtn tk" data-sa="dec" data-v="t10"${dis?' disabled':''}>${L?'Open 10':'10개 열기'}</button>`:''}</div>`:''}
+        ${tk>0?`<div class="gtk"><span title="${S?(L?'From 근·하·신·년 letter sets':'근·하·신·년 글자 세트로 받은 시즌 해독기'):(L?'Won on the season decoder card':'시즌 해독기 빙고에서 받은 해독기')}">${S?seasonSvg('tki'):decoderSvg('tki')}<i><u>${L?'Kept':'보유 해독기'} </u><b>${fmtC(tk)}</b>${L?'':'개'}</i></span><button class="gbtn tk" data-sa="${sa}" data-v="t1"${dis?' disabled':''}>${L?'Open 1':'1개 열기'}</button>${tk>=10?`<button class="gbtn tk" data-sa="${sa}" data-v="t10"${dis?' disabled':''}>${L?'Open 10':'10개 열기'}</button>`:''}</div>`:''}
         <div class="gbr"><button class="gbtn" data-sa="${sa}" data-v="1"${can1&&!dis?'':' disabled'}><b>${L?'1 decoder':'해독기 1개'}</b><span>${COIN}${fmtC(K.c1)}</span></button>
         <button class="gbtn ten" data-sa="${sa}" data-v="10"${can10&&!dis?'':' disabled'}><b>${L?'10 decoders':'해독기 10개'}</b><span>${COIN}${fmtC(K.c10)}</span></button></div>`;
     const tools=signed&&!A?(this.confirm==='breset'?`<div class="bq">${L?'A new card? What is stamped now is lost.':'새 판으로 바꿀까요? 지금 찍힌 칸은 사라져요.'}<div><button data-sa="bresetok">${L?'New card':'바꾸기'}</button><button data-sa="buyno">${L?'Cancel':'취소'}</button></div></div>`
@@ -237,7 +237,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     if(a==='exok'){this.exchange(v);return}
     // 근하신년 decoders: 1 | 10 | free | t1 | t10 (kept ones instead of coins); season decoders: 1 | 10
     if(a==='dec'){const t=v[0]==='t';this.decode(t?+v.slice(1):v==='free'?1:+v,t?'ticket':v==='free'?'free':'coins','gacha');return}
-    if(a==='sdec'){this.decode(+v,'coins','season');return}
+    if(a==='sdec'){const t=v[0]==='t';this.decode(t?+v.slice(1):+v,t?'ticket':'coins','season');return}
     if(a==='bskip'){this.animSkip();return}
     if(a==='breset'){this.confirm='breset';this.msg='';this.render();return}
     if(a==='bresetok'){this.confirm=null;const K=this.bk(this.page);this.tool(()=>K.reset(),L?'A new card':'새 판을 깔았어요');return}
@@ -470,7 +470,8 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
   if(G.coinDone){if(G.coinBox){box.innerHTML=G.coinBox;put();if(G.misBox)misResPut(box,G.misBox)}return}G.coinDone=true;// shown again, never paid twice
   if(!ACC.signed())box.innerHTML=`${COIN}<span>${L?'Sign in to earn coins from every match and buy guns for good.':'로그인하면 매치마다 코인을 받고 총을 영구 구매할 수 있어요.'}</span><button data-act="acc">${L?'Sign in':'로그인'}</button>`;
   else{box.innerHTML=`${COIN}<span>${L?'Counting your coins…':'코인 정산 중…'}</span>`;
-    ACC.claim(shopMatchStats()).then(r=>{G.coinBox=box.innerHTML=`${COIN}<span><b>+${fmtC(r.got)}</b> ${L?'coins':'코인'}${r.bonus?` <small>(${L?'first match today':'오늘 첫 판'} +${fmtC(r.bonus)})</small>`:''}${r.day_left<=0?` <small>${L?'— daily limit reached':'— 오늘 받을 수 있는 만큼 다 받았어요'}</small>`:''}${r.xp_got?` <small>· +${fmtC(r.xp_got)} XP</small>`:''}</span><span class="crh">${L?'You have':'보유'} ${COIN}${fmtC(r.coins)}</span><button data-act="shop">${L?'Shop':'상점'}</button>`;AU.play('buy',{vol:.6});
+    ACC.claim(shopMatchStats()).then(r=>{const M=P.nyM;if(M&&M.some(v=>v>0))ACC.nyAdd(M).then(x=>{const ad=x.added||[];if(ad.some(v=>v>0))shopToast((L?'Letters kept: ':'인벤토리에 저장: ')+NY_CH.map((c,i)=>ad[i]?c+(ad[i]>1?'×'+ad[i]:''):'').join(' '))}).catch(e=>console.warn('letters',e));P.nyM=[0,0,0,0];
+      G.coinBox=box.innerHTML=`${COIN}<span><b>+${fmtC(r.got)}</b> ${L?'coins':'코인'}${r.bonus?` <small>(${L?'first match today':'오늘 첫 판'} +${fmtC(r.bonus)})</small>`:''}${r.day_left<=0?` <small>${L?'— daily limit reached':'— 오늘 받을 수 있는 만큼 다 받았어요'}</small>`:''}${r.xp_got?` <small>· +${fmtC(r.xp_got)} XP</small>`:''}</span><span class="crh">${L?'You have':'보유'} ${COIN}${fmtC(r.coins)}</span><button data-act="shop">${L?'Shop':'상점'}</button>`;AU.play('buy',{vol:.6});
       const mh=misResHtml(r.missions);if(mh){G.misBox=mh;misResPut(box,mh)}})
       .catch(e=>{G.coinBox=box.innerHTML=`${COIN}<span>${esc(ACC.errText(e))}</span>`})}
   put()}
