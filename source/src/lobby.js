@@ -9,7 +9,7 @@ const THUMB={};
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
 ['v6.32.1','2026-10-12',[
- ['UP','크림슨 피스메이커 — 연사속도 상향(분당 70 → 150발)에 우클릭 「해머 연타」 추가: 손바닥으로 해머를 쓸어 남은 탄을 분당 700발 속도로 쏟아내요(발당 데미지 70% · 탄퍼짐 크게 · 끝나면 0.5초 쉼). 총 디자인도 부품을 두 배 이상 늘려 다시 만들었어요(실린더 총알구멍 · 홈 · 장전문 · 해머 · 가늠쇠 · 개머리 메달리온 등).','Crimson Peacemaker — faster fire (70 → 150 rpm) plus RMB \'fan the hammer\': sweep the hammer and empty the cylinder at 700 rpm (70 % damage per shot, much looser, 0.5 s pause after). The model was rebuilt with over twice the parts (chamber mouths, flutes, loading gate, hammer, sights, grip medallions…).'],
+ ['UP','크림슨 피스메이커 — 연사속도 상향(분당 70 → 150발)에 우클릭 「해머 연타」 추가: 손바닥으로 해머를 쓸어 남은 탄을 분당 700발 속도로 쏟아내요(발당 데미지 70% · 탄퍼짐 크게 · 끝나면 0.5초 쉼). 총 디자인도 두툼하고 묵직하게 다시 만들었어요 — 굵은 총열과 큰 실린더(총알구멍 6개 · 빨간 띠 · 멈춤 홈), 두꺼운 프레임에 장전문 · 나사 · 각인판, 큰 해머, 계단식으로 뒤로 휘는 손잡이에 빨간 패널과 메달리온.','Crimson Peacemaker — faster fire (70 → 150 rpm) plus RMB \'fan the hammer\': sweep the hammer and empty the cylinder at 700 rpm (70 % damage per shot, much looser, 0.5 s pause after). The model was rebuilt chunky and heavy: a fat barrel and big cylinder (chamber mouths, red bands, stop notches), a thick frame with loading gate, screws and engraved plates, a big hammer and a stepped grip with red panels and medallions.'],
 ]],
 ['v6.32','2026-10-12',[
  ['NEW','크림슨 피스메이커 (상점 12,000코인, 권총) — 빨강과 검정으로 칠한 싱글 액션 리볼버. 6발, 몸통 250 · 머리 600, 맞은 좀비가 멀리 날아갈 만큼 큰 넉백과 그만큼 큰 반동. 연사가 매우 느려서 한 발 한 발이 중요해요.','Crimson Peacemaker (shop, 12,000 coins, pistol) — a red-and-black single-action revolver. 6 rounds, body 250 / head 600, a shove that throws zombies back and a matching kick. Very slow to fire: every shot counts.'],
