@@ -66,41 +66,42 @@ VM_POS.bholemini={p:[.12,-.135,-.37],r:[0,.07,.02]};
 BUY_MENU.find(c=>c.k==='pistol').items.push('bholemini');
 // Crimson Peacemaker: a single-action-army revolver in red and black with a brutal kick. 6 rounds, body 250 / head 600, a huge shove.
 Object.assign(GUNS,{
-  crimson:{piv:{mag:[0,.05,-.04],aux:[0,.072,.014]},parts:(()=>{const F='dred',A6=[0,1,2,3,4,5].map(k=>k*Math.PI/3);
+  crimson:{piv:{mag:[0,.054,-.044],aux:[0,.08,.016]},parts:(()=>{const F='dred',A6=[0,1,2,3,4,5].map(k=>k*Math.PI/3);
     // the grip: a stepped stack of thick blocks curving back and flaring toward the butt (no rotation, so the steps always meet)
-    const G=[];for(let k=0;k<8;k++){const y=-.012-.013*k,z=.014+.0052*k,d=.04+.0018*k;G.push(Pt(0,y,z,.036,.0136,d,'blk',{r:.003}));
-      for(const sx of [1,-1]){G.push(Pt(sx*.0185,y,z,.003,.0136,d-.01,F,{r:.001}));if(k>0&&k<7)G.push(Pt(sx*.0202,y,z,.001,.0136,d-.016,'red'))}}
+    const G=[];for(let k=0;k<8;k++){const y=-.016-.014*k,z=.018+.0056*k,d=.05+.002*k;G.push(Pt(0,y,z,.046,.0146,d,'blk',{r:.003}));
+      for(const sx of [1,-1]){G.push(Pt(sx*.0235,y,z,.003,.0146,d-.012,F,{r:.001}));if(k>0&&k<7)G.push(Pt(sx*.0252,y,z,.001,.0146,d-.02,'red'))}}
     return [
-      // ---- frame (dark red, thick): top strap with a sight groove, standing breech, front wall, bottom rail, lower frame, the back that the grip hangs from
-      Pt(0,.0795,-.04,.034,.011,.084,F,{r:.003}),Pt(0,.0855,-.04,.005,.002,.078,'blk'),
-      Pt(0,.05,-.002,.046,.06,.022,F,{r:.005}),Pt(0,.05,-.078,.046,.06,.022,F,{r:.005}),Pt(0,.0225,-.04,.038,.013,.084,F,{r:.003}),
-      Pt(0,.008,-.024,.04,.034,.058,F,{r:.004}),Pt(0,.024,.012,.04,.066,.022,F,{r:.004}),Pt(0,.06,.023,.03,.02,.01,F),
+      // ---- frame (dark red, massive): a tall top strap with a black sight channel and three vent cuts, standing breech, front wall, bottom rail, lower frame, the back the grip hangs from
+      Pt(0,.0915,-.044,.046,.016,.096,F,{r:.004}),Pt(0,.1,-.044,.006,.002,.09,'blk'),...[-.064,-.044,-.024].map(z=>Pt(0,.0945,z,.03,.012,.006,'blk2')),
+      Pt(0,.054,-.002,.06,.076,.026,F,{r:.006}),Pt(0,.054,-.088,.06,.076,.026,F,{r:.006}),Pt(0,.02,-.044,.05,.016,.096,F,{r:.003}),
+      Pt(0,.004,-.026,.052,.04,.066,F,{r:.005}),Pt(0,.03,.014,.052,.08,.026,F,{r:.005}),Pt(0,.072,.027,.038,.026,.012,F),
       // engraved side plates, the loading gate (right), frame screws, the hammer screw
-      Pt(.0205,.006,-.024,.002,.024,.05,'engraved'),Pt(-.0205,.006,-.024,.002,.024,.05,'engraved'),
-      Pt(.0235,.054,-.006,.004,.024,.016,'blk2',{r:.001}),Pt(.0255,.054,-.006,.001,.012,.005,'chrome'),
-      ...[[.0235,.044,-.08],[-.0235,.044,-.08],[.0235,.016,-.012],[-.0235,.016,-.012],[.0205,.062,.012],[-.0205,.062,.012],[.0235,.016,-.066],[-.0235,.016,-.066]].map(([x,y,z])=>Pt(x,y,z,.002,.005,.005,'chrome',{r:.001})),
-      // ---- cylinder (tag mag, turns on a reload): fat, black and smooth, two red bands, six stop notches, six chamber mouths up front, the ratchet behind
-      ...TAG('mag',[Pt(0,.05,-.04,.052,.052,.054,'blk',{r:.025}),Pt(0,.05,-.03,.0528,.0528,.005,'red',{r:.0264}),Pt(0,.05,-.051,.0528,.0528,.003,'red',{r:.0264}),
-        ...A6.map(t=>Pt(Math.sin(t)*.0258,.05+Math.cos(t)*.0258,-.041,.005,.002,.008,'blk2',{rz:-t})),
-        Pt(0,.05,-.0675,.047,.047,.002,'blk2',{r:.0225}),...A6.map(t=>Pt(Math.sin(t)*.016,.05+Math.cos(t)*.016,-.0688,.0115,.0115,.002,'muzzle',{r:.0055})),
-        Pt(0,.05,-.0125,.03,.03,.002,'steel',{r:.015}),...A6.map(t=>Pt(Math.sin(t)*.0105,.05+Math.cos(t)*.0105,-.0115,.005,.005,.002,'blk2',{rz:-t}))]),
+      Pt(.0265,.004,-.026,.002,.028,.056,'engraved'),Pt(-.0265,.004,-.026,.002,.028,.056,'engraved'),
+      Pt(.0305,.06,-.006,.005,.03,.02,'blk2',{r:.001}),Pt(.0335,.06,-.006,.001,.014,.006,'chrome'),
+      ...[[.0305,.048,-.09],[-.0305,.048,-.09],[.0305,.014,-.012],[-.0305,.014,-.012],[.0265,.068,.014],[-.0265,.068,.014],[.0305,.014,-.074],[-.0305,.014,-.074]].map(([x,y,z])=>Pt(x,y,z,.002,.006,.006,'chrome',{r:.001})),
+      // ---- cylinder (tag mag, turns on a reload): huge, black and smooth, two red bands, six stop notches, six chamber mouths up front, the ratchet behind
+      ...TAG('mag',[Pt(0,.054,-.044,.064,.064,.062,'blk',{r:.031}),Pt(0,.054,-.032,.065,.065,.006,'red',{r:.0325}),Pt(0,.054,-.057,.065,.065,.004,'red',{r:.0325}),
+        ...A6.map(t=>Pt(Math.sin(t)*.0318,.054+Math.cos(t)*.0318,-.045,.006,.002,.01,'blk2',{rz:-t})),
+        Pt(0,.054,-.0755,.058,.058,.002,'blk2',{r:.028}),...A6.map(t=>Pt(Math.sin(t)*.0195,.054+Math.cos(t)*.0195,-.0768,.014,.014,.002,'muzzle',{r:.0065})),
+        Pt(0,.054,-.0125,.036,.036,.002,'steel',{r:.018}),...A6.map(t=>Pt(Math.sin(t)*.0125,.054+Math.cos(t)*.0125,-.0115,.006,.006,.002,'blk2',{rz:-t}))]),
       // the base pin through the front of the frame and its screw
-      Pt(0,.05,-.095,.009,.009,.034,'chrome',{r:.0045}),Pt(0,.05,-.113,.012,.012,.005,'chrome',{r:.006}),Pt(.024,.038,-.08,.002,.005,.005,'chrome',{r:.001}),
-      // ---- barrel (black, heavy and round): a red collar at the frame, a red rib on top, a thick crowned steel muzzle, the red blade front sight on a black base
-      Pt(0,.066,-.185,.031,.031,.19,'blk',{r:.0155}),Pt(0,.066,-.094,.035,.035,.014,'red',{r:.0175}),Pt(0,.0825,-.18,.008,.003,.16,'red'),
-      Pt(0,.066,-.272,.034,.034,.012,'steel',{r:.017}),Pt(0,.066,-.279,.016,.016,.002,'muzzle',{r:.008}),
-      Pt(0,.084,-.258,.012,.006,.02,'blk'),Pt(0,.091,-.258,.005,.013,.014,'red',{rx:.15}),
+      Pt(0,.054,-.108,.011,.011,.04,'chrome',{r:.0055}),Pt(0,.054,-.129,.015,.015,.006,'chrome',{r:.0075}),Pt(.031,.04,-.09,.002,.006,.006,'chrome',{r:.001}),
+      // ---- barrel: a massive black bull barrel inside a dark red shroud, a red rib, a big steel compensator with three ports each side, the red blade front sight on a black ramp
+      Pt(0,.073,-.2,.04,.04,.2,'blk',{r:.02}),Pt(0,.073,-.105,.046,.046,.018,'red',{r:.023}),Pt(0,.062,-.18,.05,.03,.15,F,{r:.008}),Pt(0,.0945,-.2,.01,.004,.17,'red'),
+      ...[-.14,-.17,-.2,-.23].map(z=>Pt(0,.045,z,.054,.004,.016,'blk2')),
+      Pt(0,.073,-.296,.046,.046,.03,'steel',{r:.022}),Pt(0,.073,-.312,.02,.02,.003,'muzzle',{r:.01}),...[1,-1].flatMap(sx=>[-.29,-.298,-.306].map(z=>Pt(sx*.0235,.082,z,.002,.012,.004,'muzzle'))),
+      Pt(0,.097,-.27,.016,.008,.03,'blk',{rx:-.2}),Pt(0,.106,-.27,.006,.016,.018,'red',{rx:.15}),
       // ejector rod housing along the right of the barrel, the rod and its head
-      Pt(.0155,.048,-.158,.016,.017,.13,'blk',{r:.007}),Pt(.0155,.048,-.23,.006,.006,.022,'chrome',{r:.003}),Pt(.0155,.048,-.245,.014,.014,.01,'chrome',{r:.006}),
-      Pt(.025,.048,-.11,.002,.005,.005,'chrome',{r:.001}),
+      Pt(.021,.048,-.17,.02,.02,.14,'blk',{r:.009}),Pt(.021,.048,-.25,.008,.008,.026,'chrome',{r:.004}),Pt(.021,.048,-.267,.018,.018,.012,'chrome',{r:.008}),
+      Pt(.033,.048,-.12,.002,.006,.006,'chrome',{r:.001}),
       // ---- hammer (tag aux): a big black body, a wide steel spur with a red knurled top
-      ...TAG('aux',[Pt(0,.072,.014,.016,.028,.02,'blk',{r:.003}),Pt(0,.093,.026,.016,.012,.03,'chrome',{rx:-.55,r:.004}),Pt(0,.0995,.028,.013,.002,.02,'red',{rx:-.55})]),
+      ...TAG('aux',[Pt(0,.08,.016,.02,.034,.024,'blk',{r:.004}),Pt(0,.106,.03,.02,.014,.036,'chrome',{rx:-.55,r:.005}),Pt(0,.1135,.032,.016,.002,.024,'red',{rx:-.55})]),
       // ---- trigger guard (thick) and trigger
-      Pt(0,-.012,-.034,.009,.006,.056,'blk',{r:.003}),Pt(0,-.001,-.061,.009,.024,.007,'blk',{r:.003}),Pt(0,-.004,-.007,.009,.018,.007,'blk',{r:.003}),Pt(0,.008,-.03,.004,.022,.006,'chrome',{rx:.35}),
+      Pt(0,-.02,-.038,.012,.008,.066,'blk',{r:.004}),Pt(0,-.007,-.07,.012,.03,.009,'blk',{r:.004}),Pt(0,-.01,-.006,.012,.024,.009,'blk',{r:.004}),Pt(0,.004,-.034,.005,.026,.007,'chrome',{rx:.35}),
       // ---- grip (stacked), steel medallions, a black butt cap, a lanyard ring
-      ...G,...[1,-1].map(sx=>Pt(sx*.0205,-.038,.024,.002,.009,.009,'chrome',{r:.002})),
-      Pt(0,-.1155,.051,.04,.006,.058,'blk2',{r:.002}),Pt(0,-.121,.054,.012,.005,.012,'chrome',{r:.002})]})(),
-    grip:[0,-.03,.02],sup:[-.012,-.05,.025],muzzle:[0,.066,-.28],mag:[0,.05,-.04],eject:[.02,.05,-.03]}});
+      ...G,...[1,-1].map(sx=>Pt(sx*.0255,-.044,.03,.002,.011,.011,'chrome',{r:.002})),
+      Pt(0,-.1295,.058,.05,.008,.072,'blk2',{r:.002}),Pt(0,-.136,.062,.014,.006,.014,'chrome',{r:.002})]})(),
+    grip:[0,-.034,.024],sup:[-.012,-.055,.03],muzzle:[0,.073,-.313],mag:[0,.054,-.044],eject:[.02,.05,-.03]}});
 WPN.crimson={slot:2,kind:'pistol',n:['크림슨 피스메이커','Crimson Peacemaker'],cost:12000,mag:6,res:24,dmg:250,hs:2.4,rpm:150,semi:1,alt:'fan',fanRpm:700,fanDm:.7,burstCd:.5,spread:[.012,.05,.11],rec:[.16,.04],kickX:[1.1,3.8,.9],kb:30,stag:1,reload:3.2,draw:.8,speed:.95,snd:'r6',model:'crimson',hold:'pistol'};
 VM_POS.crimson={p:[.12,-.14,-.37],r:[0,.07,.02]};
 BUY_MENU.find(c=>c.k==='pistol').items.push('crimson');
