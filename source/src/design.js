@@ -61,6 +61,15 @@ const SOUND_DESIGN={
   pd50:    {vol:1, rate:1, file:''},  // P90 발사음
   sterling:{vol:1, rate:1, file:''},  // 스털링 바요넷 발사음
   balrog5: {vol:1, rate:1, file:''},  // 발록-5 발사음 — M4A1보다 낮고 묵직한 5.56mm
+  bx11:    {vol:1, rate:1, file:''},  // 발록-XI 발사음 — XM1014보다 거친 12게이지
+  bxfire:  {vol:1, rate:1, file:''},  // 발록-XI 우클릭 — 화염구 5발이 '화르륵' 터져 나가는 소리
+  bxchg:   {vol:1, rate:1, file:''},  // 발록-XI 특수탄 충전 '띠링'
+  plfire:  {vol:1, rate:1, file:''},  // 플라즈마 건 발사음 — '퓨웅' 하는 에너지탄
+  plhit:   {vol:1, rate:1, file:''},  // 플라즈마 구체가 터지는 '팍'
+  plchg:   {vol:1, rate:1, file:''},  // 플라즈마 셀을 끼운 뒤 차오르는 '위잉'
+  tbfire:  {vol:1, rate:1, file:''},  // 썬더볼트 발사음 — 광선이 '쥬웅' 뻗어 나가는 소리
+  tbchg:   {vol:1, rate:1, file:''},  // 썬더볼트 재충전 완료 '위이잉'
+  tbsw:    {vol:1, rate:1, file:''},  // 썬더볼트 전원 스위치 '딸깍'
   dmp7:    {vol:1, rate:1, file:''},  // 듀얼 MP7A1 (보급상자 전용) 발사음 — 날카롭고 높은 4.6mm, 양손 번갈아 쏨
   // ── 총소리 · 소총 / 저격총 / 기관총 ──────────────────────────────────────────────────────────
   ar7:     {vol:1, rate:1, file:''},  // M4A1 발사음
@@ -754,6 +763,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',boss=k===
 //    harpoon  작살을 포신에 밀어 넣기                            tank     공기탱크 밸브를 비틀어 압력 충전
 //    orb      우리 안 구체가 돌며 빛이 차오름                    dragon   탄을 밀어 넣고 포구에 불씨
 //    cock     엄지로 해머 젖히기                                barrel   다연장 총열을 손으로 돌려 맞추기
+//    rail     전원 스위치를 올리면 레일 코일이 차례로 켜짐 (썬더볼트, csoguns.js)
 const GUN_DESIGN={
   // ── 권총 ─────────────────────────────────────────────────────────────────────────────────────
   p9:      {mag:12, ch:1, act:'slide', x:.45, d:.045, roll:.35},             // USP .45 ACP — 실제 12발. 슬라이드 뒤를 잡아 당겼다 놓음 '철컥'
@@ -799,6 +809,9 @@ const GUN_DESIGN={
   airb:    {         ch:0, act:'tank', x:.7},                                // 에어 버스터 — 공기탱크 밸브를 비틀어 치익
   salamander:{       ch:0, act:'salig', x:.75},
   blaze8:  {mag:8,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 블레이즈-8 — 튜브 8발. 오른쪽 장전손잡이를 당겼다 놓음
+  balrog11:{mag:7,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 발록-XI (CSO) — 튜브 7발 자동 샷건. 오른쪽 장전손잡이 (재장전은 한 발씩, 아주 빠르게)
+  plasma:  {mag:45, ch:0, act:'charge', x:.6,  side:'r', d:.04, roll:.3},    // 플라즈마 건 (CSO) — 셀 45발. 오른쪽 레버를 당겨 셀을 깨움 (재장전은 셀을 뒤로 뽑아 갈아 끼움)
+  thunder: {mag:30, ch:0, act:'rail', x:.9},                                 // 썬더볼트 (CSO) — 전용탄 30발, 재장전 없음. 전원 스위치를 올리면 코일이 차례로 켜짐
   balrog5: {mag:35, ch:1, act:'ar', x:.75, d:.06},                           // 발록-5 — 35발. 뒤쪽 T자 손잡이 당겼다 놓고 전진기 탁 (M4A1과 같은 동작)
   winchester:{mag:6, ch:0, act:'pump', x:.5},                               // 윈체스터 M1887 — 레버 액션 6발. 레버를 내렸다 올림                              // 샐러맨더 화염방사기 — 가스통 밸브를 돌리고 점화, 파일럿 불꽃이 화륵
   bdc:     {         ch:0, act:'dragon', x:.85},                             // 흑룡포 — 탄을 밀어 넣고 포구에 불씨 화륵

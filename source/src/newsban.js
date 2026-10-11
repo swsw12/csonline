@@ -5,8 +5,14 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'thunder',tag:['상점 9,500 코인','Shop · 9,500 coins'],t:['썬더볼트','Thunderbolt'],
+    d:['벽도 좀비도 전부 꿰뚫는 레일건. 전용탄 30발, 재장전 없음. 머리 ×5에 서 있으면 노줌도 100% 명중, 줌 중엔 벽 너머 좀비까지 표시돼요.','A railgun that goes through every wall and every zombie. 30 shots of its own, no reload. Head ×5, never misses standing still, and its scope marks zombies through walls.']},
+  {kind:'weapon',ref:'plasma',tag:['상점 7,500 코인','Shop · 7,500 coins'],t:['플라즈마 건','Plasma Gun'],
+    d:['초록 플라즈마 구체를 연사하고, 구체마다 스플래시가 터져요. 부위와 상관없이 같은 데미지 — 좀비 무리를 한꺼번에 녹이는 총.','Rapid green plasma orbs, each bursting with a splash. The same damage wherever it hits — a crowd melter.']},
+  {kind:'weapon',ref:'balrog11',tag:['상점 7,000 코인','Shop · 7,000 coins'],t:['발록-XI','Balrog-XI'],
+    d:['4발을 이어 쏠 때마다 특수탄 충전(최대 7). 우클릭으로 화염구 5개를 부채꼴로 — 가까이서 쏘면 한 몸에 다 박혀요.','Every four shells in one pull charge a special round (up to 7). Right click looses five fireballs in a fan — at point blank they all go into one body.']},
   {kind:'weapon',ref:'balrog5',tag:['상점 6,500 코인','Shop · 6,500 coins'],t:['발록-5','Balrog-5'],
-    d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 8이 되면 다음 한 발이 맞은 곳에서 폭발해요. 오른쪽 손잡이에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 8 the next bullet explodes where it lands. The gauge lights up on the right of the handguard and a lamp blinks on top when it is full.']},
+    d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 8이 되면 다음 한 발이 맞은 곳에서 폭발해요. 총 왼쪽(보이는 쪽)에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 8 the next bullet explodes where it lands. The gauge lights up on the left of the handguard (the side you see) and a lamp blinks on top when it is full.']},
   {kind:'feature',ico:'💬',tag:['신규 기능','New'],t:['친구창 채팅','Friend chat'],
     d:['친구창에서 친구에게 바로 메시지를 보낼 수 있어요. 친구가 접속해 있는지(접속 중 / n분 전)도 실제 접속 기준으로 보여요.','Message a friend right from the friends window. It also shows whether they are online (online / n min ago) by real presence.']},
   {kind:'feature',ico:'♛',tag:['신규 기능','New'],t:['명예의 전당','Hall of fame'],

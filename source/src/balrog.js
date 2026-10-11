@@ -2,7 +2,7 @@
 // ============ v6.27 weapon: Balrog-5 (a heavy assault rifle with a combo gauge) ============
 // Every bullet that lands fills the gauge (+1, a headshot +2). At W.cmb the gauge is full and the NEXT bullet carries an explosive charge:
 // it hits as usual and blows up where it lands (blastDamage: radius cmbR, cmbDmg at the centre, a hard shove and a hop), then the gauge is empty.
-// a.cmb[id] = the gauge (per weapon, cleared every round). The first-person model shows it as five lit segments on the right of the handguard
+// a.cmb[id] = the gauge (per weapon, cleared every round). The first-person model shows it as five lit segments on the left of the handguard
 // and a red lamp on top once it is full; the HUD name carries the count (ui.js: cmbTag). The hooks: weapons.js fireGun / shotTrace (a.shotEnd).
 // The model is boxes on the existing atlas materials: a dark carbon receiver, a dark-red handguard with steel bands, a muzzle brake.
 
@@ -13,10 +13,10 @@ GUNS.balrog5={parts:[
   // the ejection port and its brass deflector, a selector lever
   Pt(.0285,.06,-.06,.003,.022,.07,'muzzle'),Pt(.03,.048,-.01,.006,.012,.034,'brass'),Pt(.0295,.012,-.01,.004,.012,.03,'bright'),
   // handguard: dark red with steel bands and a vented underside, a short rail below
-  Pt(0,.052,-.37,.07,.07,.34,'dred'),...[-.24,-.33,-.42,-.5].map(z=>Pt(0,.052,z,.074,.074,.012,'blk2')),Pt(0,.015,-.37,.05,.012,.3,'vent'),Pt(-.0365,.052,-.37,.004,.03,.26,'vent'),
-  // the gauge bed on the right side of the handguard (the lit segments are the tags g1..g5)
-  Pt(.0372,.052,-.37,.004,.034,.27,'blk'),
-  ...[1,2,3,4,5].map(i=>Pt(.0392,.052,-.255-(i-1)*.052,.004,.026,.04,i<5?'orange':'red',{tag:'g'+i})),
+  Pt(0,.052,-.37,.07,.07,.34,'dred'),...[-.24,-.33,-.42,-.5].map(z=>Pt(0,.052,z,.074,.074,.012,'blk2')),Pt(0,.015,-.37,.05,.012,.3,'vent'),Pt(.0365,.052,-.37,.004,.03,.26,'vent'),
+  // the gauge bed on the left side of the handguard, the side the first-person view looks at (the lit segments are the tags g1..g5; v6.28: was on the right)
+  Pt(-.0372,.052,-.37,.004,.034,.27,'blk'),
+  ...[1,2,3,4,5].map(i=>Pt(-.0392,.052,-.255-(i-1)*.052,.004,.026,.04,i<5?'orange':'red',{tag:'g'+i})),
   // barrel, a muzzle brake with side slots, a bright ring behind it
   Pt(0,.055,-.58,.026,.026,.14,'steel'),Pt(0,.055,-.69,.044,.044,.08,'blk'),Pt(0,.055,-.735,.022,.022,.006,'muzzle'),
   Pt(.0225,.055,-.69,.002,.03,.05,'muzzle'),Pt(-.0225,.055,-.69,.002,.03,.05,'muzzle'),Pt(0,.055,-.64,.05,.05,.01,'bright'),

@@ -164,7 +164,7 @@ function rlBuild(W,G,m,L,empty){const k=rlKind(W,G),fx=empty?rlEmptyAct(W):null;
 function rlShellSpec(W,G,m,L,ph,empty){const id=W.model,drg=id==='bdc'||id==='rdc',hp=id==='gaebolg';
   const E=drg||hp?fdExt(G,'mag'):null;
   const port=hp?[0,E.mx[1],E.mx[2]-.03]:drg?[E.c[0],E.mn[1]-.004,E.c[2]]:[0,-.035,-.1];// where the shell goes in
-  const T=window.__RLT,pose=T&&T.spose?T.spose:hp?[-.03,.03,.1,.06,.3,-.12]:drg?[-.07,.08,-.01,.2,.12,-.55]:[-.07,.08,-.01,.2,.12,-.55];// raised and canted so the port and the hand are in view
+  const T=window.__RLT,pose=T&&T.spose?T.spose:W.spose?W.spose:hp?[-.03,.03,.1,.06,.3,-.12]:drg?[-.07,.08,-.01,.2,.12,-.55]:[-.07,.08,-.01,.2,.12,-.55];// raised and canted so the port and the hand are in view
   const into=hp?[0,0,.06]:[0,.035,0],on=hp?[-.014,.022,0]:[0,-.02,.0],bk=hp?[-.5,1,0]:[0,-1,0],pouch=(W.shellRel||.5)<.4?[-.07,-.22,.06]:[-.1,-.34,.08];// fast feeders keep the next shell close
   const prop={arm:'L',kind:hp?'bolt':'shell',pos:hp?[0,-.03,-.07]:[0,-.03,-.075],rot:hp?[0,0,0]:[0,Math.PI/2,0]};
   const A=[{tag:drg?'mag':'pump',at:G.sup||[0,0,-.3],ride:drg?0:1},{p:port},{p:[port[0]+pouch[0],port[1]+pouch[1],port[2]+pouch[2]]}];

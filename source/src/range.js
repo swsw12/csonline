@@ -71,7 +71,7 @@ const RANGE={on:false,move:true,st:null,el:null,uiT:0,
     else{reviveZombie(a,[d.x,0,d.z]);a.yaw=Math.PI}
     a.permaDead=false;a.maxHp=a.hp=1000;a.armor=0;a.reviving=0;a.turning=0;a.rg.resp=0;a.rg.first=0;a.rg.dir=1;a.lastHurt=-9},
   update(dt){const P=G.player;G.time+=dt;
-    if(P){P.money=999999;for(const id in P.ammo){const W=WPN[id];if(W&&P.ammo[id].res<W.res)P.ammo[id].res=W.res}}
+    if(P){P.money=999999;for(const id in P.ammo){const W=WPN[id];if(W&&P.ammo[id].res<W.res)P.ammo[id].res=W.res;if(W&&W.noRel&&P.ammo[id].mag<W.mag&&P.cur!==id)P.ammo[id].mag=W.mag}}
     for(const a of G.actors){const R0=a.rg;if(!R0)continue;const d=R0.d;
       if(!a.alive){R0.resp-=dt;if(R0.resp<=0)this.raise(a,false);continue}
       // whole again a moment after the last hit

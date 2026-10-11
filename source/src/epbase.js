@@ -153,7 +153,7 @@ const EPK={list:[],seq:1,
       if(k.t>45){this.remove(k);continue}if(NET.cli)continue;
       for(const h of SCEN.H){if(!h.alive||Math.hypot(h.c.x-k.x,h.c.z-k.z)>.9||Math.abs(h.c.y-k.y)>1.4)continue;if(!this.give(h))continue;this.remove(k);if(NET.host)netEv('epap',{id:k.id,by:h.id});break}}},
   // half a reserve for every gun carried (not past the full reserve); false when nothing was missing
-  give(h){let any=false;if(!h.pup)for(const id in h.ammo){const W=WPN[id];if(!W||!W.res)continue;const A=h.ammo[id];const add=Math.ceil(W.res*.5);if(A.res<W.res){A.res=Math.min(W.res,A.res+add);any=true}}
+  give(h){let any=false;if(!h.pup)for(const id in h.ammo){const W=WPN[id];if(W&&W.noRel){const A=h.ammo[id];if(A.mag<W.mag){A.mag=Math.min(W.mag,A.mag+Math.ceil(W.mag*.5));any=true}continue}if(!W||!W.res)continue;const A=h.ammo[id];const add=Math.ceil(W.res*.5);if(A.res<W.res){A.res=Math.min(W.res,A.res+add);any=true}}
     if(h.isPlayer){AU.play('pickup',{vol:.7});HUD.note(LI()?'Ammo':'탄약 획득',1.5)}return any||h.pup},
   remove(k){const i=this.list.indexOf(k);if(i>=0)this.list.splice(i,1);R.scene.remove(k.m);k.m.material.dispose()},
   clear(){for(const k of this.list.slice())this.remove(k)}};

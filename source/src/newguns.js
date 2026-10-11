@@ -94,8 +94,9 @@ BUY_MENU.find(c=>c.k==='special').items.push('killknife');
 // a.spN[id] = normal shells fired toward the next special shell; a.spAm[id] = special shells in their own slot (at most spMax).
 // Right click fires one: a wide fan of pellets that staggers and blows zombies back (game.js calls spFire).
 function spShot(a,W){if(!W.spEvery||W.sp)return W;const c=a.spN||(a.spN={}),m=a.spAm||(a.spAm={}),n=(c[a.cur]|0)+1;
-  if(n>=W.spEvery){c[a.cur]=0;if((m[a.cur]|0)<W.spMax){m[a.cur]=(m[a.cur]|0)+1;if(a.isPlayer)AU.play('shellin',{vol:.5,rate:1.3})}}else c[a.cur]=n;return W}
+  if(n>=W.spEvery){c[a.cur]=0;if((m[a.cur]|0)<W.spMax){m[a.cur]=(m[a.cur]|0)+1;if(a.isPlayer)AU.play(W.spGain||'shellin',{vol:.5,rate:W.spGain?1:1.3})}}else c[a.cur]=n;return W}
 function spFire(a,W){const m=a.spAm||(a.spAm={});if(!((m[a.cur]|0)>0))return false;m[a.cur]--;
+  if(W.spFlame){bxFlame(a,W);a.nextFire=G.t+60/W.rpm*1.6;return true}// Balrog-XI: five fireballs (csoguns.js)
   fireGun(a,Object.assign({},W,{sp:1,noMag:1,pellets:0,fan:W.spFan,fanA:W.spFanA,dmg:W.spDmg,spread:[.012,.018,.03],kb:W.spKb,stag:W.spStag,spUp:W.spUp,rec:[W.rec[0]*1.6,W.rec[1]*1.5]}));
   a.nextFire=G.t+60/W.rpm*1.6;return true}
 // the HUD's weapon name: special shells in the slot, then pips toward the next one

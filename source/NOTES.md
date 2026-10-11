@@ -706,3 +706,21 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Hooks: weapons.js `fireGun` (xb, cmbAfter), `shotTrace` (a.shotEnd, only for W.cmb weapons), ui.js `cmbTag`, `VMX.balrog5` (tags g1..g5 / rdy).
 - Shop 6,500 (shop.js, schema.sql price table — re-run the schema to be able to buy it), bots may carry it (ai.js rollLd), design.js sound + reload entries (the
   M4A1's 'ar' action), a heavier report (GUNDEF.balrog5). Remote clients replay the shot in ghost mode, so they see the same gauge and blast.
+
+## v6.28 — Balrog-XI, Plasma Gun, Thunderbolt (csoguns.js; build order: after ui.js because it wraps HUD.update)
+- Atlas: plGlow (self-lit green), tbBody (blue-violet plating), tbGlow (self-lit cyan) — 102 of the 104 atlas slots are now used.
+- First person looks at the LEFT side of a gun: lamps / gauges / the plasma cell sit on the left (Balrog-5's gauge moved there too).
+- Balrog-XI: the Blaze-8 special-shell machinery (spEvery 4, spMax 7) plus `spRun` (game.js: letting go of the trigger zeroes a.spN) and
+  `spFlame` (newguns.js spFire → bxFlame): five 'bxfl' projectiles in a ±0.2 rad fan, radius 0.3 + 1.3·t, each stops in the first zombie it touches
+  (160, kb 6 uncapped, stagger 1.1, 3 s burn), 24 m/s for 0.6 s. HUD ring #bxRing; ember pips p1..p7 (VMX.balrog11). Shell reload (shellRel .36).
+- Plasma Gun: proj 'plasma' (52 m/s), plBoom splash radius 1.7 (direct target 100 %, others 100→50 % by distance, LOS), `o.flat` skips morale
+  (game.js damageActor), no hsForce, kbCap applies. Reload rlCell (vmrel rlBuild wrapper): the cell pulled out backwards (rlMag style 'pull', ax +z).
+- Thunderbolt: `W.rail` branch in fireGun → tbShot: walls collected with rayCast + a skip set (×wallK .85 each), tbLine = every enemy on the line
+  (×pierceK .9 each), damage 650 × part (head ×5). `W.noRel` (mag 30, res 0): no reload; loadout.js ammo buy / re-buy, epbase supplies and the range
+  refill the magazine; the HUD hides the reserve. Scope #scope.tb (+ .lock), through-wall marks #tbMk, beam meshes (TB.beams, updated from nyUpdate),
+  FDS.rail first draw (power switch tag 'sw'), VMX.thunder lights coils tc1..tc4 as nextFire comes round.
+- Network: fireballs and orbs are nyProj kinds (the nyProj wrapper builds remote copies); the beam replays with the ghost shot.
+- Motions checked against the reference videos (frames pulled in Chrome): Balrog-XI shell reload rolled on its side (`W.spose`, vmrel rlShellSpec
+  now takes a per-gun shell pose), the Plasma Gun's cell change with the muzzle almost straight up (rlCell pose rx .8), the Thunderbolt's recharge
+  after every shot (`tbRecharge` clip: swing up, roll, two slaps on the coil housing; a scoped shot drops the scope, `a.tbZ` brings it back when
+  the coils are full). Balrog-XI's fore-end is crimson with black ribs and steel horns on the receiver.

@@ -114,6 +114,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.a
   let hitAny=false,hsAny=false,dmgTotal=0;
   if(W.cone){coneBlast(a,W,eye.clone(),base)}
   else if(W.air){airBlast(a,W,eye.clone(),base)}
+  else if(W.rail){const r=tbShot(a,W,eye,base,sp);if(r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}// the Thunderbolt (csoguns.js)
   else if(W.proj){spreadDir(base,sp,dir);launchProj(a,W,eye,dir)}
   else if(W.fan){for(let i=0;i<W.fan;i++){const off=(i-(W.fan-1)/2)/((W.fan-1)/2)*W.fanA,c=Math.cos(off),s=Math.sin(off);dir.set(base.x*c+base.z*s,base.y,-base.x*s+base.z*c).normalize();spreadDir(dir,sp,dir);
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}}

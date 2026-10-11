@@ -30,25 +30,25 @@ function ldKitReset(a){a.kit={he:0,frost:0,flare:0,armor:0,bhole:0}}
 // why a buy cannot happen, '' when it can: zombie · end · na (not on the menu) · lock · crate · own (has it, ammo full) · full · lim (once a round)
 function buyCheck(a,id){if(!a||a.team!==TH||!a.alive)return 'zombie';if(G.st==='end'||G.st==='over')return 'end';if(!ldBuyable(id))return 'na';const K=a.kit||{},lim=ldLimited();
   if(id==='armor')return a.armor>=100?'own':lim&&K.armor?'lim':'';
-  if(id==='ammo'){for(const k in a.ammo){const W=WPN[k];if(W&&W.mag&&k!=='bhole'&&a.inv[W.slot]===k&&a.ammo[k].res<W.res)return ''}return 'full'}
+  if(id==='ammo'){for(const k in a.ammo){const W=WPN[k];if(W&&W.mag&&k!=='bhole'&&a.inv[W.slot]===k&&(a.ammo[k].res<W.res||W.noRel&&a.ammo[k].mag<W.mag))return ''}return 'full'}
   const W=WPN[id];if(!W)return 'na';
   if(W.crate&&!crateOK(a,id))return a.isPlayer&&ACC.on?'lock':'crate';
   if(id==='bhole'){if(!ehOK(a))return ACC.on?'lock':'crate';return a.inv[1]==='bhole'?'own':lim&&K.bhole?'lim':''}
   if(W.kind==='nade')return a.inv[id]>=1?'own':lim&&K[id]?'lim':'';
   if(a.isPlayer&&typeof shopLocked==='function'&&shopLocked(a,id))return 'lock';
   if(W.kind==='melee')return a.inv[3]===id?'own':'';
-  if(a.inv[W.slot]===id){const am=a.ammo[id];return am&&am.res>=W.res?'own':''}
+  if(a.inv[W.slot]===id){const am=a.ammo[id];return am&&am.res>=W.res&&(!W.noRel||am.mag>=W.mag)?'own':''}
   return ''}
 // force: the host has said yes (a client putting its own buy in). o.quiet: no draw and no sound (a set going on)
 function buy(a,id,force,o){if(force?(!a||a.team!==TH||!a.alive):buyCheck(a,id))return false;
   const q=!!(o&&o.quiet),K=a.kit||(a.kit={}),L=a.ldo||(a.ldo=Object.assign({},LD_DEF)),done=()=>{if(a.isPlayer&&!q)AU.play('buy',{vol:.6});return true};
   if(id==='armor'){a.armor=100;K.armor=1;return done()}
-  if(id==='ammo'){for(const k in a.ammo){const W=WPN[k];if(W&&W.mag&&k!=='bhole'&&a.ammo[k].res<W.res)a.ammo[k].res=W.res}return done()}
+  if(id==='ammo'){for(const k in a.ammo){const W=WPN[k];if(W&&W.mag&&k!=='bhole'){if(a.ammo[k].res<W.res)a.ammo[k].res=W.res;if(W.noRel)a.ammo[k].mag=W.mag}}return done()}
   const W=WPN[id];if(!W)return false;
   if(W.kind==='nade'){a.inv[id]=Math.max(1,a.inv[id]|0);K[id]=1;return done()}
   // (a remote player's copy on the host is not drawn here: its weapon in hand comes from its own page)
   if(W.kind==='melee'){a.inv[3]=id;L[3]=id;if(!q&&!a.pup)equip(a,id);return done()}
-  if(a.inv[W.slot]===id&&id!=='bhole'){if(!a.ammo[id])fillAmmo(a,id);a.ammo[id].res=W.res;return done()}
+  if(a.inv[W.slot]===id&&id!=='bhole'){if(!a.ammo[id])fillAmmo(a,id);a.ammo[id].res=W.res;if(W.noRel)a.ammo[id].mag=W.mag;return done()}
   if(W.ny&&a.isPlayer&&a.nyFree>0&&!ldOwns(a,id))a.nyFree--;// the 근하신년 free pick only goes on a gun the account does not own
   a.inv[W.slot]=id;fillAmmo(a,id);gunFresh(a,id);L[W.slot]=id;
   if(id==='bhole'){a.ammo.bhole.res=0;K.bhole=1;a.ehBuy=1}// one magazine a round, no spare
