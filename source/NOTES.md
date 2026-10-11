@@ -760,3 +760,9 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - `crimson`: pistol (slot 2), shop 12000 (SHOP_PRICE + supabase/schema.sql gun_catalog — run the SQL), mag 6 / res 24, dmg 250, hs 2.4 (head 600), kb 30, rpm 70, rec [.16,.04] + `kickX` (vmKick override); model reuses the r6 revolver reload (rlKind 'rev').
 
 - v6.32.1: Crimson rpm 150; `alt:'fan'` (nyw.js nyAlt) sets a.fanB + a.burstN=mag; the burst branch in game.js actorWeapons fires `fanShot(W)` (dmg x fanDm, spread x2.4, kb x.55) at fanRpm 700, then burstCd. Model rebuilt (~60 parts).
+
+## v6.33 — Katana (katana.js, build order: after crateguns)
+- `katana`: melee (slot 3, special buy menu), shop 9000 (SHOP_PRICE + supabase/schema.sql gun_catalog + test/mock.js), dmg [105,280], rate [.5,1.05], range [2.6,2.9], cleave [2,3], arc [.45,.32], kbL [.3,.5], hitT [.17,.36], anD [.42,.76]; swS/hitS/drawS kaswing/kahit/kadraw (synthesised here).
+- Model: blade in slices along a curve (kaCy), burnished back band, polished flat (kaSteel), hardened edge (kaHamon) with a waving temper line, groove, finer slices over the point (KS .925); habaki, seppa, guard built in rows (kaIron + gold rim), black ito over white same (kaIto texture + raised crossings), menuki, kashira. Atlas: kaSteel, kaHamon, kaIto, kaIron (paintKaAtlas, chained onto paintCgAtlas).
+- First person: two fists on the handle (kaVmArms, like skVmArms); swings are skull9-style quaternion clips on a pivot (kaClip, KA_SW keys in camera space: grip point, blade direction, edge direction; elbows auto-placed when left out). Light alternates 'light' (kesa: down from the upper right) and 'light2' (up from the lower left), VM.kaSide; heavy = flat sweep right to left. vm.js: kind 'katana', VMK.drKa draw, VM.melee hook. Hit-stop via the VM.meleeHit wrapper.
+- Third person: HOLDS.katana (ham two-handed, light KF.hamA, heavy KF.skA). game.js dismember: katana heavy kills always sever, light 50 %.

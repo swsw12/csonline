@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'katana',tag:['신규 출시 · 상점 9,000 코인','Out now · Shop · 9,000 coins'],t:['카타나','Katana'],
+    d:['두 손으로 쥐는 일본도. 좌클릭 사선베기는 좌우를 번갈아 2마리까지, 우클릭 가로베기는 3마리를 한 번에 베어요. 총을 쏘다 바로 꺼내면 발도술처럼 즉시 베어요.','A two-handed sword. Left click cuts diagonally, alternating sides, through two; right click sweeps flat through three. Drawn right after a gunshot it cuts at once.']},
   {kind:'weapon',ref:'crimson',tag:['신규 출시 · 상점 12,000 코인','Out now · Shop · 12,000 coins'],t:['크림슨 피스메이커','Crimson Peacemaker'],
     d:['빨강과 검정의 싱글 액션 리볼버. 6발, 몸통 250 · 머리 600에 맞은 좀비가 멀리 날아가는 넉백. 우클릭 해머 연타로 남은 탄을 한꺼번에 쏟아내요.','A red-and-black single-action revolver. 6 rounds, body 250 / head 600, a shove that throws zombies back. Right click fans the hammer to dump the cylinder at once.']},
   {kind:'weapon',ref:'bholemini',tag:['신규 출시 · 상점 30,000 코인','Out now · Shop · 30,000 coins'],t:['이벤트 호라이즌 미니','Event Horizon Mini'],

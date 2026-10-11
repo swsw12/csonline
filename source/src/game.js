@@ -426,7 +426,7 @@ function dismember(t,o,perma){if(!t.ch||!o.dir||!(G.mode!=='mut'||perma||o.he))r
   const cut=(k,d,sp)=>{if(SEVER[k]&&!(t.ch.hide>>SEVER[k].root&1)){FX.limb(t,k,d,sp);severLimb(t.ch,k);(t.spurts=t.spurts||[]).push({b:SEVER[k].stump,t:2.6,ph:Math.random()*6})}};
   if(o.hs&&!o.knife){if(big&&Math.random()<.55){severLimb(t.ch,'head');(t.spurts=t.spurts||[]).push({b:14,t:2.6,ph:0})}else cut('head',o.dir,rr(3,5.5))}
   else if(o.he||o.w==='gl40'){const ks=shuffle(['armL','armR','legL','legR','head','armL','armR']);const n=Math.random()<.45?2:1;for(let i=0,c=0;i<ks.length&&c<n;i++)if(!(t.ch.hide>>SEVER[ks[i]].root&1)){cut(ks[i],[o.dir[0],.7,o.dir[2]],rr(4.5,7.5));c++}}
-  else if(o.knife&&!o.blunt&&(o.heavy?o.w==='axe'||o.w==='skull9'||Math.random()<.4:o.w==='skull9'&&Math.random()<.5))cut(o.hs||Math.random()<.35?'head':Math.random()<.5?'armL':'armR',[o.dir[0],.2,o.dir[2]],rr(2.5,4));
+  else if(o.knife&&!o.blunt&&(o.heavy?o.w==='axe'||o.w==='skull9'||o.w==='katana'||Math.random()<.4:(o.w==='skull9'||o.w==='katana')&&Math.random()<.5))cut(o.hs||Math.random()<.35?'head':Math.random()<.5?'armL':'armR',[o.dir[0],.2,o.dir[2]],rr(2.5,4));
   else if(W.kind==='shotgun'&&Math.random()<.3&&G.player&&Math.hypot(t.c.x-G.player.c.x,t.c.z-G.player.c.z)<6)cut(Math.random()<.5?'armL':'armR',o.dir,rr(3,5))}
 const SPURT_D=[[0,1,-.2],[-1,.35,0],[1,.35,0],[-.2,-1,0],[.2,-1,0]],_sv=new THREE.Vector3(),_sd=new THREE.Vector3();
 function infect(t,src){if(NET.ghost||(NET.cli&&!NET.ev))return;if(t.team!==TH||!t.alive)return;if(G.st!=='fight'&&!NET.ev)return;// not on the result card between rounds
