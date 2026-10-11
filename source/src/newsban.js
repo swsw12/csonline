@@ -5,6 +5,14 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'zombie',ref:'lyrebird',tag:['좀비 시나리오 4챕터','Zombie scenario · CH.4'],t:['4챕터 「라이어버드」','Chapter 4 「LYREBIRD」'],
+    d:['구름에 묻힌 산꼭대기 통신기지. 1차 회수팀 통신병 라이어버드는 안개 속을 네발로 기어 다니며 우리 목소리를 흉내 내요 — 동료 이름으로 가짜 무전 · 가짜 핑, 안개 속 환각 동료, 3페이즈엔 동료 모습으로 섞여 들어요. 미니맵 점을 확인하고, 경보 사이렌으로 안개를 걷어 내요. 3챕터를 깨면 열려요.','A signal station on a mountaintop buried in cloud. LYREBIRD, RT-1\'s signaller, crawls through the fog and fakes our voices: radio calls and pings in a teammate\'s name, mirages of teammates in the fog, and in phase 3 a teammate\'s face. Check the minimap dots, and sound the alarm siren to clear the fog. Opens once chapter 3 is cleared.']},
+  {kind:'zombie',ref:'radioman',tag:['신규 좀비','New zombie'],t:['통신병 좀비','Radio-Operator Zombie'],
+    d:['커다란 무전기를 멘 1차 회수팀 통신 지원병. 살아 있는 동안 무전기가 지직거리고, 쓰러뜨리면 그 무전기가 라이어버드의 신호를 역탐지해서 5초 동안 위치를 보여 줘요. 4챕터에 나와요.','An RT-1 radio operator with a big set on his back: it crackles while he lives, and when he drops it traces LYREBIRD\'s signal and shows where it is for 5 s. Shows up in chapter 4.']},
+  {kind:'zombie',ref:'spore',tag:['신규 좀비','New zombie'],t:['포자 좀비','Spore Zombie'],
+    d:['몸에서 버섯이 자라는 부푼 좀비. 쓰러지면 터지면서 그 자리를 짙은 포자 안개로 덮어요 — 멀리서 쏴요. 4챕터에 나와요.','A bloated zombie with mushrooms growing out of it: it bursts when it drops and buries the spot in thick spore fog — shoot it from a distance. Shows up in chapter 4.']},
+  {kind:'feature',ico:'📍',tag:['신규 기능','New'],t:['핑','Pings'],
+    d:['Z 키(또는 마우스 휠 클릭, 폰은 📍 버튼)로 보고 있는 곳에 핑을 찍으면 같은 편 화면과 미니맵에 6초 동안 표시돼요. 4챕터에선 라이어버드가 가짜 핑도 찍어요 — 그 동료의 미니맵 점이 딴 데 있으면 가짜!','Press Z (or the middle mouse button; the 📍 button on phones) to mark the spot you are looking at: your side sees it on screen and on the minimap for 6 s. In chapter 4 LYREBIRD fakes pings too — if that teammate\'s minimap dot is somewhere else, it is a fake!']},
   {kind:'zombie',ref:'khepri',tag:['좀비 시나리오 3챕터','Zombie scenario · CH.3'],t:['3챕터 「케프리」','Chapter 3 「KHEPRI」'],
     d:['잿가루 내리는 버려진 제철소. 거대한 쇠똥구리 케프리는 몸집만 한 고철 공을 굴려 정면 총알을 다 막아요 — 드럼통 · 가스 밸브 · 주조장 래들 쇳물로 공을 깨고, 날거나 뒤집혔을 때 배를 노려요. 2챕터를 깨면 열려요.','An abandoned steel works with ash drifting down. KHEPRI, a giant dung beetle, rolls a ball of scrap as big as itself that soaks up every bullet from the front — break it with the drums, the gas valves and the casting bay’s ladle of molten iron, and go for the belly when it flies or lands on its back. Opens once chapter 2 is cleared.']},
   {kind:'zombie',ref:'larva',tag:['신규 좀비','New zombie'],t:['유충 좀비','Larva Zombie'],

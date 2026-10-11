@@ -51,7 +51,9 @@ const RADAR={cv:null,ctx:null,px:170,t:0,band:0,seen:new Map(),rr:0,
     // supply crates: a yellow box, pinned to the rim when far away
     if(typeof SUP!=='undefined')for(const q of SUP.list){const dx=q.x-tg.c.x,dz=q.z-tg.c.z;let sx=(dx*cs-dz*sn)*s,sy=(dx*sn+dz*cs)*s;const l=Math.hypot(sx,sy),lim=R0-5*d;if(l>lim){sx*=lim/l;sy*=lim/l}
       sx+=c;sy+=c;x.fillStyle=Math.sin(G.t*6)>-.3?'#ffd04a':'#a07a20';x.fillRect(sx-3*d,sy-3*d,6*d,6*d);x.strokeStyle='rgba(0,0,0,.7)';x.lineWidth=d;x.strokeRect(sx-3*d,sy-3*d,6*d,6*d);x.fillStyle='#b01810';x.fillRect(sx-.7*d,sy-2*d,1.4*d,4*d);x.fillRect(sx-2*d,sy-.7*d,4*d,1.4*d)}
-    for(const a of G.actors){if(a===tg||!a.alive||a.reviving>0)continue;const mate=a.team===tg.team;if(!mate&&!this.aware(tg,a,dt))continue;
+    if(typeof PING!=='undefined')PING.mini(x,tg,cs,sn,s,c,R0,d);
+    // (a hallucination or a disguise never shows: the teammate it copies is somewhere else on the map)
+    for(const a of G.actors){if(a===tg||!a.alive||a.reviving>0)continue;const mate=a.team===tg.team;if(!mate&&(a.epAsH||!this.aware(tg,a,dt)))continue;
       const dx=a.c.x-tg.c.x,dz=a.c.z-tg.c.z,sx=c+(dx*cs-dz*sn)*s,sy=c+(dx*sn+dz*cs)*s;if(Math.hypot(sx-c,sy-c)>R0-3*d)continue;
       const col=a.team===TZ?'#ff4a3a':'#5ab4ff',off=Math.abs(a.c.y-tg.c.y)>2.4,r=(a.host?3.4:2.8)*d;
       x.beginPath();x.arc(sx,sy,r,0,TAU);if(off){x.lineWidth=1.4*d;x.strokeStyle=col;x.stroke()}else{x.fillStyle=col;x.fill();x.lineWidth=d;x.strokeStyle='rgba(0,0,0,.6)';x.stroke()}

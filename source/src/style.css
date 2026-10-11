@@ -1176,3 +1176,11 @@ html.touch #hRadio{top:auto;bottom:calc(var(--bs)*2.6 + 7vh);left:8px;width:min(
 html.touch #hud.epB #hRadio{width:min(300px,38vw,calc(58vw - 266px))}html.touch #hud.epB #hRadio p:nth-last-child(n+3){display:none}
 html.touch #hUse{top:58%}
 @media (max-width:900px){#epCard .ec{gap:12px;padding:14px 18px}#epCard img{height:min(120px,22vh)}}
+
+/* pings (ping.js): a diamond, the name and the distance; pinned to the screen's edge when the spot is off to the side */
+#pingL{position:absolute;inset:0;pointer-events:none;z-index:4}
+.ping{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;white-space:nowrap}
+.ping i{width:13px;height:13px;transform:rotate(45deg);background:#ffd24a;border:2px solid #2a2208;box-shadow:0 0 8px rgba(255,210,74,.75);margin-bottom:4px}
+.ping b{font-size:12px;color:#ffe8a0;text-shadow:1px 1px 0 #000,0 0 3px #000;letter-spacing:.3px}.ping span{font-size:10px;color:#e8e4d8;text-shadow:1px 1px 0 #000}
+.ping.z i{background:#ff6a4a;box-shadow:0 0 8px rgba(255,90,60,.75)}.ping.e{transform:translate(-50%,-50%) scale(.85)}.ping.new i{animation:pingIn .6s ease-out}
+@keyframes pingIn{0%{transform:rotate(45deg) scale(2.2);opacity:.3}100%{transform:rotate(45deg) scale(1);opacity:1}}

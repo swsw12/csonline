@@ -90,8 +90,9 @@ void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;vec3 n=normalize(vN);
   if(t.a<.97)c=max(c,t.rgb);gl_FragColor=vec4(c,1.);}`;
 function matVM(tex,U){return new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex}},U),vertexShader:VS_WORLD,fragmentShader:FS_VM,vertexColors:false})}
 // sky dome
-const FS_SKY=`uniform sampler2D map;uniform float uAmb;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;uniform float uFlashSky;
-void main(){vec3 c=texture2D(map,vUv).rgb*(.9+.1*uAmb)+vec3(.55,.6,.8)*uFlashSky*(1.-vUv.y);gl_FragColor=vec4(c,1.);}`;
+// uSkyFog: how far a thick fog swallows the sky too (0 clear; 1 the fog's colour all the way up, a little lighter overhead)
+const FS_SKY=`uniform sampler2D map;uniform float uAmb;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;uniform float uFlashSky;uniform vec3 uFogC;uniform float uSkyFog;
+void main(){vec3 c=texture2D(map,vUv).rgb*(.9+.1*uAmb)+vec3(.55,.6,.8)*uFlashSky*(1.-vUv.y);c=mix(c,uFogC*(1.+.16*vUv.y),clamp(uSkyFog*(1.2-.5*vUv.y),0.,1.));gl_FragColor=vec4(c,1.);}`;
 // billboard particles: point sprites from a texture atlas (4x4 frames), per-point size/colour/alpha/frame
 const VS_PT=`attribute float aSize;attribute vec4 aCol;attribute float aFrame;uniform float uScale;varying vec4 vC;varying float vF;varying float vFog;uniform float uFogD;
 void main(){vec4 mv=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mv;float d=-mv.z;gl_PointSize=aSize*uScale/max(d,.05);vC=aCol;vF=aFrame;vFog=1.-exp(-uFogD*uFogD*d*d);}`;

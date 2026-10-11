@@ -361,6 +361,8 @@ function defHuman(k){
 //        | 'argus' 아르고스(2챕터 보스: 1차 회수팀 저격수) | 'squad' 1차 팀 분대원 좀비(2·4챕터)
 //        | 'larva' 유충 좀비(3·5챕터) | 'scrap' 장갑 고철 좀비(3챕터)
 //        | 'khepri' 케프리(3챕터 보스: 거대 쇠똥구리 — 몸은 khepri.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시)
+//        | 'lyrebird' 라이어버드(4챕터 보스: 1차 회수팀 통신병) | 'radioman' 통신병 좀비(4챕터) | 'spore' 포자 좀비(4챕터)
+//        | 'mirage' 환각(4챕터: 아군의 사람 모델을 그대로 빌려 그리므로 여기 몸은 쓰이지 않는다)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
 function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',boss=k==='boss'||aleph||khepri;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
@@ -593,6 +595,71 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',boss=k===
       for(const [b,sd] of [[4,-1],[6,1]])L.push({n:'pipe',b,c:[H.piv[b][0]+sd*o.armW*.62,H.piv[b][1]-o.fore*.5,0],s:[.05,o.fore*.8,.05],m:'pipe'},{n:'pipe',b,c:[H.piv[b][0]-sd*o.armW*.62,H.piv[b][1]-o.fore*.5,.02],s:[.05,o.fore*.75,.05],m:'pipe'});
       for(const b of [8,10])L.push({n:'rust',b,c:[H.piv[b][0],H.piv[b][1]-.06,-o.legD*.62],s:[o.shinW*1.2,.18,.03],m:'rust'});
       return L}}
+  // ▶ 라이어버드 (lyrebird, 4챕터 보스 RT1-05) — 1차 회수팀 통신병이 감염된 모습 (게임이 1.4배로 키우고 네발로 뛰게 한다)
+  //    길고 마른 몸, 길게 늘어난 목, 창백한 청회색 피부에 검푸른 혈관, 찢어진 올리브 통신병 복장(가슴 끈 두 줄, 왼팔 'RT1-05'),
+  //    머리에 파고든 헤드셋(밴드 + 귀덮개 + 송화 마이크), 어깨의 포자 구멍(곰팡이 혹, 희미하게 빛남), 하얗게 탁한 눈, 입술 없는 입.
+  //    (목의 울음주머니와 등의 무전기 배낭은 게임이 따로 붙인다: lyrebird.js)
+  else if(k==='lyrebird'){// 통신병 — RT-1's signaller: drawn out thin, the neck stretched long, a headset grown into the skull, spore vents on the shoulders
+    o={hipY:1,thigh:.48,legSep:.1,legW:.12,legD:.14,shinW:.105,torsoW:.36,torsoH:.56,torsoD:.2,shX:.22,armW:.09,upper:.37,fore:.37,hand:.13,headW:.2,headH:.24,headD:.25,headZ:-.06,neck:.24,
+      claw:.06,fingL:.72,curl:.45,curlJ:81,ears:[1,1],nose:false};
+    const sk='#7e8a96',cm=['#2a3222','#5e6448'];
+    mats=Object.assign({top:{base:'#4a5438',camo:cm},legs:{base:'#465036',camo:cm},sleeve:{base:'#4a5438',camo:cm},fore:{base:sk,style:'zskin',blot:'#2a3a5a'},shin:{base:'#465036',camo:cm},
+      skin:{base:sk,style:'zskin',blot:'#2a3a5a'},hand:{base:dk(sk,.18),style:'zskin',blot:'#1a2a4a'},boot:{base:'#2a241c',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#2a3a5a'},
+      strap:{base:'#262a20'},band:{base:'#18191a',style:'plate',gloss:246},cup:{base:'#202224',style:'rubber'},spore:{base:'#7a6e52',style:'tumor'}},goreM);
+    decor={torso:{front:[['tear',2,81,sk],['veins',4,'#2a3a6a'],['soak',.4,.9,'#3a0a10',.5],['grime',.7]],back:[['tear',2,82,sk],['grime',.7]],side:[['veins',2,'#2a3a6a'],['grime',.6]]},
+      neck:{all:[['veins',5,'#2a3a6a'],['flesh',.2,.1,.8,.4,0]]},
+      head:{front:[['face','runner',{skin:sk,eye:eyeH||'#e8f4ff',tears:1,lipless:1}]],top:[['rect',0,0,1,1,'#1a1c20'],['wounds',1,83]],side:[['rect',0,.45,.5,1,'#1a1c20'],['veins',2,'#2a3a6a']],back:[['rect',0,.4,1,1,'#1a1c20']],bottom:[['teethrow','bottom',.38]]},
+      jaw:{top:[['teethrow','top',.42]],front:[['teethrow','top',.5],['drip',.5,.5,3,.7]],bottom:[['soak',0,1,'#3a0a10',.7]],side:[['flesh',0,.2,1,.9,0]]},
+      uaL:{all:[['text','RT1-05',.1,.7,'#2a2c20'],['grime',.5]]},uaR:{all:[['tear',3,84,sk],['veins',2,'#2a3a6a']]},faL:{all:[['veins',2,'#2a3a6a']]},faR:{all:[['gash',.2,.8,.6,.3,3,.1],['veins',2,'#2a3a6a']]},
+      thL:{side:[['pocket',.15,.35,.85,.7,'#3c4430']],all:[['grime',.6]]},thR:{all:[['tear',2,85,'#2a2a22'],['grime',.6]]},pelvis:{fb:[['belt',.72,.94,'#24261c','#7a7a6a']]},
+      strap:{all:[['grime',.5]]},spore:{all:[['veins',3,'#c8d878',1],['glow',.35,.35,.65,.65,'#a8c868'],['rot',2]]}};
+    // the radio harness's two chest straps, the headset (band, ear cups, the boom mic), the fungal vents on the shoulders
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zf=o.belly*.25-(o.torsoD+o.belly)/2;const L=[];
+      for(const sd of [-1,1])L.push({n:'strap',b:1,c:[sd*.1,sY+o.torsoH*.55,zf-.012],s:[.05,o.torsoH*.95,.02],m:'strap'});
+      L.push({n:'band',b:2,c:[0,hc[1]+o.headH*.5,o.headZ+.01],s:[o.headW*1.12,.035,.05],m:'band'});
+      for(const sd of [-1,1])L.push({n:'cup',b:2,c:[sd*(o.headW*.56),hc[1]+o.headH*.05,o.headZ+.01],s:[.05,.1,.09],m:'cup'});
+      L.push({n:'band',b:2,c:[-o.headW*.45,hc[1]-o.headH*.2,o.headZ-o.headD*.42],s:[.02,.02,.16],m:'band'});
+      for(const sd of [-1,1]){const b=sd<0?3:5;L.push({n:'spore',b,c:[H.piv[b][0]+sd*.02,H.piv[b][1]+.07,.02],s:[.14,.1,.15],m:'spore'},{n:'spore',b,c:[H.piv[b][0]+sd*.05,H.piv[b][1]+.02,-.05],s:[.08,.07,.08],m:'spore'})}
+      return L}}
+  // ▶ 통신병 좀비 (radioman, 4챕터) — 무전기를 멘 1차 회수팀 통신 지원 대원
+  //    올리브 위장복, 등에 큰 무전기 배낭(안테나 두 개, 다이얼), 한쪽 귀에 헤드셋, 챙 넓은 정글모, 회녹색 피부, 노란 눈.
+  //    살아 있으면 무전기가 지직거리고, 죽이면 역탐지로 라이어버드 위치가 보인다(게임 쪽 규칙).
+  else if(k==='radioman'){// 통신 지원병 — an infected RT-1 radio operator: a big radio pack with two whips, a headset, a boonie hat
+    o={hipY:.93,torsoW:.42,torsoD:.24,shX:.25,armW:.11,upper:.3,fore:.28,headW:.23,headH:.25,headD:.25,headZ:-.03,claw:.02,fingL:.52,curl:.5,curlJ:91,ears:[1,1]};
+    const sk='#6e7a6a',cm=['#2c3424','#646a48'];
+    mats=Object.assign({top:{base:'#4a5438',camo:cm},legs:{base:'#465036',camo:cm},sleeve:{base:'#4a5438',camo:cm},fore:{base:sk,style:'zskin',blot:'#3a2a30'},shin:{base:'#465036',camo:cm},
+      skin:{base:sk,style:'zskin',blot:'#3a2a30'},hand:{base:'#2a2a24',style:'rubber'},boot:{base:'#2a241c',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#3a2a30'},
+      pack:{base:'#3e4430',style:'plate',gloss:242},dial:{base:'#1a1c1a',style:'plate',gloss:246},hat:{base:'#4e5638',camo:cm},ant:{base:'#141414',style:'plate',gloss:247},cup:{base:'#202224',style:'rubber'}},goreM);
+    decor={torso:{front:[['tear',2,91,sk],['soak',.3,.9,'#4a0606',.7],['grime',.7]],back:[['grime',.7]],side:[['grime',.6]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#e8d860',tears:1}]],side:[['blood',1,92]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a0606',.8]]},
+      uaL:{all:[['text','RT-1',.18,.7,'#2a2c20'],['grime',.5]]},uaR:{all:[['tear',2,93,sk],['blood',2,94]]},thL:{side:[['pocket',.15,.35,.85,.7,'#3c4430']],all:[['grime',.6]]},thR:{all:[['soak',.4,1,'#4a0606',.5]]},
+      pelvis:{fb:[['belt',.72,.94,'#24261c','#7a7a6a']]},pack:{back:[['rect',.12,.18,.88,.5,'#2a2e22'],['text','PRC-77',.16,.74,'#9a9a80'],['grime',.5]],all:[['grime',.5]]},
+      dial:{all:[['px',.3,.4,'#ffb040'],['px',.7,.4,'#40ff70']]},hat:{all:[['grime',.5]]}};
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zb=o.belly*.25+(o.torsoD+o.belly)/2;
+      return [{n:'pack',b:1,c:[0,sY+o.torsoH*.5,zb+.11],s:[o.torsoW*.9,o.torsoH*.72,.2],m:'pack'},{n:'dial',b:1,c:[.1,sY+o.torsoH*.9,zb+.12],s:[.14,.05,.12],m:'dial'},
+        {n:'ant',b:1,c:[-.12,sY+o.torsoH*1.32,zb+.14],s:[.012,.6,.012],m:'ant'},{n:'ant',b:1,c:[.13,sY+o.torsoH*1.18,zb+.16],s:[.01,.4,.01],m:'ant'},
+        {n:'hat',b:2,c:[0,hc[1]+o.headH*.42,o.headZ],s:[o.headW*1.12,o.headH*.34,o.headD*1.12],m:'hat'},{n:'hat',b:2,c:[0,hc[1]+o.headH*.3,o.headZ],s:[o.headW*1.7,.02,o.headD*1.7],m:'hat'},
+        {n:'cup',b:2,c:[o.headW*.56,hc[1]+o.headH*.04,o.headZ+.01],s:[.05,.1,.09],m:'cup'}]}}
+  // ▶ 포자 좀비 (spore, 4챕터) — 곰팡이 포자에 뒤덮인 기지 근무자
+  //    부풀어 오른 몸, 등·어깨·머리에 돋은 버섯갓과 포자 주머니(희미한 연둣빛), 회색 근무복(가슴에 'UMB-04' 명찰), 곰팡이 핀 회백색 피부,
+  //    뿌옇게 흐린 눈. 터지면 그 자리 안개가 짙어진다(게임 쪽 규칙).
+  else if(k==='spore'){// 포자 숙주 — a station hand gone to mould: bloated, mushroom caps on the back and the head, glowing spore pods
+    o={hipY:.9,torsoW:.46,torsoD:.28,torsoH:.52,belly:.08,shX:.27,armW:.12,upper:.29,fore:.27,headW:.24,headH:.25,headD:.25,headZ:-.02,neck:.04,claw:.02,fingL:.5,curl:.55,curlJ:95,ears:[1,0]};
+    const sk='#a8a89a';
+    mats=Object.assign({top:{base:'#6a6e6a'},legs:{base:'#4a4e4c'},sleeve:{base:'#6a6e6a'},fore:{base:sk,style:'zskin',blot:'#6a7a4a'},shin:{base:'#4a4e4c'},skin:{base:sk,style:'zskin',blot:'#6a7a4a'},
+      hand:{base:dk(sk,.2),style:'zskin',blot:'#4a5a2a'},boot:{base:'#262422',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#6a7a4a'},
+      cap:{base:'#c8b88a',style:'plate',gloss:243},stem:{base:'#d8d0b8'},pod:{base:'#9aa86a',style:'tumor'}},goreM);
+    decor={torso:{front:[['rect',.58,.6,.88,.72,'#d8d4c8'],['text','UMB-04',.6,.7,'#2a2a2a'],['rot',3],['veins',3,'#c8e070',1],['grime',.7]],back:[['rot',4],['veins',4,'#c8e070',1],['grime',.6]],side:[['rot',2],['grime',.6]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#d8dcc8',tears:1,cheek:1}],['rot',2]],side:[['rot',2]],top:[['rot',2]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.36],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#3a4a1a',.7]]},
+      uaL:{all:[['rot',2],['grime',.6]]},uaR:{all:[['rot',2],['grime',.6]]},faL:{all:[['rot',2]]},faR:{all:[['rot',1],['gash',.2,.8,.6,.3,3,.1]]},thL:{all:[['grime',.7]]},thR:{all:[['grime',.7]]},
+      pelvis:{fb:[['belt',.72,.92,'#1e1c18','#7a7a6a']]},cap:{all:[['grime',.4]],bottom:[['rect',0,0,1,1,'#8a7a5a']]},pod:{all:[['veins',3,'#e0f080',1],['glow',.35,.35,.65,.65,'#c8e070']]}};
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zb=o.belly*.25+(o.torsoD+o.belly)/2;const L=[];
+      for(const [x,y,w] of [[-.1,.78,.22],[.12,.5,.18],[-.04,.3,.14]])L.push({n:'stem',b:1,c:[x,sY+o.torsoH*y,zb+.04],s:[.04,.05,.06],m:'stem'},{n:'cap',b:1,c:[x,sY+o.torsoH*y+.03,zb+.08],s:[w,.04,w*.8],m:'cap'});
+      L.push({n:'cap',b:2,c:[.05,hc[1]+o.headH*.56,o.headZ+.02],s:[.18,.04,.16],m:'cap'},{n:'stem',b:2,c:[.05,hc[1]+o.headH*.5,o.headZ+.02],s:[.04,.04,.04],m:'stem'});
+      for(const sd of [-1,1]){const b=sd<0?3:5;L.push({n:'pod',b,c:[H.piv[b][0]+sd*.03,H.piv[b][1]+.06,.03],s:[.15,.12,.15],m:'pod'})}
+      L.push({n:'pod',b:1,c:[.16,sY+o.torsoH*.66,zb+.06],s:[.14,.14,.12],m:'pod'});return L}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),

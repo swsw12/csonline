@@ -336,7 +336,7 @@ function gatesUpdate(dt){const GS=MAP.gates;if(!GS)return;for(const k in GS){con
 // sky: dome + star field + moon, kept centred on the camera (built once; maps without a sky hide it)
 function buildSky(scene){
   const SG=new THREE.Group();
-  const skyU={map:{value:TEX.sky},uAmb:LU.uAmb,uFlashSky:{value:0}};MAP.skyU=skyU;
+  const skyU={map:{value:TEX.sky},uAmb:LU.uAmb,uFlashSky:{value:0},uFogC:LU.uFogC,uSkyFog:{value:0}};MAP.skyU=skyU;
   const dome=new THREE.Mesh(new THREE.SphereGeometry(160,32,12,0,TAU,0,Math.PI*.55),new THREE.ShaderMaterial({uniforms:skyU,vertexShader:VS_WORLD,fragmentShader:FS_SKY,side:THREE.BackSide,depthWrite:false}));
   dome.renderOrder=-3;SG.add(dome);
   const N=700,sp=new Float32Array(N*3),sc=new Float32Array(N);for(let i=0;i<N;i++){let x,y,z;do{x=Math.random()*2-1;y=Math.random();z=Math.random()*2-1}while(x*x+y*y+z*z>1||y<.12);const l=Math.hypot(x,y,z);sp[i*3]=x/l*150;sp[i*3+1]=y/l*150;sp[i*3+2]=z/l*150;sc[i]=Math.pow(Math.random(),3)*.8+.15}
@@ -396,7 +396,7 @@ async function loadMapUI(id){if(!MAPDEFS[id])id='q7';MAP.want=id;mapFinish();if(
   if(G.st==='menu'&&MAP.id===id&&Main.menuDemo)Main.menuDemo();if(UI.mapLoaded)UI.mapLoaded()}
 // per-map look and sound: sky, fog, rain, ambience, dynamic lights
 function mapEnv(){const E=MAP.env||{};if(MAP.sky)MAP.sky.visible=!!E.sky;
-  const SP=MAP.skyParts;if(SP&&E.sky){SP.dome.material.uniforms.map.value=TEX[E.skyTex||'sky'];SP.stars.visible=!E.sun;
+  const SP=MAP.skyParts;if(SP&&E.sky){SP.dome.material.uniforms.map.value=TEX[E.skyTex||'sky'];SP.stars.visible=!E.sun&&!E.noStars;SP.moon.visible=SP.halo.visible=true;SP.dome.material.uniforms.uSkyFog.value=E.skyFog||0;
     const d=E.sun?MAP.moon.d:MOON_D;SP.moon.position.set(d.x*140,d.y*140,d.z*140);SP.moon.lookAt(0,0,0);SP.moon.material.map=TEX[E.sun?'sunDisc':'moon'];SP.moon.material.color.set(E.sun?'#fff0d8':'#b8bccc');SP.moon.scale.setScalar(E.sun?1.6:1);SP.moon.material.needsUpdate=true;
     SP.halo.position.copy(SP.moon.position).multiplyScalar(1.02);SP.halo.lookAt(0,0,0);SP.halo.material.uniforms.uC.value.set(E.halo||(E.sun?'#c87040':'#6b7a9e'));SP.halo.scale.setScalar(E.sun?2.4:1)}
   LU.uFogC.value.set(E.fog||'#0a0c12');LU.uFogD.value=E.fogD||.045;

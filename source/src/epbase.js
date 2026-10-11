@@ -134,10 +134,11 @@ const EGREN={list:[],id:0,
 
 // ---------- smoke: a thick cloud that hides whoever is inside it (bots and bosses cannot see through it) ----------
 const ESMK={list:[],
-  add(x,y,z,r,life,remote){const S={x,y,z,r,life,t:0};this.list.push(S);AU.at('salgust',x,y,z,{vol:.9,range:50,rate:.8});if(NET.host&&!remote)netEv('epsm',{x:r2(x),y:r2(y),z:r2(z),r:r2(r),l:r2(life)});return S},
+  // col: the cloud's colour [r,g,b] (grey smoke by default; 4챕터's spores a pale green)
+  add(x,y,z,r,life,remote,col){const S={x,y,z,r,life,t:0,c:col||null};this.list.push(S);AU.at('salgust',x,y,z,{vol:.9,range:50,rate:.8});if(NET.host&&!remote)netEv('epsm',{x:r2(x),y:r2(y),z:r2(z),r:r2(r),l:r2(life),c:col?col.map(v=>Math.round(v*100)):0});return S},
   update(dt){for(let i=this.list.length-1;i>=0;i--){const S=this.list[i];S.t+=dt;if(S.t>S.life+3){this.list.splice(i,1);continue}const k=S.t<1?S.t:S.t>S.life?Math.max(0,1-(S.t-S.life)/3):1;
       const n=S.t<1.2?8:2.4;for(let j=0;j<n;j++)if(Math.random()<dt*14*k){const a=Math.random()*TAU,d=Math.sqrt(Math.random())*S.r*(S.t<1?S.t:1);
-        FX.spawn({x:S.x+Math.cos(a)*d,y:S.y+rr(.2,2.4),z:S.z+Math.sin(a)*d,vx:rr(-.2,.2),vy:rr(0,.25),vz:rr(-.2,.2),life:rr(3,4.5),s0:rr(1.4,2),s1:rr(3,4.2),r:.62,g:.64,b:.62,a:.55,f:2,drag:.6,lit:1})}}},
+        FX.spawn({x:S.x+Math.cos(a)*d,y:S.y+rr(.2,2.4),z:S.z+Math.sin(a)*d,vx:rr(-.2,.2),vy:rr(0,.25),vz:rr(-.2,.2),life:rr(3,4.5),s0:rr(1.4,2),s1:rr(3,4.2),r:S.c?S.c[0]:.62,g:S.c?S.c[1]:.64,b:S.c?S.c[2]:.62,a:.55,f:2,drag:.6,lit:1})}}},
   // inside a cloud (or the line between two points crosses one)
   at(x,z,pad){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;if(Math.hypot(x-S.x,z-S.z)<S.r*.85+(pad||0))return S}return null},
   blocks(ax,az,bx,bz){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz||1,t=clamp(((S.x-ax)*dx+(S.z-az)*dz)/l,0,1),cx=ax+dx*t-S.x,cz=az+dz*t-S.z;if(cx*cx+cz*cz<S.r*S.r*.6)return true}return false},
@@ -214,7 +215,7 @@ Object.assign(GUNS,{epAmmo:{parts:[Pt(0,.13,0,.42,.26,.2,'olive',{r:.02}),Pt(0,.
     eplx(L,m){const s=byIdAny(m.i);if(s)ELAS.stop(s,true)},
     epbt(L,m){EBUL.draw(m)},
     epgn(L,m){const A=m.a;EGREN.throw(m.k,A[0]/100,A[1]/100,A[2]/100,A[3]/100,A[4]/100,A[5]/100,m.T/100,{src:byIdAny(m.s)},true,m.id)},
-    epsm(L,m){ESMK.add(m.x/100,m.y/100,m.z/100,m.r/100,m.l/100,true)},
+    epsm(L,m){ESMK.add(m.x/100,m.y/100,m.z/100,m.r/100,m.l/100,true,Array.isArray(m.c)?m.c.map(v=>v/100):null)},
     epwv(L,m){EWAVE.add(m.x/100,m.y/100,m.z/100,m.R/100,m.sp/100,0,null,true)},
     epak(L,m){EPK.spawn(m.x/100,m.y/100,m.z/100,m.id,true)},
     epap(L,m){const k=EPK.list.find(q=>q.id===m.id);if(k){const P=G.player;if(P&&P.id===m.by)EPK.give(P);EPK.remove(k)}}});

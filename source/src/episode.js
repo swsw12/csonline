@@ -8,7 +8,7 @@
 //   terms   hold rings in turn (a human inside, no zombie inside: the clock runs)              — 1챕터 security terminals
 //   act     hold E at devices (all of them, or in order: D.seq); a hit breaks it off for a moment — generators, records, valves, relays
 //   hold    survive D.len s; the boss may show up meanwhile (D.meet)                            — 1챕터 the lift, 3챕터 the conveyor
-//   breach  get everybody into the goal box within D.len s                                     — 4챕터 the summit gate
+//   breach  get everybody into the goal box within D.len s (C.breachOK can ask for more first) — 4챕터 the summit gate
 //   boss    three phases; a wipe replays the phase it reached
 //   escape  after the boss: everybody alive to the exit within 60 s (late still clears, without the bonus)
 // Between stages the next door opens with a supply box; everybody inside the next zone (or 40 s) starts the next stage. The fallen
@@ -198,7 +198,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     if(D.meet){if(!E&&this.obj.p>=(D.meet.at||10))this.meetStart();else if(E&&E.st==='on'){E.t+=dt;if(B&&B.meetTick)B.meetTick(E,dt)}}
     this.trickle(dt,D.mix,D.cap||.9);SCEN.unstick(dt);this.countZ();this.introTick();
     let all=!!gb,n=0;if(gb)for(const h of SCEN.H){if(!h.alive)continue;n++;if(!this.inBox(gb.box,h.c.x,h.c.z))all=false}this.obj.h=n;
-    if(all&&n){if(E&&E.st==='on'&&B&&B.meetLeave)B.meetLeave(E);this.stageClear();return}
+    if(all&&n&&(!this.C.breachOK||this.C.breachOK())){if(E&&E.st==='on'&&B&&B.meetLeave)B.meetLeave(E);this.stageClear();return}
     if(this.obj.p>=len){this.say(D.late||'cut');this.fail()}},
   // the boss's first appearance (and its way out)
   meetStart(){const B=this.B();this.meet={st:'on',t:0,a:null};if(B&&B.meetStart)B.meetStart(this.meet)},
@@ -244,7 +244,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     if(!P.alive||P.team!==TH||Main.paused||P.grabT>0||P.knockT>0||!this.reviveOK()){U.t=0;U.tg=null;U.dev=U.bd=-1;this.useSend(P,-1);return}
     const tg=this.deadNear(P,1.7);if(tg!==U.tg)U.t=0;U.tg=tg;
     if(tg){U.dev=U.bd=-1;this.useSend(P,-1);if(!P.cmd.use){U.t=0;return}U.t+=dt;if(U.t>=4){U.t=0;if(NET.cli){if(G.t-U.sent>1){U.sent=G.t;netToHost({t:'eprv',i:tg.id})}}else this.reviveAt(tg,P)}return}
-    U.t=0;const D=this.S(),B=this.B(),run=this.ph==='run',di=D.k==='act'&&run?this.devNear(P):-1,bd=D.k==='boss'&&run&&B&&B.useNear?B.useNear(P):-1;U.dev=di;U.bd=bd;
+    U.t=0;const D=this.S(),B=this.B(),run=this.ph==='run',di=D.k==='act'&&run?this.devNear(P):-1,bd=(D.k==='boss'||D.k==='breach'&&this.C.breachDev)&&run&&B&&B.useNear?B.useNear(P):-1;U.dev=di;U.bd=bd;
     const ok=P.cmd.use&&G.t>=(P.useBlk||0);this.useSend(P,ok&&di>=0?di:ok&&bd>=0?100+bd:-1)},
   useSend(P,d){if(P.epUse===d)return;P.epUse=d;if(NET.cli)netToHost({t:'epuse',d})},
   // a hit while holding a device breaks it off for a moment
@@ -307,7 +307,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     // a device in reach: hold E there, unless a zombie is right on it (the boss fight's own devices when the boss says it is worth it)
     a.epUse=-1;const k=this.S().k;if(this.ph!=='run')return;
     if(k==='act'){const j=this.devNear(a);if(j>=0&&!zNearPt(c.x,c.y,c.z,2.6)){a.epUse=j;a.cmd.f=a.cmd.s=0;a.cmd.jump=false}}
-    else if(k==='boss'&&Bo&&Bo.botUse){const j=Bo.botUse(a);if(j>=0&&!zNearPt(c.x,c.y,c.z,2.6)){a.epUse=100+j;a.cmd.f=a.cmd.s=0;a.cmd.jump=false}}},
+    else if((k==='boss'||k==='breach'&&this.C.breachDev)&&Bo&&Bo.botUse){const j=Bo.botUse(a);if(j>=0&&!zNearPt(c.x,c.y,c.z,2.6)){a.epUse=100+j;a.cmd.f=a.cmd.s=0;a.cmd.jump=false}}},
   bossNear(x,z,r){const b=this.bossA();return !!(b&&Math.hypot(b.c.x-x,b.c.z-z)<r)},
   // the chapter's own zombies (the boss, the straitjackets, ...) own their controls
   zPost(a){const Z=EPZ[a.zc];if(Z&&Z.post)Z.post(a)},

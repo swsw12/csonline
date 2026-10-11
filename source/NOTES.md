@@ -645,3 +645,24 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - New radio lines: aWave (ch1), aFrag and aPounce (ch2).
 - Balance from 4-bot simulations on normal (whole chapters): chapter 1 about 6.5 min, one life lost (was none); chapter 2 8–11 min,
   one or two lives lost, medal B (was S). Human players can jump the waves and use the rings better than the bots do.
+
+## v6.23 — zombie scenario chapter 4 「라이어버드」 (lyrebird.js, mapep4.js, ping.js; multiplayer not tested here: the owner tests it)
+- mapep4.js 「운무봉 통신기지」 (MAPDEFS.ep4, ep:4): A the checkpoint at the foot (y 0, gate gA), B the mountain road (lower road east
+  y 0 → 3, the hairpin and supply depot at y 3, the upper road west y 3 → 6 through a rock tunnel; three relays; gate gB), C the radar dome
+  compound (y 6; radar blocks, mess hall, the summit gate gC and its console), D the summit antenna yard (y 10; three alarm siren towers,
+  lattice masts with platforms, helipad, the two-storey signals block, the generator shed, the cliff over the sea of cloud). Clouds at y −14,
+  blinking warning lamps (E4GLOW). env.skyFog (map.js / shaders.js): the sky dome fades into the fog colour.
+- lyrebird.js: EPFOG (the fog density per stage / near lit relays / past the cliff edge / thicker after the cry / clear for a siren's 10 s;
+  bots see 2.3 / density metres, 18–90), SIREN (beacons, rings, the boxes = boss devices epUse 100–102), DECOY (dyn boxes eh k 'dc',
+  shot through C.boxShot), GATEC (stage 3's console = boss device 103, progress in EP.obj.ps[0]; CHAP.breachOK / breachDev / goal /
+  markers), LYRE (the boss: brain, pounce / pin / release, climb / perch, fake radio (CHAT + PING), mirages, sonic, echo, disguise (a human
+  rig via rigKey, epAsH), fake siren; hit volumes through epRay; the rig extras: the throat sac, the radio pack), MIRAGE (a teammate's rig on
+  a zombie, walks up, lunges, grabs), EPZ radioman / spore. The quadruped rig: lyCrawl (IK hands through ik2 in the spine frame, feet
+  through solveLeg with the pelvis pitch; a trot on the stride clock; perch / pin / down / leap poses).
+- ping.js: PING (Z / middle button / the 📍 touch button; host relays 'pngs' to the pinger's side; screen diamonds and minimap marks).
+- episode.js: a breach stage can wait on C.breachOK and use the boss module's devices (C.breachDev).
+- Snapshot (bsPack): id, phase, grog, grog max, flags, pack %, pose, disguise as, victim, sirens. Events 'ely'; client → host 'elyk'
+  (the knife frees a pin), 'elys' (a decoy shot).
+- Balance from 4-bot simulations on normal (whole chapter): 6.5–10 min, the boss fight 165–270 s, sometimes a wipe in phase 3.
+- Test harness note: calling HUD.update every few frames in headless runs makes the renderer's memory climb to an OOM kill (swiftshader
+  compositing); the long sims skip it (window.__noHud).

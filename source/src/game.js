@@ -32,7 +32,15 @@ Object.assign(ZCLASS,{
   khepri:{n:['케프리','KHEPRI'],sk:['고철 공','Scrap ball'],d:['3챕터 보스 · Q7-303','Chapter 3 boss · Q7-303'],hp:18000,armor:0,speed:5.4,jump:7,kb:.05,dmg:30,skill:'none',cd:99,dur:0,hw:.78,h:1.7,eye:1.2},
   larva:{n:['유충 좀비','Larva Zombie'],sk:['유충 떼','Swarm'],d:['3·5챕터 · 죽으면 유충 떼가 터져 나온다 (불로 태우면 사라짐)','Chapters 3 and 5 · bursts into a swarm when it dies (fire burns it away)'],hp:1700,armor:60,speed:5.6,jump:7.2,kb:1.1,dmg:40,skill:'none',cd:99,dur:0,hw:.3,h:1.84,eye:1.68},
   scrap:{n:['장갑 고철 좀비','Scrap-Armour Zombie'],sk:['고철 갑옷','Scrap armour'],d:['3챕터 · 총알 −50%, 불·폭발 ×2, 느림','Chapter 3 · bullets −50 %, fire and blasts ×2, slow'],hp:2300,armor:180,speed:5,jump:6.8,kb:.45,dmg:60,skill:'none',cd:99,dur:0,hw:.36,h:1.96,eye:1.78}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 4 (lyrebird.js): LYREBIRD, RT-1's signaller (its own brain; 1.4× a man, on all fours), the radio-operator zombie (kill it
+// and its radio traces LYREBIRD for 5 s), the spore zombie (bursts into a patch of thick fog) and the mirage — a hallucination in a
+// teammate's shape (drawn with that teammate's rig; no flashlight)
+Object.assign(ZCLASS,{
+  lyrebird:{n:['라이어버드','LYREBIRD'],sk:['흉내','Mimicry'],d:['4챕터 보스 · RT1-05','Chapter 4 boss · RT1-05'],hp:19000,armor:0,speed:7.5,jump:9,kb:.2,dmg:24,skill:'none',cd:99,dur:0,hw:.42,h:1.9,eye:1.6},
+  radioman:{n:['통신병 좀비','Radio-Operator Zombie'],sk:['역탐지','Trace'],d:['4챕터 · 무전기가 지직거린다 — 죽이면 5초 동안 라이어버드 위치가 보인다','Chapter 4 · its radio crackles — kill it and LYREBIRD shows for 5 s'],hp:1500,armor:40,speed:5.6,jump:7.2,kb:1,dmg:22,skill:'none',cd:99,dur:0,hw:.3,h:1.84,eye:1.7},
+  spore:{n:['포자 좀비','Spore Zombie'],sk:['포자 안개','Spore fog'],d:['4챕터 · 터지면 그 자리 안개가 짙어진다','Chapter 4 · bursts into a patch of thick fog'],hp:1400,armor:30,speed:5,jump:6.8,kb:1.2,dmg:26,skill:'none',cd:99,dur:0,hw:.32,h:1.86,eye:1.7},
+  mirage:{n:['환각','Mirage'],sk:['붙잡기','Grab'],d:['4챕터 · 안개 속의 아군 모습 — 손전등이 없다','Chapter 4 · a teammate in the fog — with no flashlight'],hp:300,armor:0,speed:4.6,jump:6,kb:1.5,dmg:0,skill:'none',cd:99,dur:0,hw:.3,h:1.8,eye:1.65}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};
@@ -256,7 +264,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(cmd.lastInv){equip(a,hasWeapon(a,a.prev)?a.prev:(a.team===TZ?'claw':bestWeapon(a)));cmd.lastInv=false}
   const W=WPN[a.cur];if(!W)return;
   if(a.team===TZ){zombieAttack(a,dt);return}
-  if(a.grabT>0){cmd.fire=cmd.alt=cmd.reload=false}// pinned by a straitjacket zombie: no shooting until a teammate frees you
+  if(a.grabT>0&&!(a.lyPin>0&&W.kind==='melee')){cmd.fire=cmd.alt=cmd.reload=false}// pinned by a straitjacket zombie: no shooting until a teammate frees you (pinned by 4챕터's LYREBIRD: a knife still works)
   // grenades
   if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){throwNade(a,a.cur);a.inv[a.cur]=Math.max(0,a.inv[a.cur]-1);const nx=['he','frost','flare'].find(k=>a.inv[k]>0);equip(a,nx||bestWeapon(a))}return}
     if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;if(a.isPlayer){VM.throwNade();AU.play('pin',{vol:.5})}}return}

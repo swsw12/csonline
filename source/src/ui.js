@@ -123,7 +123,8 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     // who is under the crosshair
     let ai='';if(P.alive&&!G.spec){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const hw=rayCast(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,60);let best=null,bt=hw?hw.t:60;
       for(const t of G.actors){if(!t.alive||t===P)continue;const c=t.c;const th=rayAABB(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,c.x-c.hw,c.y,c.z-c.hw,c.x+c.hw,t.head.y+.15,c.z+c.hw,bt);if(th>=0&&th<bt){bt=th;best=t}}
-      if(best)ai=`<span class="${best.team===TZ?'z':'h'}">${esc(best.name)}</span>`+(best.team===TZ&&P.team===TH?`<span class="bar"><i style="width:${Math.round(clamp(best.hp/best.maxHp,0,1)*100)}%"></i></span>`:'')}
+      // (something wearing a teammate's shape — 4챕터's mirages, LYREBIRD in disguise — reads as that teammate: epAsH, epName)
+      if(best){const asH=!!best.epAsH;ai=`<span class="${best.team===TZ&&!asH?'z':'h'}">${esc(asH&&best.epName||best.name)}</span>`+(best.team===TZ&&!asH&&P.team===TH?`<span class="bar"><i style="width:${Math.round(clamp(best.hp/best.maxHp,0,1)*100)}%"></i></span>`:'')}}
     if(e.aimInfo.innerHTML!==ai)e.aimInfo.innerHTML=ai;
     // top bar
     e.hRound.textContent=`${T('round')} ${G.round}/${G.rounds}`;const tm=Math.max(0,Math.ceil(G.time));e.hTime.textContent=G.st==='prep'?'0:'+String(tm).padStart(2,'0'):`${Math.floor(tm/60)}:${String(tm%60).padStart(2,'0')}`;
