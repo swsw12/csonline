@@ -4,11 +4,11 @@ const TH=0,TZ=1;
 const HSKINS=['guard','medic','soldier','hazmat'];
 const HSKIN_N={guard:['박재원','Park Jae-won'],medic:['엘레나','Elena'],soldier:['메이슨','Mason'],hazmat:['서유나','Seo Yuna']};
 const ZCLASS={
-  rager:{n:['일반 좀비','Regular Zombie'],sk:['광폭화','Berserk'],d:['기본형 · 스킬 G: 광폭화 (5초간 이동속도 +45%, 대신 받는 피해 +30% / 체력 소모)','Standard · Skill G: Berserk (5s +45% speed, but takes +30% damage / costs HP)'],hp:2400,armor:120,speed:5.6,jump:7.3,kb:1,dmg:55,skill:'frenzy',cd:14,dur:5,hw:.3,h:1.8,eye:1.62},
-  runner:{n:['라이트 좀비','Light Zombie'],sk:['투명화','Invisibility'],d:['고속·고점프 · 스킬 G: 투명화 (8초간 거의 보이지 않음, 봇은 가까이서만 발견) · 체력 낮음','Fast, jumps high · Skill G: Invisibility (8s, nearly invisible; bots only spot you up close) · low HP'],hp:1700,armor:60,speed:6.4,jump:8.6,kb:1.3,dmg:40,skill:'invis',cd:16,dur:8,hw:.28,h:1.82,eye:1.66},
-  brute:{n:['헤비 좀비','Heavy Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:2700,armor:220,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
-  coffin:{n:['관짝 좀비','Coffin Zombie'],sk:['관 방패','Coffin Wall'],d:['방어형 · 스킬 G: 앞에 기다란 관을 세로로 세움 (총알·이동을 막음, 부서지면 좀비 폭탄처럼 폭발, 최대 2개)','Defender · Skill G: stands a tall coffin up in front (stops bullets and bodies; bursts like a zombie bomb when broken; up to 2)'],hp:2800,armor:200,speed:5.3,jump:7,kb:.8,dmg:58,skill:'coffin',cd:14,dur:0,hw:.32,h:1.92,eye:1.72},
-  scream:{n:['부두 좀비','Voodoo Zombie'],sk:['치유','Heal'],d:['지원형 · 스킬 G: 치유 (자신 25%, 주변 좀비 20% 회복)','Support · Skill G: Heal (25% to itself, 20% to nearby zombies)'],hp:2000,armor:100,speed:5.5,jump:7.3,kb:1.1,dmg:48,skill:'heal',cd:12,dur:1.2,hw:.29,h:1.85,eye:1.68},
+  rager:{n:['일반 좀비','Regular Zombie'],sk:['광폭화','Berserk'],d:['기본형 · 스킬 G: 광폭화 (5초간 이동속도 +45%, 대신 받는 피해 +30% / 체력 소모)','Standard · Skill G: Berserk (5s +45% speed, but takes +30% damage / costs HP)'],hp:2900,armor:120,speed:5.6,jump:7.3,kb:1,dmg:55,skill:'frenzy',cd:14,dur:5,hw:.3,h:1.8,eye:1.62},
+  runner:{n:['라이트 좀비','Light Zombie'],sk:['투명화','Invisibility'],d:['고속·고점프 · 스킬 G: 투명화 (8초간 거의 보이지 않음, 봇은 가까이서만 발견) · 체력 낮음','Fast, jumps high · Skill G: Invisibility (8s, nearly invisible; bots only spot you up close) · low HP'],hp:2050,armor:60,speed:6.4,jump:8.6,kb:1.3,dmg:40,skill:'invis',cd:16,dur:8,hw:.28,h:1.82,eye:1.66},
+  brute:{n:['헤비 좀비','Heavy Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:3400,armor:220,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
+  coffin:{n:['관짝 좀비','Coffin Zombie'],sk:['관 방패','Coffin Wall'],d:['방어형 · 스킬 G: 앞에 기다란 관을 세로로 세움 (총알·이동을 막음, 부서지면 좀비 폭탄처럼 폭발, 최대 2개)','Defender · Skill G: stands a tall coffin up in front (stops bullets and bodies; bursts like a zombie bomb when broken; up to 2)'],hp:3300,armor:200,speed:5.3,jump:7,kb:.8,dmg:58,skill:'coffin',cd:14,dur:0,hw:.32,h:1.92,eye:1.72},
+  scream:{n:['부두 좀비','Voodoo Zombie'],sk:['치유','Heal'],d:['지원형 · 스킬 G: 치유 (자신 25%, 주변 좀비 20% 회복)','Support · Skill G: Heal (25% to itself, 20% to nearby zombies)'],hp:2400,armor:100,speed:5.5,jump:7.3,kb:1.1,dmg:48,skill:'heal',cd:12,dur:1.2,hw:.29,h:1.85,eye:1.68},
 };
 const ZLIST=['rager','runner','brute','scream','coffin'];
 // every gun carries twice the spare ammo it used to
@@ -233,7 +233,7 @@ function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy
   const kd=Math.exp(-dt*(c.onGround?4:1.1));a.kvx*=kd;a.kvz*=kd;
   if(a.frozen>0){a.mvx=a.mvz=0;a.kvx*=.5;a.kvz*=.5}
   // jump
-  if(cmd.jump&&(!a.pc.jump||a.team===TH&&G.t-(a.landT||-9)<.09)&&c.onGround&&a.frozen<=0&&!(a.rootT>0)&&!(a.holdT>0)){if(a.team===TH)a.bhop=G.t-(a.landT||-9)<BHOP_WIN?Math.min(BHOP_MAX,(a.bhop|0)+1):0;c.vy=jumpV(a);c.onGround=false;c.jumped=true;if(a.isPlayer){VM.jumped();if(a.team===TH)AU.play('step_conc',{vol:.35})}}
+  if(cmd.jump&&(!a.pc.jump||G.t-(a.landT||-9)<.09)&&c.onGround&&a.frozen<=0&&!(a.rootT>0)&&!(a.holdT>0)){if(a.team===TH)a.bhop=G.t-(a.landT||-9)<BHOP_WIN?Math.min(BHOP_MAX,(a.bhop|0)+1):0;c.vy=jumpV(a);c.onGround=false;c.jumped=true;if(a.isPlayer){VM.jumped();if(a.team===TH)AU.play('step_conc',{vol:.35})}}
   c.vx=a.mvx+a.kvx;c.vz=a.mvz+a.kvz;const ox=c.x,oz=c.z;
   moveChar(c,dt);headStand(a);
   // blocked axes lose their velocity
@@ -293,7 +293,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
     if(G.t>=a.nextFire&&a.drawT<=0&&(cmd.fire||cmd.alt)){const heavy=!!cmd.alt;if(!heavy)a.an.atkSide=-(a.an.atkSide||1);meleeSwing(a,heavy);a.nextFire=G.t+W.rate[heavy?1:0];a.an.atk=1;a.an.heavy=heavy;a.an.atkD=meleeAtkD(W,heavy);
       const d=W.hitT?W.hitT[heavy?1:0]:0;if(d>0)meleePend(a,d,heavy);else meleeStrike(a,heavy)}return}
   const am=a.ammo[a.cur];if(!am)return;
-  if(W.alt&&W.kind!=='saw'&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0)nyAlt(a,W);
+  if(W.alt&&W.kind!=='saw'&&cmd.alt&&!pc.alt&&a.drawT<=0&&(a.reloadT<=0||W.alt==='detonate'))nyAlt(a,W);
   // zoom levels cycle with the right button
   // Dual Berettas: the aim key flips the stance (looks only)
   if(W.dual&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
@@ -403,7 +403,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
   aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;
   // Original: every dead zombie stays down this round. Mutation: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
   // the Nata Knife's (killknife) last blow keeps any zombie down in every mode (hosts too)
-  const perma=G.mode==='orig'||o.w==='killknife'&&G.mode!=='scen'||G.mode==='mut'&&(o.knife||o.hs||(!t.host&&o.he));
+  const perma=G.mode==='orig'||o.w==='killknife'&&G.mode!=='scen'||G.mode==='mut'&&(o.knife||o.hs);
   if(perma)t.permaDead=true;else if(G.mode==='mut')t.reviveT=8;else t.respawnT=5
   if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills
   HUD.feed(src,o.w,t,{hs:o.hs,perma});nyOnKill(t,src);
@@ -420,7 +420,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
 // dismemberment: only on bodies that stay down (perma kills, or the classic mode where the dead respawn elsewhere).
 // Headshots take the head off (heavy guns may burst it instead), explosions tear off one or two limbs, heavy blades lop off a head or an arm,
 // a close shotgun blast can take an arm.
-function dismember(t,o,perma){if(!t.ch||!o.dir||!(G.mode!=='mut'||perma))return;const W=WPN[o.w]||{},big=W.kind==='sniper'||W.kind==='shotgun'||(W.dmg||0)>=60;
+function dismember(t,o,perma){if(!t.ch||!o.dir||!(G.mode!=='mut'||perma||o.he))return;const W=WPN[o.w]||{},big=W.kind==='sniper'||W.kind==='shotgun'||(W.dmg||0)>=60;
   const cut=(k,d,sp)=>{if(SEVER[k]&&!(t.ch.hide>>SEVER[k].root&1)){FX.limb(t,k,d,sp);severLimb(t.ch,k);(t.spurts=t.spurts||[]).push({b:SEVER[k].stump,t:2.6,ph:Math.random()*6})}};
   if(o.hs&&!o.knife){if(big&&Math.random()<.55){severLimb(t.ch,'head');(t.spurts=t.spurts||[]).push({b:14,t:2.6,ph:0})}else cut('head',o.dir,rr(3,5.5))}
   else if(o.he||o.w==='gl40'){const ks=shuffle(['armL','armR','legL','legR','head','armL','armR']);const n=Math.random()<.45?2:1;for(let i=0,c=0;i<ks.length&&c<n;i++)if(!(t.ch.hide>>SEVER[ks[i]].root&1)){cut(ks[i],[o.dir[0],.7,o.dir[2]],rr(4.5,7.5));c++}}
