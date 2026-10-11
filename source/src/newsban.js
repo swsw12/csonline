@@ -10,7 +10,7 @@ const NEW_CONTENT=[
   {kind:'weapon',ref:'plasma',tag:['상점 7,500 코인','Shop · 7,500 coins'],t:['플라즈마 건','Plasma Gun'],
     d:['초록 플라즈마 구체를 연사하고, 구체마다 스플래시가 터져요. 부위와 상관없이 같은 데미지 — 좀비 무리를 한꺼번에 녹이는 총.','Rapid green plasma orbs, each bursting with a splash. The same damage wherever it hits — a crowd melter.']},
   {kind:'weapon',ref:'balrog11',tag:['상점 7,000 코인','Shop · 7,000 coins'],t:['발록-XI','Balrog-XI'],
-    d:['4발을 이어 쏠 때마다 특수탄 충전(최대 7). 우클릭으로 화염구 5개를 부채꼴로 — 가까이서 쏘면 한 몸에 다 박혀요.','Every four shells in one pull charge a special round (up to 7). Right click looses five fireballs in a fan — at point blank they all go into one body.']},
+    d:['4발 쏠 때마다 특수탄 충전(최대 7발까지 저장). 우클릭으로 화염구 5개를 부채꼴로 — 가까이서 쏘면 한 몸에 다 박혀요.','Every four shells fired charge a special round (stack up to 7). Right click looses five fireballs in a fan — at point blank they all go into one body.']},
   {kind:'weapon',ref:'balrog5',tag:['상점 6,500 코인','Shop · 6,500 coins'],t:['발록-5','Balrog-5'],
     d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 8이 되면 다음 한 발이 맞은 곳에서 폭발해요. 총 왼쪽(보이는 쪽)에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 8 the next bullet explodes where it lands. The gauge lights up on the left of the handguard (the side you see) and a lamp blinks on top when it is full.']},
   {kind:'feature',ico:'💬',tag:['신규 기능','New'],t:['친구창 채팅','Friend chat'],

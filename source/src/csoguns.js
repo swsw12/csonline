@@ -56,7 +56,7 @@ GUNS.balrog11={parts:[
   ...pGrip('grip2',-.045,.04,.3),...tGuard(-.01),Pt(0,.04,.18,.042,.064,.24,'blk2',{rx:-.06}),Pt(0,.078,.19,.034,.02,.16,'lacR'),Pt(0,.02,.34,.05,.12,.02,'rub',{rx:-.08})],
   grip:[0,-.03,.02],sup:[0,.005,-.3],muzzle:[0,.066,-.775],mag:[0,.0,-.12],eject:[.03,.05,-.06]};
 WPN.balrog11={slot:1,kind:'shotgun',n:['발록-XI','Balrog-XI'],cost:5750,mag:7,res:49,pellets:6,dmg:24,rpm:240,spread:[.06,.075,.11],rec:[.06,.02],kb:3.2,stag:.45,hs:2,
-  shellRel:.36,relStart:.32,relFire:1,spEvery:4,spMax:7,spRun:1,spFlame:1,spGain:'bxchg',spFanA:.2,spDmg:160,spKb:6,spStag:1.1,spBurn:3,spSpd:24,spLife:.6,
+  shellRel:.36,relStart:.32,relFire:1,spEvery:4,spMax:7,spFlame:1,spGain:'bxchg',spFanA:.2,spDmg:160,spKb:6,spStag:1.1,spBurn:3,spSpd:24,spLife:.6,
   draw:.85,speed:.9,snd:'bx11',model:'balrog11',hold:'rifle',shell:1,spose:[-.09,.1,-.02,.34,.2,-1.0]};
 VM_POS.balrog11={p:[.15,-.165,-.37],r:[0,.08,.035]};
 BUY_MENU.find(c=>c.k==='shotgun').items.push('balrog11');

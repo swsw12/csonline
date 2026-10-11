@@ -290,8 +290,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   // Dual Berettas: the aim key flips the stance (looks only)
   if(W.dual&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
   if(W.zoom&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0){a.zoom=(a.zoom+1)%(W.zoom.length+1);a.zoomWas=0;if(a.isPlayer)AU.play('ui',{vol:.3,rate:.7})}
-  // Blaze-8: right click fires a special shell from its own slot (cuts a shell reload short). Balrog-XI (spRun): letting go of the trigger restarts the count
-  if(W.spRun&&!cmd.fire&&a.spN&&a.spN[a.cur])a.spN[a.cur]=0;
+  // Blaze-8: right click fires a special shell from its own slot (cuts a shell reload short).
   if(W.spEvery&&a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire&&(a.isPlayer?cmd.alt&&!pc.alt:(a.spAm&&a.spAm[a.cur]>0&&cmd.fire&&Math.random()<.04))&&a.spAm&&a.spAm[a.cur]>0){
     if(a.reloadT>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload()}if(a.reloadT<=0){spFire(a,W);return}}
   // reloading

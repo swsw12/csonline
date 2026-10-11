@@ -710,7 +710,7 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 ## v6.28 — Balrog-XI, Plasma Gun, Thunderbolt (csoguns.js; build order: after ui.js because it wraps HUD.update)
 - Atlas: plGlow (self-lit green), tbBody (blue-violet plating), tbGlow (self-lit cyan) — 102 of the 104 atlas slots are now used.
 - First person looks at the LEFT side of a gun: lamps / gauges / the plasma cell sit on the left (Balrog-5's gauge moved there too).
-- Balrog-XI: the Blaze-8 special-shell machinery (spEvery 4, spMax 7) plus `spRun` (game.js: letting go of the trigger zeroes a.spN) and
+- Balrog-XI: the Blaze-8 special-shell machinery (spEvery 4, spMax 7) (v6.28.1: the count no longer resets on trigger release; `spRun` removed) and
   `spFlame` (newguns.js spFire → bxFlame): five 'bxfl' projectiles in a ±0.2 rad fan, radius 0.3 + 1.3·t, each stops in the first zombie it touches
   (160, kb 6 uncapped, stagger 1.1, 3 s burn), 24 m/s for 0.6 s. HUD ring #bxRing; ember pips p1..p7 (VMX.balrog11). Shell reload (shellRel .36).
 - Plasma Gun: proj 'plasma' (52 m/s), plBoom splash radius 1.7 (direct target 100 %, others 100→50 % by distance, LOS), `o.flat` skips morale
