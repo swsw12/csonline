@@ -13236,6 +13236,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.31.1','2026-10-12',[
+ ['UP','모바일 사격 보정 — 총을 쏘는 동안(발사 버튼을 누르고 있거나 자동 사격 중)에만 작동하고, 좌우로만 살짝 끌어당겨요. 위아래 조준은 이제 전부 직접 해야 해요.','Mobile aim assist — only while firing (fire button held or auto-fire running), and sideways only. Up and down aiming is all yours now.'],
+]],
 ['v6.31','2026-10-12',[
  ['NEW','이벤트 호라이즌 미니 (상점 30,000코인, 권총) — 이벤트 호라이즌의 빨아들이는 힘만 가진 권총. 2발(예비 6발), 데미지 없음. 느린 구체가 닿은 곳에 작은 블랙홀이 2.6초간 열려 9 m 안의 좀비를 (원본의 약 절반 힘으로) 끌어당겨 살짝 띄워요. 갈아버리기도 마지막 폭발도 없어서 좀비를 모아두거나 시간을 버는 용도예요.','Event Horizon Mini (shop, 30,000 coins, pistol) — a pistol with only the Event Horizon\'s pull. 2 rounds (6 spare), no damage. The slow orb opens a small black hole for 2.6 s that drags zombies within 9 m in at about half the original\'s force and lifts them a little; no grinding, no collapse blast — for bunching zombies up and buying time.'],
 ]],
@@ -13553,7 +13556,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.31 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.31.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -15704,7 +15707,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     if(id==='nv'&&P.team===TZ){P.nv=!P.nv;AU.play('ui',{vol:.35,rate:.5});return}},
   buzz(ms){if(CFG.haptic===false)return;try{navigator.vibrate&&navigator.vibrate(ms)}catch(_){}},
   // ---------- aim assist + auto-fire ----------
-  assist(dt){const P=G.player;this.tgt=null;this.autoF=false;if(!P||!P.alive||Main.overlay||G.st==='menu')return;const W=WPN[P.cur];if(!W||W.kind==='nade')return;
+  assist(dt){const P=G.player;const wasAuto=this.autoF;this.tgt=null;this.autoF=false;if(!P||!P.alive||Main.overlay||G.st==='menu')return;const W=WPN[P.cur];if(!W||W.kind==='nade')return;
     const zt=P.team===TZ,melee=zt||W.kind==='melee';const eye=actorEye(P);const ex=eye.x,ey=eye.y,ez=eye.z;aimDir(P.yaw,P.pitch,_tdir);
     const maxD=melee?(zt?2.4:(W.range?W.range[0]+.2:2.3)):70;let best=null,bs=1e9;
     for(const t of G.actors){if(!t.alive||t===P||t.team===P.team)continue;if(t.team===TZ&&t.zc==='runner'&&t.skillT>0&&!zt)continue;
@@ -15712,9 +15715,9 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
       const ang=Math.acos(clamp((dx*_tdir.x+dy*_tdir.y+dz*_tdir.z)/d,-1,1));const body=Math.atan(.42/d);const cone=melee?.75:Math.max(.07,body*3.2);if(ang>cone)continue;
       if(!losClear(ex,ey,ez,t.c.x,ty,t.c.z))continue;const s=ang/cone+d*.004;if(s<bs){bs=s;best={dx,dy,dz,d,ang,body}}}
     if(!best)return;this.tgt=best;
-    // gentle pull toward the body (stronger while the player is actively aiming), never a hard snap
-    if(CFG.aimAssist!==false&&!melee){const wy=Math.atan2(-best.dx,-best.dz),wp=Math.atan2(best.dy,Math.hypot(best.dx,best.dz));const act=performance.now()-this.lastLook<250||Main.ml;
-      const k=Math.min(1,dt*(act?3.2:1.6));P.yaw=wrapA(P.yaw+wrapA(wy-P.yaw)*k);P.pitch+=(wp-P.pitch)*k*.8}
+    // gentle sideways pull toward the body, only while the gun is firing (the trigger held, or the auto-fire running); up and down is the player's own
+    if(CFG.aimAssist!==false&&!melee&&(P.cmd.fire||wasAuto)){const wy=Math.atan2(-best.dx,-best.dz);const act=performance.now()-this.lastLook<250||Main.ml;
+      const k=Math.min(1,dt*(act?3.2:1.6));P.yaw=wrapA(P.yaw+wrapA(wy-P.yaw)*k)}
     if(CFG.autoFire===false)return;
     const on=melee?best.ang<.6:best.ang<best.body*1.15+.01;if(!on)return;
     const am=P.ammo&&P.ammo[P.cur];if(!melee&&am&&am.mag<=0)return;

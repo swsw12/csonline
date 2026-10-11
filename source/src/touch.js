@@ -99,7 +99,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     if(id==='nv'&&P.team===TZ){P.nv=!P.nv;AU.play('ui',{vol:.35,rate:.5});return}},
   buzz(ms){if(CFG.haptic===false)return;try{navigator.vibrate&&navigator.vibrate(ms)}catch(_){}},
   // ---------- aim assist + auto-fire ----------
-  assist(dt){const P=G.player;this.tgt=null;this.autoF=false;if(!P||!P.alive||Main.overlay||G.st==='menu')return;const W=WPN[P.cur];if(!W||W.kind==='nade')return;
+  assist(dt){const P=G.player;const wasAuto=this.autoF;this.tgt=null;this.autoF=false;if(!P||!P.alive||Main.overlay||G.st==='menu')return;const W=WPN[P.cur];if(!W||W.kind==='nade')return;
     const zt=P.team===TZ,melee=zt||W.kind==='melee';const eye=actorEye(P);const ex=eye.x,ey=eye.y,ez=eye.z;aimDir(P.yaw,P.pitch,_tdir);
     const maxD=melee?(zt?2.4:(W.range?W.range[0]+.2:2.3)):70;let best=null,bs=1e9;
     for(const t of G.actors){if(!t.alive||t===P||t.team===P.team)continue;if(t.team===TZ&&t.zc==='runner'&&t.skillT>0&&!zt)continue;
@@ -107,9 +107,9 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
       const ang=Math.acos(clamp((dx*_tdir.x+dy*_tdir.y+dz*_tdir.z)/d,-1,1));const body=Math.atan(.42/d);const cone=melee?.75:Math.max(.07,body*3.2);if(ang>cone)continue;
       if(!losClear(ex,ey,ez,t.c.x,ty,t.c.z))continue;const s=ang/cone+d*.004;if(s<bs){bs=s;best={dx,dy,dz,d,ang,body}}}
     if(!best)return;this.tgt=best;
-    // gentle pull toward the body (stronger while the player is actively aiming), never a hard snap
-    if(CFG.aimAssist!==false&&!melee){const wy=Math.atan2(-best.dx,-best.dz),wp=Math.atan2(best.dy,Math.hypot(best.dx,best.dz));const act=performance.now()-this.lastLook<250||Main.ml;
-      const k=Math.min(1,dt*(act?3.2:1.6));P.yaw=wrapA(P.yaw+wrapA(wy-P.yaw)*k);P.pitch+=(wp-P.pitch)*k*.8}
+    // gentle sideways pull toward the body, only while the gun is firing (the trigger held, or the auto-fire running); up and down is the player's own
+    if(CFG.aimAssist!==false&&!melee&&(P.cmd.fire||wasAuto)){const wy=Math.atan2(-best.dx,-best.dz);const act=performance.now()-this.lastLook<250||Main.ml;
+      const k=Math.min(1,dt*(act?3.2:1.6));P.yaw=wrapA(P.yaw+wrapA(wy-P.yaw)*k)}
     if(CFG.autoFire===false)return;
     const on=melee?best.ang<.6:best.ang<best.body*1.15+.01;if(!on)return;
     const am=P.ammo&&P.ammo[P.cur];if(!melee&&am&&am.mag<=0)return;
