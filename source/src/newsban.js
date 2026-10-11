@@ -5,6 +5,10 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'crimson',tag:['신규 출시 · 상점 12,000 코인','Out now · Shop · 12,000 coins'],t:['크림슨 피스메이커','Crimson Peacemaker'],
+    d:['빨강과 검정의 싱글 액션 리볼버. 6발, 몸통 250 · 머리 600에 맞은 좀비가 멀리 날아가는 넉백. 우클릭 해머 연타로 남은 탄을 한꺼번에 쏟아내요.','A red-and-black single-action revolver. 6 rounds, body 250 / head 600, a shove that throws zombies back. Right click fans the hammer to dump the cylinder at once.']},
+  {kind:'weapon',ref:'bholemini',tag:['신규 출시 · 상점 30,000 코인','Out now · Shop · 30,000 coins'],t:['이벤트 호라이즌 미니','Event Horizon Mini'],
+    d:['이벤트 호라이즌의 빨아들이는 힘만 가진 권총. 2발, 데미지 없음 — 작은 블랙홀이 2.6초간 9 m 안의 좀비를 끌어모아요. 좀비를 모아두거나 시간을 버는 용도.','A pistol with only the Event Horizon\'s pull. 2 rounds, no damage — a small black hole gathers zombies within 9 m for 2.6 s. For bunching them up and buying time.']},
   {kind:'zombie',ref:'tiamat',tag:['좀비 시나리오 5챕터 · 시즌 1 마지막','Zombie scenario · CH.5 · season 1 finale'],t:['5챕터 「티아마트」','Chapter 5 「TIAMAT」'],
     d:['폭우 치는 밤, 지하 40 m의 빗물 방수로. 수석연구원과 원종이 합쳐진 거대 지네 티아마트는 물속에선 총알이 안 들어가요 — 솟구칠 때 · 좌초됐을 때 · 코어가 열릴 때를 노리고, 배수 수문으로 물을 빼요. 마지막엔 지상으로 기어오르는 놈을 수직갱 나선 경사로로 쫓아가요. 4챕터를 깨면 열려요.','A storm-water tunnel 40 m down on a night of downpour. TIAMAT, the chief researcher fused with the origin strain into a giant centipede, cannot be hurt under the water — hit it when it rises, when it is stranded, when its core opens, and drain the hall to strand it. Last of all, chase it up the spiral ramp of the shaft before it reaches the surface. Opens once chapter 4 is cleared.']},
   {kind:'zombie',ref:'drowned',tag:['신규 좀비','New zombie'],t:['익사체 좀비','Drowned Zombie'],
