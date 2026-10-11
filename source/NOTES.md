@@ -754,4 +754,4 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   humans slow its attacks (up to 1.6×). Hard with 4 bots stalls in the tunnel (zombie pressure). TIAMAT 23,500 × (0.6 + 0.4 × humans) × difficulty (22,000 gave 3 min fights without a wipe, 25,000 one with two).
 
 ## v6.31 — Event Horizon Mini (supply.js)
-- `bholemini`: pistol (slot 2), cost 30000 (shop.js SHOP_PRICE + supabase/schema.sql gun_catalog row — run the SQL), mag 2 / res 6, dmg 0, `pull:1`: reuses the vortex projectile; vortexUpd reads WPN[n.w] vR (7 m) / vT (2.6 s); `pull` skips the grinding ticks and the collapse blast.
+- `bholemini`: pistol (slot 2), cost 30000 (shop.js SHOP_PRICE + supabase/schema.sql gun_catalog row — run the SQL), mag 2 / res 6, dmg 0, `pull:1`: reuses the vortex projectile; vortexUpd reads WPN[n.w] vR (9 m) / vT (2.6 s) / vF (.55 pull force); `pull` skips the grinding ticks and the collapse blast.

@@ -61,7 +61,7 @@ Object.assign(GUNS,{
       Pt(.022,.08,-.05,.004,.05,.004,'chrome'),Pt(-.022,.08,-.05,.004,.05,.004,'chrome'),Pt(0,.08,-.028,.004,.05,.004,'chrome'),Pt(0,.08,-.072,.004,.05,.004,'chrome'),
       ...pGrip('grip2',-.035,.012,.22),...tGuard(-.035)],
     grip:[0,-.02,.005],sup:[-.012,-.045,.01],muzzle:[0,.047,-.175],eject:[.02,.05,-.03]}});
-WPN.bholemini={slot:2,kind:'pistol',n:['이벤트 호라이즌 미니','Event Horizon Mini'],cost:30000,mag:2,res:6,dmg:0,pull:1,vR:7,vT:2.6,rpm:60,semi:1,proj:'vortex',spread:[.004,.02,.06],rec:[.04,.01],kb:0,stag:0,hs:1,reload:2.2,draw:.6,speed:1,snd:'bhole',model:'bholemini',hold:'pistol'};
+WPN.bholemini={slot:2,kind:'pistol',n:['이벤트 호라이즌 미니','Event Horizon Mini'],cost:30000,mag:2,res:6,dmg:0,pull:1,vR:9,vT:2.6,vF:.55,rpm:60,semi:1,proj:'vortex',spread:[.004,.02,.06],rec:[.04,.01],kb:0,stag:0,hs:1,reload:2.2,draw:.6,speed:1,snd:'bhole',model:'bholemini',hold:'pistol'};
 VM_POS.bholemini={p:[.12,-.135,-.37],r:[0,.07,.02]};
 BUY_MENU.find(c=>c.k==='pistol').items.push('bholemini');
 function vortexMake(a,w,x,y,z,vx,vy,vz,ghost){const m=new THREE.Mesh(gunGeo('bholep'),matGun());m.position.set(x,y,z);R.scene.add(m);
@@ -84,9 +84,9 @@ function vortexUpd(n,dt){const m=n.mesh;
   if(Math.random()<.4){const an=rr(0,TAU),rd=rr(1,5);FX.spawn({x:x+Math.cos(an)*rd,y:y+rr(-1,1),z:z+Math.sin(an)*rd,vx:-Math.cos(an)*3,vy:0,vz:-Math.sin(an)*3,life:.6,s0:.3,s1:.05,r:.1,g:.04,b:.15,a:.6,f:2})}
   // the pull is the host's job (zombies of client players get it as an effect); the grinding is done by the owner's own copy
   if(!NET.cli)for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;const dx=x-t.c.x,dz=z-t.c.z,dy=y-1-t.c.y,d=Math.hypot(dx,dy,dz);if(d>VR||d<.05)continue;
-    if(!losClear(x,y,z,t.c.x,t.c.y+1,t.c.z))continue;const hd=Math.hypot(dx,dz)||1,k=1-d/VR,acc=(10+28*k)*(t.host?.7:1);
-    t.kvx+=dx/hd*acc*dt;t.kvz+=dz/hd*acc*dt;const v=Math.hypot(t.kvx,t.kvz);if(v>9){t.kvx*=9/v;t.kvz*=9/v}
-    if(d<4.5){const want=clamp(dy*2,0,3.5);if(t.c.vy<want){t.c.vy=want;t.c.onGround=false;t.c.jumped=true}}
+    if(!losClear(x,y,z,t.c.x,t.c.y+1,t.c.z))continue;const hd=Math.hypot(dx,dz)||1,k=1-d/VR,acc=(10+28*k)*(t.host?.7:1)*(VW.vF||1);
+    t.kvx+=dx/hd*acc*dt;t.kvz+=dz/hd*acc*dt;const v=Math.hypot(t.kvx,t.kvz),vm=9*(VW.vF||1);if(v>vm){t.kvx*=vm/v;t.kvz*=vm/v}
+    if(d<4.5){const want=clamp(dy*2,0,3.5)*(VW.vF?.7:1);if(t.c.vy<want){t.c.vy=want;t.c.onGround=false;t.c.jumped=true}}
     t.staggerT=Math.max(t.staggerT,.3)}
   n.tick-=dt;if(n.tick<=0&&!VW.pull){n.tick=.25;let hit=0;for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;if(Math.hypot(x-t.c.x,y-1-t.c.y,z-t.c.z)>2.6)continue;
       damageActor(t,60,n.owner,{w:n.w,dir:[0,0,0],kb:0,stag:.4,x:t.c.x,y:t.c.y+1,z:t.c.z});hit++}if(hit&&n.owner.isPlayer&&!n.ghost)HUD.hitmark(false)}

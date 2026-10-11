@@ -9,7 +9,7 @@ const THUMB={};
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
 ['v6.31','2026-10-12',[
- ['NEW','이벤트 호라이즌 미니 (상점 30,000코인, 권총) — 이벤트 호라이즌의 빨아들이는 힘만 가진 권총. 2발(예비 6발), 데미지 없음. 느린 구체가 닿은 곳에 작은 블랙홀이 2.6초간 열려 7 m 안의 좀비를 끌어당겨 공중에 띄워요. 갈아버리기도 마지막 폭발도 없어서 좀비를 모아두거나 시간을 버는 용도예요.','Event Horizon Mini (shop, 30,000 coins, pistol) — a pistol with only the Event Horizon\'s pull. 2 rounds (6 spare), no damage. The slow orb opens a small black hole for 2.6 s that drags zombies within 7 m in and lifts them; no grinding, no collapse blast — for bunching zombies up and buying time.'],
+ ['NEW','이벤트 호라이즌 미니 (상점 30,000코인, 권총) — 이벤트 호라이즌의 빨아들이는 힘만 가진 권총. 2발(예비 6발), 데미지 없음. 느린 구체가 닿은 곳에 작은 블랙홀이 2.6초간 열려 9 m 안의 좀비를 (원본의 약 절반 힘으로) 끌어당겨 살짝 띄워요. 갈아버리기도 마지막 폭발도 없어서 좀비를 모아두거나 시간을 버는 용도예요.','Event Horizon Mini (shop, 30,000 coins, pistol) — a pistol with only the Event Horizon\'s pull. 2 rounds (6 spare), no damage. The slow orb opens a small black hole for 2.6 s that drags zombies within 9 m in at about half the original\'s force and lifts them a little; no grinding, no collapse blast — for bunching zombies up and buying time.'],
 ]],
 ['v6.30.1','2026-10-12',[
  ['FIX','봇이 서로 뭉쳐 있거나 한자리에서 멍하니 서 있던 것 완화 — 좀비 봇은 대기 지점에서 오래 기다리지 않고(7초 → 3.5초, 2마리만 모여도 돌격, 후퇴 12초 → 6초), 인간 봇은 동료 근처로 몰려가지 않고 흩어져서 더 자주 자리를 옮겨요.','Bots huddling or standing idle eased — zombie bots wait less at their staging points (7 s → 3.5 s, rush with 2, fall back 12 s → 6 s); human bots no longer pick spots next to teammates and relocate more often.'],
