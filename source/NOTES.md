@@ -755,3 +755,6 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 
 ## v6.31 — Event Horizon Mini (supply.js)
 - `bholemini`: pistol (slot 2), cost 30000 (shop.js SHOP_PRICE + supabase/schema.sql gun_catalog row — run the SQL), mag 2 / res 6, dmg 0, `pull:1`: reuses the vortex projectile; vortexUpd reads WPN[n.w] vR (9 m) / vT (2.6 s) / vF (.55 pull force); `pull` skips the grinding ticks and the collapse blast.
+
+## v6.32 — Crimson Peacemaker (supply.js)
+- `crimson`: pistol (slot 2), shop 12000 (SHOP_PRICE + supabase/schema.sql gun_catalog — run the SQL), mag 6 / res 24, dmg 250, hs 2.4 (head 600), kb 30, rpm 70, rec [.16,.04] + `kickX` (vmKick override); model reuses the r6 revolver reload (rlKind 'rev').

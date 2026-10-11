@@ -27,7 +27,7 @@ function fdMerge(A,B,m){const g6=(a,b)=>[K6(a),K6(b)],g1=(a,b)=>[[a,0],[b,0]],g3
 
 // ---- what kind of reload a gun gets ----
 function rlKind(W,G){const id=W.model;
-  if(W.dual)return 'dual';if(id==='r6')return 'rev';if(W.brk)return 'brk';if(id==='hmg'||id==='mg6')return 'belt';
+  if(W.dual)return 'dual';if(id==='r6'||id==='crimson')return 'rev';if(W.brk)return 'brk';if(id==='hmg'||id==='mg6')return 'belt';
   if(id==='xbow'||id==='xbowa')return 'rail';if(id==='pd50'||id==='airb')return 'top';if(id==='sterling')return 'side';
   if(!G.parts.some(p=>p.tag==='mag')||id==='bhole'||id==='bholemini'||id==='ripper')return 'gen';return 'mag'}
 // the gun's pose while a magazine is changed: tipped so the well faces the free hand (pistols come up into view)

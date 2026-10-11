@@ -64,6 +64,18 @@ Object.assign(GUNS,{
 WPN.bholemini={slot:2,kind:'pistol',n:['이벤트 호라이즌 미니','Event Horizon Mini'],cost:30000,mag:2,res:6,dmg:0,pull:1,vR:9,vT:2.6,vF:.55,rpm:60,semi:1,proj:'vortex',spread:[.004,.02,.06],rec:[.04,.01],kb:0,stag:0,hs:1,reload:2.2,draw:.6,speed:1,snd:'bhole',model:'bholemini',hold:'pistol'};
 VM_POS.bholemini={p:[.12,-.135,-.37],r:[0,.07,.02]};
 BUY_MENU.find(c=>c.k==='pistol').items.push('bholemini');
+// Crimson Peacemaker: a single-action-army revolver in red and black with a brutal kick. 6 rounds, body 250 / head 600, a huge shove.
+Object.assign(GUNS,{
+  crimson:{piv:{mag:[0,.046,-.035],aux:[0,.064,.02]},parts:[
+      Pt(0,.03,-.035,.03,.052,.1,'dred'),Pt(0,.052,-.03,.026,.01,.09,'dred'),
+      ...TAG('mag',[Pt(0,.046,-.035,.044,.044,.052,'blk'),Pt(.0225,.046,-.035,.002,.03,.044,'red'),Pt(-.0225,.046,-.035,.002,.03,.044,'red'),Pt(0,.0685,-.035,.03,.002,.044,'red')]),
+      Pt(0,.062,-.185,.024,.026,.23,'blk'),Pt(0,.046,-.17,.014,.014,.2,'steel'),Pt(0,.0625,-.303,.012,.012,.004,'muzzle'),Pt(0,.08,-.29,.006,.012,.014,'red'),
+      ...TAG('aux',[Pt(0,.078,.012,.014,.006,.012,'blk'),Pt(0,.072,.022,.008,.022,.014,'chrome',{rx:-.4})]),
+      Pt(0,.0745,-.1,.012,.002,.1,'blk2'),...pGrip('dred',-.04,.026,.42),Pt(0,-.1,.058,.034,.012,.05,'blk',{rx:.42}),...tGuard(-.03),Pt(.016,.03,-.02,.004,.016,.016,'chrome')],
+    grip:[0,-.02,.01],sup:[-.012,-.045,.015],muzzle:[0,.062,-.305],mag:[0,.046,-.035],eject:[.02,.05,-.03]}});
+WPN.crimson={slot:2,kind:'pistol',n:['크림슨 피스메이커','Crimson Peacemaker'],cost:12000,mag:6,res:24,dmg:250,hs:2.4,rpm:70,semi:1,spread:[.012,.05,.11],rec:[.16,.04],kickX:[1.1,3.8,.9],kb:30,stag:1,reload:3.2,draw:.8,speed:.95,snd:'r6',model:'crimson',hold:'pistol'};
+VM_POS.crimson={p:[.12,-.14,-.37],r:[0,.07,.02]};
+BUY_MENU.find(c=>c.k==='pistol').items.push('crimson');
 function vortexMake(a,w,x,y,z,vx,vy,vz,ghost){const m=new THREE.Mesh(gunGeo('bholep'),matGun());m.position.set(x,y,z);R.scene.add(m);
   const n={kind:'vortex',owner:a,w,x,y,z,vx,vy,vz,t:0,ph:0,ht:0,tick:0,mesh:m,spin:0,hit:new Set(),upd:vortexUpd,ghost:!!ghost};NADES.push(n);return n}
 function vortexLaunch(a,W,eye,dir){const sp=24;const n=vortexMake(a,a.cur,eye.x+dir.x*.6,eye.y+dir.y*.6-.05,eye.z+dir.z*.6,dir.x*sp,dir.y*sp,dir.z*sp,false);

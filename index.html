@@ -2255,7 +2255,8 @@ const GUN_DESIGN={
   f7:      {mag:20, ch:1, act:'slide', x:.4,  d:.035, roll:.3},              // FN 파이브세븐 5.7mm — 실제 20발. 가벼운 슬라이드를 짧고 빠르게
   tw9:     {mag:30, ch:1, act:'slide', x:.45, d:.04},                        // 베레타 M92FS ×2 — 한 자루 15발씩. X자 교차 뒤 두 슬라이드를 동시에 (약실 +2)
   d50:     {mag:7,  ch:1, act:'slide', x:.6,  d:.06,  roll:.45, heavy:1},    // IMI 데저트 이글 .50AE — 실제 7발. 무거운 슬라이드를 끝까지 천천히
-  r6:      {mag:6,  ch:0, act:'revolver', x:1.1},                            // 콜트 아나콘다 .44 매그넘 — 6연발 리볼버. 실린더 열고 촤르륵 돌리고 닫고 해머 딸깍
+  r6:      {mag:6,  ch:0, act:'revolver', x:1.1},
+  crimson: {mag:6,  ch:0, act:'revolver', x:1.1},                            // 크림슨 피스메이커 (오리지널) — 6연발 싱글액션 리볼버, 빨강·검정                            // 콜트 아나콘다 .44 매그넘 — 6연발 리볼버. 실린더 열고 촤르륵 돌리고 닫고 해머 딸깍
   duckfoot:{         ch:0, act:'cock', x:.45},                               // 스페셜 덕 풋 건 (CSO) — 4연장 일제사격 권총. 엄지로 해머 젖히기
   // ── 샷건 ─────────────────────────────────────────────────────────────────────────────────────
   sg8:     {mag:8,  ch:0, act:'pump', x:.45},                                // 베넬리 M3 슈퍼90 — 군용 튜브 7+약실 1 = 8발. 펌프 척-척
@@ -7690,7 +7691,7 @@ const VM_POS={
   r700:{p:[.145,-.165,-.38],r:[0,.075,.03]},sr8:{p:[.145,-.16,-.37],r:[0,.075,.03]},dm14:{p:[.145,-.165,-.38],r:[0,.075,.03]},
   hmg:{p:[.16,-.19,-.42],r:[0,.08,.035]},mg6:{p:[.16,-.185,-.41],r:[0,.08,.035]},gx6:{p:[.19,-.235,-.43],r:[0,.07,.03]},gl40:{p:[.15,-.17,-.37],r:[0,.08,.035]},airb:{p:[.15,-.18,-.36],r:[0,.08,.035]}};
 // recoil impulses: [push back m/s, pitch rad/s, random roll rad/s]
-function vmKick(W){if(W.flame)return [.1,.16,.18];if(W.spin)return [.16,.25,.25];if(W.kind==='shotgun'||W.kind==='special')return [1.05,2.4,.7];if(W.kind==='sniper')return [.95,2.1,.5];if(W.kind==='pistol')return [.42,1.7,.45];if(W.kind==='mg')return [.5,.75,.4];return [.42,.6,.3]}
+function vmKick(W){if(W.kickX)return W.kickX;if(W.flame)return [.1,.16,.18];if(W.spin)return [.16,.25,.25];if(W.kind==='shotgun'||W.kind==='special')return [1.05,2.4,.7];if(W.kind==='sniper')return [.95,2.1,.5];if(W.kind==='pistol')return [.42,1.7,.45];if(W.kind==='mg')return [.5,.75,.4];return [.42,.6,.3]}
 // keyframed first-person actions: [t, [x,y,z, rx,ry,rz]] offsets from the rest pose
 const VMK={
   // knife: forehand slash right-to-left, rising backhand, heavy stab (hold, then a straight thrust)
@@ -8346,7 +8347,7 @@ function fdMerge(A,B,m){const g6=(a,b)=>[K6(a),K6(b)],g1=(a,b)=>[[a,0],[b,0]],g3
 
 // ---- what kind of reload a gun gets ----
 function rlKind(W,G){const id=W.model;
-  if(W.dual)return 'dual';if(id==='r6')return 'rev';if(W.brk)return 'brk';if(id==='hmg'||id==='mg6')return 'belt';
+  if(W.dual)return 'dual';if(id==='r6'||id==='crimson')return 'rev';if(W.brk)return 'brk';if(id==='hmg'||id==='mg6')return 'belt';
   if(id==='xbow'||id==='xbowa')return 'rail';if(id==='pd50'||id==='airb')return 'top';if(id==='sterling')return 'side';
   if(!G.parts.some(p=>p.tag==='mag')||id==='bhole'||id==='bholemini'||id==='ripper')return 'gen';return 'mag'}
 // the gun's pose while a magazine is changed: tipped so the well faces the free hand (pistols come up into view)
@@ -13142,6 +13143,18 @@ Object.assign(GUNS,{
 WPN.bholemini={slot:2,kind:'pistol',n:['이벤트 호라이즌 미니','Event Horizon Mini'],cost:30000,mag:2,res:6,dmg:0,pull:1,vR:9,vT:2.6,vF:.55,rpm:60,semi:1,proj:'vortex',spread:[.004,.02,.06],rec:[.04,.01],kb:0,stag:0,hs:1,reload:2.2,draw:.6,speed:1,snd:'bhole',model:'bholemini',hold:'pistol'};
 VM_POS.bholemini={p:[.12,-.135,-.37],r:[0,.07,.02]};
 BUY_MENU.find(c=>c.k==='pistol').items.push('bholemini');
+// Crimson Peacemaker: a single-action-army revolver in red and black with a brutal kick. 6 rounds, body 250 / head 600, a huge shove.
+Object.assign(GUNS,{
+  crimson:{piv:{mag:[0,.046,-.035],aux:[0,.064,.02]},parts:[
+      Pt(0,.03,-.035,.03,.052,.1,'dred'),Pt(0,.052,-.03,.026,.01,.09,'dred'),
+      ...TAG('mag',[Pt(0,.046,-.035,.044,.044,.052,'blk'),Pt(.0225,.046,-.035,.002,.03,.044,'red'),Pt(-.0225,.046,-.035,.002,.03,.044,'red'),Pt(0,.0685,-.035,.03,.002,.044,'red')]),
+      Pt(0,.062,-.185,.024,.026,.23,'blk'),Pt(0,.046,-.17,.014,.014,.2,'steel'),Pt(0,.0625,-.303,.012,.012,.004,'muzzle'),Pt(0,.08,-.29,.006,.012,.014,'red'),
+      ...TAG('aux',[Pt(0,.078,.012,.014,.006,.012,'blk'),Pt(0,.072,.022,.008,.022,.014,'chrome',{rx:-.4})]),
+      Pt(0,.0745,-.1,.012,.002,.1,'blk2'),...pGrip('dred',-.04,.026,.42),Pt(0,-.1,.058,.034,.012,.05,'blk',{rx:.42}),...tGuard(-.03),Pt(.016,.03,-.02,.004,.016,.016,'chrome')],
+    grip:[0,-.02,.01],sup:[-.012,-.045,.015],muzzle:[0,.062,-.305],mag:[0,.046,-.035],eject:[.02,.05,-.03]}});
+WPN.crimson={slot:2,kind:'pistol',n:['크림슨 피스메이커','Crimson Peacemaker'],cost:12000,mag:6,res:24,dmg:250,hs:2.4,rpm:70,semi:1,spread:[.012,.05,.11],rec:[.16,.04],kickX:[1.1,3.8,.9],kb:30,stag:1,reload:3.2,draw:.8,speed:.95,snd:'r6',model:'crimson',hold:'pistol'};
+VM_POS.crimson={p:[.12,-.14,-.37],r:[0,.07,.02]};
+BUY_MENU.find(c=>c.k==='pistol').items.push('crimson');
 function vortexMake(a,w,x,y,z,vx,vy,vz,ghost){const m=new THREE.Mesh(gunGeo('bholep'),matGun());m.position.set(x,y,z);R.scene.add(m);
   const n={kind:'vortex',owner:a,w,x,y,z,vx,vy,vz,t:0,ph:0,ht:0,tick:0,mesh:m,spin:0,hit:new Set(),upd:vortexUpd,ghost:!!ghost};NADES.push(n);return n}
 function vortexLaunch(a,W,eye,dir){const sp=24;const n=vortexMake(a,a.cur,eye.x+dir.x*.6,eye.y+dir.y*.6-.05,eye.z+dir.z*.6,dir.x*sp,dir.y*sp,dir.z*sp,false);
@@ -13236,6 +13249,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.32','2026-10-12',[
+ ['NEW','크림슨 피스메이커 (상점 12,000코인, 권총) — 빨강과 검정으로 칠한 싱글 액션 리볼버. 6발, 몸통 250 · 머리 600, 맞은 좀비가 멀리 날아갈 만큼 큰 넉백과 그만큼 큰 반동. 연사가 매우 느려서 한 발 한 발이 중요해요.','Crimson Peacemaker (shop, 12,000 coins, pistol) — a red-and-black single-action revolver. 6 rounds, body 250 / head 600, a shove that throws zombies back and a matching kick. Very slow to fire: every shot counts.'],
+]],
 ['v6.31.1','2026-10-12',[
  ['UP','모바일 사격 보정 — 총을 쏘는 동안(발사 버튼을 누르고 있거나 자동 사격 중)에만 작동하고, 좌우로만 살짝 끌어당겨요. 위아래 조준은 이제 전부 직접 해야 해요.','Mobile aim assist — only while firing (fire button held or auto-fire running), and sideways only. Up and down aiming is all yours now.'],
 ]],
@@ -13556,7 +13572,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.31.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.32 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -14519,7 +14535,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
 // 근하신년 free pick still hand out any gun; the 근하신년 guns themselves come from the decoder bingo (or the fragment exchange). With accounts off (no Supabase settings in account.js) every gun stays open.
 // Prices: the database table gun_prices is the truth; this copy (same numbers as schema.sql) is shown until it has loaded.
 const SHOP_FREE=['knife','p9','sg8','k5','g35'];
-const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000,killknife:12000,blaze8:6000,winchester:4500,balrog5:6500,balrog11:7000,plasma:7500,thunder:9500,bholemini:30000};
+const SHOP_PRICE={f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000,killknife:12000,blaze8:6000,winchester:4500,balrog5:6500,balrog11:7000,plasma:7500,thunder:9500,bholemini:30000,crimson:12000};
 const SHOP_NOTSOLD=['bhole','skull9','salamander','ak60r','dmp7'];// never in the shop: the season decoder's guns (a line on its card), else crate-only
 const SHOP_GACHA={S:['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],A:['xdz','ripper','xbowa','xbow','sterling','duckfoot']};
 // the decoder's numbers until gacha_config has loaded (same defaults as schema.sql)

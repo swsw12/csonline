@@ -302,6 +302,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('plasma',7500,false,true,null),
   ('thunder',9500,false,true,null),
   ('bholemini',30000,false,true,null),
+  ('crimson',12000,false,true,null),
   ('bhole',0,false,false,null),
   ('skull9',0,false,false,null),
   ('salamander',0,false,false,null),
