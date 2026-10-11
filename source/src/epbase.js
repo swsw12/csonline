@@ -37,22 +37,28 @@ const TELE={list:[],geo:null,tc:null,tr:null,id:0,
       else{const fx=-Math.sin(T.yaw),fz=-Math.cos(T.yaw),rx=Math.cos(T.yaw),rz=-Math.sin(T.yaw),dx=x-T.x,dz=z-T.z,al=dx*fx+dz*fz,sd=dx*rx+dz*rz;
         if(al>-pad&&al<T.l+pad&&Math.abs(sd)<T.w/2+pad){const s=sd>=0?1:-1;return {ax:rx*s,az:rz*s}}}}return null}};
 
-// ---------- what a blow does to a human beyond the damage: knocked flat (kd), blinded by a flash (bl), dizzy (dz) ----------
+// ---------- what a blow does to a human beyond the damage: knocked flat (kd), blinded by a flash (bl), dizzy (dz), dust in the eyes (du) ----------
 // The host relays it to the remote player it hit; every page applies it to its own player and the host to its bots.
 function epFx(h,k,t){if(!h||!h.alive||h.team!==TH)return;if(h.net&&NET.host&&!h.isPlayer){netEv('epst',{i:h.id,k,t:r2(t)});return}epFxApply(h,k,t)}
 function epFxApply(h,k,t){
   if(k==='kd'){h.knockT=Math.max(h.knockT||0,t);h.dizzy=Math.max(h.dizzy||0,t*.9);if(h.isPlayer){FX.shake=Math.max(FX.shake,.65);AU.play('bodyfall',{vol:.6});if(HUD.daze)HUD.daze()}}
   else if(k==='bl'){h.blindT=Math.max(h.blindT||0,t);if(h.isPlayer)EPV.blind(t)}
-  else if(k==='dz'){h.dizzy=Math.max(h.dizzy||0,t);if(h.isPlayer&&HUD.daze)HUD.daze()}}
+  else if(k==='dz'){h.dizzy=Math.max(h.dizzy||0,t);if(h.isPlayer&&HUD.daze)HUD.daze()}
+  else if(k==='du'){h.blindT=Math.max(h.blindT||0,t*.5);if(h.isPlayer)EPV.dust(t)}}
 // the screen side of it: a white-out that fades, and the red glow of a laser sight on the player
-const EPV={bl:0,blT:0,las:0,
+const EPV={bl:0,blT:0,las:0,du:0,duT:0,
   el(id,css){let e=$(id);if(!e){e=document.createElement('div');e.id=id;e.style.cssText=css;($('app')||document.body).appendChild(e)}return e},
   blind(t){this.bl=Math.max(this.bl,1);this.blT=Math.max(this.blT,t);AU.play('hiss',{vol:.7,rate:2.4})},
+  // dirt or iron dust thrown in the face: a brown haze that closes in from the edges, then clears
+  dust(t){if(this.duT<=0)AU.play('hiss',{vol:.35,rate:.7});this.du=1;this.duT=Math.max(this.duT,t)},
   update(dt){const P=G.player;if(this.blT>0){this.blT=Math.max(0,this.blT-dt);if(this.blT<=0)this.bl=Math.max(0,this.bl-dt*.9)}else this.bl=Math.max(0,this.bl-dt*.9);
     const b=this.el('epBlind','position:absolute;inset:0;pointer-events:none;z-index:8;background:#fff;opacity:0');const o=this.bl>0?Math.min(1,this.blT>0?1:this.bl):0;if(+b.style.opacity!==o)b.style.opacity=o.toFixed(2);
+    if(this.duT>0)this.duT=Math.max(0,this.duT-dt);else this.du=Math.max(0,this.du-dt*.8);
+    const u=this.el('epDust','position:absolute;inset:0;pointer-events:none;z-index:8;opacity:0;background:radial-gradient(ellipse at center,rgba(96,74,52,.5) 0%,rgba(70,52,34,.88) 46%,rgba(44,32,20,.97) 100%)');
+    const uo=P&&P.alive&&this.du>0?Math.min(.92,this.du*.92).toFixed(2):'0';if(u.style.opacity!==uo)u.style.opacity=uo;
     const l=this.el('epLas','position:absolute;inset:0;pointer-events:none;z-index:7;opacity:0;box-shadow:inset 0 0 90px 30px rgba(255,20,10,.85)');const lo=P&&P.alive?this.las:0;
     const s=lo>0?(.35+.45*Math.abs(Math.sin(G.t*(6+lo*14)))).toFixed(2):'0';if(l.style.opacity!==s)l.style.opacity=s;this.las=0},
-  reset(){this.bl=this.blT=this.las=0;for(const id of ['epBlind','epLas']){const e=$(id);if(e)e.style.opacity=0}}};
+  reset(){this.bl=this.blT=this.las=this.du=this.duT=0;for(const id of ['epBlind','epLas','epDust']){const e=$(id);if(e)e.style.opacity=0}}};
 
 // ---------- laser sights: a red beam from the shooter's muzzle to its mark, shown on every page ----------
 // S: {i, src, tg, t, d, m (mesh), dot}; the marked player's screen edge glows and a beep speeds up as the shot comes
@@ -151,6 +157,9 @@ const EPK={list:[],seq:1,
   remove(k){const i=this.list.indexOf(k);if(i>=0)this.list.splice(i,1);R.scene.remove(k.m);k.m.material.dispose()},
   clear(){for(const k of this.list.slice())this.remove(k)}};
 
+// a shot hit one of the chapter's shootable props (a box with o.eh = {k, i}: drums, gas valves, coolant tanks); the chapter decides
+// (host), a client tells the host about its own shots
+function epBoxShot(b,a,W){if(NET.ghost||!a||a.team!==TH||!EP.on||!EP.C||!EP.C.boxShot)return;EP.C.boxShot(b.o.eh,a,W)}
 // a bot does not see a zombie flagged epHide (the sniper) through a smoke cloud, or inside one, unless it is within 4 m
 function epHid(a,z,d){if(d<4)return false;return !!(ESMK.at(z.c.x,z.c.z,0)||ESMK.blocks(a.c.x,a.c.z,z.c.x,z.c.z))}
 

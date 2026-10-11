@@ -604,3 +604,27 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   (ARGUS.hidNodes, per perch), take peek spots a step from it, close in while it is down, and one minds the floodlight that reaches it.
 - Server: a chapter clear counts from 240 s (was 300; schema.sql, re-run it).
 - Test harness note: yield with a MessageChannel, not setTimeout(0) — headless runs that yielded with timers sometimes stalled for good.
+
+## v6.22 — zombie scenario chapter 3 「케프리」 (khepri.js, mapep3.js; multiplayer not tested here: the owner tests it)
+- mapep3.js 「녹슨 제철소」 (MAPDEFS.ep3, ep:3): A scrap yard (scrap mountain, crushed cars, car press, magnet crane; gate gA), B rail yard
+  (tracks, gondolas, loco, coil flatcar, signal box with an outside stair, pump house, oil tank, gantry, flare stack; the stair cage gB up
+  to the gallery), C conveyor gallery at y 8 (window bays, the breach wall gW), D blast-furnace hall (furnace octagon with catwalk rings
+  at y 5 / 10, slag yard with two scrap heaps, molten runners, casting bay with the ladle, two lever booths, the pour spot; door gC).
+  MAP.ez carries zones / doors / valves / drums / gas / coolant / heaps / scrap / rails / ladle / perches / phase points / gallery / cut.
+  env.ash (map.js): the snow particles tinted as ash (rain shader uTn). ep3Mesh: the runners' molten shader (E3MOLT.uOn = furnace lit).
+- khepri.js: KHEPRI (hp 22,000 × (0.6 + 0.4 × humans) × SC_DIFF.hp; phases at 60 % / 30 %; the header comment has every rule). Its own
+  hit volumes through a.epRay (+ a.epRayZc so a reused boss slot of another class never keeps it): the ball sphere, the head-joint sphere,
+  the body box. The ball (S.b: st held / air / loose / none / grow, r = 1.25 + 0.075 × weight, durability 1,300 × …) rides khFwd(r)
+  ahead of the body. KX = the hazards (drums with hp 50 and chains, gas pillars, coolant steam (ESMK), heaps, scrap pick-ups, fire
+  patches, larva swarms, the phase-2 mini balls); LADLE = the casting bay ladle (levers held as boss devices epUse 100 / 101).
+  The beetle is its own rig on the zombie group (rigX / attach: shell, hinged wing cases and wings, head, six two-part legs whose
+  shins are angled so the claws reach the ground; it rears up to lift the ball). Larva (swarm on death unless fire / HE) and
+  scrap-armour zombies (bullets ×0.5, fire / HE ×2) via EPZ; their designs in design.js.
+- weapons.js / nyw.js: rayActors(X) ask a.epRay when present; part 'ball' → metal impact. epbase.js: epBoxShot (shots on props with
+  o.eh reach C.boxShot), the 'du' dust-in-the-eyes effect.
+- Snapshot (bsPack): id, phase, grog, grog max, flags, ball state, ball xyz, weight, durability, lift, grow radius, pose, ladle.
+  Events 'ekh' (KX kinds → KX.fxApply, 'ld' → LADLE.set, else KHEPRI.fxApply); client → host 'ekhs' prop shot, 'ekhb' HE blast,
+  'ekhf' flame on a swarm.
+- Atlas: epEly / epChit / epBelly / epWing / epRust / epMolt (GA 96 of 104 slots used).
+- Balance from 4-bot simulations on normal: the boss fight 90–210 s, the whole chapter 6–7 min, no lives lost on most runs.
+- Phones: with a boss bar up (#hud.epB) the radio box narrows and keeps its last two lines.

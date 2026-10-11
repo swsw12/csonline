@@ -76,6 +76,8 @@ function rayArms(t,ox,oy,oz,dx,dy,dz,tmax,grow){if(!t.arms||!(t.armT>G.t-.25))re
 // nearest enemy hit along a ray before tmax: {a, t, part}
 function rayActors(src,ox,oy,oz,dx,dy,dz,tmax,teamMask){let best=null,bt=tmax,part=null;
   for(const t of G.actors){if(!t.alive||t===src||t.team===src.team)continue;const c=t.c;
+    // a body with its own hit volumes (3챕터's beetle and its scrap ball: khepri.js) answers for itself: {t, part}
+    if(t.epRay&&t.epRayZc===t.zc){const r=t.epRay(ox,oy,oz,dx,dy,dz,bt);if(r&&r.t<bt){bt=r.t;best=t;part=r.part}continue}
     // quick reject by distance to the ray
     const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h,bt);if(th>=0){bt=th;best=t;part='head'}
@@ -143,10 +145,11 @@ function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
     const ds=hsForce(a,ha),hs=ha.part==='head';dmg*=hs?(W.hs||3):ha.part==='legs'?.75:1;
     const pb=1+Math.max(0,(4-ha.t)/4)*.8;// point-blank shots shove harder
     damageActor(t,dmg,a,{w:a.cur,hs,ds,dir:[dx,dy,dz],kb:W.kb*pb,stag:W.stag,x:ex,y:ey,z:ez,up:W.spUp&&t.c.onGround?W.spUp:0});
-    FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
+    if(ha.part==='ball'){FX.impact(ex,ey,ez,-dx,-dy,-dz,'metal');if(Math.random()<.5)AU.at('imp_metal',ex,ey,ez,{vol:.5,range:30})}else FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
     if(hs&&!t.isPlayer&&a.isPlayer)AU.play('headshot',{vol:.7});else if(!a.isPlayer&&t.isPlayer){}else if(Math.random()<.5)AU.at('imp_flesh',ex,ey,ez,{vol:.6});
     return {hit:true,hs,dmg}}
   if(hw){if(wbox.coffin&&a.team===TH)COFF.hurt(wbox.coffin,W.pellets?W.dmg*.8:W.dmg,a);if((wbox.o.epanel!=null||wbox.o.esteam!=null)&&typeof ALEPH!=='undefined')ALEPH.devShot(wbox,a);// B4's pillar panels and steam valves (aleph.js)
+    if(wbox.o.eh&&typeof epBoxShot==='function')epBoxShot(wbox,a,W);// a chapter's shootable props: drums, gas valves, coolant tanks (epbase.js)
     const m=wbox.o.f&&wbox.o.f[nf(wn)]||wbox.mat;FX.impact(ex,ey,ez,wn[0],wn[1],wn[2],m);
     if(pi===0||Math.random()<.3){const mk=matKind(m),snd=mk==='metal'?'imp_metal':mk==='wood'?'imp_wood':mk==='soft'?'imp_dirt':'imp_conc';AU.at(snd,ex,ey,ez,{vol:.55,range:30})}}
   return null}

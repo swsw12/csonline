@@ -326,7 +326,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     else el.innerHTML=`<div class="ec"><img class="sil" src="${portrait('z_'+E.k,150)}"><div class="tx"><small>${L?'CHAPTER '+this.id:this.id+'챕터'} · ${K.place?K.place[L]:''}</small><h1>${E.t[L]}</h1><p>${mapName(E.map)} — ${L?'Recovery Team 2 (RT-2)':'2차 회수팀 RT-2'}</p><b>${E.n[1]} · ${E.code}</b></div></div>`;
     el.className='on'+(kind==='boss'?' b':'');clearTimeout(this.cardT);this.cardT=setTimeout(()=>{el.className=''},kind==='boss'?3800:4800)},
   // ---------- the HUD ----------
-  barSetup(){const el=$('hEp'),B=this.B();if(!el||!B)return;const L=LI(),bb=el.querySelector('.eb');bb.querySelector('.bh b').textContent=B.name[1];bb.querySelector('.bh em').textContent=B.code;
+  barSetup(){const el=$('hEp'),B=this.B(),hd=$('hud');if(hd)hd.classList.remove('epB');if(!el||!B)return;const L=LI(),bb=el.querySelector('.eb');bb.style.display='none';bb.querySelector('.bh b').textContent=B.name[1];bb.querySelector('.bh em').textContent=B.code;
     const s=bb.querySelectorAll('.hp s');(B.ticks||[60,25]).forEach((v,i)=>{if(s[i])s[i].style.left=v+'%'});
     const g2=bb.querySelector('.g2');g2.style.display=B.g2?'':'none';if(B.g2)g2.querySelector('b').textContent=B.g2[L];bb.querySelector('.g1 b').textContent=L?'STAGGER':'그로기'},
   hud(){const el=$('hEp');if(!el)return;const P=G.player,on=G.st!=='menu'&&!!P&&this.on;const ds=on?'block':'none';if(el.style.display!==ds)el.style.display=ds;
@@ -356,7 +356,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     const ol=el.querySelector('.eo'),os=ot+'|'+warn;if(ol.dataset.s!==os){ol.dataset.s=os;ol.querySelector('span').innerHTML=ot+(warn?` <em>${warn}</em>`:'')}
     const bar=ol.querySelector('i');bar.style.display=pr>=0?'block':'none';if(pr>=0)bar.firstChild.style.width=(clamp(pr,0,1)*100).toFixed(1)+'%';
     // the boss bar
-    const Bs=this.bs(),bb=el.querySelector('.eb'),bon=!!(Bs&&Bs.a.alive&&(D.k==='boss'||this.meet&&this.meet.st==='on'||D.meet&&Bs.a.alive));if(bb.style.display!==(bon?'block':'none'))bb.style.display=bon?'block':'none';
+    const Bs=this.bs(),bb=el.querySelector('.eb'),bon=!!(Bs&&Bs.a.alive&&(D.k==='boss'||this.meet&&this.meet.st==='on'||D.meet&&Bs.a.alive));if(bb.style.display!==(bon?'block':'none')){bb.style.display=bon?'block':'none';const hd=$('hud');if(hd)hd.classList.toggle('epB',bon)}
     if(bon&&Bo){const a=Bs.a,H=Bo.hud(Bs,L);bb.querySelector('.hp u').style.width=Math.max(0,a.hp/a.maxHp*100).toFixed(1)+'%';
       const k=H.ss+'|'+H.sp+'|'+H.cls;if(bb.dataset.s!==k){bb.dataset.s=k;bb.querySelector('.bs').textContent=H.ss;bb.querySelector('.bs').className='bs'+(H.cls?' '+H.cls:'');bb.querySelector('.bp').textContent=H.sp}
       bb.querySelector('.g1 u').style.width=clamp(H.g1,0,1)*100+'%';const g2=bb.querySelector('.g2');if(Bo.g2){g2.style.visibility=H.g2==null?'hidden':'visible';if(H.g2!=null)g2.querySelector('u').style.width=clamp(H.g2,0,1)*100+'%'}}

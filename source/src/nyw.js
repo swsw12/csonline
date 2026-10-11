@@ -175,7 +175,8 @@ function nyProj(a,W,eye,dir,kind){const sp={bolt:78,harpoon:56,disc:24,slug:46}[
   NET.on&&netFxPush(['p',a.id,WI[a.cur],kind,r2(n.x),r2(n.y),r2(n.z),r2(n.vx),r2(n.vy),r2(n.vz)]);return n}
 // nearest enemy along a ray that this projectile has not hit yet
 function rayActorsX(n,ox,oy,oz,dx,dy,dz,tmax){const src=n.owner;let best=null,bt=tmax,part=null;
-  for(const t of G.actors){if(!t.alive||t===src||t.team===src.team||n.hit.has(t))continue;const c=t.c;const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
+  for(const t of G.actors){if(!t.alive||t===src||t.team===src.team||n.hit.has(t))continue;const c=t.c;
+    if(t.epRay&&t.epRayZc===t.zc){const r=t.epRay(ox,oy,oz,dx,dy,dz,bt);if(r&&r.t<bt){bt=r.t;best=t;part=r.part}continue}const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h*1.15,bt);if(th>=0){bt=th;best=t;part='head'}
     const hw=(t.hitW||c.hw)+.04,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);if(tb>=0&&tb<bt){bt=tb;best=t;part=(oy+dy*tb)<c.y+(top-c.y)*.45?'legs':'body'}
     if(t.team===TZ){const ta=rayArms(t,ox,oy,oz,dx,dy,dz,bt,1.15);if(ta>=0&&ta<bt){bt=ta;best=t;part='body'}}}
@@ -189,7 +190,7 @@ function projStep(n,dt,grav,onActor,onWorld){const sp0=Math.hypot(n.vx,n.vy,n.vz
       if(hw&&hw.t<=rem+.02){const k=Math.max(0,tW-.03);n.x+=dx*k;n.y+=dy*k;n.z+=dz*k;return onWorld(n,wn,box,dx,dy,dz)}
       n.x+=dx*rem;n.y+=dy*rem;n.z+=dz*rem;rem=0}}
   return null}
-function projHitFx(n,ha,dx,dy,dz,amt){FX.blood(n.x,n.y,n.z,dx,dy,dz,amt,false);AU.at('imp_flesh',n.x,n.y,n.z,{vol:.6});if(n.owner.isPlayer){HUD.hitmark(ha.part==='head');if(ha.part==='head')AU.play('headshot',{vol:.6})}}
+function projHitFx(n,ha,dx,dy,dz,amt){if(ha.part==='ball')FX.impact(n.x,n.y,n.z,-dx,-dy,-dz,'metal');else FX.blood(n.x,n.y,n.z,dx,dy,dz,amt,false);AU.at('imp_flesh',n.x,n.y,n.z,{vol:.6});if(n.owner.isPlayer){HUD.hitmark(ha.part==='head');if(ha.part==='head')AU.play('headshot',{vol:.6})}}
 function projWallFx(n,wn,box,snd){const m=box&&(box.o.f&&box.o.f[nf(wn)]||box.mat)||'conc';FX.impact(n.x,n.y,n.z,wn[0],wn[1],wn[2],m);AU.at(snd||'hstick',n.x,n.y,n.z,{vol:.55,range:28})}
 const PROJ_UPD={
   bolt(n,dt){const W=WPN[n.w]||WPN.xbow;

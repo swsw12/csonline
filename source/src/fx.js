@@ -122,8 +122,8 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     g.setAttribute('position',new THREE.BufferAttribute(pos,3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('color',new THREE.BufferAttribute(col,3));
     for(let i=0;i<n;i++){const k=.25+Math.random()*.3;col.set([k*.6,k*.68,k*.8,k*.9,k*.95,k],i*6)}
     // streaks glint where they cross the flashlight cone
-    const mat=new THREE.ShaderMaterial({uniforms:{uSpotP:LU.uSpotP,uSpotD:LU.uSpotD,uSpotK:LU.uSpotK,uK:{value:1}},vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-      vertexShader:'uniform vec3 uSpotP;uniform vec3 uSpotD;uniform vec4 uSpotK;uniform float uK;varying vec3 vC;void main(){vec4 wp=modelMatrix*vec4(position,1.);vec3 L=wp.xyz-uSpotP;float d=max(length(L),.01);float sp=smoothstep(uSpotK.x-.05,uSpotK.y,dot(L/d,uSpotD))*clamp(1.-d/12.,0.,1.)*uSpotK.w;vC=color*.55*uK*(1.+sp*4.)+vec3(.5,.47,.4)*sp*.4;gl_Position=projectionMatrix*viewMatrix*wp;}',
+    const mat=new THREE.ShaderMaterial({uniforms:{uSpotP:LU.uSpotP,uSpotD:LU.uSpotD,uSpotK:LU.uSpotK,uK:{value:1},uTn:{value:new THREE.Color(1,1,1)}},vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+      vertexShader:'uniform vec3 uSpotP;uniform vec3 uSpotD;uniform vec4 uSpotK;uniform float uK;uniform vec3 uTn;varying vec3 vC;void main(){vec4 wp=modelMatrix*vec4(position,1.);vec3 L=wp.xyz-uSpotP;float d=max(length(L),.01);float sp=smoothstep(uSpotK.x-.05,uSpotK.y,dot(L/d,uSpotD))*clamp(1.-d/12.,0.,1.)*uSpotK.w;vC=color*.55*uK*uTn*(1.+sp*4.)+vec3(.5,.47,.4)*sp*.4;gl_Position=projectionMatrix*viewMatrix*wp;}',
       fragmentShader:'varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.);}'});
     const L=new THREE.LineSegments(g,mat);L.frustumCulled=false;L.renderOrder=3;scene.add(L);
     const drops=[];for(let i=0;i<n;i++)drops.push({x:0,y:-99,z:0,f:-99,v:rr(14,18)});

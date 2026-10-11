@@ -352,7 +352,7 @@ function buildSky(scene){
   scene.add(SG);MAP.sky=SG;
 }
 // ---------- map registry ----------
-// env: sky (dome + sky light), rain, storm (thunder and lightning), under (underground ambience), fog colour/density, ambIn (indoor ambient),
+// env: sky (dome + sky light), rain, snow, ash (snow's drift, warm grey), storm (thunder and lightning), under (underground ambience), fog colour/density, ambIn (indoor ambient),
 // boAmb (the share of the baked light left in a blackout: night maps keep more, they are dark already; .3 when not given)
 const MAPDEFS={
   q7:{n:['격리구역 Q-7','Quarantine Zone Q-7'],d:['비 내리는 밤의 격리시설. 창고 중2층·사무동 2층·펌프장 옥상·감시탑과 넓은 마당.','A rainy night at the quarantine facility: warehouse mezzanine, two-storey office, pump-house roof, a watchtower and a wide yard.'],
@@ -378,7 +378,7 @@ function* mapLoader(id){
     // the graph is built with every gate open (they open as the map is played; a shut one simply blocks the way for now)
     const GT=Object.values(MAP.gates||{});for(const G0 of GT)for(const b of G0.boxes)b.nosolid=true;
     buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));
-    for(const G0 of GT)for(const b of G0.boxes)b.nosolid=G0.open;MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow))FX.buildRainHM()}
+    for(const G0 of GT)for(const b of G0.boxes)b.nosolid=G0.open;MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow||MAP.env.ash))FX.buildRainHM()}
   // bots holding paths through the old graph start over
   for(const a of G.actors)if(a.bot){a.bot.path=null;a.bot.goal=null;a.bot.wander=null;a.bot.spot=null}
   mapEnv()}
@@ -401,7 +401,7 @@ function mapEnv(){const E=MAP.env||{};if(MAP.sky)MAP.sky.visible=!!E.sky;
     SP.halo.position.copy(SP.moon.position).multiplyScalar(1.02);SP.halo.lookAt(0,0,0);SP.halo.material.uniforms.uC.value.set(E.halo||(E.sun?'#c87040':'#6b7a9e'));SP.halo.scale.setScalar(E.sun?2.4:1)}
   LU.uFogC.value.set(E.fog||'#0a0c12');LU.uFogD.value=E.fogD||.045;
   if(R.mBright)R.mBright.uniforms.uThr.value=E.bloomThr||.74;// bright daylight maps bloom only on the hottest highlights
-  if(FX.rain){FX.rain.on=!!(E.rain||E.snow);FX.rain.snow=!!E.snow;FX.rain.L.material.uniforms.uK.value=E.snow?2.6:1}if(AU.setEnv)AU.setEnv(E);
+  if(FX.rain){FX.rain.on=!!(E.rain||E.snow||E.ash);FX.rain.snow=!!(E.snow||E.ash);const RU=FX.rain.L.material.uniforms;RU.uK.value=E.snow?2.6:E.ash?1.5:1;if(RU.uTn)RU.uTn.value.setRGB(E.ash?1.35:1,E.ash?.92:1,E.ash?.62:1)}if(AU.setEnv)AU.setEnv(E);
   for(const l of DL.list)if(l.map||l.fire)l.dead=true;if(typeof Main!=='undefined'){Main.fireL=null;Main.lightning=0}
   for(const d of MAP.dyn)DL.add(d[0],d[1],d[2],d[3],d[4],d[5],0,{flick:d[6]||0,map:1});
   if(FX.dec)FX.clearDecals()}

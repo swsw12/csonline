@@ -1172,5 +1172,7 @@ html.touch #chatBar{left:50%;transform:translateX(-50%);top:8px;bottom:auto;widt
 .tb.tUse.show{display:flex!important}
 html.touch #hEp{top:calc(var(--bs)*.72 + 10px);transform:translateX(-50%) scale(.82);transform-origin:top center}
 html.touch #hRadio{top:auto;bottom:calc(var(--bs)*2.6 + 7vh);left:8px;width:min(300px,38vw);transform:scale(.85);transform-origin:bottom left}
+/* touch, with a boss bar up: the radio narrows to clear it and keeps its last two lines */
+html.touch #hud.epB #hRadio{width:min(300px,38vw,calc(58vw - 266px))}html.touch #hud.epB #hRadio p:nth-last-child(n+3){display:none}
 html.touch #hUse{top:58%}
 @media (max-width:900px){#epCard .ec{gap:12px;padding:14px 18px}#epCard img{height:min(120px,22vh)}}

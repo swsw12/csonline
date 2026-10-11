@@ -5,6 +5,12 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'zombie',ref:'khepri',tag:['좀비 시나리오 3챕터','Zombie scenario · CH.3'],t:['3챕터 「케프리」','Chapter 3 「KHEPRI」'],
+    d:['잿가루 내리는 버려진 제철소. 거대한 쇠똥구리 케프리는 몸집만 한 고철 공을 굴려 정면 총알을 다 막아요 — 드럼통 · 가스 밸브 · 주조장 래들 쇳물로 공을 깨고, 날거나 뒤집혔을 때 배를 노려요. 2챕터를 깨면 열려요.','An abandoned steel works with ash drifting down. KHEPRI, a giant dung beetle, rolls a ball of scrap as big as itself that soaks up every bullet from the front — break it with the drums, the gas valves and the casting bay’s ladle of molten iron, and go for the belly when it flies or lands on its back. Opens once chapter 2 is cleared.']},
+  {kind:'zombie',ref:'larva',tag:['신규 좀비','New zombie'],t:['유충 좀비','Larva Zombie'],
+    d:['몸속에서 뭔가 꿈틀거리는 좀비. 죽으면 유충 떼가 터져 나와 근처를 물어뜯어요 — 떨어져서 쏘거나 불로 태우면 떼가 안 나와요. 3챕터에 나와요.','Something is wriggling inside it: a swarm of grubs bursts out when it dies and bites whoever is near — shoot it from a distance, or burn it and no swarm comes out. Shows up in chapter 3.']},
+  {kind:'zombie',ref:'scrap',tag:['신규 좀비','New zombie'],t:['장갑 고철 좀비','Scrap-Armour Zombie'],
+    d:['자동차 문짝과 드럼통 뚜껑을 철사로 감아 두른 좀비. 총알은 반밖에 안 먹히지만 불과 폭발엔 두 배로 약해요. 3챕터에 나와요.','Car doors and drum lids wired on as armour: bullets do half, but fire and blasts do double. Shows up in chapter 3.']},
   {kind:'zombie',ref:'argus',tag:['좀비 시나리오 2챕터','Zombie scenario · CH.2'],t:['2챕터 「아르고스」','Chapter 2 「ARGUS」'],
     d:['비 오는 밤의 봉쇄선 전방기지. 감시탑을 옮겨 다니는 1차 회수팀 저격수 아르고스는 불빛만 보이면 쏴요 — 붉은 레이저가 보이면 엄폐! 투광등을 놈이 선 탑으로 돌리면 야간투시경이 타서 떨어져요. 1챕터를 깨면 열려요.','A rainy night at the containment line’s forward base. ARGUS, RT-1’s sniper, moves between the watchtowers and shoots at any light it sees — when the red laser lands on you, get behind cover. Swing a floodlight onto its tower and its night vision burns out. Opens once chapter 1 is cleared.']},
   {kind:'zombie',ref:'squad',tag:['신규 좀비','New zombie'],t:['1차 팀 분대원 좀비','RT-1 Squad Zombie'],

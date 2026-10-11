@@ -26,7 +26,13 @@ Object.assign(ZCLASS,{
 Object.assign(ZCLASS,{
   argus:{n:['아르고스','ARGUS'],sk:['저격','Snipe'],d:['2챕터 보스 · RT1-07','Chapter 2 boss · RT1-07'],hp:14000,armor:0,speed:5.5,jump:8.5,kb:.25,dmg:28,skill:'none',cd:99,dur:0,hw:.32,h:1.9,eye:1.76},
   squad:{n:['1차 팀 분대원 좀비','RT-1 Squad Zombie'],sk:['수류탄','Grenade'],d:['2·4챕터 · 방탄조끼(정면 총알 −30%), 가끔 수류탄, 쓰러지면 탄약','Chapters 2 and 4 · body armour (−30 % from the front), a grenade now and then, drops ammo'],hp:1700,armor:60,speed:5.5,jump:7.2,kb:.9,dmg:22,skill:'none',cd:99,dur:0,hw:.3,h:1.84,eye:1.7}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 3 (khepri.js): KHEPRI, the giant dung beetle (its own body and hit volumes; the rig here is a hidden placeholder), the larva
+// zombie (bursts into a swarm when it dies) and the scrap-armour zombie (bullets −50 %, fire and blasts ×2, slow)
+Object.assign(ZCLASS,{
+  khepri:{n:['케프리','KHEPRI'],sk:['고철 공','Scrap ball'],d:['3챕터 보스 · Q7-303','Chapter 3 boss · Q7-303'],hp:18000,armor:0,speed:5.4,jump:7,kb:.05,dmg:30,skill:'none',cd:99,dur:0,hw:.78,h:1.7,eye:1.2},
+  larva:{n:['유충 좀비','Larva Zombie'],sk:['유충 떼','Swarm'],d:['3·5챕터 · 죽으면 유충 떼가 터져 나온다 (불로 태우면 사라짐)','Chapters 3 and 5 · bursts into a swarm when it dies (fire burns it away)'],hp:1700,armor:60,speed:5.6,jump:7.2,kb:1.1,dmg:40,skill:'none',cd:99,dur:0,hw:.3,h:1.84,eye:1.68},
+  scrap:{n:['장갑 고철 좀비','Scrap-Armour Zombie'],sk:['고철 갑옷','Scrap armour'],d:['3챕터 · 총알 −50%, 불·폭발 ×2, 느림','Chapter 3 · bullets −50 %, fire and blasts ×2, slow'],hp:2300,armor:180,speed:5,jump:6.8,kb:.45,dmg:60,skill:'none',cd:99,dur:0,hw:.36,h:1.96,eye:1.78}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};

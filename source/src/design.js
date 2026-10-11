@@ -359,9 +359,11 @@ function defHuman(k){
 //        | 'bomber' 자폭(시나리오) | 'spitter' 산성(시나리오) | 'boss' 거대 좀비(시나리오: 헤비 몸에 어두운 색)
 //        | 'strait' 구속복 좀비(1챕터) | 'aleph' 알레프(1챕터 보스: 거대 좀비 몸 + 구속구)
 //        | 'argus' 아르고스(2챕터 보스: 1차 회수팀 저격수) | 'squad' 1차 팀 분대원 좀비(2·4챕터)
+//        | 'larva' 유충 좀비(3·5챕터) | 'scrap' 장갑 고철 좀비(3챕터)
+//        | 'khepri' 케프리(3챕터 보스: 거대 쇠똥구리 — 몸은 khepri.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
-function defZombie(k,host){const aleph=k==='aleph',boss=k==='boss'||aleph;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
+function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',boss=k==='boss'||aleph||khepri;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
   let o={},mats,decor,extra=()=>[];const vein=host||boss?'#ff3020':null,eyeH=host?'#ff3a1a':boss?'#ff5a20':null;
   // shared gore materials: exposed bone, intestine, tumour flesh, nails
   const goreM={bone:{base:'#d4ccae',style:'plate',gloss:243},guts:{base:'#a03a34',style:'meat'},tumor:{base:'#6a3a48',style:'tumor'},nail:{base:'#cfc4a0',style:'plate',gloss:246},flesh:{base:'#8a1c14',style:'flesh'}};
@@ -546,6 +548,51 @@ function defZombie(k,host){const aleph=k==='aleph',boss=k==='boss'||aleph;if(bos
       return [{n:'vest',b:1,c:[0,sY+o.torsoH*.56,0],s:[o.torsoW*1.1,o.torsoH*.72,o.torsoD*1.26],m:'vest'},{n:'helm',b:2,c:[0,hc[1]+o.headH*.42,o.headZ],s:[o.headW*1.18,o.headH*.46,o.headD*1.16],m:'helm'},
         {n:'mount',b:2,c:[0,hc[1]+o.headH*.5,o.headZ-o.headD*.62],s:[.07,.06,.05],m:'mount'},{n:'gog',b:2,c:[0,hc[1]+o.headH*.72,o.headZ-o.headD*.5],s:[.2,.05,.05],m:'gog'},
         {n:'radio',b:1,c:[.17,sY+o.torsoH*.86,zf+.02],s:[.06,.11,.045],m:'radio'},{n:'radio',b:1,c:[.19,sY+o.torsoH*.98,zf+.02],s:[.012,.14,.012],m:'mount'}]}}
+  // ▶ 유충 좀비 (larva, 3·5챕터) — 몸속에 유충이 든 제철소 작업자
+//    회청색 작업복(가슴에 '청운제철' 대신 'CW-2' 명찰, 반사띠), 노란 안전모, 부풀어 오른 등과 목덜미에 꿈틀대는 혹(희미하게 빛남),
+//    피부를 뚫고 나온 흰 유충 몇 마리(목·팔·등), 짓무른 얼굴, 탁한 연두 눈. 죽으면 유충 떼가 터져 나온다(게임 쪽 규칙).
+  else if(k==='larva'){// 숙주 작업자 — a steel-works hand carrying a brood: the back swollen into writhing lumps, grubs boring out through the skin
+    o={hipY:.92,torsoW:.42,torsoD:.25,torsoH:.52,belly:.05,shX:.24,armW:.11,upper:.29,fore:.28,headW:.23,headH:.25,headD:.25,headZ:-.04,neck:.05,claw:.02,fingL:.55,curl:.5,curlJ:61,ears:[1,0]};
+    const sk='#8a8a6a';
+    mats=Object.assign({top:{base:'#3e4c5a'},legs:{base:'#3a4652'},sleeve:{base:'#3e4c5a'},fore:{base:sk,style:'zskin',blot:'#6a5a3a'},shin:{base:'#3a4652'},skin:{base:sk,style:'zskin',blot:'#6a5a3a'},
+      hand:{base:dk(sk,.2),style:'zskin',blot:'#5a3a10'},boot:{base:'#2a2420',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#6a5a3a'},
+      hat:{base:'#c8a01e',style:'plate',gloss:246},lump:{base:'#9a8a5a',style:'tumor'},grub:{base:'#e8e0c0',style:'plate',gloss:245},refl:{base:'#d8d8c8',style:'plate',gloss:250}},goreM);
+    decor={torso:{front:[['band',.3,.36,'#d8d8c8'],['rect',.6,.62,.86,.74,'#d8d0b8'],['text','CW-2',.62,.72,'#2a2a2a'],['soak',.2,.7,'#4a3a10',.6],['tear',2,61,sk],['grime',.7]],
+        back:[['band',.3,.36,'#d8d8c8'],['flesh',.12,.3,.88,.98,0],['veins',5,'#d8e070',1],['rot',3],['grime',.6]],side:[['band',.3,.36,'#d8d8c8'],['grime',.6]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#c8d870',tears:1,cheek:1}],['rot',2]],side:[['rot',1],['veins',2,'#d8e070',1]],back:[['veins',3,'#d8e070',1]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a3a10',.8]]},
+      neck:{all:[['veins',3,'#d8e070',1],['rot',1]]},uaL:{all:[['band',.5,.58,'#d8d8c8'],['grime',.6]]},uaR:{all:[['band',.5,.58,'#d8d8c8'],['tear',2,62,sk]]},
+      faL:{all:[['rot',2],['veins',2,'#d8e070',1]]},faR:{all:[['gash',.2,.8,.6,.3,3,.1],['rot',1]]},thL:{all:[['grime',.7]]},thR:{all:[['grime',.7],['soak',.5,1,'#4a3a10',.5]]},
+      pelvis:{fb:[['belt',.72,.92,'#1e1c18','#7a7a6a']]},hat:{all:[['grime',.5]],front:[['text','CW',.32,.4,'#2a2a2a']]},lump:{all:[['veins',3,'#e8f080',1],['glow',.4,.4,.6,.6,'#c8d860']]},grub:{all:[['band',.3,.36,'#b8b090'],['band',.6,.66,'#b8b090']]}};
+    // the swollen back, a lump at the nape, the hard hat, grubs half out of the skin
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zb=o.belly*.25+(o.torsoD+o.belly)/2;
+      return [{n:'lump',b:1,c:[.05,sY+o.torsoH*.62,zb+.07],s:[.34,.3,.18],m:'lump'},{n:'lump',b:1,c:[-.12,sY+o.torsoH*.32,zb+.05],s:[.2,.18,.12],m:'lump'},{n:'lump',b:2,c:[.04,H.piv[2][1]+.04,o.headZ+.13],s:[.16,.12,.1],m:'lump'},
+        {n:'hat',b:2,c:[0,hc[1]+o.headH*.44,o.headZ-.01],s:[o.headW*1.2,o.headH*.4,o.headD*1.22],m:'hat'},{n:'hat',b:2,c:[0,hc[1]+o.headH*.26,o.headZ-o.headD*.62],s:[o.headW*1.1,.02,.08],m:'hat'},
+        {n:'grub',b:1,c:[.16,sY+o.torsoH*.86,zb+.05],s:[.05,.05,.13],m:'grub'},{n:'grub',b:2,c:[-.08,H.piv[2][1]-.02,o.headZ+.14],s:[.04,.04,.11],m:'grub'},{n:'grub',b:4,c:[H.piv[4][0]-o.armW*.4,H.piv[4][1]-o.fore*.4,.05],s:[.04,.11,.04],m:'grub'},
+        {n:'grub',b:1,c:[-.2,sY+o.torsoH*.5,zb+.03],s:[.11,.04,.04],m:'grub'}]}}
+  // ▶ 장갑 고철 좀비 (scrap, 3챕터) — 고철을 몸에 두른 덩치 큰 작업자
+//    가슴에 철사로 묶은 찌그러진 차 문짝(녹·파란 페인트), 등에 드럼통 뚜껑, 양팔에 쇠파이프 토시, 양동이를 엎어 쓴 투구(눈구멍),
+//    무릎에 철판, 기름때 낀 갈색 작업복, 회색 피부, 주황 눈. 총알은 반만 들어가고 불·폭발은 두 배(게임 쪽 규칙).
+  else if(k==='scrap'){// 고철 갑옷 — a big steel-works hand wearing what it found: a car door wired across the chest, a drum lid on the back, a bucket for a helmet
+    o={hipY:.95,thigh:.44,legSep:.13,legW:.17,legD:.18,shinW:.15,torsoW:.52,torsoH:.56,torsoD:.3,belly:.04,shX:.31,armW:.14,upper:.31,fore:.3,hand:.13,headW:.23,headH:.25,headD:.25,headZ:-.03,neck:.03,claw:.02,curl:.55,curlJ:71,browH:.03};
+    const sk='#7a7670';
+    mats=Object.assign({top:{base:'#5a4a36'},legs:{base:'#4e4232'},sleeve:{base:'#5a4a36'},fore:{base:sk,style:'zskin',blot:'#4a3a32'},shin:{base:'#4e4232'},skin:{base:sk,style:'zskin',blot:'#4a3a32'},
+      hand:{base:dk(sk,.25),style:'zskin',blot:'#3a1a10'},boot:{base:'#221c16',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#4a3a32'},
+      door:{base:'#3a5a7a',style:'plate',gloss:242},rust:{base:'#7a4422',style:'plate',gloss:241},lid:{base:'#5a5e60',style:'plate',gloss:244},pipe:{base:'#4a4a48',style:'plate',gloss:246},wire:{base:'#2a2a28',style:'plate',gloss:247}},goreM);
+    decor={torso:{front:[['soak',.3,.9,'#2a1a10',.6],['grime',.8]],back:[['grime',.8]],side:[['grime',.8]]},
+      door:{front:[['rect',.08,.55,.92,.92,'#1a2a3a'],['rect',.1,.58,.9,.9,'#3a4a5a'],['rot',3],['grime',.7],['rect',.7,.3,.86,.36,'#2a2a2a']],all:[['grime',.6]]},
+      lid:{back:[['out',.1,.1,.9,.9,'#3a3e40'],['rot',2]],all:[['grime',.5]]},rust:{all:[['rot',3],['grime',.6]]},pipe:{all:[['band',.1,.16,'#2a2a28'],['band',.84,.9,'#2a2a28'],['grime',.5]]},
+      head:{front:[['face','brute',{skin:sk,eye:eyeH||'#ffa030',tears:1}]],side:[['blood',1,72]],bottom:[['teethrow','bottom',.32]]},
+      jaw:{top:[['teethrow','top',.34]],front:[['teethrow','top',.4],['drip',.5,.5,3,.6]],bottom:[['soak',0,1,'#4a0606',.7]]},
+      uaL:{all:[['grime',.7]]},uaR:{all:[['grime',.7],['tear',2,73,sk]]},thL:{all:[['grime',.7]]},thR:{all:[['grime',.7]]},pelvis:{fb:[['belt',.72,.94,'#1a1612','#6a6a5a']]}};
+    // the door across the chest (wired on), the drum lid on the back, pipe bracers, a bucket helmet with an eye slot, knee plates
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2;
+      const L=[{n:'door',b:1,c:[0,sY+o.torsoH*.52,zf-.035],s:[o.torsoW*1.12,o.torsoH*.86,.045],m:'door'},{n:'wire',b:1,c:[0,sY+o.torsoH*.78,0],s:[o.torsoW*1.16,.02,o.torsoD*1.3],m:'wire'},
+        {n:'wire',b:1,c:[0,sY+o.torsoH*.26,0],s:[o.torsoW*1.16,.02,o.torsoD*1.3],m:'wire'},{n:'lid',b:1,c:[0,sY+o.torsoH*.56,zb+.035],s:[o.torsoW*.9,o.torsoH*.8,.04],m:'lid'},
+        {n:'rust',b:2,c:[0,hc[1]+o.headH*.2,o.headZ],s:[o.headW*1.24,o.headH*.9,o.headD*1.2],m:'rust'},{n:'wire',b:2,c:[0,hc[1]+o.headH*.08,o.headZ-o.headD*.61],s:[o.headW*.9,.035,.012],m:'wire'}];
+      for(const [b,sd] of [[4,-1],[6,1]])L.push({n:'pipe',b,c:[H.piv[b][0]+sd*o.armW*.62,H.piv[b][1]-o.fore*.5,0],s:[.05,o.fore*.8,.05],m:'pipe'},{n:'pipe',b,c:[H.piv[b][0]-sd*o.armW*.62,H.piv[b][1]-o.fore*.5,.02],s:[.05,o.fore*.75,.05],m:'pipe'});
+      for(const b of [8,10])L.push({n:'rust',b,c:[H.piv[b][0],H.piv[b][1]-.06,-o.legD*.62],s:[o.shinW*1.2,.18,.03],m:'rust'});
+      return L}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),
@@ -605,7 +652,7 @@ function defZombie(k,host){const aleph=k==='aleph',boss=k==='boss'||aleph;if(bos
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
       stumpLL:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]},stumpLR:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]}})}
   H.parts.push(...ex.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
-  return Object.assign(H,{key:'z_'+(aleph?'aleph':boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
+  return Object.assign(H,{key:'z_'+(aleph?'aleph':khepri?'khepri':boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
 
 // ================================================================================================
 //  4부  총기 아이덴티티 — 실제 총 · 탄창 수 · 약실 · 처음 꺼낼 때의 장전 모션
