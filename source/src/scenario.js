@@ -74,9 +74,10 @@ SCEN.makeWave=function(s,w){const H=SCEN.H.length,d=G.diff||0;let n=Math.round((
   const tot=W.reduce((t,e)=>t+e[1],0);const q=[];
   if(s===SCEN.STAGES&&w===SCEN.WAVES){q.push('boss');n=Math.round(n*.5)}
   for(let i=0;i<n;i++){let r=Math.random()*tot;for(const [k,p] of W){r-=p;if(r<=0){q.push(k);break}}}return q};
+const SC_OLDHP={rager:2400,runner:1700,brute:2700,coffin:2800,scream:2000};// scenario zombies keep their pre-v6.30 HP
 SCEN.hpFor=function(zc){const H=SCEN.H.length,d=G.diff||0;
   if(zc==='boss')return Math.round(8000*(.6+.4*H)*SC_DIFF.hp[d]);
-  return Math.round(ZCLASS[zc].hp*.28*(1+.1*(H-1))*SC_DIFF.hp[d]*(1+.12*(SCEN.stage-1)+.05*(SCEN.wave-1)))};
+  return Math.round((SC_OLDHP[zc]||ZCLASS[zc].hp)*.28*(1+.1*(H-1))*SC_DIFF.hp[d]*(1+.12*(SCEN.stage-1)+.05*(SCEN.wave-1)))};
 // claw damage scale (base zombie damage is tuned for infection; here claws only wound)
 SCEN.dmgMul=()=>.18*SC_DIFF.dmg[G.diff||0]*(1+.06*(SCEN.stage-1));
 // ---------- spawning ----------

@@ -12,7 +12,7 @@ const PATCH=[
  ['UP','게이볼그 — 장전 중에도 우클릭으로 박힌 작살을 바로 터뜨릴 수 있어요.','Gae Bolg — you can detonate stuck harpoons with RMB even while reloading.'],
  ['UP','폭발로 죽은 좀비도 이제 다시 부활해요. 헤드샷 · 나이프로 죽은 경우만 영구 사망이고, 폭발에 팔다리가 잘려 나가는 연출은 그대로예요(부활하면 몸이 멀쩡히 돌아옴).','Zombies killed by explosions now revive too. Only headshot / knife kills are permanent; limbs still tear off (and grow back on revival).'],
  ['FIX','스페이스바를 누르고 있으면 착지 즉시 다시 뛰는 자동 점프가 좀비에게도 적용돼요.','Holding space now rejumps on landing for zombies too.'],
- ['UP','좀비 전체 체력 상향 — 일반 2,400→2,900 · 라이트 1,700→2,050 · 헤비 2,700→3,400 (방어력은 그대로 가장 높음) · 관짝 2,800→3,300 · 부두 2,000→2,400. 시나리오 좀비도 같이 올라가요.','Zombie HP raised — Regular 2,400→2,900, Light 1,700→2,050, Heavy 2,700→3,400, Coffin 2,800→3,300, Voodoo 2,000→2,400 (scenario zombies scale with it).'],
+ ['UP','좀비 전체 체력 상향 — 일반 2,400→2,900 · 라이트 1,700→2,050 · 헤비 2,700→3,400 (방어력은 그대로 가장 높음) · 관짝 2,800→3,300 · 부두 2,000→2,400. 시나리오 좀비 체력은 그대로예요.','Zombie HP raised — Regular 2,400→2,900, Light 1,700→2,050, Heavy 2,700→3,400, Coffin 2,800→3,300, Voodoo 2,000→2,400 (scenario zombies unchanged).'],
  ['UP','리퍼 사거리 2.2 m → 3.0 m.','Ripper range 2.2 m → 3.0 m.'],
 ]],
 ['v6.29.2','2026-10-12',[
