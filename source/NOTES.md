@@ -758,3 +758,5 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 
 ## v6.32 — Crimson Peacemaker (supply.js)
 - `crimson`: pistol (slot 2), shop 12000 (SHOP_PRICE + supabase/schema.sql gun_catalog — run the SQL), mag 6 / res 24, dmg 250, hs 2.4 (head 600), kb 30, rpm 70, rec [.16,.04] + `kickX` (vmKick override); model reuses the r6 revolver reload (rlKind 'rev').
+
+- v6.32.1: Crimson rpm 150; `alt:'fan'` (nyw.js nyAlt) sets a.fanB + a.burstN=mag; the burst branch in game.js actorWeapons fires `fanShot(W)` (dmg x fanDm, spread x2.4, kb x.55) at fanRpm 700, then burstCd. Model rebuilt (~60 parts).

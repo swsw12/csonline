@@ -298,6 +298,7 @@ function sawSwing(a,W){a.an.atk=1;a.an.atkD=.6;a.an.heavy=true;a.an.atkSide=-(a.
 
 // ---------- right-button actions ----------
 function nyAlt(a,W){
+  if(W.alt==='fan'){const am=a.ammo[a.cur];if(!am||am.mag<=0||a.burstN>0||G.t<a.nextFire||a.reloadT>0)return;a.fanB=1;a.burstN=am.mag;a.nextFire=G.t;return}
   if(W.alt==='detonate'){let n=0;for(const p of NADES)if(p.kind==='harpoon'&&p.owner===a){p.stuck=true;p.fuse=Math.min(p.fuse==null?0:p.fuse,0);p.vx=p.vy=p.vz=0;n++}if(n){if(a.isPlayer)AU.play('ui',{vol:.4,rate:1.4});nyAltFx(a)}return}
   if(W.alt==='bayonet'){if(G.t<(a.altNext||0))return;nyAltFx(a);a.altNext=G.t+W.bayCd;a.nextFire=Math.max(a.nextFire,G.t+.35);a.an.atk=1;a.an.atkD=.4;a.an.heavy=false;
     if(a.isPlayer){VM.nyStab=.38;AU.play('kswing',{vol:.7,rate:1.2})}else AU.at('kswing',a.c.x,a.c.y+1.3,a.c.z,{vol:.5,rate:1.2});
@@ -399,7 +400,7 @@ const NY_SW=[[0,[0,0,0,0,0,0]],[.25,[.12,.08,.04,.25,-.6,.5]],[.45,[-.08,.02,-.1
 // ---------- buy-menu text ----------
 function nyTags(W,L){const t=[];
   if(W.proj==='bolt')t.push(L?(W.pierce?'Piercing bolts':'Silent bolts'):(W.pierce?'관통 볼트':'저소음 볼트'));if(W.zoom)t.push(L?'Scope':'조준경');
-  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.air)t.push(L?'Air blast cone · huge knockback':'압축공기 분사 · 강한 넉백');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 적룡 소환');
+  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.air)t.push(L?'Air blast cone · huge knockback':'압축공기 분사 · 강한 넉백');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 적룡 소환');if(W.alt==='fan')t.push(L?'RMB: fan the hammer — empties the cylinder fast':'우클릭: 해머 연타 — 남은 탄을 빠르게 쏟아냄');
   if(W.kind==='saw')t.push(L?'Hold to grind · RMB swing':'갈아버리기 · 우클릭 휘두르기');if(W.proj==='harpoon')t.push(L?'Sticky harpoon · RMB detonate':'작살 1초 뒤 폭발 · 우클릭 즉시 폭발');
   if(W.proj==='disc')t.push(L?'Returning blade · pierces':'관통 후 되돌아오는 칼날');if(W.alt==='drill')t.push(L?'RMB: drill':'우클릭: 드릴');if(W.proj==='slug')t.push(L?'3 explosive slugs':'폭발탄 3발');
   if(W.spin)t.push(L?'Rotary barrels':'회전 총열');if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.fan)t.push(L?'4-barrel volley':'4연장 일제사격');if(W.alt==='bayonet')t.push(L?'RMB: bayonet':'우클릭: 대검');

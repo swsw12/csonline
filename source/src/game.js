@@ -263,6 +263,8 @@ function separate(dt){const A=G.actors;for(let i=0;i<A.length;i++){const a=A[i];
   const wa=a.team===b.team?.5:(a.team===TZ?.35:.65);
   for(const [t,sg,w] of [[a,-1,wa],[b,1,1-wa]]){const nx=t.c.x+ux*push*2*w*sg,nz=t.c.z+uz*push*2*w*sg;if(charFits(t.c,nx,t.c.y,nz)){t.c.x=nx;t.c.z=nz}}}}}
 // ---------- weapons in hand ----------
+// fanning the hammer (Crimson Peacemaker, right button): the rest of the cylinder goes off at W.fanRpm, each shot weaker and much looser
+function fanShot(W){return W.fanW||(W.fanW=Object.assign({},W,{dmg:W.dmg*W.fanDm,spread:W.spread.map(x=>x*2.4),kb:W.kb*.55}))}
 function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(cmd.drop&&!pc.drop&&a.team===TH)playerDrop(a);// G: throw the gun in hand (drops.js)
   if(a.holdT>0&&a.team===TZ&&!a.host){cmd.fire=cmd.alt=cmd.skill=false}// pinned by the Ripper: no claws, no skill
@@ -318,7 +320,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(W.kind==='saw'){sawUpdate(a,W,dt);return}
   const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;
   // a burst keeps going after the trigger is released
-  if(a.burstN>0){if(ready){if(am.mag<=0)a.burstN=0;else{fireGun(a,W);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/W.rpm:W.burstCd)}}return}
+  if(a.burstN>0){if(ready){if(am.mag<=0){a.burstN=0;a.fanB=0}else{const fb=a.fanB&&W.fanRpm;fireGun(a,fb?fanShot(W):W);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/(fb?W.fanRpm:W.rpm):W.burstCd);if(a.burstN<=0)a.fanB=0}}return}
   // Dual Berettas in the sideways stance fire full-auto while held (a pair with bRpm, the Dual MP7A1, fires faster in it)
   if(cmd.fire&&ready&&(!((W.semi&&!(W.dual&&a.dualB))||W.burst)||!pc.fire||!a.isPlayer)){
     if(am.mag<=0){if(!pc.fire&&a.isPlayer)AU.play('dry',{vol:.6});a.nextFire=G.t+.25;return}

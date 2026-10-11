@@ -9848,6 +9848,7 @@ function sawSwing(a,W){a.an.atk=1;a.an.atkD=.6;a.an.heavy=true;a.an.atkSide=-(a.
 
 // ---------- right-button actions ----------
 function nyAlt(a,W){
+  if(W.alt==='fan'){const am=a.ammo[a.cur];if(!am||am.mag<=0||a.burstN>0||G.t<a.nextFire||a.reloadT>0)return;a.fanB=1;a.burstN=am.mag;a.nextFire=G.t;return}
   if(W.alt==='detonate'){let n=0;for(const p of NADES)if(p.kind==='harpoon'&&p.owner===a){p.stuck=true;p.fuse=Math.min(p.fuse==null?0:p.fuse,0);p.vx=p.vy=p.vz=0;n++}if(n){if(a.isPlayer)AU.play('ui',{vol:.4,rate:1.4});nyAltFx(a)}return}
   if(W.alt==='bayonet'){if(G.t<(a.altNext||0))return;nyAltFx(a);a.altNext=G.t+W.bayCd;a.nextFire=Math.max(a.nextFire,G.t+.35);a.an.atk=1;a.an.atkD=.4;a.an.heavy=false;
     if(a.isPlayer){VM.nyStab=.38;AU.play('kswing',{vol:.7,rate:1.2})}else AU.at('kswing',a.c.x,a.c.y+1.3,a.c.z,{vol:.5,rate:1.2});
@@ -9949,7 +9950,7 @@ const NY_SW=[[0,[0,0,0,0,0,0]],[.25,[.12,.08,.04,.25,-.6,.5]],[.45,[-.08,.02,-.1
 // ---------- buy-menu text ----------
 function nyTags(W,L){const t=[];
   if(W.proj==='bolt')t.push(L?(W.pierce?'Piercing bolts':'Silent bolts'):(W.pierce?'관통 볼트':'저소음 볼트'));if(W.zoom)t.push(L?'Scope':'조준경');
-  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.air)t.push(L?'Air blast cone · huge knockback':'압축공기 분사 · 강한 넉백');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 적룡 소환');
+  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.air)t.push(L?'Air blast cone · huge knockback':'압축공기 분사 · 강한 넉백');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 적룡 소환');if(W.alt==='fan')t.push(L?'RMB: fan the hammer — empties the cylinder fast':'우클릭: 해머 연타 — 남은 탄을 빠르게 쏟아냄');
   if(W.kind==='saw')t.push(L?'Hold to grind · RMB swing':'갈아버리기 · 우클릭 휘두르기');if(W.proj==='harpoon')t.push(L?'Sticky harpoon · RMB detonate':'작살 1초 뒤 폭발 · 우클릭 즉시 폭발');
   if(W.proj==='disc')t.push(L?'Returning blade · pierces':'관통 후 되돌아오는 칼날');if(W.alt==='drill')t.push(L?'RMB: drill':'우클릭: 드릴');if(W.proj==='slug')t.push(L?'3 explosive slugs':'폭발탄 3발');
   if(W.spin)t.push(L?'Rotary barrels':'회전 총열');if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.fan)t.push(L?'4-barrel volley':'4연장 일제사격');if(W.alt==='bayonet')t.push(L?'RMB: bayonet':'우클릭: 대검');
@@ -11081,6 +11082,8 @@ function separate(dt){const A=G.actors;for(let i=0;i<A.length;i++){const a=A[i];
   const wa=a.team===b.team?.5:(a.team===TZ?.35:.65);
   for(const [t,sg,w] of [[a,-1,wa],[b,1,1-wa]]){const nx=t.c.x+ux*push*2*w*sg,nz=t.c.z+uz*push*2*w*sg;if(charFits(t.c,nx,t.c.y,nz)){t.c.x=nx;t.c.z=nz}}}}}
 // ---------- weapons in hand ----------
+// fanning the hammer (Crimson Peacemaker, right button): the rest of the cylinder goes off at W.fanRpm, each shot weaker and much looser
+function fanShot(W){return W.fanW||(W.fanW=Object.assign({},W,{dmg:W.dmg*W.fanDm,spread:W.spread.map(x=>x*2.4),kb:W.kb*.55}))}
 function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(cmd.drop&&!pc.drop&&a.team===TH)playerDrop(a);// G: throw the gun in hand (drops.js)
   if(a.holdT>0&&a.team===TZ&&!a.host){cmd.fire=cmd.alt=cmd.skill=false}// pinned by the Ripper: no claws, no skill
@@ -11136,7 +11139,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(W.kind==='saw'){sawUpdate(a,W,dt);return}
   const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;
   // a burst keeps going after the trigger is released
-  if(a.burstN>0){if(ready){if(am.mag<=0)a.burstN=0;else{fireGun(a,W);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/W.rpm:W.burstCd)}}return}
+  if(a.burstN>0){if(ready){if(am.mag<=0){a.burstN=0;a.fanB=0}else{const fb=a.fanB&&W.fanRpm;fireGun(a,fb?fanShot(W):W);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/(fb?W.fanRpm:W.rpm):W.burstCd);if(a.burstN<=0)a.fanB=0}}return}
   // Dual Berettas in the sideways stance fire full-auto while held (a pair with bRpm, the Dual MP7A1, fires faster in it)
   if(cmd.fire&&ready&&(!((W.semi&&!(W.dual&&a.dualB))||W.burst)||!pc.fire||!a.isPlayer)){
     if(am.mag<=0){if(!pc.fire&&a.isPlayer)AU.play('dry',{vol:.6});a.nextFire=G.t+.25;return}
@@ -13146,13 +13149,31 @@ BUY_MENU.find(c=>c.k==='pistol').items.push('bholemini');
 // Crimson Peacemaker: a single-action-army revolver in red and black with a brutal kick. 6 rounds, body 250 / head 600, a huge shove.
 Object.assign(GUNS,{
   crimson:{piv:{mag:[0,.046,-.035],aux:[0,.064,.02]},parts:[
-      Pt(0,.03,-.035,.03,.052,.1,'dred'),Pt(0,.052,-.03,.026,.01,.09,'dred'),
-      ...TAG('mag',[Pt(0,.046,-.035,.044,.044,.052,'blk'),Pt(.0225,.046,-.035,.002,.03,.044,'red'),Pt(-.0225,.046,-.035,.002,.03,.044,'red'),Pt(0,.0685,-.035,.03,.002,.044,'red')]),
-      Pt(0,.062,-.185,.024,.026,.23,'blk'),Pt(0,.046,-.17,.014,.014,.2,'steel'),Pt(0,.0625,-.303,.012,.012,.004,'muzzle'),Pt(0,.08,-.29,.006,.012,.014,'red'),
-      ...TAG('aux',[Pt(0,.078,.012,.014,.006,.012,'blk'),Pt(0,.072,.022,.008,.022,.014,'chrome',{rx:-.4})]),
-      Pt(0,.0745,-.1,.012,.002,.1,'blk2'),...pGrip('dred',-.04,.026,.42),Pt(0,-.1,.058,.034,.012,.05,'blk',{rx:.42}),...tGuard(-.03),Pt(.016,.03,-.02,.004,.016,.016,'chrome')],
+      // frame: dark red, flat-sided like the old army revolvers; top strap with a sight groove, recoil shields, loading gate, engraved side plates, screws
+      Pt(0,.03,-.04,.03,.05,.09,'dred'),Pt(0,.0545,-.03,.026,.008,.1,'dred'),Pt(0,.0595,.006,.01,.002,.028,'blk'),
+      Pt(.012,.045,.008,.006,.04,.016,'dred'),Pt(-.012,.045,.008,.006,.04,.016,'dred'),
+      Pt(.0155,.04,-.012,.002,.03,.04,'blk2'),Pt(.0157,.04,-.006,.002,.006,.01,'chrome'),Pt(.0152,.022,-.05,.002,.026,.05,'engraved'),Pt(-.0152,.022,-.05,.002,.026,.05,'engraved'),
+      Pt(.0156,.03,-.076,.003,.006,.006,'chrome'),Pt(-.0156,.03,-.076,.003,.006,.006,'chrome'),Pt(.0156,.01,-.022,.003,.006,.006,'chrome'),Pt(-.0156,.01,-.022,.003,.006,.006,'chrome'),
+      Pt(0,.062,-.075,.018,.016,.022,'blk'),Pt(0,.002,-.01,.006,.012,.04,'dred'),
+      // cylinder (turns on a reload): black, red flutes on every face, six dark chamber mouths and a steel pin on the front
+      ...TAG('mag',[Pt(0,.046,-.035,.044,.044,.052,'blk'),Pt(.0225,.046,-.035,.002,.03,.044,'red'),Pt(-.0225,.046,-.035,.002,.03,.044,'red'),Pt(0,.0685,-.035,.03,.002,.044,'red'),Pt(0,.0235,-.035,.03,.002,.044,'red'),
+        Pt(.0165,.0615,-.035,.002,.014,.044,'red',{rz:.78}),Pt(-.0165,.0615,-.035,.002,.014,.044,'red',{rz:-.78}),Pt(.0165,.0305,-.035,.002,.014,.044,'red',{rz:-.78}),Pt(-.0165,.0305,-.035,.002,.014,.044,'red',{rz:.78}),
+        Pt(0,.046,-.0618,.01,.01,.002,'chrome'),...[0,1,2,3,4,5].map(k=>Pt(Math.sin(k*1.0472)*.0135,.046+Math.cos(k*1.0472)*.0135,-.0618,.0085,.0085,.002,'blk2')),
+        Pt(0,.046,-.0092,.034,.034,.002,'steel')]),
+      // barrel: black with a red rib and band, a crowned muzzle, a red blade sight; the ejector rod under it
+      Pt(0,.0625,-.185,.024,.026,.23,'blk'),Pt(0,.0762,-.185,.008,.003,.22,'red'),Pt(0,.0625,-.24,.028,.03,.01,'red'),Pt(0,.0625,-.299,.03,.03,.006,'steel'),Pt(0,.0625,-.3025,.012,.012,.002,'muzzle'),
+      Pt(0,.0805,-.288,.006,.014,.012,'red'),Pt(0,.04,-.17,.014,.014,.2,'steel'),Pt(0,.04,-.272,.01,.01,.012,'chrome'),Pt(0,.041,-.075,.02,.012,.018,'blk2'),
+      // hammer: steel spur on a black base, its pin
+      ...TAG('aux',[Pt(0,.078,.012,.014,.006,.012,'blk'),Pt(0,.072,.022,.008,.022,.014,'chrome',{rx:-.4})]),Pt(0,.064,.014,.012,.012,.02,'blk2'),Pt(0,.066,.006,.004,.004,.03,'chrome'),
+      // trigger and guard
+      Pt(0,-.005,-.014,.004,.026,.006,'chrome',{rx:.3}),...tGuard(-.03),Pt(0,-.014,-.046,.007,.016,.012,'dred'),
+      // plow-handle grip: dark red panels with red inlay strips and steel medallions, a black backstrap and butt cap, a lanyard ring
+      Pt(0,-.006,.01,.03,.03,.042,'dred'),...pGrip('dred',-.04,.02,.36),Pt(.0176,-.04,.02,.002,.07,.032,'red',{rx:.36}),Pt(-.0176,-.04,.02,.002,.07,.032,'red',{rx:.36}),
+      Pt(.0178,-.028,.024,.002,.012,.012,'chrome',{rx:.36}),Pt(-.0178,-.028,.024,.002,.012,.012,'chrome',{rx:.36}),
+      Pt(0,-.038,.042,.012,.1,.008,'blk',{rx:.36}),Pt(0,-.098,.046,.034,.012,.05,'blk',{rx:.36}),Pt(0,-.106,.05,.012,.004,.012,'chrome'),
+      Pt(.016,.03,-.02,.004,.016,.016,'chrome')],
     grip:[0,-.02,.01],sup:[-.012,-.045,.015],muzzle:[0,.062,-.305],mag:[0,.046,-.035],eject:[.02,.05,-.03]}});
-WPN.crimson={slot:2,kind:'pistol',n:['크림슨 피스메이커','Crimson Peacemaker'],cost:12000,mag:6,res:24,dmg:250,hs:2.4,rpm:70,semi:1,spread:[.012,.05,.11],rec:[.16,.04],kickX:[1.1,3.8,.9],kb:30,stag:1,reload:3.2,draw:.8,speed:.95,snd:'r6',model:'crimson',hold:'pistol'};
+WPN.crimson={slot:2,kind:'pistol',n:['크림슨 피스메이커','Crimson Peacemaker'],cost:12000,mag:6,res:24,dmg:250,hs:2.4,rpm:150,semi:1,alt:'fan',fanRpm:700,fanDm:.7,burstCd:.5,spread:[.012,.05,.11],rec:[.16,.04],kickX:[1.1,3.8,.9],kb:30,stag:1,reload:3.2,draw:.8,speed:.95,snd:'r6',model:'crimson',hold:'pistol'};
 VM_POS.crimson={p:[.12,-.14,-.37],r:[0,.07,.02]};
 BUY_MENU.find(c=>c.k==='pistol').items.push('crimson');
 function vortexMake(a,w,x,y,z,vx,vy,vz,ghost){const m=new THREE.Mesh(gunGeo('bholep'),matGun());m.position.set(x,y,z);R.scene.add(m);
@@ -13249,6 +13270,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.32.1','2026-10-12',[
+ ['UP','크림슨 피스메이커 — 연사속도 상향(분당 70 → 150발)에 우클릭 「해머 연타」 추가: 손바닥으로 해머를 쓸어 남은 탄을 분당 700발 속도로 쏟아내요(발당 데미지 70% · 탄퍼짐 크게 · 끝나면 0.5초 쉼). 총 디자인도 부품을 두 배 이상 늘려 다시 만들었어요(실린더 총알구멍 · 홈 · 장전문 · 해머 · 가늠쇠 · 개머리 메달리온 등).','Crimson Peacemaker — faster fire (70 → 150 rpm) plus RMB \'fan the hammer\': sweep the hammer and empty the cylinder at 700 rpm (70 % damage per shot, much looser, 0.5 s pause after). The model was rebuilt with over twice the parts (chamber mouths, flutes, loading gate, hammer, sights, grip medallions…).'],
+]],
 ['v6.32','2026-10-12',[
  ['NEW','크림슨 피스메이커 (상점 12,000코인, 권총) — 빨강과 검정으로 칠한 싱글 액션 리볼버. 6발, 몸통 250 · 머리 600, 맞은 좀비가 멀리 날아갈 만큼 큰 넉백과 그만큼 큰 반동. 연사가 매우 느려서 한 발 한 발이 중요해요.','Crimson Peacemaker (shop, 12,000 coins, pistol) — a red-and-black single-action revolver. 6 rounds, body 250 / head 600, a shove that throws zombies back and a matching kick. Very slow to fire: every shot counts.'],
 ]],
@@ -13572,7 +13596,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.32 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.32.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
