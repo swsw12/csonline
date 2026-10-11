@@ -701,7 +701,7 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   Skull-9 speed 1 and no atkSpd.
 
 ## v6.27 — Balrog-5 (balrog.js)
-- A heavy assault rifle with a combo gauge: each landed bullet +1 (headshot +2), at `W.cmb` (25) the next bullet is explosive — it hits normally and
+- A heavy assault rifle with a combo gauge: each landed bullet +1 (headshot +2), at `W.cmb` (8 since v6.27.1; 25 before) the next bullet is explosive — it hits normally and
   `blastDamage` goes off where it landed (radius 3.6, 230 at the centre, kb 13, up 4.2, he flag). `a.cmb[id]` is the gauge (cleared by startRound).
 - Hooks: weapons.js `fireGun` (xb, cmbAfter), `shotTrace` (a.shotEnd, only for W.cmb weapons), ui.js `cmbTag`, `VMX.balrog5` (tags g1..g5 / rdy).
 - Shop 6,500 (shop.js, schema.sql price table — re-run the schema to be able to buy it), bots may carry it (ai.js rollLd), design.js sound + reload entries (the

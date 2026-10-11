@@ -10117,7 +10117,7 @@ GUNS.balrog5={parts:[
   Pt(0,.03,.16,.03,.03,.14,'blk2'),Pt(0,.03,.25,.05,.08,.16,'dred'),Pt(0,.062,.25,.04,.008,.14,'rub'),Pt(0,.03,.338,.056,.11,.02,'rub')],
   grip:[0,-.03,.02],sup:[-.005,.01,-.37],muzzle:[0,.055,-.74],mag:[0,-.15,-.11],eject:[.03,.06,-.08]};
 WPN.balrog5={slot:1,kind:'rifle',n:['발록-5','Balrog-5'],cost:6500,mag:35,res:210,dmg:34,rpm:640,spread:[.005,.04,.11],rec:[.014,.008],kb:2.6,stag:.28,hs:3,reload:2.7,draw:.8,speed:.9,
-  snd:'balrog5',model:'balrog5',hold:'rifle',shell:1,cmb:25,cmbR:3.6,cmbDmg:230,cmbKb:13,cmbUp:4.2};
+  snd:'balrog5',model:'balrog5',hold:'rifle',shell:1,cmb:8,cmbR:3.6,cmbDmg:230,cmbKb:13,cmbUp:4.2};
 VM_POS.balrog5={p:[.15,-.165,-.36],r:[0,.085,.035]};
 BUY_MENU.find(c=>c.k==='rifle').items.push('balrog5');
 
@@ -12424,6 +12424,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.27.1','2026-10-11',[
+ ['UP','발록-5 — 폭발탄이 8번 맞출 때마다 나가요 (전엔 25번, 헤드샷은 여전히 2로 쳐요)','Balrog-5 — the explosive round now comes every 8 hits (was 25; a headshot still counts 2)']]],
 ['v6.27','2026-10-11',[
  ['NEW','발록-5 (상점 6,500코인, 소총) — 맞출 때마다 콤보 게이지가 차요(헤드샷은 +2). 25가 되면 다음 한 발이 맞은 곳에서 폭발해요(반경 3.6m, 중심 230 데미지, 강한 넉백 + 띄우기). 총 오른쪽에 게이지 5칸이 켜지고, 가득 차면 위 램프가 깜박이며 무기 이름 옆에 「폭발탄 장전!」이 떠요. 서버 스키마(supabase/schema.sql) 전체를 SQL Editor에서 다시 실행해야 상점에서 살 수 있어요.','Balrog-5 (shop, 6,500 coins, rifle) — every hit fills a combo gauge (a headshot +2). At 25 the next bullet explodes where it lands (3.6 m, 230 at the centre, a hard shove and a hop). Five segments light up on the right of the gun, a lamp blinks on top when it is full and the HUD says 「EXPLOSIVE ROUND」. Re-run supabase/schema.sql in the SQL Editor to be able to buy it.']]],
 ['v6.26','2026-10-11',[
@@ -12704,7 +12706,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.27 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.27.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -14335,7 +14337,7 @@ function rankLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
   {kind:'weapon',ref:'balrog5',tag:['상점 6,500 코인','Shop · 6,500 coins'],t:['발록-5','Balrog-5'],
-    d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 25가 되면 다음 한 발이 맞은 곳에서 폭발해요. 오른쪽 손잡이에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 25 the next bullet explodes where it lands. The gauge lights up on the right of the handguard and a lamp blinks on top when it is full.']},
+    d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 8이 되면 다음 한 발이 맞은 곳에서 폭발해요. 오른쪽 손잡이에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 8 the next bullet explodes where it lands. The gauge lights up on the right of the handguard and a lamp blinks on top when it is full.']},
   {kind:'feature',ico:'💬',tag:['신규 기능','New'],t:['친구창 채팅','Friend chat'],
     d:['친구창에서 친구에게 바로 메시지를 보낼 수 있어요. 친구가 접속해 있는지(접속 중 / n분 전)도 실제 접속 기준으로 보여요.','Message a friend right from the friends window. It also shows whether they are online (online / n min ago) by real presence.']},
   {kind:'feature',ico:'♛',tag:['신규 기능','New'],t:['명예의 전당','Hall of fame'],

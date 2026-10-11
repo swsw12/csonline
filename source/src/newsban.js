@@ -6,7 +6,7 @@
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
   {kind:'weapon',ref:'balrog5',tag:['상점 6,500 코인','Shop · 6,500 coins'],t:['발록-5','Balrog-5'],
-    d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 25가 되면 다음 한 발이 맞은 곳에서 폭발해요. 오른쪽 손잡이에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 25 the next bullet explodes where it lands. The gauge lights up on the right of the handguard and a lamp blinks on top when it is full.']},
+    d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 8이 되면 다음 한 발이 맞은 곳에서 폭발해요. 오른쪽 손잡이에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 8 the next bullet explodes where it lands. The gauge lights up on the right of the handguard and a lamp blinks on top when it is full.']},
   {kind:'feature',ico:'💬',tag:['신규 기능','New'],t:['친구창 채팅','Friend chat'],
     d:['친구창에서 친구에게 바로 메시지를 보낼 수 있어요. 친구가 접속해 있는지(접속 중 / n분 전)도 실제 접속 기준으로 보여요.','Message a friend right from the friends window. It also shows whether they are online (online / n min ago) by real presence.']},
   {kind:'feature',ico:'♛',tag:['신규 기능','New'],t:['명예의 전당','Hall of fame'],

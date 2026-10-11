@@ -29,7 +29,7 @@ GUNS.balrog5={parts:[
   Pt(0,.03,.16,.03,.03,.14,'blk2'),Pt(0,.03,.25,.05,.08,.16,'dred'),Pt(0,.062,.25,.04,.008,.14,'rub'),Pt(0,.03,.338,.056,.11,.02,'rub')],
   grip:[0,-.03,.02],sup:[-.005,.01,-.37],muzzle:[0,.055,-.74],mag:[0,-.15,-.11],eject:[.03,.06,-.08]};
 WPN.balrog5={slot:1,kind:'rifle',n:['발록-5','Balrog-5'],cost:6500,mag:35,res:210,dmg:34,rpm:640,spread:[.005,.04,.11],rec:[.014,.008],kb:2.6,stag:.28,hs:3,reload:2.7,draw:.8,speed:.9,
-  snd:'balrog5',model:'balrog5',hold:'rifle',shell:1,cmb:25,cmbR:3.6,cmbDmg:230,cmbKb:13,cmbUp:4.2};
+  snd:'balrog5',model:'balrog5',hold:'rifle',shell:1,cmb:8,cmbR:3.6,cmbDmg:230,cmbKb:13,cmbUp:4.2};
 VM_POS.balrog5={p:[.15,-.165,-.36],r:[0,.085,.035]};
 BUY_MENU.find(c=>c.k==='rifle').items.push('balrog5');
 
