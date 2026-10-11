@@ -12092,7 +12092,7 @@ const UI={open:null,
 // special charge into its own slot (up to 7; the Blaze-8's special-shell machinery, newguns.js). Right click looses five fireballs in a fan
 // (spFlame): each grows as it flies, stops in the first zombie it touches and sets it alight, so at point blank all five land in one body.
 // The charge shows as a ring round the crosshair (bxRing) and as seven ember pips on the receiver.
-// Plasma Gun: 45 rounds of green plasma orbs (projectiles) that burst on contact with a splash (full at the centre, half at the edge).
+// Plasma Gun: 45 rounds of green plasma orbs (projectiles) that burst on contact with a splash (full at the centre, 80% at the edge).
 // Every part of the body takes the same damage, a headshot never counts (no 확인사살 either) and morale does not raise it (o.flat).
 // The reload pulls the glowing cell out of its cradle on the right side backwards and pushes a fresh one in (rlCell).
 // Thunderbolt: a railgun with its own ammunition (30 shots, no magazine and no reload; buying ammo or a supply refills it: W.noRel).
@@ -12197,7 +12197,7 @@ GUNS.plasma={parts:[
   Pt(0,.04,.17,.05,.08,.18,'gunmetal'),Pt(0,.08,.15,.03,.02,.14,'blk'),Pt(0,.03,.27,.056,.12,.02,'rub'),Pt(-.0255,.04,.17,.002,.03,.1,'plGlow')],
   grip:[0,-.04,.02],sup:[0,-.02,-.36],muzzle:[0,.05,-.62],mag:[-.062,.04,-.23],eject:[.03,.06,-.06]};
 GUNS.plorb={parts:[Pt(0,0,0,.07,.07,.07,'plGlow'),Pt(0,0,0,.05,.09,.05,'plGlow'),Pt(0,0,0,.09,.05,.05,'plGlow'),Pt(0,0,0,.05,.05,.09,'plGlow')],grip:[0,0,0],muzzle:[0,0,0]};
-WPN.plasma={slot:1,kind:'rifle',n:['플라즈마 건','Plasma Gun'],cost:5500,mag:45,res:270,dmg:40,rpm:600,proj:'plasma',plR:1.7,plSpd:52,spread:[.008,.03,.08],rec:[.012,.006],kb:3.2,stag:.38,hs:1,
+WPN.plasma={slot:1,kind:'rifle',n:['플라즈마 건','Plasma Gun'],cost:5500,mag:45,res:270,dmg:60,rpm:600,proj:'plasma',plR:3.8,plSpd:52,spread:[.008,.03,.08],rec:[.012,.006],kb:3.2,stag:.38,hs:1,
   reload:3.2,draw:.85,speed:.92,snd:'plfire',model:'plasma',hold:'rifle'};
 VM_POS.plasma={p:[.15,-.17,-.36],r:[0,.085,.035]};
 BUY_MENU.find(c=>c.k==='rifle').items.push('plasma');
@@ -12214,7 +12214,7 @@ function plBoom(n,direct){const W=WPN.plasma,o=n.owner,x=n.x,y=n.y,z=n.z,R0=W.pl
   for(let k=0;k<10;k++){const a=Math.random()*TAU,e=rr(-.4,1),sp=rr(1.5,4);FX.spawn({x,y,z,vx:Math.cos(a)*Math.cos(e)*sp,vy:Math.sin(e)*sp,vz:Math.sin(a)*Math.cos(e)*sp,life:rr(.2,.45),s0:.07,s1:.01,r:.7,g:1,b:.35,f:11,add:1,grav:3})}
   if(!AU.throttle('plh'+(o?o.id:0),70))AU.at('plhit',x,y,z,{vol:.55,range:35});
   for(const t of G.actors){if(!t.alive||!o||t.team===o.team)continue;const c=t.c,cy=clamp(y,c.y+.2,t.head.y),dx=c.x-x,dz=c.z-z,d=Math.max(0,Math.hypot(dx,cy-y,dz)-c.hw);
-    if(t!==direct&&(d>R0||!losClear(x,y,z,c.x,cy,c.z)))continue;const f=t===direct?1:1-.5*clamp(d/R0,0,1),hl=Math.hypot(dx,dz)||1;
+    if(t!==direct&&(d>R0||!losClear(x,y,z,c.x,cy,c.z)))continue;const f=t===direct?1:1-.2*clamp(d/R0,0,1),hl=Math.hypot(dx,dz)||1;
     damageActor(t,W.dmg*f,o,{w:'plasma',flat:1,dir:[dx/hl,.05,dz/hl],kb:W.kb*(.5+.5*f),stag:W.stag,x,y,z});hit=true}
   if(hit&&o&&o.isPlayer)HUD.hitmark(false)}
 // the reload: the cell out backwards along its cradle, carried down; the fresh one up, pushed in, a hum as it takes
@@ -12241,7 +12241,7 @@ GUNS.thunder={parts:[
   // grip, guard, a thumbhole stock with a cheek rest and pad
   ...pGrip('grip2',-.065,.04,.28),...tGuard(-.01),Pt(0,.06,.2,.05,.06,.26,'tbBody'),Pt(0,-.02,.25,.04,.05,.14,'tbBody'),Pt(0,.098,.18,.036,.016,.16,'blk'),Pt(0,.02,.34,.056,.13,.02,'rub')],
   grip:[0,-.04,.02],sup:[0,.0,-.42],muzzle:[0,.05,-.83],mag:[0,.05,-.48],eject:[.03,.06,-.06]};
-WPN.thunder={slot:1,kind:'sniper',n:['썬더볼트','Thunderbolt'],cost:7000,mag:30,res:0,noRel:1,rail:1,dmg:650,hs:5,rpm:40,semi:1,spread:[0,.025,.12],spreadZ:0,zoom:[26,10],
+WPN.thunder={slot:1,kind:'sniper',n:['썬더볼트','Thunderbolt'],cost:7000,mag:30,res:0,noRel:1,rail:1,dmg:650,hs:2.5,rpm:40,semi:1,spread:[0,.025,.12],spreadZ:0,zoom:[26,10],
   rec:[.1,.015],kb:26,stag:1,reload:1,draw:1,speed:.85,snd:'tbfire',model:'thunder',hold:'rifle',range:150,wallK:.85,pierceK:.9};
 VM_POS.thunder={p:[.145,-.17,-.38],r:[0,.075,.03]};
 BUY_MENU.find(c=>c.k==='sniper').items.push('thunder');
@@ -13224,6 +13224,10 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.29.1','2026-10-11',[
+ ['UP','썬더볼트 — 헤드샷 배율 ×5 → ×2.5로 하향 (몸통 650 · 머리 1,625).','Thunderbolt — headshot multiplier lowered from ×5 to ×2.5 (body 650, head 1,625).'],
+ ['UP','플라즈마 건 — 데미지 40 → 60으로 상향, 스플래시 범위 1.7 m → 3.8 m로 대폭 확대, 가장자리 스플래시 데미지 50% → 80%로 상향.','Plasma Gun — damage 40 → 60, splash radius 1.7 m → 3.8 m, edge splash damage 50 % → 80 %.'],
+]],
 ['v6.29','2026-10-11',[
  ['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1의 마지막 챕터. 폭우 치는 밤, 지하 40 m의 새벽천 대심도 빗물 방수로. 관리동 마당(웨이브 3번) → 수직구 승강기로 지하 33 m 하강 → 유입 수로(수동 펌프 3개, 10초씩 — 수로에 거대한 무언가가 지나감) → 조압수조(물에 잠긴 홀: 북 · 남 통로의 배수 수문 핸들 2개를 6초씩, 홀 가운데 계단으로 올라가요 — 티아마트가 물속을 맴돌며 물에 있는 사람만 노려요) → 조압수조 · 제3수직구 보스전 → 75초 탈출(무너지며 물이 차오르는 수직갱의 나선 경사로를 지상까지). 4챕터를 깨면 열려요','Zombie scenario chapter 5 「TIAMAT」 — the last chapter of season 1. A storm-water tunnel 40 m under the city on a night of downpour: the control yard (three waves) → the cage lift 33 m down → the inflow tunnel (three hand pumps, 10 s each — something huge passes along the channel) → the surge tank (a flooded hall: the drain wheels on the north and south walkways, 6 s each, up the stairs in the middle — TIAMAT circles in the water and goes only for those in it) → the boss in the surge tank and shaft No. 3 → a 75 s escape up the spiral ramp of a shaft that is caving in and filling. Opens once chapter 4 is cleared.'],
  ['NEW','보스 티아마트(TIAMAT · Q7-Ω) — 원종 샘플을 자기 몸에 넣은 Q7 수석연구원이 원종과 합쳐진 거대 지네 군체. 머리에 연구원의 상반신이 박혀 있고 마디 14개가 뒤따라요. 물속에선 총알이 안 들어가요 — 수면에 떠 있을 때 · 솟구칠 때 · 좌초됐을 때 · 코어가 열릴 때를 노려요. 부위: 머리 1.2배, 마디 0.3배, 턱 밑 코어 3배(포효 · 숨결 · 쓰러졌을 때만 열림), 등의 알주머니 4개(체력 4%씩 — 터지면 비틀거리고 유충 떼가 나오고, 4개 다 터지면 8초 쓰러짐), 빛나는 관절 3개(4%씩 — 끊으면 뒤쪽 마디가 떨어져 나가 새끼 지네가 됨). 체력 2.35만 × (0.6 + 0.4 × 인원) × 난이도, 240초 넘게 끌면 광폭화(전문가 180초)','The boss TIAMAT (Q7-Ω) — Q7\'s chief researcher, who put the origin-strain sample into her own body, fused with it into a giant centipede colony: her upper body sunk into the head, fourteen segments behind. Bullets cannot reach it under the water — hit it while it cruises at the surface, when it rises, when it is stranded, when its core opens. Parts: the head ×1.2, the segments ×0.3, the core under its jaw ×3 (open while it roars or breathes or lies floored), four egg sacs on its back (4 % of its health each — a burst one staggers it and lets out a swarm of grubs; all four floor it for 8 s), three glowing joints (4 % each — cut one and the segments behind it drop off and crawl on as little centipedes). Health 23,500 × (0.6 + 0.4 × players) × difficulty; it enrages after 240 s (180 on expert).'],
@@ -13236,7 +13240,7 @@ const PATCH=[
  ['FIX','발록-XI: 방아쇠를 떼면 4발 카운트가 처음부터 다시 시작되던 문제 수정 — 이제 연사든 단발이든 4발을 쏘면 특수탄이 충전되고 최대 7발까지 모아요.','Balrog-XI: letting go of the trigger no longer resets the four-shell count — every four shells fired, any way, charge a special round (stack up to 7).']]],
 ['v6.28','2026-10-11',[
  ['NEW','발록-XI (상점 7,000코인, 산탄총) — 7발 자동 샷건, 장전은 한 발씩 아주 빠르게. 어떤 방식으로든 4발을 쏘면 특수탄 1발이 따로 충전돼요(최대 7발까지 모아 둘 수 있어요). 우클릭: 화염구 5개가 부채꼴로 날아가요 — 날아갈수록 커지고, 맞은 좀비에 박혀서 데미지 + 넉백 + 3초 화상. 가까이서 쏘면 5발이 한 몸에 다 박혀요. 장전할 때는 총을 옆으로 눕혀 들어 올리고 아래 탄 넣는 구멍에 한 발씩 밀어 넣어요. 조준점 둘레 링이 충전을 보여 주고, 총 왼쪽에 불씨 램프가 특수탄 수만큼 켜져요.','Balrog-XI (shop, 7,000 coins, shotgun) — a 7-round auto shotgun loaded shell by shell, very fast. Every four shells fired, however you fire them, charge one special round in its own slot (stack up to 7). Right click: five fireballs in a fan that grow as they fly, stick in the first zombie they touch (damage, a shove, 3 s of burning) — at point blank all five go into one body. A ring round the crosshair shows the charge, ember lamps on the gun show the rounds stored. To reload it is turned on its side and raised, and the shells are pushed into the port underneath one by one.'],
- ['NEW','플라즈마 건 (상점 7,500코인, 소총) — 45발. 초록 플라즈마 구체를 연사하고, 구체는 닿는 곳에서 터져 주변 좀비까지 맞혀요(중심 100% → 가장자리 50%). 머리든 다리든 데미지가 같고 헤드샷 · 확인사살 · 사기 보너스가 안 붙는 대신 스플래시로 무리를 한꺼번에 녹여요. 장전할 때는 총구를 거의 세운 채 빛나는 셀을 아래로 뽑아내고 새 셀을 밀어 끼우면 위잉 하고 차올라요.','Plasma Gun (shop, 7,500 coins, rifle) — 45 rounds of green plasma orbs that burst where they land and splash the zombies round them (100 % at the centre, 50 % at the edge). Every part of the body takes the same damage; no headshots, no 확인사살, no morale bonus — the splash melts crowds instead. To reload the muzzle goes up almost straight, the glowing cell is drawn out downwards and a fresh one pushed in, humming as it takes.'],
+ ['NEW','플라즈마 건 (상점 7,500코인, 소총) — 45발. 초록 플라즈마 구체를 연사하고, 구체는 닿는 곳에서 터져 주변 좀비까지 맞혀요(중심 100% → 가장자리 80%). 머리든 다리든 데미지가 같고 헤드샷 · 확인사살 · 사기 보너스가 안 붙는 대신 스플래시로 무리를 한꺼번에 녹여요. 장전할 때는 총구를 거의 세운 채 빛나는 셀을 아래로 뽑아내고 새 셀을 밀어 끼우면 위잉 하고 차올라요.','Plasma Gun (shop, 7,500 coins, rifle) — 45 rounds of green plasma orbs that burst where they land and splash the zombies round them (100 % at the centre, 80 % at the edge). Every part of the body takes the same damage; no headshots, no 확인사살, no morale bonus — the splash melts crowds instead. To reload the muzzle goes up almost straight, the glowing cell is drawn out downwards and a fresh one pushed in, humming as it takes.'],
  ['NEW','썬더볼트 (상점 9,500코인, 저격총) — 레일건. 전용탄 30발로 재장전이 없어요(탄약 구매 · 보급으로 다시 30발). 광선이 모든 벽(벽마다 85%)과 그 줄의 좀비를 전부 꿰뚫어요(앞에 맞은 좀비마다 90%). 몸통 650, 머리 ×5. 가만히 서 있으면 줌 없이도 100% 명중. 전용 조준경: 좀비가 조준선에 걸리면 빨갛게 바뀌고, 줌 중에는 시야 안 좀비가 벽 너머까지 표시돼요. 쏠 때마다 총을 휙 들어 비틀고 왼손으로 코일을 두 번 쳐서 충전해요 — 코일이 차례로 다시 켜지고, 줌에서 쐈다면 충전이 끝나면 다시 줌이 돼요.','Thunderbolt (shop, 9,500 coins, sniper) — a railgun with its own 30 shots and no reload (buying ammo or a supply refills it). The beam goes through every wall (85 % each) and every zombie on its line (90 % for each before). Body 650, head ×5. Standing still it never misses, scoped or not. Its own scope turns red while the line runs over a zombie, and while scoped every zombie in view is marked, through walls too. After every shot the gun swings up and rolls over while the free hand slaps the coils twice; they light up again one by one, and a shot from the scope goes back into it once it is ready.'],
  ['FIX','발록-5 — 콤보 게이지 램프가 총 오른쪽(1인칭에서 안 보이는 쪽)에 있던 것을 왼쪽으로 옮겼어요','Balrog-5 — the combo gauge lamps moved to the left of the gun (they were on the right, out of sight in first person)']]],
 ['v6.27.1','2026-10-11',[
@@ -13521,7 +13525,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.29 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.29.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -15158,9 +15162,9 @@ const NEW_CONTENT=[
   {kind:'zombie',ref:'hazmat',tag:['신규 좀비','New zombie'],t:['방호복 연구원 좀비','Hazmat Researcher Zombie'],
     d:['원종 실험실의 Q7 연구원. 방호복이라 단단하고, 쓰러지면 등의 가스통이 터져 포자 구름이 퍼져요 — 가까이서 잡지 마요. 5챕터에 나와요.','A Q7 researcher from the origin-strain lab, tough in its suit — its back tank bursts into a cloud of spores when it falls, so do not finish it up close. Shows up in chapter 5.']},
   {kind:'weapon',ref:'thunder',tag:['상점 9,500 코인','Shop · 9,500 coins'],t:['썬더볼트','Thunderbolt'],
-    d:['벽도 좀비도 전부 꿰뚫는 레일건. 전용탄 30발, 재장전 없음. 머리 ×5에 서 있으면 노줌도 100% 명중, 줌 중엔 벽 너머 좀비까지 표시돼요.','A railgun that goes through every wall and every zombie. 30 shots of its own, no reload. Head ×5, never misses standing still, and its scope marks zombies through walls.']},
+    d:['벽도 좀비도 전부 꿰뚫는 레일건. 전용탄 30발, 재장전 없음. 머리 ×2.5, 서 있으면 노줌도 100% 명중, 줌 중엔 벽 너머 좀비까지 표시돼요.','A railgun that goes through every wall and every zombie. 30 shots of its own, no reload. Head ×2.5, never misses standing still, and its scope marks zombies through walls.']},
   {kind:'weapon',ref:'plasma',tag:['상점 7,500 코인','Shop · 7,500 coins'],t:['플라즈마 건','Plasma Gun'],
-    d:['초록 플라즈마 구체를 연사하고, 구체마다 스플래시가 터져요. 부위와 상관없이 같은 데미지 — 좀비 무리를 한꺼번에 녹이는 총.','Rapid green plasma orbs, each bursting with a splash. The same damage wherever it hits — a crowd melter.']},
+    d:['초록 플라즈마 구체를 연사하고, 구체마다 넓은 스플래시가 터져요. 부위와 상관없이 같은 데미지 — 좀비 무리를 한꺼번에 녹이는 총.','Rapid green plasma orbs, each bursting with a wide splash. The same damage wherever it hits — a crowd melter.']},
   {kind:'weapon',ref:'balrog11',tag:['상점 7,000 코인','Shop · 7,000 coins'],t:['발록-XI','Balrog-XI'],
     d:['4발 쏠 때마다 특수탄 충전(최대 7발까지 저장). 우클릭으로 화염구 5개를 부채꼴로 — 가까이서 쏘면 한 몸에 다 박혀요.','Every four shells fired charge a special round (stack up to 7). Right click looses five fireballs in a fan — at point blank they all go into one body.']},
   {kind:'weapon',ref:'balrog5',tag:['상점 6,500 코인','Shop · 6,500 coins'],t:['발록-5','Balrog-5'],

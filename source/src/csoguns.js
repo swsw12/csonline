@@ -6,7 +6,7 @@
 // special charge into its own slot (up to 7; the Blaze-8's special-shell machinery, newguns.js). Right click looses five fireballs in a fan
 // (spFlame): each grows as it flies, stops in the first zombie it touches and sets it alight, so at point blank all five land in one body.
 // The charge shows as a ring round the crosshair (bxRing) and as seven ember pips on the receiver.
-// Plasma Gun: 45 rounds of green plasma orbs (projectiles) that burst on contact with a splash (full at the centre, half at the edge).
+// Plasma Gun: 45 rounds of green plasma orbs (projectiles) that burst on contact with a splash (full at the centre, 80% at the edge).
 // Every part of the body takes the same damage, a headshot never counts (no 확인사살 either) and morale does not raise it (o.flat).
 // The reload pulls the glowing cell out of its cradle on the right side backwards and pushes a fresh one in (rlCell).
 // Thunderbolt: a railgun with its own ammunition (30 shots, no magazine and no reload; buying ammo or a supply refills it: W.noRel).
@@ -111,7 +111,7 @@ GUNS.plasma={parts:[
   Pt(0,.04,.17,.05,.08,.18,'gunmetal'),Pt(0,.08,.15,.03,.02,.14,'blk'),Pt(0,.03,.27,.056,.12,.02,'rub'),Pt(-.0255,.04,.17,.002,.03,.1,'plGlow')],
   grip:[0,-.04,.02],sup:[0,-.02,-.36],muzzle:[0,.05,-.62],mag:[-.062,.04,-.23],eject:[.03,.06,-.06]};
 GUNS.plorb={parts:[Pt(0,0,0,.07,.07,.07,'plGlow'),Pt(0,0,0,.05,.09,.05,'plGlow'),Pt(0,0,0,.09,.05,.05,'plGlow'),Pt(0,0,0,.05,.05,.09,'plGlow')],grip:[0,0,0],muzzle:[0,0,0]};
-WPN.plasma={slot:1,kind:'rifle',n:['플라즈마 건','Plasma Gun'],cost:5500,mag:45,res:270,dmg:40,rpm:600,proj:'plasma',plR:1.7,plSpd:52,spread:[.008,.03,.08],rec:[.012,.006],kb:3.2,stag:.38,hs:1,
+WPN.plasma={slot:1,kind:'rifle',n:['플라즈마 건','Plasma Gun'],cost:5500,mag:45,res:270,dmg:60,rpm:600,proj:'plasma',plR:3.8,plSpd:52,spread:[.008,.03,.08],rec:[.012,.006],kb:3.2,stag:.38,hs:1,
   reload:3.2,draw:.85,speed:.92,snd:'plfire',model:'plasma',hold:'rifle'};
 VM_POS.plasma={p:[.15,-.17,-.36],r:[0,.085,.035]};
 BUY_MENU.find(c=>c.k==='rifle').items.push('plasma');
@@ -128,7 +128,7 @@ function plBoom(n,direct){const W=WPN.plasma,o=n.owner,x=n.x,y=n.y,z=n.z,R0=W.pl
   for(let k=0;k<10;k++){const a=Math.random()*TAU,e=rr(-.4,1),sp=rr(1.5,4);FX.spawn({x,y,z,vx:Math.cos(a)*Math.cos(e)*sp,vy:Math.sin(e)*sp,vz:Math.sin(a)*Math.cos(e)*sp,life:rr(.2,.45),s0:.07,s1:.01,r:.7,g:1,b:.35,f:11,add:1,grav:3})}
   if(!AU.throttle('plh'+(o?o.id:0),70))AU.at('plhit',x,y,z,{vol:.55,range:35});
   for(const t of G.actors){if(!t.alive||!o||t.team===o.team)continue;const c=t.c,cy=clamp(y,c.y+.2,t.head.y),dx=c.x-x,dz=c.z-z,d=Math.max(0,Math.hypot(dx,cy-y,dz)-c.hw);
-    if(t!==direct&&(d>R0||!losClear(x,y,z,c.x,cy,c.z)))continue;const f=t===direct?1:1-.5*clamp(d/R0,0,1),hl=Math.hypot(dx,dz)||1;
+    if(t!==direct&&(d>R0||!losClear(x,y,z,c.x,cy,c.z)))continue;const f=t===direct?1:1-.2*clamp(d/R0,0,1),hl=Math.hypot(dx,dz)||1;
     damageActor(t,W.dmg*f,o,{w:'plasma',flat:1,dir:[dx/hl,.05,dz/hl],kb:W.kb*(.5+.5*f),stag:W.stag,x,y,z});hit=true}
   if(hit&&o&&o.isPlayer)HUD.hitmark(false)}
 // the reload: the cell out backwards along its cradle, carried down; the fresh one up, pushed in, a hum as it takes
@@ -155,7 +155,7 @@ GUNS.thunder={parts:[
   // grip, guard, a thumbhole stock with a cheek rest and pad
   ...pGrip('grip2',-.065,.04,.28),...tGuard(-.01),Pt(0,.06,.2,.05,.06,.26,'tbBody'),Pt(0,-.02,.25,.04,.05,.14,'tbBody'),Pt(0,.098,.18,.036,.016,.16,'blk'),Pt(0,.02,.34,.056,.13,.02,'rub')],
   grip:[0,-.04,.02],sup:[0,.0,-.42],muzzle:[0,.05,-.83],mag:[0,.05,-.48],eject:[.03,.06,-.06]};
-WPN.thunder={slot:1,kind:'sniper',n:['썬더볼트','Thunderbolt'],cost:7000,mag:30,res:0,noRel:1,rail:1,dmg:650,hs:5,rpm:40,semi:1,spread:[0,.025,.12],spreadZ:0,zoom:[26,10],
+WPN.thunder={slot:1,kind:'sniper',n:['썬더볼트','Thunderbolt'],cost:7000,mag:30,res:0,noRel:1,rail:1,dmg:650,hs:2.5,rpm:40,semi:1,spread:[0,.025,.12],spreadZ:0,zoom:[26,10],
   rec:[.1,.015],kb:26,stag:1,reload:1,draw:1,speed:.85,snd:'tbfire',model:'thunder',hold:'rifle',range:150,wallK:.85,pierceK:.9};
 VM_POS.thunder={p:[.145,-.17,-.38],r:[0,.075,.03]};
 BUY_MENU.find(c=>c.k==='sniper').items.push('thunder');
