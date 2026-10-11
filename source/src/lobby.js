@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.30.1','2026-10-12',[
+ ['FIX','봇이 서로 뭉쳐 있거나 한자리에서 멍하니 서 있던 것 완화 — 좀비 봇은 대기 지점에서 오래 기다리지 않고(7초 → 3.5초, 2마리만 모여도 돌격, 후퇴 12초 → 6초), 인간 봇은 동료 근처로 몰려가지 않고 흩어져서 더 자주 자리를 옮겨요.','Bots huddling or standing idle eased — zombie bots wait less at their staging points (7 s → 3.5 s, rush with 2, fall back 12 s → 6 s); human bots no longer pick spots next to teammates and relocate more often.'],
+]],
 ['v6.30','2026-10-12',[
  ['UP','게이볼그 — 장전 중에도 우클릭으로 박힌 작살을 바로 터뜨릴 수 있어요.','Gae Bolg — you can detonate stuck harpoons with RMB even while reloading.'],
  ['UP','폭발로 죽은 좀비도 이제 다시 부활해요. 헤드샷 · 나이프로 죽은 경우만 영구 사망이고, 폭발에 팔다리가 잘려 나가는 연출은 그대로예요(부활하면 몸이 멀쩡히 돌아옴).','Zombies killed by explosions now revive too. Only headshot / knife kills are permanent; limbs still tear off (and grow back on revival).'],
@@ -319,7 +322,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.30 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.30.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

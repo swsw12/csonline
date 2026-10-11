@@ -13,7 +13,7 @@ const HBOT={sight:40,kite:9,aim:[2.5,.25,40]};
 // the zombie pack: staging ring (m from the target), longest wait there (s), how many staged make a rush, a human this close makes it
 // rush anyway (m), everyone rushes in the last `late` s; fall back under hp share [others, hosts] until `heal` or `hide` s; choosing
 // a target, a human counts `share` m farther for each other zombie on it and `strag` m for each human standing by it
-const ZPACK={ring:[13,20],wait:7,quorum:3,near:9,late:35,low:[.3,.25],heal:.75,hide:12,share:7,strag:2.5};
+const ZPACK={ring:[13,20],wait:3.5,quorum:2,near:9,late:35,low:[.3,.25],heal:.75,hide:6,share:7,strag:2.5};
 // roughly normal noise (mean 0, sd 1)
 function gRand(){return (Math.random()+Math.random()+Math.random()-1.5)*2}
 // live humans within r metres of a point on about the same level (ex not counted)
@@ -31,7 +31,7 @@ const AI={
   onRound(a){const B=a.bot;B.path=null;B.target=null;B.seen=null;B.buyT=rr(.4,3);B.stuckT=0;B.goal=null;B.roamT=rr(.5,2.5);B.scanY=null;this.pickCamp(a);a.flash=false},
   onTeam(a){const B=a.bot;B.spot=B.spotC=B.gT=null;B.path=null;B.partial=false;B.target=null;B.seen=null;B.goal=null;B.repath=0;B.stuckT=0;B.wasDirect=0;B.straight=false;B.unreach=0;B.lastHp=a.hp;B.skillT=rr(1,3);B.zp=null;B.pp=null;a.cmd.fire=a.cmd.alt=false},
   // per-round state of a human bot (relocation clock, aim settle, panic, bearings), set up on its first update of the round
-  hInit(a){const B=a.bot;B.hR=G.round;B.relocT=B.roam?rr(14,30):rr(30,50);B.panicT=0;B.panicZ=null;B.aimT0=G.t;B.aimRT=0;B.aimOX=B.aimOY=0;B.hsT=0;B.hs=false;B.lof=true;B.kd=99;B.kSide=Math.random()<.5?1:-1;B.spotT=0;if(B.brg==null)B.brg=Math.random()*TAU;if(B.scanOff==null)B.scanOff=rr(-1,1)},
+  hInit(a){const B=a.bot;B.hR=G.round;B.relocT=B.roam?rr(10,20):rr(18,32);B.panicT=0;B.panicZ=null;B.aimT0=G.t;B.aimRT=0;B.aimOX=B.aimOY=0;B.hsT=0;B.hs=false;B.lof=true;B.kd=99;B.kSide=Math.random()<.5?1:-1;B.spotT=0;if(B.brg==null)B.brg=Math.random()*TAU;if(B.scanOff==null)B.scanOff=rr(-1,1)},
   onHurt(a,src){const B=a.bot;if(src&&a.team===TZ&&src.alive&&(!B.target||Math.random()<.25)){B.target=src;B.repath=0}},
   // a camp to hold. Outside the scenario each camp takes a few bots at most (fewer the more are there already) and none with a zombie
   // on it; every camp full → open ground instead. Each bot gets a point of its own and looks its own way.
@@ -54,7 +54,7 @@ const AI={
       let zd=40;for(const z of Zs)zd=Math.min(zd,Math.hypot(z.c.x-n.x,z.c.z-n.z)+Math.abs(z.c.y-n.y)*2);
       let sc=Math.random()*(spread?6:10)+Math.min(zd,25)*.6-Math.abs(n.y-c.y)*.4;
       if(spread){let k=0;for(const h of Hs){const sp=h.bot&&h.bot.spot;if(Math.abs(h.c.y-n.y)<2.5&&Math.hypot(h.c.x-n.x,h.c.z-n.z)<6)k++;else if(sp&&Math.abs(sp[1]-n.y)<2.5&&Math.hypot(sp[0]-n.x,sp[2]-n.z)<5)k++}
-        sc+=Math.cos(Math.atan2(n.x-c.x,n.z-c.z)-B.brg)*3+(k===0?-1.5:k<=2?1.5:-4*(k-2))}
+        sc+=Math.cos(Math.atan2(n.x-c.x,n.z-c.z)-B.brg)*3+(k===0?0:-2.5*k)}
       if(sc>bs){bs=sc;best=n}}
     if(!best)return false;B.spot=[best.x+rr(-.25,.25),best.y,best.z+rr(-.25,.25)];B.camp=null;B.path=null;B.repath=0;B.scanY=null;return true},
   // buying is free: every bot has a loadout it likes (rolled from the weights below, the dearer guns a little likelier, rolled again now and
@@ -127,7 +127,7 @@ const AI={
     if(fight&&B.kd<99&&this.kite(a)){moving=true;B.crouchT=0}// zombies close by: back off with the gun on them
     if(spread&&fight&&!last){// a spot with a zombie near it is given up, and nobody stays anywhere for long
       B.spotT-=dt;if(B.spot&&B.spotT<=0){B.spotT=.5;if(zNearPt(B.spot[0],B.spot[1],B.spot[2],8)){B.spotT=2;if(!this.pickRoam(a))this.pickCamp(a)}}
-      B.relocT-=dt;if(B.relocT<=0&&!(B.kd<12)){B.relocT=B.roam?rr(20,35):rr(35,55);if(Math.random()<.35||!this.pickRoam(a))this.pickCamp(a)}}
+      B.relocT-=dt;if(B.relocT<=0&&!(B.kd<12)){B.relocT=B.roam?rr(12,22):rr(20,35);if(Math.random()<.35||!this.pickRoam(a))this.pickCamp(a)}}
     if(!moving){const goal=last?this.fleeSpot(a):B.spot;
       if(goal){const gd=Math.hypot(goal[0]-c.x,goal[2]-c.z),gy=Math.abs(goal[1]-c.y);
         // a roamer with a zombie in its sights (well away, and not in a crowd) stops walking and shoots; it walks on once things are quiet
@@ -138,7 +138,7 @@ const AI={
           B.strafeT-=dt;if(B.strafeT<=0){B.strafeT=rr(.6,2.2);B.strafe=Math.random()<.5?0:rpick([-1,1])}if(B.strafe&&tgt)cmd.s=B.strafe*.6;
           if(spread){const m=this.hSep(a);if(m)this.moveDir(a,m[0]*.6,m[1]*.6)}
           if(tgt&&B.crouchT<=0&&Math.random()<dt*.3)B.crouchT=rr(1,3);
-          if(roamer&&!plant){B.roamT-=dt;if(B.roamT<=0&&!tgt&&G.t-B.seenT>2.5){const toCamp=fight&&Math.random()<.3;if(toCamp||!this.pickRoam(a))this.pickCamp(a);B.roamT=G.st==='prep'?rr(1.5,4):rr(5,15)}}}}}
+          if(roamer&&!plant){B.roamT-=dt;if(B.roamT<=0&&!tgt&&G.t-B.seenT>2.5){const toCamp=fight&&Math.random()<.3;if(toCamp||!this.pickRoam(a))this.pickCamp(a);B.roamT=G.st==='prep'?rr(1.5,4):rr(3,8)}}}}}
     if(B.crouchT>0){B.crouchT-=dt;cmd.duck=true}
     // aim & shoot
     const W=WPN[a.cur];
@@ -293,7 +293,7 @@ const AI={
       waiting++;
       if(zp.st==='approach'){if(late||hd<P.near)this.zRush(z);else if(t&&t.alive&&t.team===TH&&dist3(t.c,z.c)<P.ring[1]+4){const s=this.zStage(z,t,Zs,H);if(s){B.zp={st:'stage',t:G.t,node:s.n,brg:s.b,tgt:t,tp:[t.c.x,t.c.z],arr:0};B.path=null;B.repath=0}else this.zRush(z)}}
       else if(zp.st==='stage'){const n=zp.node;if(!zp.arr&&Math.hypot(n.x-z.c.x,n.z-z.c.z)<1.6&&Math.abs(n.y-z.c.y)<1.2)zp.arr=G.t;
-        if(late||hd<P.near||zp.bad||(zp.arr&&G.t-zp.arr>P.wait)||G.t-zp.t>P.wait+11||B.hurtAcc>z.maxHp*.05)this.zRush(z);
+        if(late||hd<P.near||zp.bad||(zp.arr&&G.t-zp.arr>P.wait)||G.t-zp.t>P.wait+8||B.hurtAcc>z.maxHp*.05)this.zRush(z);
         else if(!t||!t.alive||t.team!==TH||Math.hypot(t.c.x-zp.tp[0],t.c.z-zp.tp[1])>8){B.zp={st:'approach',t:G.t};B.path=null;B.repath=0;B.tgtT=0}
         else if(zp.arr)staged++}}
     for(const z of Zs){const zp=z.bot.zp;if(!zp||zp.st!=='stage'||!zp.arr)continue;if(staged>=Math.min(P.quorum,waiting)||fights.some(f=>dist3(f.c,zp.tgt.c)<15))this.zRush(z)}},
