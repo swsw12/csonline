@@ -60,7 +60,7 @@ Object.assign(GUNS,{
 Object.assign(SFX,{
   lybreath:{n:2,dur:.9,ch:1,peak:.8,gain:.7,rev:.15,poly:2,fn:B=>{const out=B.f('lowpass',1400,.7,B.g(.9));const e=B.env(0,.32,1,.5,out,.05);B.nz('pink',0,.85,B.sweep(B.f('bandpass',380,1.2,e),300,900,0,.35));
     const e2=B.env(.36,.04,.6,.4,out);B.nz('brown',.36,.5,B.f('bandpass',220,1.4,e2));voice(B,{f0:rr(70,80),f1:55,len:.6,F:[320,700,1800],drive:3,rasp:1,rf:500,gurgle:18})}},
-  lyradio:{n:3,dur:.9,ch:1,peak:.75,gain:.5,rev:.08,poly:3,fn:B=>{const out=B.f('highpass',700,.7,B.f('lowpass',3800,.7,B.g(.9)));const e=B.env(0,.01,1,.75,out,.05);B.am(e,0,.85,45,.85);B.nz('white',0,.85,B.f('bandpass',1700,.9,e));
+  lyradio:{n:3,dur:.9,ch:1,peak:.75,gain:.5,rev:.08,poly:3,fn:B=>{const out=B.f('highpass',700,.7,B.f('lowpass',3800,.7,B.g(.9)));const g=B.g(1,out);B.am(g,0,.85,45,.85);const e=B.env(0,.01,1,.75,g,.05);B.nz('white',0,.85,B.f('bandpass',1700,.9,e));
     const s=B.env(.62,.005,.5,.12,out);B.osc('square',1150,1150,.62,.14,s)}},
   lycall:{n:3,dur:1.4,ch:1,peak:.8,gain:.65,rev:.12,poly:2,fn:B=>{const out=B.f('highpass',450,.7,B.f('lowpass',3000,.8,B.sh(3,B.g(.9))));const g=B.g(1,out);B.am(g,0,1.3,14,.75);
     for(const [t,f0,f1] of [[0,240,320],[.3,300,210],[.62,260,360],[.95,330,220]]){const e=B.env(t,.03,1,.2,g,.06);for(const k of [1,2.02,3.1])B.osc('sawtooth',f0*k,f1*k,t,.3,B.f('bandpass',900*k,3,e))}

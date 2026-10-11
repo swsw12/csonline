@@ -3,6 +3,7 @@
 // Ranking: the top 50 of a record (level = xp, kills, infections, best score), from the database function qz_ranking — anyone may
 // look, signed in or not; the player's own place is pinned under the list. Daily missions: 3 a day per account (new ones at midnight
 // in Korea), picked and counted on the server (qz_missions; every qz_claim adds the finished match), paid once by qz_mission_claim.
+// Hall of fame (v6.24, hof.js): the first team of every chapter × difficulty; the ranking rows wear the titles (ft) too.
 const RK_KINDS=[['level','레벨','Level'],['kills','킬','Kills'],['infects','감염','Infections'],['best','최고 점수','Best score']];
 const MIS_TIER=[null,['쉬움','Easy'],['보통','Normal'],['어려움','Hard']];
 const SVG_TROPHY='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M4 1.5h8V3h2.5v1.6c0 1.9-1.3 3.3-3.1 3.6A4 4 0 018.8 10.6V12H11v2.5H5V12h2.2v-1.4A4 4 0 014.6 8.2 3.6 3.6 0 011.5 4.6V3H4zm0 3H3v.1c0 .9.5 1.6 1.2 1.9A6 6 0 014 4.5zm8 0c0 .7 0 1.4-.2 2C12.5 6.2 13 5.5 13 4.6v-.1z"/></svg>';
@@ -22,6 +23,7 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
   close(){const o=$('rkWin');if(o)o.remove();clearInterval(this.tick)},
   // what the page on screen needs from the server: the ranking of this kind (kept a minute), today's missions (fetched on every open)
   fetch(force){const L=LI();
+    if(this.page==='hof'){HOF.load(force||Date.now()-HOF.at>20e3).then(()=>this.render());return}
     if(this.page==='rank'){const k=this.kind;if(this.load[k]||(!force&&this.data[k]&&Date.now()-this.at[k]<60e3))return;this.load[k]=1;
       ACC.ranking(k).then(r=>{this.data[k]=r;this.at[k]=Date.now();if(this.kind===k)this.msg=''},e=>{if(this.kind===k){this.msg=ACC.errText(e);this.msgOk=false}}).finally(()=>{this.load[k]=0;this.render()})}
     else if(ACC.signed()&&!this.load.mis){this.load.mis=1;ACC.loadMissions().catch(e=>{this.msg=ACC.errText(e);this.msgOk=false}).finally(()=>{this.load.mis=0;this.render()})}},
@@ -32,8 +34,8 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
     if(ACC.signed())return `<span class="scoin">${COIN}<b>${fmtC(me.coins)}</b></span>${me.tickets>0?`<span class="scoin tkc" title="${L?'근하신년 decoders kept':'보유한 근하신년 해독기'}">${decoderSvg('tki')}<b>${fmtC(me.tickets)}</b></span>`:''}<button class="sacc" data-ra="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`;
     return `<button class="sacc hl" data-ra="login">${SVG_USER}<span>${L?'Sign in':'로그인'}</span></button>`},
   render(){const o=$('rkWin');if(!o)return;const L=LI(),pg=this.page,dot=ACC.misReady()>0,sc=o.querySelector('.rklist,.mbody'),keep=sc&&o.dataset.pg===pg+this.kind?sc.scrollTop:0;
-    const tabs=`<div class="spages"><button class="${pg==='mis'?'on':''}" data-ra="page" data-v="mis">${SVG_MIS}${L?'Daily missions':'일일 미션'}${dot?'<i class="dot"></i>':''}</button><button class="${pg==='rank'?'on':''}" data-ra="page" data-v="rank">${SVG_TROPHY}${L?'Ranking':'랭킹'}</button></div>`;
-    o.innerHTML=`<div class="swin p${pg}"><div class="swh"><b>${pg==='rank'?(L?'Ranking':'랭킹'):(L?'Daily missions':'일일 미션')}</b><small>${pg==='rank'?'RANKING':'MISSIONS'}</small><span class="sgap"></span>${this.head()}<button class="sx" data-ra="x" aria-label="close">×</button></div>${tabs}${pg==='rank'?this.rankPage():this.misPage()}</div>`;
+    const tabs=`<div class="spages"><button class="${pg==='mis'?'on':''}" data-ra="page" data-v="mis">${SVG_MIS}${L?'Daily missions':'일일 미션'}${dot?'<i class="dot"></i>':''}</button><button class="${pg==='rank'?'on':''}" data-ra="page" data-v="rank">${SVG_TROPHY}${L?'Ranking':'랭킹'}</button><button class="${pg==='hof'?'on':''}" data-ra="page" data-v="hof">${SVG_CROWN}${L?'Hall of fame':'명예의 전당'}</button></div>`;
+    o.innerHTML=`<div class="swin p${pg}"><div class="swh"><b>${pg==='rank'?(L?'Ranking':'랭킹'):pg==='hof'?(L?'Hall of fame':'명예의 전당'):(L?'Daily missions':'일일 미션')}</b><small>${pg==='rank'?'RANKING':pg==='hof'?'HALL OF FAME':'MISSIONS'}</small><span class="sgap"></span>${this.head()}<button class="sx" data-ra="x" aria-label="close">×</button></div>${tabs}${pg==='rank'?this.rankPage():pg==='hof'?HOF.page():this.misPage()}</div>`;
     o.dataset.pg=pg+this.kind;if(keep){const s2=o.querySelector('.rklist,.mbody');if(s2)s2.scrollTop=keep}this.clock()},
   // ---- the daily missions ----
   misPage(){const L=LI(),M=ACC.mis,ms=M&&M.missions||[];let body;
@@ -51,7 +53,7 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
   // ---- the ranking ----
   rankPage(){const L=LI(),k=this.kind,R=this.data[k],lvK=k==='level';
     const val=x=>lvK?`${fmtC(x.xp)} <small>XP</small>`:fmtC(x.value);
-    const row=(x,cls)=>`<div class="rkr${x.rank<=3?' r'+x.rank:''}${cls||''}"><span class="rkn">${x.rank<=3?`<i>${x.rank}</i>`:x.rank}</span><b>${esc(x.nickname)}</b><span class="rklv">Lv.${recLevel(x.xp|0).l}</span><span class="rkv">${val(x)}</span></div>`;
+    const row=(x,cls)=>`<div class="rkr${x.rank<=3?' r'+x.rank:''}${cls||''}"><span class="rkn">${x.rank<=3?`<i>${x.rank}</i>`:x.rank}</span><b>${esc(x.nickname)}${HOF.chip(x.ft,'sm')}</b><span class="rklv">Lv.${recLevel(x.xp|0).l}</span><span class="rkv">${val(x)}</span></div>`;
     let list,mine='';
     if(!ACC.on)list=`<div class="rkempty">${L?'The ranking opens once accounts are set up.':'계정 서버가 연결되면 랭킹을 볼 수 있어요.'}</div>`;
     else if(!R)list=`<div class="rkempty">${this.load[k]?(L?'Loading…':'불러오는 중…'):''}</div>`;

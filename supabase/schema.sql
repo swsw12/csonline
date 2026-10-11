@@ -14,6 +14,9 @@
 --     + 킬 5) × 난이도(쉬움 .7 · 보통 1 · 어려움 1.4 · 전문가 2), 판당 3,000 · 1분당 150까지. 난이도마다 첫 클리어 1번:
 --     1,000 / 3,000 / 5,000 / 8,000 코인(하루 상한과 별개) + 보통 이상은 근하신년 해독기 1개. 클리어는 4분 이상 걸린 판이어야 하고(v6.21: 5분 → 4분),
 --     n챕터는 n-1챕터를 깬 계정만 기록됩니다.
+--   * 명예의 전당(v6.24): 챕터 × 난이도마다 서버에서 처음 클리어한 팀(ep_firsts · ep_first_members). 그 판의 계정들이 칭호를
+--     달아요(로비 · 대기실 · 이름표 · 채팅 · 랭킹 · 친구). 기록은 qz_claim이 남기고, 누구나 qz_ep_firsts로 읽습니다.
+--     이 파일을 처음 돌릴 때 v6.24 전의 첫 클리어(ep_records.first_at)도 그대로 옮겨집니다.
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
 --     시즌 해독기 숫자는 같은 줄의 season_* 칸에 있습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
@@ -194,6 +197,35 @@ create table if not exists public.ep_records (
   last_at    timestamptz not null default now(),
   primary key (user_id, ep, diff)
 );
+-- v6.24: the hall of fame. One row per episode × difficulty, made by the first clear qz_claim accepts (match_id = the id that match
+-- gave every page, so its players' separate claims find each other), and the accounts of that match that claimed it within
+-- 15 minutes (at most 8). Read through qz_ep_firsts only.
+create table if not exists public.ep_firsts (
+  ep         integer not null check (ep between 1 and 5),
+  diff       integer not null check (diff between 0 and 3),
+  match_id   text not null,
+  at         timestamptz not null default now(),
+  clear_time integer,
+  primary key (ep, diff)
+);
+create table if not exists public.ep_first_members (
+  ep      integer not null,
+  diff    integer not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  at      timestamptz not null default now(),
+  primary key (ep, diff, user_id),
+  foreign key (ep, diff) references public.ep_firsts (ep, diff) on delete cascade
+);
+create index if not exists ep_first_members_user on public.ep_first_members (user_id);
+-- the clears from before v6.24: the earliest first clear of each episode × difficulty, and everyone whose own first clear of it came
+-- within 3 minutes of that one (one match: every page claims as its results show). Only rows not there yet, so re-running is safe.
+insert into public.ep_firsts (ep, diff, match_id, at)
+select r.ep, r.diff, 'past:', min(r.first_at) from public.ep_records r where r.first_at is not null group by r.ep, r.diff
+on conflict (ep, diff) do nothing;
+insert into public.ep_first_members (ep, diff, user_id, at)
+select r.ep, r.diff, r.user_id, r.first_at from public.ep_records r join public.ep_firsts f on f.ep = r.ep and f.diff = r.diff
+where f.match_id = 'past:' and r.first_at is not null and r.first_at <= f.at + interval '3 minutes'
+on conflict do nothing;
 
 -- ---------- row level security: read your own rows (prices and pouch numbers are public); no direct writes ----------
 alter table public.profiles     enable row level security;
@@ -205,6 +237,10 @@ alter table public.gacha_log    enable row level security;
 alter table public.bingo_boards enable row level security;
 alter table public.season_boards enable row level security;
 alter table public.ep_records   enable row level security;
+alter table public.ep_firsts        enable row level security;   -- (no policies: the hall of fame comes out of qz_ep_firsts only)
+alter table public.ep_first_members enable row level security;
+revoke all on table public.ep_firsts from anon, authenticated;
+revoke all on table public.ep_first_members from anon, authenticated;
 drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile" on public.profiles for select to authenticated using ((select auth.uid()) = id);
 drop policy if exists "read prices" on public.gun_prices;
@@ -318,10 +354,29 @@ language sql stable security definer set search_path = '' as $$
     'best_medal', r.best_medal, 'best_lives', r.best_lives, 'first_at', r.first_at) order by r.ep, r.diff), '[]'::jsonb)
   from public.ep_records r where r.user_id = uid
 $$;
+-- the hall-of-fame titles of one account (v6.24): ep * 10 + diff of every first-clear team it is in (12 = chapter 1, hard)
+create or replace function public.qz_firsts_of(uid uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(m.ep * 10 + m.diff order by m.ep, m.diff), '[]'::jsonb) from public.ep_first_members m where m.user_id = uid
+$$;
+-- the one shown next to the name: the latest chapter, then the hardest difficulty (null: none)
+create or replace function public.qz_first_best(uid uuid) returns integer
+language sql stable security definer set search_path = '' as $$
+  select max(m.ep * 10 + m.diff) from public.ep_first_members m where m.user_id = uid
+$$;
+-- the hall of fame as the game shows it (v6.24): every episode × difficulty cleared so far, when, in what time, and the team's
+-- nicknames (no ids). Anyone may read it, signed in or not.
+create or replace function public.qz_ep_firsts() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('ep', f.ep, 'diff', f.diff, 'at', f.at, 'time', f.clear_time,
+      'team', coalesce((select jsonb_agg(t.nickname order by m.at, t.nickname) from public.ep_first_members m
+        join public.profiles t on t.id = m.user_id where m.ep = f.ep and m.diff = f.diff), '[]'::jsonb)) order by f.ep, f.diff), '[]'::jsonb)
+  from public.ep_firsts f
+$$;
 
 -- ---------- what the game calls (POST /rest/v1/rpc/<name>) ----------
 -- me: nickname, coins, fragments, pouch pity, the free decoder, 근하신년 decoders kept (tickets), owned guns,
--- the friend code, gifts not shown yet and friend requests waiting (v6.18), the episode records (v6.20)
+-- the friend code, gifts not shown yet and friend requests waiting (v6.18), the episode records (v6.20), hall-of-fame titles (v6.24)
 -- (creates the profile if the account is older than this file)
 create or replace function public.qz_me() returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -348,7 +403,7 @@ begin
     'fragments', p.fragments, 'pity', p.pity, 'tickets', p.dec_tickets,
     'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'season_tickets', p.season_tickets,
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
-    'rec', public.qz_rec(p), 'eps', public.qz_eps(uid),
+    'rec', public.qz_rec(p), 'eps', public.qz_eps(uid), 'firsts', public.qz_firsts_of(uid),
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
 
@@ -393,13 +448,17 @@ end $$;
 -- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them.
 -- v6.20: an episode of the zombie scenario (p_ep 1..5) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
 -- and goes on ep_records (p_time = the clear time in seconds, p_lives = lives lost, p_bonus = escaped in time); the first clear of
--- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder
+-- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder.
+-- v6.24: p_match = the match's id (the same on every page of it): the first clear of an episode × difficulty starts its hall-of-fame
+-- row, and the other accounts of that match join it (ep_hof in the answer = this account just did)
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean);
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer);   -- v6.11, before p_hs
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer);   -- v6.12, before the episodes
+drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean);   -- v6.20, before p_match
 create or replace function public.qz_claim(p_mode text, p_rounds integer, p_kills integer, p_infects integer, p_damage integer,
   p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0, p_hs integer default 0,
-  p_ep integer default 0, p_diff integer default 1, p_time integer default 0, p_lives integer default 0, p_bonus boolean default false) returns jsonb
+  p_ep integer default 0, p_diff integer default 1, p_time integer default 0, p_lives integer default 0, p_bonus boolean default false,
+  p_match text default '') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
@@ -426,6 +485,9 @@ declare
   v_first integer := 0;
   v_tix integer := 0;
   v_secs numeric;
+  v_match text := left(regexp_replace(coalesce(p_match, ''), '[^A-Za-z0-9]', '', 'g'), 24);
+  v_fr public.ep_firsts;
+  v_hof boolean := false;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform 1 from public.profiles where id = uid for update;
@@ -490,6 +552,19 @@ begin
         jsonb_build_object('ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'tickets', v_tix));
       p := (select t from public.profiles t where t.id = uid);
     end if;
+    -- the hall of fame (v6.24): the first accepted clear makes the row with its match id; the same match's accounts join within
+    -- 15 minutes, 8 at most (a page sending no id gets one of its own, so it never joins anybody else)
+    if v_clear then
+      if v_match = '' then v_match := 'u:' || uid::text; end if;
+      insert into public.ep_firsts (ep, diff, match_id, at, clear_time) values (v_ep, v_diff, v_match, now(), v_time)
+      on conflict (ep, diff) do nothing;
+      v_fr := (select f from public.ep_firsts f where f.ep = v_ep and f.diff = v_diff);
+      if v_fr.match_id = v_match and v_fr.at > now() - interval '15 minutes'
+         and (select count(*) from public.ep_first_members m where m.ep = v_ep and m.diff = v_diff) < 8 then
+        insert into public.ep_first_members (ep, diff, user_id) values (v_ep, v_diff, uid) on conflict do nothing;
+        v_hof := found;
+      end if;
+    end if;
   end if;
   -- daily missions (v6.12): what this match adds to each kind, clamped like the coins above
   perform public.qz_missions_make(uid, today);
@@ -506,7 +581,8 @@ begin
   where m.user_id = uid and m.day = today and m.progress < m.goal;
   return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 20000 - p.day_earned,
     'xp_got', gx, 'rec', public.qz_rec(p), 'missions', v_mis, 'tickets', p.dec_tickets,
-    'ep_first', v_first, 'ep_tickets', v_tix, 'ep_clear', v_clear, 'ep_medal', v_medal, 'eps', case when v_ep > 0 then public.qz_eps(uid) end);
+    'ep_first', v_first, 'ep_tickets', v_tix, 'ep_clear', v_clear, 'ep_medal', v_medal, 'eps', case when v_ep > 0 then public.qz_eps(uid) end,
+    'ep_hof', v_hof, 'firsts', case when v_ep > 0 then public.qz_firsts_of(uid) end);
 end $$;
 
 -- the coins and xp for one finished round (v6.17): a round of the infection modes pays about what a whole match paid before.
@@ -595,8 +671,9 @@ declare
   v_val integer;
 begin
   -- equal values share a rank (1, 2, 2, 4); within a tie the higher xp, then the older account, is listed first
+  -- (ft: the hall-of-fame title shown next to the name, v6.24)
   v_top := (select coalesce(jsonb_agg(jsonb_build_object('rank', r.rk, 'nickname', r.nickname, 'value', r.v, 'xp', r.xp, 'games', r.rec_games,
-      'me', coalesce(r.id = uid, false)) order by r.n), '[]'::jsonb)
+      'me', coalesce(r.id = uid, false), 'ft', public.qz_first_best(r.id)) order by r.n), '[]'::jsonb)
     from (select t.id, t.nickname, t.xp, t.rec_games, s.v, rank() over (order by s.v desc) as rk,
             row_number() over (order by s.v desc, t.xp desc, t.created_at, t.id) as n
           from public.profiles t cross join lateral (select public.qz_rank_value(t, k) as v) s
@@ -605,7 +682,7 @@ begin
     p := (select t from public.profiles t where t.id = uid);
     if p.id is not null then
       v_val := public.qz_rank_value(p, k);
-      v_me := jsonb_build_object('nickname', p.nickname, 'value', v_val, 'xp', p.xp, 'games', p.rec_games,
+      v_me := jsonb_build_object('nickname', p.nickname, 'value', v_val, 'xp', p.xp, 'games', p.rec_games, 'ft', public.qz_first_best(p.id),
         'rank', case when p.rec_games > 0 then 1 + (select count(*) from public.profiles t where t.rec_games > 0 and public.qz_rank_value(t, k) > v_val) end);
     end if;
   end if;
@@ -665,6 +742,10 @@ end $$;
 revoke all on function public.qz_rank_value(public.profiles, text) from public, anon, authenticated;
 revoke all on function public.qz_ranking(text) from public;
 grant execute on function public.qz_ranking(text) to anon, authenticated;
+revoke all on function public.qz_firsts_of(uuid) from public, anon, authenticated;
+revoke all on function public.qz_first_best(uuid) from public, anon, authenticated;
+revoke all on function public.qz_ep_firsts() from public;
+grant execute on function public.qz_ep_firsts() to anon, authenticated;
 
 -- ---------- daily missions (v6.12) ----------
 -- 3 missions per account per Korean day (Asia/Seoul): one easy (tier 1), one normal (2), one hard (3), each of a different kind, picked
@@ -1219,7 +1300,7 @@ revoke all on function public.qz_on_signup() from public, anon, authenticated;
 revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
-revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean) from public, anon;
+revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text) from public, anon;
 revoke all on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) from public, anon;
 revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo_json(uuid) from public, anon, authenticated;
@@ -1242,7 +1323,7 @@ revoke all on function public.qz_eps(uuid) from public, anon, authenticated;
 grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
-grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean) to authenticated;
+grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text) to authenticated;
 grant execute on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) to authenticated;
 grant execute on function public.qz_bingo() to authenticated;
 grant execute on function public.qz_decode(integer, boolean, boolean) to authenticated;
@@ -1344,15 +1425,16 @@ begin
     update public.profiles set fcode = public.qz_fcode_new() where id = uid;
     me := (select t.fcode from public.profiles t where t.id = uid);
   end if;
+  -- (ft: the hall-of-fame title shown next to the name, v6.24)
   return jsonb_build_object('code', me,
     'friends', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp,
-        'last', greatest(t.last_claim, t.last_round), 'since', f.accepted_at)
+        'last', greatest(t.last_claim, t.last_round), 'since', f.accepted_at, 'ft', public.qz_first_best(t.id))
         order by greatest(t.last_claim, t.last_round) desc nulls last, t.nickname)
       from public.friends f join public.profiles t on t.id = case when f.a = uid then f.b else f.a end
       where (f.a = uid or f.b = uid) and f.accepted), '[]'::jsonb),
-    'incoming', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at) order by f.at desc)
+    'incoming', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id)) order by f.at desc)
       from public.friends f join public.profiles t on t.id = f.a where f.b = uid and not f.accepted), '[]'::jsonb),
-    'outgoing', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at) order by f.at desc)
+    'outgoing', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id)) order by f.at desc)
       from public.friends f join public.profiles t on t.id = f.b where f.a = uid and not f.accepted), '[]'::jsonb),
     'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen));
 end $$;

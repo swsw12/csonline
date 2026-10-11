@@ -492,8 +492,9 @@ function shopLocked(P,id){if(id==='bhole'||!ACC.on||!P||G.mode==='range')return 
 function shopMatchStats(){const P=G.player,A=G.actors.filter(a=>!a.scen&&!a.rg),best=A.slice().sort((a,b)=>(b.score||0)-(a.score||0))[0];
   return {mode:G.mode,rounds:G.round|0,kills:P.kills|0,infects:P.infects|0,damage:P.dmgDealt||0,won:(G.score&&G.score[TH]>G.score[TZ]),mvp:best===P&&(P.score||0)>0,
     stage:typeof SCEN!=='undefined'?(SCEN.best||SCEN.stage||0):0,cleared:typeof SCEN!=='undefined'&&!!SCEN.win,score:Math.round(P.score||0),hs:P.hsKills|0,
-    // an episode (v6.20): which one, the difficulty, the clear time, lives lost and the escape bonus (records and first-clear rewards)
-    ...(typeof EP!=='undefined'&&EP.on&&EP.res?{ep:EP.id,diff:G.diff|0,time:EP.res.time|0,lives:EP.res.lost|0,bonus:!!EP.res.bonus}:{})}}
+    // an episode (v6.20): which one, the difficulty, the clear time, lives lost and the escape bonus (records and first-clear rewards);
+    // the match's id (v6.24: the hall of fame's first-clear team, hof.js)
+    ...(typeof EP!=='undefined'&&EP.on&&EP.res?{ep:EP.id,diff:G.diff|0,time:EP.res.time|0,lives:EP.res.lost|0,bonus:!!EP.res.bonus,match:G.mt||''}:{})}}
 function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.mode==='range')return;const L=LI();
   const box=document.createElement('div');box.className='coinRes';const put=()=>{const fs=res.querySelector('.finalScore');if(fs)fs.after(box);else res.prepend(box)};
   if(G.coinDone){if(G.coinBox){box.innerHTML=G.coinBox;put();if(G.misBox)misResPut(box,G.misBox)}return}G.coinDone=true;// shown again, never paid twice

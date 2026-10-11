@@ -1184,3 +1184,34 @@ html.touch #hUse{top:58%}
 .ping b{font-size:12px;color:#ffe8a0;text-shadow:1px 1px 0 #000,0 0 3px #000;letter-spacing:.3px}.ping span{font-size:10px;color:#e8e4d8;text-shadow:1px 1px 0 #000}
 .ping.z i{background:#ff6a4a;box-shadow:0 0 8px rgba(255,90,60,.75)}.ping.e{transform:translate(-50%,-50%) scale(.85)}.ping.new i{animation:pingIn .6s ease-out}
 @keyframes pingIn{0%{transform:rotate(45deg) scale(2.2);opacity:.3}100%{transform:rotate(45deg) scale(1);opacity:1}}
+/* ---------- the hall of fame (v6.24): gold title chips, the chapter cards' first-clear line, the results line, the ranking window's page ---------- */
+.crn{width:1em;height:1em;flex:none;vertical-align:-.12em}
+.hoft{display:inline-flex;align-items:center;gap:3px;max-width:100%;box-sizing:border-box;padding:1px 6px 1px 4px;border:1px solid #b8902e;border-radius:2px;background:linear-gradient(100deg,#3b2c07 0%,#614a12 45%,#3b2c07 70%);background-size:220% 100%;color:#ffe08a;font-size:10px;font-weight:normal;line-height:1.35;white-space:nowrap;text-shadow:0 1px 0 #000;box-shadow:0 0 6px rgba(255,200,60,.2);animation:hofSh 4.5s linear infinite;vertical-align:middle}
+.hoft b{font-weight:normal!important;overflow:hidden;text-overflow:ellipsis;color:inherit!important;font-size:inherit!important}
+.hoft .crn{color:#ffcf3a;filter:drop-shadow(0 0 2px rgba(255,190,40,.6))}.hoft i{font-style:normal;color:#d9b66a;font-size:9px;margin-left:1px}
+@keyframes hofSh{0%{background-position:100% 0}100%{background-position:-120% 0}}
+.hoft.sm{font-size:9px;padding:0 4px 0 3px;margin-left:6px;animation:none;background:linear-gradient(#3b2c07,#271d05);box-shadow:none}
+.prof .hoft.pf{grid-column:1/-1;justify-self:start;cursor:pointer}.prof .hoft.pf:hover{border-color:#ffd970;color:#fff3c4}
+.slot .hoft.sm{align-self:flex-start;margin-left:0}
+i.hofc{font-style:normal;display:inline-flex;color:#ffcf3a;margin-left:4px;vertical-align:-1px;filter:drop-shadow(0 0 2px rgba(255,190,40,.55))}
+.ntag .hn{display:block;text-align:center;font-size:10px;color:#ffd970;line-height:1.2}.ntag .hn .crn{margin-right:2px;color:#ffcf3a}.ntag.hof{color:#ffe7a8}
+#chatBox .cl b.hof{color:#ffd970}#chatBox .cl b.hof .crn{color:#ffcf3a;margin-right:2px}
+.hofl{display:flex;align-items:center;gap:4px;margin-top:2px;min-width:0;font-size:10px;line-height:1.3}.hofl:empty{display:none}
+.hofl .crn{color:#7a6c48}.hofl b{flex:none;font-size:10px!important;font-weight:normal;color:#b8a67a!important}
+.hofl span{min-width:0;font-size:10px!important;color:#ecdcae!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hofl span.no{color:#7a7f88!important}
+.hofl.on .crn{color:#ffcf3a;filter:drop-shadow(0 0 2px rgba(255,190,40,.55))}.hofl.on b{color:#ffd970!important}.hofl.me span{color:#fff6d0!important}
+.epPrev .hofl{flex-direction:row;gap:4px;margin-top:3px}
+.hofRes{display:flex;align-items:center;gap:12px;margin:6px auto;padding:8px 16px;max-width:560px;box-sizing:border-box;border:1px solid #d9ac3e;background:linear-gradient(100deg,#3b2c07,#6e5416 50%,#3b2c07);background-size:220% 100%;animation:hofSh 3.5s linear infinite;box-shadow:0 0 18px rgba(255,200,60,.28)}
+.hofRes>.crn{width:34px;height:34px;color:#ffd23f;filter:drop-shadow(0 0 6px rgba(255,200,40,.75))}
+.hofRes div{display:flex;flex-direction:column;gap:1px;text-align:left;min-width:0}.hofRes small{font-size:10px;letter-spacing:2px;color:#e8c46a}
+.hofRes b{font-size:16px;color:#fff3c4}.hofRes span{font-size:12px;color:#f0dca0}.hofRes em{font-style:normal;font-size:10px;color:#c9b080}
+#rkWin .hofc{flex:none;border:1px solid #3e424a;background:linear-gradient(#24282e,#1a1d21);padding:6px 8px}
+#rkWin .hch{display:flex;align-items:center;gap:8px;margin-bottom:5px}#rkWin .hch img{height:40px;image-rendering:pixelated}
+#rkWin .hch div{display:flex;flex-direction:column}#rkWin .hch small{font-size:10px;color:#a89070;letter-spacing:1px}#rkWin .hch b{font-size:14px;color:#fff}
+#rkWin .hrs{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+#rkWin .hr{display:flex;flex-direction:column;gap:2px;padding:4px 7px;min-width:0;background:rgba(0,0,0,.25);border:1px solid #2e3138}
+#rkWin .hr em{font-style:normal;font-size:10px;color:var(--dc,#9aa0a8)}#rkWin .hr .tm{display:flex;flex-wrap:wrap;gap:1px 8px}
+#rkWin .hr .tm b{font-size:12px;font-weight:normal;color:#ffe08a}#rkWin .hr small{font-size:10px;color:#7a7f88}#rkWin .hr .no{font-size:11px;color:#6a6e76}
+#rkWin .hr.on{border-color:#6a5420;background:linear-gradient(#2e2610,#1e1a0c)}#rkWin .hr.me{border-color:#e8a33a;box-shadow:inset 0 0 0 1px rgba(232,163,58,.35)}
+#rkWin .spages .crn{width:14px;height:14px}
+@media (max-width:600px){#rkWin .hrs{grid-template-columns:1fr}}

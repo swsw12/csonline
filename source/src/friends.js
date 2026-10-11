@@ -3,6 +3,7 @@
 // A friends window (the lobby button 친구, with a red dot while requests wait or gifts are unread): my friend code, adding by code or
 // by a nickname only one player has, requests in and out, the friend list (level, when they last played) with a gift button that
 // opens the shop in gift mode for that friend (shop.js: SHOP.giftTo). Gifts that came in show once, in a pop-up in the lobby.
+// v6.24: a friend in a hall-of-fame team wears the title (ft) next to the name.
 // The database decides everything (schema.sql v6.18: qz_friends, qz_friend_add / _answer / _remove, qz_gift, qz_gift_inbox).
 const SVG_FRIEND='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M6 2a2.6 2.6 0 110 5.2A2.6 2.6 0 016 2zM1 13.6c.3-2.8 2.4-4.4 5-4.4s4.7 1.6 5 4.4zM12.2 4.5h1.4v2h2v1.4h-2v2h-1.4v-2h-2V6.5h2z"/></svg>';
 const SVG_GIFT='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 6h12v3H2zM3 9.6h4.3V15H3zM8.7 9.6H13V15H8.7zM8 5.4C6.6 3 4.2 2.6 4.2 4.1c0 1 1.6 1.3 3.8 1.3zm0 0c1.4-2.4 3.8-2.8 3.8-1.3 0 1-1.6 1.3-3.8 1.3z"/></svg>';
@@ -18,7 +19,7 @@ const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,
     if(ACC.signed()){this.lastLoad=Date.now();ACC.loadFriends().then(()=>this.render()).catch(e=>{this.msg=ACC.errText(e);this.ok=false;this.render()})}},
   close(){const o=$('frWin');if(o)o.remove();this.del=null},
   render(){const o=$('frWin');if(!o)return;const L=LI(),signed=ACC.signed(),F=ACC.fr,inp=$('frIn'),keep=inp?inp.value:'';
-    const row=(f,btns,sub)=>`<div class="frr"><span class="frlv">Lv.${recLevel(f.xp|0).l}</span><span class="frnm"><b>${esc(f.nickname)}</b><small>#${esc(f.code||'')}${sub?' · '+esc(sub):''}</small></span><span class="frbt">${btns}</span></div>`;
+    const row=(f,btns,sub)=>`<div class="frr"><span class="frlv">Lv.${recLevel(f.xp|0).l}</span><span class="frnm"><b>${esc(f.nickname)}${HOF.chip(f.ft,'sm')}</b><small>#${esc(f.code||'')}${sub?' · '+esc(sub):''}</small></span><span class="frbt">${btns}</span></div>`;
     let body;
     if(!ACC.on)body=`<p class="frn">${L?'Accounts are not set up yet.':'계정 서버가 아직 연결되지 않았어요.'}</p>`;
     else if(!signed)body=`<p class="frn">${L?'Sign in to add friends and send them guns.':'로그인하면 친구를 추가하고 총을 선물할 수 있어요.'}</p><button class="frbig" data-fr="login">${L?'Sign in':'로그인'}</button>`;

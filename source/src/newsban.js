@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'♛',tag:['신규 기능','New'],t:['명예의 전당','Hall of fame'],
+    d:['챕터 × 난이도마다 서버에서 가장 먼저 클리어한 팀이 명예의 전당에 남아요. 그 판의 팀원 모두 이름 옆에 금색 칭호(예: 「알레프 보통 최초 클리어」)를 달고 — 로비 · 대기실 · 머리 위 이름표 · 채팅 · 랭킹 · 친구 목록에 보여요. 랭킹 창의 「명예의 전당」 탭, 챕터 카드에서 팀을 볼 수 있어요.','The first team on the server to clear each chapter on each difficulty goes into the hall of fame. Everyone in it wears a gold title next to their name (e.g. 「ALEPH Normal · first clear」) — in the lobby, the waiting room, over their head, in chat, the ranking and friend lists. See the teams on the ranking window\'s 「Hall of fame」 tab and on the chapter cards.']},
   {kind:'zombie',ref:'lyrebird',tag:['좀비 시나리오 4챕터','Zombie scenario · CH.4'],t:['4챕터 「라이어버드」','Chapter 4 「LYREBIRD」'],
     d:['구름에 묻힌 산꼭대기 통신기지. 1차 회수팀 통신병 라이어버드는 안개 속을 네발로 기어 다니며 우리 목소리를 흉내 내요 — 동료 이름으로 가짜 무전 · 가짜 핑, 안개 속 환각 동료, 3페이즈엔 동료 모습으로 섞여 들어요. 미니맵 점을 확인하고, 경보 사이렌으로 안개를 걷어 내요. 3챕터를 깨면 열려요.','A signal station on a mountaintop buried in cloud. LYREBIRD, RT-1\'s signaller, crawls through the fog and fakes our voices: radio calls and pings in a teammate\'s name, mirages of teammates in the fog, and in phase 3 a teammate\'s face. Check the minimap dots, and sound the alarm siren to clear the fog. Opens once chapter 3 is cleared.']},
   {kind:'zombie',ref:'radioman',tag:['신규 좀비','New zombie'],t:['통신병 좀비','Radio-Operator Zombie'],

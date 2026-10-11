@@ -666,3 +666,13 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Balance from 4-bot simulations on normal (whole chapter): 6.5–10 min, the boss fight 165–270 s, sometimes a wipe in phase 3.
 - Test harness note: calling HUD.update every few frames in headless runs makes the renderer's memory climb to an OOM kill (swiftshader
   compositing); the long sims skip it (window.__noHud).
+
+## v6.24 — hall of fame: the first clear team of every chapter × difficulty (hof.js)
+- Schema: `ep_firsts(ep,diff,match_id,at,clear_time)` + `ep_first_members(ep,diff,user_id,at)`; pre-v6.24 first clears are migrated by the
+  schema file. `qz_ep_firsts()` (public) lists them with member nicknames; `qz_claim(..., p_match)` records the first clear (the match id is
+  made by the host, `cfg.mt`, or `netKey(12)` solo), `qz_me`/`qz_ranking`/`qz_friends` return `ft` (the player's titles).
+- Title code = chapter*10 + difficulty. The client shows a title only if `qz_ep_firsts` lists that account nickname for that team (no spoofing).
+- hof.js: HOF.chip / crown / of / cardLine / page / claimed / hello. Shown in the ranking (new 명예의 전당 tab), friends, chat, name tags,
+  results/scoreboard and the chapter cards.
+- Old databases keep working: `ACC.claim` falls back through the older signatures; a missing `qz_ep_firsts` is treated as 'old'.
+- Fixed: lyradio SFX warning (setValueCurveAtTime overlapped a ramp; `B.am` now goes on a separate gain).
