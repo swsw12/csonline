@@ -105,7 +105,8 @@ function spreadDir(base,ang,out){if(ang<=0)return out.copy(base);
   const r=ang*Math.sqrt(Math.random()),th=Math.random()*TAU;out.copy(base).addScaledVector(_uv,Math.cos(th)*r).addScaledVector(_rv,Math.sin(th)*r).normalize();return out}
 function curSpread(a,W){const c=a.c;const moving=Math.hypot(c.vx,c.vz)>1.2;let s=!c.onGround?W.spread[2]:moving?W.spread[1]:W.spread[0];
   if(W.zoom&&a.zoom>0){if(c.onGround&&!moving)s=W.spreadZ;else if(W.kind==='sniper')s=W.spread[1]}if(a.duck&&c.onGround)s*=.8;if(W.bSpread&&a.dualB)s*=W.bSpread;return s+a.recoilSpread}
-function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.ammo[a.cur];
+function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.ammo[a.cur],xb=W.cmb&&cmbReady(a,W);// xb: Balrog-5's explosive round (balrog.js)
+  
   const eye=actorEye(a);aimDir(a.yaw+a.punchY,a.pitch+a.punchP,_dv);const base=_dv.clone();
   if(W.dual)a.dualSide=-(a.dualSide||1);
   NET.on&&netFxPush(['f',a.id,WI[a.cur],r3(a.yaw+a.punchY),r3(a.pitch+a.punchP),a.dualSide||0]);
@@ -118,6 +119,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.a
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}}
   else for(let i=0;i<n;i++){spreadDir(base,n>1?W.spread[0]+(sp-W.spread[0])*.5:sp,dir);if(n>1&&i>0)spreadDir(dir,W.spread[0]*.9,dir);
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}
+  if(W.cmb)cmbAfter(a,W,hitAny,hsAny,xb);
   if(!W.noMag)am.mag--;a.shots++;
   // recoil: view punch + accumulating spread
   const rv=W.rec[0]*(a.duck?.75:1),rh=W.rec[1];a.punchP+=rv*(.7+Math.min(a.shots,8)*.06);a.punchY+=(Math.random()*2-1)*rh;a.recoilSpread=Math.min(W.spread[1]*1.4,a.recoilSpread+W.rec[0]*.35);a.kick=1;
@@ -137,7 +139,7 @@ const SHOT_FILTER={skip:b=>b.o.pass};
 function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
   const hw=rayCast(ox,oy,oz,dx,dy,dz,range,SHOT_FILTER);const tW=hw?hw.t:range;const wn=hw?[hw.nx,hw.ny,hw.nz]:null,wbox=hw?hw.box:null;
   const ha=rayActors(a,ox,oy,oz,dx,dy,dz,tW);
-  const tEnd=ha?ha.t:tW;const ex=ox+dx*tEnd,ey=oy+dy*tEnd,ez=oz+dz*tEnd;
+  const tEnd=ha?ha.t:tW;const ex=ox+dx*tEnd,ey=oy+dy*tEnd,ez=oz+dz*tEnd;if(W.cmb)a.shotEnd=[ex,ey,ez];
   if((a.isPlayer?Math.random()<.35:Math.random()<.55)&&(pi===0))FX.tracer(ox+dx*.8-(a.isPlayer?.05:0),oy+dy*.8-(a.isPlayer?.08:0),oz+dz*.8,ex,ey,ez);
   // near-miss whiz for the local player
   if(!a.isPlayer&&G.player&&G.player.alive&&pi===0){const P=actorEye(G.player);const lx=P.x-ox,ly=P.y-oy,lz=P.z-oz;const tc=lx*dx+ly*dy+lz*dz;if(tc>3&&tc<tEnd){const d2=lx*lx+ly*ly+lz*lz-tc*tc;if(d2<1.2&&!AU.throttle('whiz',120))AU.play('whiz',{vol:.6,pan:rr(-.6,.6)})}}

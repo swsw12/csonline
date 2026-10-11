@@ -474,7 +474,7 @@ function startRound(plan){if(NET.cli&&!plan)return;AU.stopAll('countdown');drops
   // v6.26: every round everyone (bots too) starts somewhere else, drawn from the human spawns and the zombie spawn points together
   const rnd=!plan&&(G.mode==='mut'||G.mode==='orig')&&MAP.zspawns&&MAP.zspawns.length>0,sp=shuffle(rnd?MAP.spawns.concat(MAP.zspawns.filter(z=>!MAP.spawns.includes(z))):MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
   for(const a of G.actors){const q=pm[a.id];const keep=plan?!!(q&&q[5]):a.survived&&a.team===TH;if(keep)ldSnap(a);a.nb=null;a.r0={k:a.kills,i:a.infects,dm:a.dmgDealt,sc:a.score||0,hs:a.hsKills|0};a.team=TH;a.host=false;a.alive=true;a.dmgRound=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.permaDead=false;a.hp=100;a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;
-    a.an.dead=0;a.an.atk=0;a.pendingClaw=null;a.zoom=0;a.flash=false;a.nv=false;a.turning=0;a.holdT=0;a.bSt=0;a.throwT=0;a.nHold=0;
+    a.an.dead=0;a.an.atk=0;a.pendingClaw=null;a.zoom=0;a.flash=false;a.nv=false;a.turning=0;a.holdT=0;a.bSt=0;a.throwT=0;a.nHold=0;a.cmb=null;
     // everyone gets the loadout he had (survivors: what they hold now; the rest: what was noted as they went down or turned)
     ldRestore(a);
     if(q)placeAt(a,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);else{const p=sp[k++%sp.length];placeAt(a,p[0],p[2]||0,p[1],p[3]!=null?p[3]+rr(-.4,.4):rnd?rr(0,TAU):Math.PI+rr(-.6,.6))}ensureRig(a);equip(a,bestWeapon(a),true);a.drawT=0;

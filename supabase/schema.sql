@@ -297,6 +297,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('killknife',12000,false,true,null),
   ('blaze8',6000,false,true,null),
   ('winchester',4500,false,true,null),
+  ('balrog5',6500,false,true,null),
   ('bhole',0,false,false,null),
   ('skull9',0,false,false,null),
   ('salamander',0,false,false,null),

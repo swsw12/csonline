@@ -699,3 +699,10 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   landing); grenade hold (a.nHold / a.nT, VM.hold freezes the throw animation at the pulled-back pose; bots still throw at once).
 - Light zombie: the invisibility tint is bright blue (.5,.75,1) at 0.8 mix, 70 % dithered away; host zombies killed by a headshot stay down in mutation;
   Skull-9 speed 1 and no atkSpd.
+
+## v6.27 — Balrog-5 (balrog.js)
+- A heavy assault rifle with a combo gauge: each landed bullet +1 (headshot +2), at `W.cmb` (25) the next bullet is explosive — it hits normally and
+  `blastDamage` goes off where it landed (radius 3.6, 230 at the centre, kb 13, up 4.2, he flag). `a.cmb[id]` is the gauge (cleared by startRound).
+- Hooks: weapons.js `fireGun` (xb, cmbAfter), `shotTrace` (a.shotEnd, only for W.cmb weapons), ui.js `cmbTag`, `VMX.balrog5` (tags g1..g5 / rdy).
+- Shop 6,500 (shop.js, schema.sql price table — re-run the schema to be able to buy it), bots may carry it (ai.js rollLd), design.js sound + reload entries (the
+  M4A1's 'ar' action), a heavier report (GUNDEF.balrog5). Remote clients replay the shot in ghost mode, so they see the same gauge and blast.

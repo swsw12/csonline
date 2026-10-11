@@ -60,6 +60,7 @@ const SOUND_DESIGN={
   um45:    {vol:1, rate:1, file:''},  // UMP45 발사음
   pd50:    {vol:1, rate:1, file:''},  // P90 발사음
   sterling:{vol:1, rate:1, file:''},  // 스털링 바요넷 발사음
+  balrog5: {vol:1, rate:1, file:''},  // 발록-5 발사음 — M4A1보다 낮고 묵직한 5.56mm
   dmp7:    {vol:1, rate:1, file:''},  // 듀얼 MP7A1 (보급상자 전용) 발사음 — 날카롭고 높은 4.6mm, 양손 번갈아 쏨
   // ── 총소리 · 소총 / 저격총 / 기관총 ──────────────────────────────────────────────────────────
   ar7:     {vol:1, rate:1, file:''},  // M4A1 발사음
@@ -798,6 +799,7 @@ const GUN_DESIGN={
   airb:    {         ch:0, act:'tank', x:.7},                                // 에어 버스터 — 공기탱크 밸브를 비틀어 치익
   salamander:{       ch:0, act:'salig', x:.75},
   blaze8:  {mag:8,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 블레이즈-8 — 튜브 8발. 오른쪽 장전손잡이를 당겼다 놓음
+  balrog5: {mag:35, ch:1, act:'ar', x:.75, d:.06},                           // 발록-5 — 35발. 뒤쪽 T자 손잡이 당겼다 놓고 전진기 탁 (M4A1과 같은 동작)
   winchester:{mag:6, ch:0, act:'pump', x:.5},                               // 윈체스터 M1887 — 레버 액션 6발. 레버를 내렸다 올림                              // 샐러맨더 화염방사기 — 가스통 밸브를 돌리고 점화, 파일럿 불꽃이 화륵
   bdc:     {         ch:0, act:'dragon', x:.85},                             // 흑룡포 — 탄을 밀어 넣고 포구에 불씨 화륵
   rdc:     {         ch:0, act:'dragon', x:.9},                              // 적룡포
