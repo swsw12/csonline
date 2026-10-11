@@ -174,9 +174,31 @@ function epKinStep(a,dt){const K=a.kin,c=a.c;K.t+=dt;const u=Math.min(1,K.t/K.T)
   if(u>=1){a.kin=null;c.x=K.x1;c.y=K.y1;c.z=K.z1;c.vx=c.vz=c.vy=0;c.onGround=true;a.airT=0;if(K.done)K.done(a)}}
 {const ap=actorPhysics;actorPhysics=function(a,dt){if(a.kin){epKinStep(a,dt);return}return ap(a,dt)}}
 
+// ---------- shockwaves (v6.22.1): a ring of dust racing out over the floor from a slam; whoever is on the ground where it passes is hit
+// and thrown (jump over it); the host decides, every page draws it ----------
+const EWAVE={list:[],geo:null,
+  add(x,y,z,rad,sp,dmg,src,remote){if(!this.geo){this.geo=new THREE.RingGeometry(.82,1,72);this.geo.rotateX(-Math.PI/2)}
+    const m=new THREE.Mesh(this.geo,new THREE.MeshBasicMaterial({color:0xffb070,transparent:true,opacity:.8,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
+    m.position.set(x,y+.14,z);m.scale.setScalar(.5);m.frustumCulled=false;m.renderOrder=5;R.scene.add(m);
+    const W={x,y,z,R:rad,sp,dmg,src:src||null,r:.5,m,hit:new Set()};this.list.push(W);AU.at('explode',x,y,z,{vol:.6,range:60,occ:false,rate:.42});
+    if(NET.host&&!remote)netEv('epwv',{x:r2(x),y:r2(y),z:r2(z),R:r2(rad),sp:r2(sp)});return W},
+  update(dt){const P=G.player;for(let i=this.list.length-1;i>=0;i--){const W=this.list[i],r0=W.r;W.r=Math.min(W.R,W.r+W.sp*dt);const u=W.r/W.R;
+      W.m.scale.setScalar(W.r);W.m.material.opacity=.8*(1-u*u);
+      for(let k=0;k<4;k++)if(Math.random()<dt*30){const g=Math.random()*TAU;FX.spawn({x:W.x+Math.cos(g)*W.r,y:W.y+.15,z:W.z+Math.sin(g)*W.r,vx:Math.cos(g)*2.4,vy:rr(.6,1.8),vz:Math.sin(g)*2.4,life:rr(.35,.6),s0:.3,s1:.9,r:.52,g:.47,b:.4,a:.55,f:2,drag:2})}
+      if(P&&P.alive&&Math.abs(Math.hypot(P.c.x-W.x,P.c.z-W.z)-W.r)<1.2)FX.shake=Math.max(FX.shake,.25);
+      if(!NET.cli)for(const h of SCEN.H){if(!h.alive||W.hit.has(h))continue;const d=Math.hypot(h.c.x-W.x,h.c.z-W.z);
+        // a bot sees it coming and (mostly) jumps it
+        if(h.bot&&!h.isPlayer&&d>W.r&&d-W.r<4&&h.c.onGround&&!(h.rootT>0)&&!(h.grabT>0)){if(!W.bj)W.bj=new Map();let j=W.bj.get(h);if(j==null){j=Math.random()<.8?rr(1.6,3.4):-1;W.bj.set(h,j)}
+          if(j>0&&d-W.r<j){h.c.vy=jumpV(h);h.c.onGround=false;h.c.jumped=true;W.bj.set(h,-1)}}
+        if(d<r0-.6||d>W.r+.6)continue;
+        // over it in a jump, or on another floor: it misses
+        if(h.c.y-W.y>.5||W.y-h.c.y>1.2)continue;W.hit.add(h);const kx=(h.c.x-W.x)/(d||1),kz=(h.c.z-W.z)/(d||1);SCEN.pushHuman(h,kx*6,5,kz*6);hurtHuman(h,EPD(W.dmg),W.src&&W.src.alive?W.src:null,{})}
+      if(W.r>=W.R){R.scene.remove(W.m);W.m.material.dispose();this.list.splice(i,1)}}},
+  clear(){for(const W of this.list){R.scene.remove(W.m);W.m.material.dispose()}this.list=[]}};
+
 // the shared toys every frame (every page) and between matches
-function epToysUpdate(dt){TELE.update(dt);ELAS.update(dt);EGREN.update(dt);ESMK.update(dt);EPK.update(dt);EPV.update(dt)}
-function epToysClear(){TELE.clear();ELAS.clear();EGREN.clear();ESMK.clear();EPK.clear();EPV.reset()}
+function epToysUpdate(dt){TELE.update(dt);ELAS.update(dt);EGREN.update(dt);ESMK.update(dt);EPK.update(dt);EPV.update(dt);EWAVE.update(dt)}
+function epToysClear(){TELE.clear();ELAS.clear();EGREN.clear();ESMK.clear();EPK.clear();EPV.reset();EWAVE.clear()}
 
 // props for the toys (drawn with the weapon material): an ammo can
 Object.assign(GUNS,{epAmmo:{parts:[Pt(0,.13,0,.42,.26,.2,'olive',{r:.02}),Pt(0,.27,0,.3,.03,.06,'blk2'),Pt(.12,.13,.101,.12,.08,.004,'yellow'),Pt(-.21,.13,0,.01,.18,.14,'steel'),Pt(.21,.13,0,.01,.18,.14,'steel')],grip:[0,0,0],muzzle:[0,0,0]},
@@ -193,6 +215,7 @@ Object.assign(GUNS,{epAmmo:{parts:[Pt(0,.13,0,.42,.26,.2,'olive',{r:.02}),Pt(0,.
     epbt(L,m){EBUL.draw(m)},
     epgn(L,m){const A=m.a;EGREN.throw(m.k,A[0]/100,A[1]/100,A[2]/100,A[3]/100,A[4]/100,A[5]/100,m.T/100,{src:byIdAny(m.s)},true,m.id)},
     epsm(L,m){ESMK.add(m.x/100,m.y/100,m.z/100,m.r/100,m.l/100,true)},
+    epwv(L,m){EWAVE.add(m.x/100,m.y/100,m.z/100,m.R/100,m.sp/100,0,null,true)},
     epak(L,m){EPK.spawn(m.x/100,m.y/100,m.z/100,m.id,true)},
     epap(L,m){const k=EPK.list.find(q=>q.id===m.id);if(k){const P=G.player;if(P&&P.id===m.by)EPK.give(P);EPK.remove(k)}}});
 })();

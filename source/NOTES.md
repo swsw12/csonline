@@ -628,3 +628,20 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Atlas: epEly / epChit / epBelly / epWing / epRust / epMolt (GA 96 of 104 slots used).
 - Balance from 4-bot simulations on normal: the boss fight 90–210 s, the whole chapter 6–7 min, no lives lost on most runs.
 - Phones: with a boss bar up (#hud.epB) the radio box narrows and keeps its last two lines.
+
+## v6.22.1 — the chapter 1 and 2 bosses hit harder and move more (aleph.js, argus.js, epbase.js)
+- epbase.js: EWAVE, a shared shockwave (a ring racing out over the floor; on the ground where it passes: damage and a shove, a jump or
+  a raised spot dodges it; bots jump most of them). Host decides the hits; 'epwv' draws it on the clients. Updated / cleared with the
+  other toys.
+- ALEPH: claws 22 / 34, the charge 38 (+25 pinned; speed 16.5, the warning strip 18.5 m), cooldowns shorter (P1 charge 4.5 / slam 3.5 /
+  throw 8; P2 smash 8 / shield charge 5.5 / slam 3.5 / throw 11; P3 roar 16 / hops 9 / charge 3.2 / throw 7) and much less idle time
+  after each move. A charge that ends within 7 m of someone turns into a slam (P1 45 %, later 85 %); P3 charges a second time 65 % of
+  the time (0.45 s wind-up). Slams 18–48 in 8 m, with a shockwave from P2 on (15 m, 12.5 m/s, 24); P3's third hop sends one too.
+  Slabs 40 in 3.5 m, thrown in P2 as well, three at once in P3 (±4.2 m beside the target). Shield smash 52.
+- ARGUS: the rifle 68 (88 into armour), P3 doubles 40 (three when enraged or under 15 %); frags (EGREN 'he', 42): from the tower at
+  whoever comes within 13 m of its foot (cooldown 10), in P2 alternating with the flashbangs (9); the SMG 7 a round, spread 0.04,
+  2.2 s bursts every 6 s; tripwires 36; claws 22 / 32; the descent 30. P3 pounce (modes pnw / pnl / pnr): a red ring where it will
+  land, 0.55 s, the leap, 34 in 3.6 m and knocked flat within 2.3 m, then it hops away (cooldown 11).
+- New radio lines: aWave (ch1), aFrag and aPounce (ch2).
+- Balance from 4-bot simulations on normal (whole chapters): chapter 1 about 6.5 min, one life lost (was none); chapter 2 8–11 min,
+  one or two lives lost, medal B (was S). Human players can jump the waves and use the rings better than the bots do.

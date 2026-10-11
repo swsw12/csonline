@@ -10,6 +10,11 @@
 // +20) floors it for 6.5 s (×1.5 damage) and fills 25 % slower each time. At 60 % it tears the north bulkhead out and carries it as a
 // shield (bullets from the front 110° −85 %, the shield has 12 % of its health, HE ×3 on it, breaking it floors it for 6 s); at 25 %
 // it drops it, the lights die and it goes wild. Every phase change is 3.5 s of invulnerability and gets the whole team back up.
+// Its blows (v6.22.1, harder): claws 22 / 34, the charge 38 (+25 pinned against a wall; faster and longer, 4.5 s apart, straight into a
+// slam when someone is close — phase 1 about half the time, later nearly always; phase 3 often charges a second time), slams 18–48
+// within 8 m (from phase 2 on each sends a shockwave out over the floor to 15 m: 24 to whoever is on the ground when it passes — jump
+// it), the thrown slab 40 (now in phase 2 too; three at once in phase 3: one at you, one either side), the shield smash 52, the three hops 22–34 (the
+// last one sends a shockwave). Less standing about between moves.
 // (EPD, EPTW, TELE and the other shared toys: epbase.js; the chapter's definition CHAP[1] is at the end of this file)
 const AL_PH=[1,.6,.25];// health at the start of each phase
 
@@ -76,8 +81,8 @@ const ROCK={list:[],id:0,
     for(let i=0;i<14;i++)FX.spawn({x:K.tx,y:K.ty+.5,z:K.tz,vx:rr(-4,4),vy:rr(2,6),vz:rr(-4,4),life:rr(.6,1.2),s0:.07,s1:.06,r:.42,g:.4,b:.38,f:7,grav:14,col:.3});
     AU.at('explode',K.tx,K.ty+.4,K.tz,{vol:.8,range:70,occ:false,rate:.55});const P=G.player;if(P){const d=Math.hypot(P.c.x-K.tx,P.c.z-K.tz);if(d<14)FX.shake=Math.max(FX.shake,.7-d/20)}
     if(NET.cli)return;
-    const b=EP.bossA();for(const h of SCEN.H){if(!h.alive)continue;const dx=h.c.x-K.tx,dz=h.c.z-K.tz,d=Math.hypot(dx,dz);if(d>3||Math.abs(h.c.y-K.ty)>2.5)continue;
-      SCEN.pushHuman(h,dx/(d||1)*7,5,dz/(d||1)*7);h.dizzy=Math.max(h.dizzy,1.2);hurtHuman(h,EPD(30),b,{})}
+    const b=EP.bossA();for(const h of SCEN.H){if(!h.alive)continue;const dx=h.c.x-K.tx,dz=h.c.z-K.tz,d=Math.hypot(dx,dz);if(d>3.5||Math.abs(h.c.y-K.ty)>2.5)continue;
+      SCEN.pushHuman(h,dx/(d||1)*7,5,dz/(d||1)*7);h.dizzy=Math.max(h.dizzy,1.2);hurtHuman(h,EPD(40),b,{})}
     // it stays as cover unless it would bury somebody
     const B=this.boxOf(K);let ok=true;for(const a of G.actors){if(!a.alive)continue;const c=a.c;if(c.x+c.hw>B.x0&&c.x-c.hw<B.x1&&c.z+c.hw>B.z0&&c.z-c.hw<B.z1&&c.y<B.y1&&c.y+c.h>B.y0){ok=false;break}}
     if(ok)this.box(K);if(NET.host)netEv('epx',{k:'rkl',id:K.id,b:ok?1:0})},
@@ -163,33 +168,34 @@ const ALEPH={props:[],encNext:false,
     S.pt-=dt;if(S.pt>0||!t||!t.alive)return;this.pick(a,t,S)},
   pick(a,t,S){const c=a.c,dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz)||1,hy=c.y+3.6,see=losClear(c.x,hy,c.z,t.c.x,t.c.y+1.4,t.c.z),tw=EPTW();
     // up on a gallery (or somewhere it cannot walk to) for a while: one leap onto it
-    if(see&&c.onGround&&!S.enc&&(S.far>3&&t.c.y>c.y+1.5||S.far>9)&&d<26&&S.cd.lp<=0&&losClear(c.x,hy,c.z,t.c.x,Math.max(hy,t.c.y+3),t.c.z)){S.cd.lp=7;S.tg=t;this.face(a,t.c.x,t.c.z);this.start(a,'lw',.75*tw);this.fx({k:'w',i:a.id,s:1,n:0});return}
+    if(see&&c.onGround&&!S.enc&&(S.far>3&&t.c.y>c.y+1.5||S.far>9)&&d<26&&S.cd.lp<=0&&losClear(c.x,hy,c.z,t.c.x,Math.max(hy,t.c.y+3),t.c.z)){S.cd.lp=6;S.tg=t;this.face(a,t.c.x,t.c.z);this.start(a,'lw',.75*tw);this.fx({k:'w',i:a.id,s:1,n:0});return}
     if(!see){S.pt=.4;return}
     const P=S.enc?1:S.ph;
     if(P===2){
       if(S.cd.su<=0){S.cd.su=25;this.start(a,'su',.9);this.fx({k:'w',i:a.id,s:1,n:1});return}
-      if(d<10.5&&S.cd.sm<=0){S.cd.sm=9;this.smashW(a,t);return}
-      if(d>5&&d<22&&S.cd.sc<=0){S.cd.sc=7;this.chargeW(a,t,true);return}
-      if(d<5&&S.cd.sl<=0){S.cd.sl=5;this.slamW(a);return}
-      S.pt=.5;return}
+      if(d<10.5&&S.cd.sm<=0){S.cd.sm=8;this.smashW(a,t);return}
+      const ft=this.far(a);if(ft&&S.cd.th<=0){S.cd.th=11;this.throwW(a,ft);return}
+      if(d>5&&d<22&&S.cd.sc<=0){S.cd.sc=5.5;this.chargeW(a,t,true);return}
+      if(d<5.5&&S.cd.sl<=0){S.cd.sl=3.5;this.slamW(a);return}
+      S.pt=.35;return}
     if(P===3){
-      if(S.cd.ro<=0&&this.near(a,15)){S.cd.ro=20;this.start(a,'rw',1.2*tw);this.fx({k:'w',i:a.id,s:1.2,n:1});return}
-      if(d<13&&S.cd.tr<=0){S.cd.tr=12;S.tg=t;S.trN=0;this.start(a,'trw',.6*tw);this.fx({k:'w',i:a.id,s:1,n:0});return}
-      if(d>6&&d<22&&S.cd.ch<=0){S.cd.ch=6*.7;this.chargeW(a,t,false);return}
-      const ft=this.far(a);if(ft&&S.cd.th<=0){S.cd.th=10;this.throwW(a,ft);return}
-      if(d<7.5&&S.cd.sl<=0){S.cd.sl=5;this.slamW(a);return}
-      S.pt=.5;return}
+      if(S.cd.ro<=0&&this.near(a,15)){S.cd.ro=16;this.start(a,'rw',1.2*tw);this.fx({k:'w',i:a.id,s:1.2,n:1});return}
+      if(d<13&&S.cd.tr<=0){S.cd.tr=9;S.tg=t;S.trN=0;this.start(a,'trw',.6*tw);this.fx({k:'w',i:a.id,s:1,n:0});return}
+      if(d>6&&d<22&&S.cd.ch<=0){S.cd.ch=3.2;S.ch2=Math.random()<.65;this.chargeW(a,t,false);return}
+      const ft=this.far(a);if(ft&&S.cd.th<=0){S.cd.th=7;this.throwW(a,ft);return}
+      if(d<7.5&&S.cd.sl<=0){S.cd.sl=3.5;this.slamW(a);return}
+      S.pt=.35;return}
     // phase 1 (and the first meeting in the corridor: charges and slams only)
-    const ft=S.enc?null:this.far(a);if(ft&&S.cd.th<=0){S.cd.th=10;this.throwW(a,ft);return}
-    if(d>6&&d<22&&S.cd.ch<=0){S.cd.ch=6;this.chargeW(a,t,false);return}
-    if(d<8&&S.cd.sl<=0){S.cd.sl=5;this.slamW(a);return}
-    S.pt=.5},
+    const ft=S.enc?null:this.far(a);if(ft&&S.cd.th<=0){S.cd.th=8;this.throwW(a,ft);return}
+    if(d>6&&d<22&&S.cd.ch<=0){S.cd.ch=4.5;this.chargeW(a,t,false);return}
+    if(d<8&&S.cd.sl<=0){S.cd.sl=3.5;this.slamW(a);return}
+    S.pt=.35},
   near(a,r){for(const h of SCEN.H)if(h.alive&&Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z)<r&&Math.abs(h.c.y-a.c.y)<5)return true;return false},
   // a throw target: the farthest human 14 m or more away, in sight and not inside a steam cloud
   far(a){const c=a.c;let best=null,bd=14;for(const h of SCEN.H){if(!h.alive)continue;const d=Math.hypot(h.c.x-c.x,h.c.z-c.z);if(d<bd||d>34||STEAM.at(h.c.x,h.c.z))continue;
       if(!losClear(c.x,c.y+4.2,c.z,h.c.x,h.c.y+1.2,h.c.z))continue;bd=d;best=h}return best},
-  chargeW(a,t,sh){const S=a.al,c=a.c,dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz)||1,tw=EPTW();S.dx=dx/d;S.dz=dz/d;S.sc=!!sh;this.face(a,t.c.x,t.c.z);this.start(a,'cw',.7*tw);
-    TELE.add({k:'r',x:c.x,y:c.y,z:c.z,yaw:a.yaw,w:sh?3.4:2.6,l:Math.min(19,16.5*(a.spdMul||1)+1),d:.7*tw});this.fx({k:'w',i:a.id,s:.7,n:0})},
+  chargeW(a,t,sh){const S=a.al,c=a.c,dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz)||1,tw=EPTW();S.dx=dx/d;S.dz=dz/d;S.sc=!!sh;this.face(a,t.c.x,t.c.z);const w=(S.ch2b?.45:.7)*tw;this.start(a,'cw',w);
+    TELE.add({k:'r',x:c.x,y:c.y,z:c.z,yaw:a.yaw,w:sh?3.4:2.6,l:Math.min(22,18.5*(a.spdMul||1)+1),d:w});this.fx({k:'w',i:a.id,s:.7,n:0})},
   slamW(a){const c=a.c,tw=EPTW();this.start(a,'sw',.85*tw);TELE.add({k:'c',x:c.x,y:c.y,z:c.z,r:7.5,d:.85*tw});this.fx({k:'w',i:a.id,s:1,n:1})},
   smashW(a,t){const c=a.c,tw=EPTW();this.face(a,t.c.x,t.c.z);this.start(a,'smw',1*tw);TELE.add({k:'r',x:c.x,y:c.y,z:c.z,yaw:a.yaw,w:3,l:10,d:1*tw});this.fx({k:'w',i:a.id,s:1.3,n:1})},
   throwW(a,h){a.al.tg=h;this.face(a,h.c.x,h.c.z);this.start(a,'tw',1*EPTW());this.fx({k:'w',i:a.id,s:1,n:0})},
@@ -197,26 +203,28 @@ const ALEPH={props:[],encNext:false,
     const x=c.x+dx/d*st,z=c.z+dz/d*st,T=this.leap(a,x,c.y,z,.7);if(st>.1)this.face(a,x,z);TELE.add({k:'c',x,y:c.y,z,r:6,d:Math.max(.35,T)});this.start(a,'tr',Math.max(.45,T));this.fx({k:'w',i:a.id,s:1,n:1})},
   step(a,dt,S){const c=a.c;
     switch(S.mode){
-    case 'cw':{a.an.skill=Math.max(a.an.skill,.6);a.yaw=Math.atan2(-S.dx,-S.dz);if(S.mt<=0){this.start(a,'ch',1.1);S.hits=new Set();S.lx=c.x;S.lz=c.z;S.chT=0;S.blk=0;AU.at('zroar',c.x,c.y+3,c.z,{vol:1,range:80});if(NET.host)netEv('scbo',{k:0,i:a.id})}break}
-    case 'ch':{const v=15*(a.spdMul||1);a.kvx=S.dx*v;a.kvz=S.dz*v;a.mvx=a.mvz=0;a.yaw=Math.atan2(-S.dx,-S.dz);S.chT+=dt;
+    case 'cw':{a.an.skill=Math.max(a.an.skill,.6);a.yaw=Math.atan2(-S.dx,-S.dz);if(S.mt<=0){S.ch2b=false;this.start(a,'ch',1.1);S.hits=new Set();S.lx=c.x;S.lz=c.z;S.chT=0;S.blk=0;AU.at('zroar',c.x,c.y+3,c.z,{vol:1,range:80});if(NET.host)netEv('scbo',{k:0,i:a.id})}break}
+    case 'ch':{const v=16.5*(a.spdMul||1);a.kvx=S.dx*v;a.kvz=S.dz*v;a.mvx=a.mvz=0;a.yaw=Math.atan2(-S.dx,-S.dz);S.chT+=dt;
       if(Math.random()<dt*30)FX.spawn({x:c.x+rr(-.6,.6),y:c.y+.1,z:c.z+rr(-.6,.6),vy:rr(.3,.9),life:rr(.5,.9),s0:.3,s1:1,r:.4,g:.36,b:.3,a:.5,f:2,drag:2});
-      for(const h of SCEN.H){if(!h.alive||S.hits.has(h))continue;if(Math.hypot(h.c.x-c.x,h.c.z-c.z)<c.hw+(S.sc?1.7:1.2)&&Math.abs(h.c.y-c.y)<2.6){S.hits.add(h);let dm=25;
-          if(S.sc&&rayCast(h.c.x,h.c.y+1,h.c.z,S.dx,0,S.dz,2.2))dm+=20;// pinned against a wall
+      for(const h of SCEN.H){if(!h.alive||S.hits.has(h))continue;if(Math.hypot(h.c.x-c.x,h.c.z-c.z)<c.hw+(S.sc?1.7:1.2)&&Math.abs(h.c.y-c.y)<2.6){S.hits.add(h);let dm=38;
+          if(S.sc&&rayCast(h.c.x,h.c.y+1,h.c.z,S.dx,0,S.dz,2.2))dm+=25;// pinned against a wall
           SCEN.pushHuman(h,S.dx*13,7,S.dz*13);hurtHuman(h,EPD(dm),a,{claw:1})}}
       // a wall or a pillar in the way: it slams into it and reels
       const mv=Math.hypot(c.x-S.lx,c.z-S.lz);S.lx=c.x;S.lz=c.z;if(S.chT>.15&&mv<v*dt*.3)S.blk+=dt;else S.blk=0;
       if(S.blk>.05){a.kvx=a.kvz=0;this.start(a,'stun',1.5);this.grog(a,20);this.fx({k:'wall',i:a.id,x:r2(c.x+S.dx*1.1),y:r2(c.y),z:r2(c.z+S.dz*1.1)});EP.say('aWall');break}
-      if(S.mt<=0){a.kvx*=.2;a.kvz*=.2;S.mode='';S.pt=rr(1,1.8)}break}
-    case 'sw':{a.an.skill=Math.max(a.an.skill,.3);if(S.mt<=0){S.mode='';S.pt=rr(1.2,2);this.slam(a,7.5,12,35)}break}
+      if(S.mt<=0){a.kvx*=.2;a.kvz*=.2;S.mode='';S.pt=rr(.55,1);const P=S.enc?1:S.ph;
+        if(S.ch2&&P===3){S.ch2=false;const t=a.bot&&a.bot.target;if(t&&t.alive&&Math.hypot(t.c.x-c.x,t.c.z-c.z)>4){S.ch2b=true;this.chargeW(a,t,false);break}}
+        if(this.near(a,7)&&Math.random()<(P===1?.45:.85))this.slamW(a)}break}
+    case 'sw':{a.an.skill=Math.max(a.an.skill,.3);if(S.mt<=0){S.mode='';S.pt=rr(.6,1.1);this.slam(a,8,18,48,S.ph>=2&&!S.enc)}break}
     case 'lw':{a.an.skill=Math.max(a.an.skill,.6);if(S.mt<=0){const t=S.tg;let T=1;if(t&&t.alive){T=this.leap(a,t.c.x,t.c.y,t.c.z,2);TELE.add({k:'c',x:t.c.x,y:t.c.y,z:t.c.z,r:7.5,d:T});AU.at('zroar',c.x,c.y+3,c.z,{vol:1,range:90,rate:.8})}this.start(a,'lp',T+.6)}break}
-    case 'lp':{if(!a.leapV||S.mt<=0){S.mode='';S.pt=rr(1.5,2.5);S.far=0;this.slam(a,7.5,12,35)}break}
-    case 'tw':{a.an.skill=Math.max(a.an.skill,1);if(S.mt<=0){S.mode='';S.pt=rr(1,1.6);const h=S.tg;if(h&&h.alive)this.throwRock(a,h)}break}
-    case 'smw':{a.an.skill=Math.max(a.an.skill,.9);if(S.mt<=0){S.mode='';S.pt=rr(1.2,2);this.smash(a)}break}
+    case 'lp':{if(!a.leapV||S.mt<=0){S.mode='';S.pt=rr(.8,1.4);S.far=0;this.slam(a,8,18,48,S.ph>=2&&!S.enc)}break}
+    case 'tw':{a.an.skill=Math.max(a.an.skill,1);if(S.mt<=0){S.mode='';S.pt=rr(.5,.9);const h=S.tg;if(h&&h.alive){this.throwRock(a,h,0);if(S.ph>=3&&!S.enc){this.throwRock(a,h,-4.2);this.throwRock(a,h,4.2)}}}break}
+    case 'smw':{a.an.skill=Math.max(a.an.skill,.9);if(S.mt<=0){S.mode='';S.pt=rr(.6,1.1);this.smash(a)}break}
     case 'su':{a.an.skill=Math.max(a.an.skill,.8);if(S.mt<=0){S.mode='';S.pt=1;this.fx({k:'roar',i:a.id});this.summon(a,4,true,true)}break}
     case 'rw':{a.an.skill=Math.max(a.an.skill,.5+.5*Math.abs(Math.sin(G.t*14)));if(S.mt<=0){S.mode='';S.pt=1;this.roar(a)}break}
     case 'trw':{a.an.skill=Math.max(a.an.skill,.6);if(S.mt<=0)this.triStep(a);break}
-    case 'tr':{if(!a.leapV||S.mt<=-.4){this.slam(a,6,15,25);S.trN++;if(S.trN>=3){S.mode='';S.pt=rr(1.4,2)}else this.triStep(a)}break}
-    case 'down':case 'stun':{a.kvx*=.8;a.kvz*=.8;if(S.mt<=0){S.mode='';S.pt=.8}break}
+    case 'tr':{if(!a.leapV||S.mt<=-.4){S.trN++;this.slam(a,6.5,22,34,S.trN>=3);if(S.trN>=3){S.mode='';S.pt=rr(.7,1.1)}else this.triStep(a)}break}
+    case 'down':case 'stun':{a.kvx*=.8;a.kvz*=.8;if(S.mt<=0){S.mode='';S.pt=.6}break}
     // 60 %: a leap to the north bulkhead, it tears a leaf out of the frame and keeps it as a shield; the cold room behind lets the infected out
     case 'p2a':{a.an.skill=Math.max(a.an.skill,.7);if(S.mt<=0){const B=MAP.ez.bulk,T=this.leap(a,B[0],0,B[2]+2.6,3);this.start(a,'p2l',T+.6)}break}
     case 'p2l':{if(!a.leapV||S.mt<=0){this.face(a,0,25);this.start(a,'p2b',1.7);this.fx({k:'rip'})}break}
@@ -227,15 +235,17 @@ const ALEPH={props:[],encNext:false,
     // the first meeting ends: a roar, a leap back through the hole it made, gone
     case 'ret':{a.an.skill=Math.max(a.an.skill,.6);if(S.mt<=0){const W=MAP.ez.wallW,T=this.leap(a,W[0],0,W[2]-5,2.2);this.start(a,'ret2',T+.8)}break}
     case 'ret2':{if(!a.leapV||S.mt<=0){S.mode='gone';EP.meetEnd(a)}break}}},
-  slam(a,R,lo,hi){const c=a.c;SCEN.slamFx(c.x,c.y,c.z);if(NET.host)netEv('scsl',{x:r2(c.x),y:r2(c.y),z:r2(c.z)});
+  slam(a,R,lo,hi,wave){const c=a.c;SCEN.slamFx(c.x,c.y,c.z);if(NET.host)netEv('scsl',{x:r2(c.x),y:r2(c.y),z:r2(c.z)});
+    if(wave){EWAVE.add(c.x,c.y,c.z,15,12.5,24,a);if(!this.waveSaid){this.waveSaid=1;EP.say('aWave')}}
     for(const h of SCEN.H){if(!h.alive)continue;const dx=h.c.x-c.x,dz=h.c.z-c.z,d=Math.hypot(dx,dz);if(d>R||Math.abs(h.c.y-c.y)>2.5)continue;const f=1-d/R;
       SCEN.pushHuman(h,dx/(d||1)*10*f,4+5*f,dz/(d||1)*10*f);hurtHuman(h,EPD(lo+(hi-lo)*f),a,{})}},
   smash(a){const c=a.c,fx=-Math.sin(a.yaw),fz=-Math.cos(a.yaw),rx=Math.cos(a.yaw),rz=-Math.sin(a.yaw);this.fx({k:'smash',x:r2(c.x),y:r2(c.y),z:r2(c.z),yw:r3(a.yaw)});
     for(const h of SCEN.H){if(!h.alive)continue;const dx=h.c.x-c.x,dz=h.c.z-c.z,al=dx*fx+dz*fz,sd=dx*rx+dz*rz;if(al<-.5||al>10.5||Math.abs(sd)>1.5+h.c.hw||Math.abs(h.c.y-c.y)>2.5)continue;
-      SCEN.pushHuman(h,fx*6+rx*Math.sign(sd||1)*3,6,fz*6+rz*Math.sign(sd||1)*3);h.dizzy=Math.max(h.dizzy,1.4);hurtHuman(h,EPD(45),a,{})}},
-  throwRock(a,h){const c=a.c,T=1.05,tx=h.c.x+h.c.vx*.55,tz=h.c.z+h.c.vz*.55;let ty=floorBelow(tx,h.c.y+1.2,tz,.2);if(!(ty>-50))ty=h.c.y;
-    const fx=-Math.sin(a.yaw),fz=-Math.cos(a.yaw),x0=c.x+fx*1.2,y0=c.y+4.6,z0=c.z+fz*1.2,K=ROCK.throw(x0,y0,z0,tx,ty,tz,T);TELE.add({k:'c',x:tx,y:ty,z:tz,r:3,d:T});
-    AU.at('zatk',c.x,c.y+3,c.z,{vol:1,range:60,rate:.6});if(NET.host)netEv('epx',{k:'th',id:K.id,a:[r2(x0),r2(y0),r2(z0),r2(tx),r2(ty),r2(tz)],T:r2(T)})},
+      SCEN.pushHuman(h,fx*6+rx*Math.sign(sd||1)*3,6,fz*6+rz*Math.sign(sd||1)*3);h.dizzy=Math.max(h.dizzy,1.4);hurtHuman(h,EPD(52),a,{})}},
+  // a slab at a human (with a lead), or (phase 2 on) two more either side of them: off sideways by side metres
+  throwRock(a,h,side){const c=a.c,T=1.05,px=-(h.c.z-c.z),pz=h.c.x-c.x,pl=Math.hypot(px,pz)||1,sd=side||0,tx=h.c.x+h.c.vx*.55+px/pl*sd,tz=h.c.z+h.c.vz*.55+pz/pl*sd;let ty=floorBelow(tx,h.c.y+1.2,tz,.2);if(!(ty>-50))ty=h.c.y;
+    const fx=-Math.sin(a.yaw),fz=-Math.cos(a.yaw),x0=c.x+fx*1.2,y0=c.y+4.6,z0=c.z+fz*1.2,K=ROCK.throw(x0,y0,z0,tx,ty,tz,T);TELE.add({k:'c',x:tx,y:ty,z:tz,r:3.5,d:T});
+    if(!sd)AU.at('zatk',c.x,c.y+3,c.z,{vol:1,range:60,rate:.6});if(NET.host)netEv('epx',{k:'th',id:K.id,a:[r2(x0),r2(y0),r2(z0),r2(tx),r2(ty),r2(tz)],T:r2(T)})},
   roar(a){this.fx({k:'roar',i:a.id});for(const h of SCEN.H){if(!h.alive)continue;if(Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z)<15)h.shriekT=Math.max(h.shriekT,2.5)}this.summon(a,3,false)},
   // minions: at the cold room once it is open, else the chamber's corners and galleries (twice as many once it is enraged)
   summon(a,n,mixed,cold){const S=a&&a.al,k=S&&S.enr?2:1,Z=MAP.ez.zones.D,pts=cold&&EP.gateIsOpen('gN')?Z.cold:Z.zsp;let s=0;
@@ -246,7 +256,7 @@ const ALEPH={props:[],encNext:false,
   down(a,t){const S=a.al;if(S.mode[0]==='p'||S.mode==='gone')return;S.mode='down';S.mt=t;S.grog=0;S.rage=0;S.frT=0;S.exT=0;a.kvx=a.kvz=0;a.leapV=null;this.fx({k:'dn',i:a.id});EP.say('aDown')},
   tankBreak(a){const S=a.al;S.tankB=true;S.tank=0;S.rage=0;S.frT=S.exT=0;this.fx({k:'tk',i:a.id});this.down(a,8);EP.say('aTank')},
   shieldBreak(a){const S=a.al;S.shield=false;S.sh=0;this.fx({k:'shb',i:a.id});this.down(a,6);EP.say('aShB')},
-  toPhase(a,n){const S=a.al;S.ph=n;S.invT=3.5;S.grog=0;S.rage=0;S.frT=S.exT=0;a.kvx=a.kvz=0;a.leapV=null;Object.assign(S.cd,{su:10,sm:3,sc:2,tr:3,ro:6,ch:3,sl:1,th:5});
+  toPhase(a,n){const S=a.al;S.ph=n;S.invT=3.5;S.grog=0;S.rage=0;S.frT=S.exT=0;a.kvx=a.kvz=0;a.leapV=null;Object.assign(S.cd,{su:10,sm:3,sc:2,tr:3,ro:6,ch:3,sl:1,th:6});S.ch2=false;
     EP.bossPh=n;this.start(a,n===2?'p2a':'p3a',n===2?.6:1.6);this.fx({k:'w',i:a.id,s:1.4,n:1});this.fx({k:'ph',n});EP.reviveAll()},
   // its health reached the floor of this phase (or of the first meeting)
   floorHit(a){const S=a.al;if(S.enc){if(S.mode==='ret'||S.mode==='ret2'||S.mode==='gone')return;S.invT=99;this.start(a,'ret',.8);this.fx({k:'w',i:a.id,s:1.2,n:1});EP.say('aRet');return}if(S.ph<3)this.toPhase(a,S.ph+1)},
@@ -291,7 +301,7 @@ const ALEPH={props:[],encNext:false,
   // sparks off the shield for the page's own shots (no traffic: every page sees its own)
   shieldSpark(t,o){if(!o||o.x==null||!o.dir||AU.throttle('epsh',60))return;const fx=-Math.sin(t.yaw),fz=-Math.cos(t.yaw),hl=Math.hypot(o.dir[0],o.dir[2])||1;if((o.dir[0]*fx+o.dir[2]*fz)/hl>=-.57)return;
     for(let i=0;i<6;i++)FX.spawn({x:o.x,y:o.y,z:o.z,vx:rr(-3,3)-o.dir[0]*2,vy:rr(0,3),vz:rr(-3,3)-o.dir[2]*2,life:rr(.15,.35),s0:.05,s1:.02,r:1,g:.85,b:.5,f:0,grav:9,add:1});AU.at('imp_metal',o.x,o.y,o.z,{vol:.5,range:30})},
-  clear(){TELE.clear();ROCK.clear();STEAM.clear();CHAIN.off(false);for(const m of this.props){R.scene.remove(m);m.material.dispose()}this.props=[];
+  clear(){TELE.clear();ROCK.clear();STEAM.clear();CHAIN.off(false);this.waveSaid=0;for(const m of this.props){R.scene.remove(m);m.material.dispose()}this.props=[];
     const E=MAP.ez;if(E&&E.panels){for(const p of E.panels)p.used=false;for(const v of E.valves||[])v.cd=0}},
   // ---------- every page: what the events show ----------
   fxApply(m){const a=m.i!=null?byIdAny(m.i):null,P=G.player,L=LI(),E=MAP.ez;
@@ -365,7 +375,7 @@ EPZ.aleph={hp:()=>ALEPH.hpFor(),init:a=>ALEPH.init(a,ALEPH.encNext),tick:(a,dt)=
   hit:(t,dmg,src,o)=>t.al?ALEPH.hit(t,dmg,src,o):dmg,after:(t,r)=>{if(t.al)ALEPH.after(t,r)},
   spark(t,o){const shOn=NET.cli?!!(EP.bf&&EP.bf.f&1):!!(t.al&&t.al.shield);if(shOn)ALEPH.shieldSpark(t,o)},
   // its claws hit hard and shove
-  claw(a,t,heavy){aimDir(a.yaw,0,_dv);const kb=heavy?7:4;if(t.isPlayer||!t.pup){t.kvx+=_dv.x*kb;t.kvz+=_dv.z*kb}else SCEN.pushHuman(t,_dv.x*kb,2,_dv.z*kb);a.scHit=G.t;hurtHuman(t,EPD(heavy?24:16),a,{claw:1});return true},
+  claw(a,t,heavy){aimDir(a.yaw,0,_dv);const kb=heavy?7:4;if(t.isPlayer||!t.pup){t.kvx+=_dv.x*kb;t.kvz+=_dv.z*kb}else SCEN.pushHuman(t,_dv.x*kb,2,_dv.z*kb);a.scHit=G.t;hurtHuman(t,EPD(heavy?34:22),a,{claw:1});return true},
   pre:(a,dt)=>ALEPH.pre(a,dt),attach:a=>ALEPH.attach(a),gone(a){if(a.al)a.al.mode='gone'}};
 EPZ.strait={init(a){a.st={mode:'',cd:rr(1,2.5),mt:0}},tick:(a,dt)=>STRAIT.tick(a,dt),
   post(a){a.cmd.fire=a.cmd.alt=false;if(a.st&&(a.st.mode==='wind'||a.st.mode==='grab')){a.cmd.f=a.cmd.s=0;a.cmd.jump=false}},
@@ -456,6 +466,7 @@ CHAP[1]={id:1,k:'aleph',map:'ep1',code:'Q7-000',n:['알레프','ALEPH'],t:['좀�
     aTank:['혈청 탱크 파괴! 더는 분노 못 한다!','Serum tank destroyed! No more rage!',1],
     aShB:['방패가 깨졌다!','The shield broke!',1],
     aWall:['벽에 박았다—지금이야!','It hit the wall—now!',1],
+    aWave:['충격파다! 바닥을 타고 온다 — 점프로 넘어!','A shockwave! It rolls along the floor — jump over it!',1],
     aPanel:['감전! 패널이 먹혔다!','Shocked! The panel worked!',1],
     aEnr:['놈이 더 빨라진다—시간을 끌면 안 돼!','It is getting faster—we cannot drag this out!',0],
     dead:['알레프 무력화 확인! 60초 안에 엘리베이터로 탈출해!','ALEPH is down! Back to the lift—60 seconds!',0],

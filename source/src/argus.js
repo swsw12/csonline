@@ -20,6 +20,9 @@
 // Swing a floodlight (hold E at its box, 3 s) onto the tower it stands on: the night vision burns out — it falls off and lies 5 s;
 // that light is spent for 20 s. Standing in a floodlight's pool on the ground (phases 2, 3) stagger it +25 a second.
 // Every phase change is 3.5 s of invulnerability and gets the whole team back up; enraged after 240 s (expert 180).
+// Harder (v6.22.1): the rifle 68 (88 into armour; phase 3's doubles 40 each, three in a row when enraged or under 15 %); on a tower it
+// drops a frag (42 at the middle) on whoever comes to its foot; phase 2 throws frags too, the SMG hits 7 a round in tighter bursts
+// every 6 s; tripwires 36; in phase 3 it pounces off its perch on whoever comes within 12 m (a red ring first: 34 and knocked flat); claws 22 / 32.
 const AG_PH=[1,.75,.3],AG_S=1.3;
 const AG_POSE=['','aim','smg','throw','idle','beast','down','perch','smgc'];
 const AG_MIX=[['rager',40],['runner',30],['squad',30]];
@@ -105,7 +108,7 @@ const TRAP={list:[],id:0,geo:null,mat:null,
   update(dt){if(this.mat)this.mat.opacity=.5+.35*Math.abs(Math.sin(G.t*8));
     for(let i=this.list.length-1;i>=0;i--){const T=this.list[i];T.t+=dt;if(T.t>T.life){this.drop(T);this.list.splice(i,1);continue}if(NET.cli)continue;
       for(const h of SCEN.H){if(!h.alive||h.team!==TH||Math.abs(h.c.y-T.y)>.7)continue;if(this.seg(h.c.x,h.c.z,T)<(h.c.hw||.3)+.05){this.fire(T,h);break}}}},
-  fire(T,h){const b=EP.bossA();hurtHuman(h,EPD(25),b,{});epFx(h,'kd',1.2);this.boom(T,h.c.x,h.c.z);this.kill(T);if(NET.host)netEv('eag',{k:'trx',id:T.id,x:r2(h.c.x),z:r2(h.c.z)})},
+  fire(T,h){const b=EP.bossA();hurtHuman(h,EPD(36),b,{});epFx(h,'kd',1.2);this.boom(T,h.c.x,h.c.z);this.kill(T);if(NET.host)netEv('eag',{k:'trx',id:T.id,x:r2(h.c.x),z:r2(h.c.z)})},
   boom(T,x,z){const y=T.y+.3;for(let k=0;k<22;k++)FX.spawn({x,y,z,vx:rr(-4,4),vy:rr(.5,4),vz:rr(-4,4),life:rr(.2,.5),s0:.06,s1:.02,r:1,g:.5,b:.2,f:0,grav:9,add:1});
     for(let k=0;k<10;k++)FX.spawn({x:x+rr(-.4,.4),y:y+rr(0,.6),z:z+rr(-.4,.4),vy:rr(.2,.8),life:rr(.8,1.4),s0:.3,s1:1.1,r:.4,g:.38,b:.36,a:.5,f:2,drag:1.4});
     DL.add(x,y+.4,z,'#ff7a3a',7,2,.18);AU.at('explode',x,y,z,{vol:.6,range:50,rate:1.8,occ:false})},
@@ -143,7 +146,7 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
   // the boss slot of the pool comes back as ARGUS
   spawn(p,yaw,enc){const a=SCEN.Z.find(z=>z.boss);if(!a)return null;if(a.alive)EP.despawn(a);a.zpick='argus';a.deadT=99;this.encNext=!!enc;reviveZombie(a,p);a.yaw=yaw||0;this.encNext=false;return a},
   init(a,enc){const m=a.maxHp||1;
-    a.ag={ph:1,mode:'',mt:0,mt0:1,pt:2,tw:-1,lastTw:-1,perch:-1,dest:-1,moving:false,cd:{fl:8,smg:2,fb:5,tr:3,smk:4,sn:0},pride:0,angry:0,hits:0,
+    a.ag={ph:1,mode:'',mt:0,mt0:1,pt:2,tw:-1,lastTw:-1,perch:-1,dest:-1,moving:false,cd:{fl:8,smg:2,fb:5,tr:3,smk:4,sn:0,fr:6,pn:4},pride:0,angry:0,hits:0,
       grog:0,grogN:0,grogMax:100,lens:[m*.03,m*.03,m*.03,m*.03],lensN:4,invT:0,enr:false,fightT:0,enc:!!enc,idle:!enc,tg:null,noSee:0,dmgT:0,slowT:0,burnT:0,
       ltn:-9,ltnN:rr(14,24),sv:[],svS:[],svT:0,spot:null,spotT:0,atk:0,goT:0,hopT:0,n2:0,burstT:0,tk:'fb',trap2:false,d0:0,fBot:-1,fIdx:-1,fT:0,ptN:1.5};
     a.agPose='idle';a.agPitch=0;a.agKick=0;a.agAtk=0;a.agThT=0;a.agBurn=0;a.agLens=15;a.epDown=0;a.kin=null;a.epHide=true},
@@ -191,8 +194,11 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
     if(!S.enc&&S.dmgT>=a.maxHp*.08){this.moveStart(a,S,this.towerPick(a,S,false));return}
     const t0=this.pick(a);if(t0)this.face(a,t0.c.x,t0.c.z);
     S.pt-=dt;if(S.pt>0)return;
+    if(!S.enc&&S.tw>=0&&S.cd.fr<=0){const h=this.underTower(a);if(h){S.cd.fr=10;this.throwW(a,h,S,'he');return}}
     if(!t0){S.noSee+=.4;S.pt=.4;if(!S.enc&&S.noSee>=4&&S.cd.fl<=0){const h=this.hidden(a);if(h){S.cd.fl=15;S.noSee=0;this.flareW(a,h,S)}}return}
     S.noSee=0;this.snipeW(a,t0,S,(S.angry>0?1:1.5)*EPTW())},
+  // someone at its tower's foot (within 13 m, in sight): a frag goes down on them
+  underTower(a){const e=this.eye(a);for(const h of SCEN.H){if(!h.alive)continue;const d=Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z);if(d<13&&a.c.y-h.c.y>2&&losClear(e.x,e.y,e.z,h.c.x,h.c.y+1.2,h.c.z))return h}return null},
   // phase 2: the plaza floor, cover to cover, the SMG
   p2(a,dt,S){const c=a.c;a.agPose='smgc';
     if(c.y>3.2){const n=navSnap(c.x+rr(-3,3),0,c.z+rr(-3,3),5);if(n){S.mode='hop';S.mt=2.4;epKin(a,n.x,n.y,n.z,1,1,()=>{S.mode=''})}return}
@@ -205,17 +211,23 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
     const t=this.pick(a)||this.nearestH(a,32);if(t)this.face(a,t.c.x,t.c.z);else S.spotT+=dt;
     S.pt-=dt;if(S.pt>0||!t)return;const e=this.eye(a),dd=Math.hypot(t.c.x-c.x,t.c.z-c.z),los=losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.2,t.c.z);
     if(!los){S.spotT+=1;S.pt=.4;return}
+    if(S.cd.fr<=0&&dd>6&&dd<24){S.cd.fr=9;S.atk++;this.throwW(a,t,S,'he');return}
     if(S.cd.fb<=0&&dd>5&&dd<22&&Math.random()<.55){S.cd.fb=12;S.atk++;this.throwW(a,t,S,'fb');return}
-    if(S.cd.smg<=0&&dd<32){S.cd.smg=7;S.atk++;this.smgW(a,t,S);return}
+    if(S.cd.smg<=0&&dd<32){S.cd.smg=6;S.atk++;this.smgW(a,t,S);return}
     S.pt=.4},
   // phase 3: on all fours from perch to perch, double shots, smoke
   p3(a,dt,S){a.agPose='perch';S.hopT-=dt;
     if(S.perch<0||S.hopT<=0||this.nearH(a,7)&&S.hopT<3){this.hop(a,S);return}
-    if(S.cd.smk<=0&&this.nearH(a,26)){S.cd.smk=20;this.throwW(a,null,S,'sm');return}
+    if(S.cd.smk<=0&&this.nearH(a,26)){S.cd.smk=16;this.throwW(a,null,S,'sm');return}
+    {const pv=this.nearestH(a,12);if(pv&&S.cd.pn<=0&&S.perch>=0&&Math.abs(pv.c.y-a.c.y)<6){S.cd.pn=11;this.pounceW(a,pv,S);return}}
     const t0=this.pick(a);if(t0)this.face(a,t0.c.x,t0.c.z);
     S.pt-=dt;if(S.pt>0)return;
     if(!t0){S.noSee+=.3;S.pt=.3;if(S.noSee>=4&&S.cd.fl<=0){const h=this.hidden(a);if(h){S.cd.fl=15;S.noSee=0;this.flareW(a,h,S)}}return}
-    S.noSee=0;if(S.cd.sn<=0){S.cd.sn=6.5;S.n2=2;this.snipeW(a,t0,S,1*EPTW());return}S.pt=.3},
+    S.noSee=0;if(S.cd.sn<=0){S.cd.sn=6;S.n2=S.enr||a.hp<a.maxHp*.15?3:2;this.snipeW(a,t0,S,1*EPTW());return}S.pt=.3},
+  // phase 3: off its perch onto whoever came within 12 m — a red ring where it lands (0.55 s, then the leap), 34 at the middle, knocked flat
+  pounceW(a,h,S){const tw=EPTW(),n=navSnap(h.c.x+h.c.vx*.45,h.c.y,h.c.z+h.c.vz*.45,3)||{x:h.c.x,y:h.c.y,z:h.c.z},d=Math.hypot(n.x-a.c.x,n.z-a.c.z);
+    S.pp=[n.x,n.y,n.z];S.pT=clamp(.45+d/22,.55,1);S.mode='pnw';S.mt=.55*tw;S.tg=h;S.n2=0;ELAS.stop(a);this.face(a,n.x,n.z);
+    TELE.add({k:'c',x:n.x,y:n.y,z:n.z,r:3.6,d:S.mt+S.pT});this.fx({k:'w',i:a.id,s:'pn'});if(!this.pnSaid){this.pnSaid=1;EP.say('aPounce')}},
   // a claw at whoever is right on it
   claw(a){const h=this.nearH(a,2.1);if(!h||Math.abs(h.c.y-a.c.y)>1.5)return false;this.face(a,h.c.x,h.c.z);a.cmd.fire=Math.random()<.85;return true},
   // walking on the plaza floor: the nav path, the body turned the way it runs
@@ -228,23 +240,24 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
   snipeW(a,t,S,w){S.tg=t;S.mode='aim';S.mt=w;this.face(a,t.c.x,t.c.z);ELAS.add(a,t,w);this.fx({k:'w',i:a.id,s:'aim'})},
   fire(a,S){const t=S.tg,m=this.muz(a);ELAS.stop(a,true);
     if(t&&t.alive){const P3=S.ph===3&&!S.enc,ty=t.c.y+(t.duck?.95:1.3);
-      const h=EBUL.shot(m.x,m.y,m.z,t.c.x,ty,t.c.z,.0035,{dmg:P3?35:t.armor>0?80:60,kd:P3?0:1.1,w:'s',src:a});
+      const h=EBUL.shot(m.x,m.y,m.z,t.c.x,ty,t.c.z,.0035,{dmg:P3?40:t.armor>0?88:68,kd:P3?0:1.1,w:'s',src:a});
       if(h){S.hits++;if(S.hits%4===1)EP.say('aHit')}
       else if(!S.enc&&S.ph===1){S.pride++;if(S.pride>=3){S.pride=0;S.angry=3;S.n2=0;EP.say('aPride');EP.later(1.8,()=>EP.say('aPride2'));this.moveStart(a,S,this.towerPick(a,S,true));return}}}
     if(S.angry>0)S.angry--;
     if(S.n2>1&&t&&t.alive){S.n2--;S.mode='aim';S.mt=.35;ELAS.add(a,t,.35);return}
-    S.n2=0;S.mode='bolt';S.mt=1;S.ptN=(S.enc?1.8:S.ph===3?.5:1.8)*(S.enr?.7:1)},
+    S.n2=0;S.mode='bolt';S.mt=1;S.ptN=(S.enc?1.8:S.ph===3?.45:1.8)*(S.enr?.7:1)},
   // a flare round onto the nearest one hiding in the dark
   flareW(a,h,S){S.tg=h;S.mode='flw';S.mt=.5*EPTW();this.face(a,h.c.x,h.c.z);this.fx({k:'w',i:a.id,s:'fl'});EP.say('aFlare')},
   flareShot(a,S){const h=S.tg;if(!h)return;const m=this.muz(a),T=1.05,g=GRAV*.8,tx=h.c.x+rr(-1.2,1.2),tz=h.c.z+rr(-1.2,1.2);let ty=floorBelow(tx,h.c.y+1.5,tz,.2);if(!(ty>-50))ty=h.c.y;
     throwNade(a,'flare',{x:m.x,y:m.y,z:m.z,vx:(tx-m.x)/T,vy:(ty+.1-m.y)/T+.5*g*T,vz:(tz-m.z)/T});AU.at('gl40',m.x,m.y,m.z,{vol:.8,range:90})},
   // ---------- the SMG and the grenades (phase 2, the smoke in phase 3) ----------
   smgW(a,t,S){S.tg=t;S.mode='sma';S.mt=.6*EPTW();this.face(a,t.c.x,t.c.z);ELAS.add(a,t,S.mt);this.fx({k:'w',i:a.id,s:'smg'})},
-  smgShot(a,t){const m=this.muz(a);EBUL.shot(m.x,m.y,m.z,t.c.x+t.c.vx*.1,t.c.y+(t.duck?.9:1.2),t.c.z+t.c.vz*.1,.045,{dmg:6,w:'m',src:a})},
+  smgShot(a,t){const m=this.muz(a);EBUL.shot(m.x,m.y,m.z,t.c.x+t.c.vx*.1,t.c.y+(t.duck?.9:1.2),t.c.z+t.c.vz*.1,.04,{dmg:7,w:'m',src:a})},
   throwW(a,t,S,kind){S.tg=t;S.tk=kind;S.mode='thr';S.mt=S.mt0=(kind==='sm'?.5:.8)*EPTW();a.agThT=0;if(t)this.face(a,t.c.x,t.c.z);this.fx({k:'w',i:a.id,s:'thr'})},
   toss(a,S){const c=a.c,yw=a.yaw,fx=-Math.sin(yw),fz=-Math.cos(yw),x=c.x+fx*.5,y=c.y+2.2,z=c.z+fz*.5;
     if(S.tk==='sm'){const tx=c.x+fx*1.2,tz=c.z+fz*1.2;let ty=floorBelow(tx,c.y+1.5,tz,.2);if(!(ty>-50))ty=c.y;EGREN.throw('sm',x,y,z,tx,ty,tz,.45,{src:a,r:8,life:10});EP.say('aSmoke');return}
     const t=S.tg;if(!t||!t.alive)return;const tx=t.c.x+t.c.vx*.4,tz=t.c.z+t.c.vz*.4;let ty=floorBelow(tx,t.c.y+1.2,tz,.2);if(!(ty>-50))ty=t.c.y;
+    if(S.tk==='he'){EGREN.throw('he',x,y,z,tx,ty,tz,clamp(Math.hypot(tx-x,tz-z)/14,.6,1.2),{src:a,dmg:42});if(!this.frSaid){this.frSaid=1;EP.say('aFrag')}return}
     EGREN.throw('fb',x,y,z,tx,ty,tz,clamp(Math.hypot(tx-x,tz-z)/14,.6,1.2),{src:a});EP.say('aFb')},
   // ---------- the towers ----------
   // where to go: another tower; farther from the team (closer when its pride is hurt), not one a floodlight is on, not crowded
@@ -268,7 +281,7 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
       if(k<4)s+=FLOOD.onTower(k)?60:12;else if(FLOOD.lit(P.x,P.y,P.z))s+=30;for(const h of SCEN.H)if(h.alive&&Math.hypot(h.c.x-P.x,h.c.z-P.z)<6)s+=30;if(s<bs){bs=s;best=k}}return best},
   hop(a,S){const k=this.perchPick(a,S),P=MAP.ez.perch[k];if(!P){S.hopT=1;return}const d=Math.hypot(P.x-a.c.x,P.z-a.c.z),T=clamp(.55+d/18,.7,1.7);
     S.mode='hop';S.mt=T+1.5;S.perch=-1;S.tw=-1;S.n2=0;a.agPose='beast';ELAS.stop(a);
-    epKin(a,P.x,P.y,P.z,T,clamp(1.5+d*.08,1.5,4.5),()=>{S.mode='';S.perch=k;S.tw=k<4?k:-1;S.hopT=rr(5,7.5)*(S.enr?.75:1);S.pt=Math.min(S.pt,.6);const F=k<4?FLOOD.onTower(k):null;if(F)this.burn(a,F)});
+    epKin(a,P.x,P.y,P.z,T,clamp(1.5+d*.08,1.5,4.5),()=>{S.mode='';S.perch=k;S.tw=k<4?k:-1;S.hopT=rr(5,7)*(S.enr?.75:1);S.pt=Math.min(S.pt,.6);const F=k<4?FLOOD.onTower(k):null;if(F)this.burn(a,F)});
     this.fx({k:'hop',i:a.id})},
   // ---------- the modes ----------
   step(a,dt,S){
@@ -278,11 +291,15 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
     case 'flw':{const t=S.tg;a.agPose='aim';if(t)this.face(a,t.c.x,t.c.z);if(S.mt<=0){this.flareShot(a,S);S.mode='bolt';S.mt=.8;S.ptN=.8}break}
     case 'run':this.runStep(a,dt,S);break;
     case 'down':{a.agPose='down';if(S.mt<=0){S.mode='';S.pt=.6}break}
-    case 'sma':{const t=S.tg;a.agPose='smg';if(t&&t.alive)this.face(a,t.c.x,t.c.z);if(S.mt<=0){S.mode='smb';S.mt=2;S.burstT=0}break}
-    case 'smb':{const t=S.tg;a.agPose='smg';if(t&&t.alive)this.face(a,t.c.x,t.c.z);S.burstT-=dt;if(S.burstT<=0&&t&&t.alive){S.burstT=.2;this.smgShot(a,t)}if(S.mt<=0){S.mode='';S.pt=.8}break}
+    case 'sma':{const t=S.tg;a.agPose='smg';if(t&&t.alive)this.face(a,t.c.x,t.c.z);if(S.mt<=0){S.mode='smb';S.mt=2.2;S.burstT=0}break}
+    case 'smb':{const t=S.tg;a.agPose='smg';if(t&&t.alive)this.face(a,t.c.x,t.c.z);S.burstT-=dt;if(S.burstT<=0&&t&&t.alive){S.burstT=.18;this.smgShot(a,t)}if(S.mt<=0){S.mode='';S.pt=.8}break}
     case 'thr':{const t=S.tg;a.agPose='throw';if(t&&t.alive)this.face(a,t.c.x,t.c.z);if(S.mt<=0){this.toss(a,S);S.mode='thr2';S.mt=.4}break}
     case 'thr2':{a.agPose='throw';if(S.mt<=0){S.mode='';S.pt=.6}break}
     case 'p2b':{a.agPose='beast';if(S.mt<=0){S.mode='';S.pt=1}break}
+    case 'pnw':{a.agPose='beast';const p=S.pp;if(p)this.face(a,p[0],p[2]);if(S.mt<=0&&p){S.mode='pnl';S.mt=S.pT+1.2;S.perch=-1;S.tw=-1;
+      epKin(a,p[0],p[1],p[2],S.pT,1.6,()=>{this.slam(a,3.6,34);for(const h of SCEN.H)if(h.alive&&Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z)<2.3&&Math.abs(h.c.y-a.c.y)<1.6)epFx(h,'kd',1);S.mode='pnr';S.mt=.9;this.fx({k:'roar',i:a.id})});this.fx({k:'hop',i:a.id})}break}
+    case 'pnl':{a.agPose='beast';if(!a.kin&&S.mt<=0)S.mode='';break}
+    case 'pnr':{a.agPose='beast';if(S.mt<=0){S.mode='';S.hopT=0}break}
     case 'p3a':{a.agPose='beast';if(S.mt<=0){S.mode='';this.hop(a,S)}break}
     case 'ret':{a.agPose='idle';if(S.mt<=0){const c=a.c;S.mode='ret2';S.mt=3;epKin(a,c.x+6.5,c.y-5,c.z-1,1.1,1,()=>{S.mode='gone';EP.meetEnd(a)});this.fx({k:'hop',i:a.id})}break}
     // (scripted leaps: their landing sets the next mode; the clock only rescues one that went wrong)
@@ -303,11 +320,11 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
   floorHit(a){const S=a.ag;if(S.enc){if(S.mode!=='ret'&&S.mode!=='ret2'&&S.mode!=='gone'){S.invT=99;this.retreat(a)}return}if(S.ph<3)this.toPhase(a,S.ph+1)},
   retreat(a){const S=a.ag;S.invT=99;S.mode='ret';S.mt=.8;S.n2=0;ELAS.stop(a);this.fx({k:'roar',i:a.id});EP.say('aRet')},
   toPhase(a,n){const S=a.ag,c=a.c;S.ph=n;S.invT=3.5;S.grog=0;S.pride=0;S.angry=0;S.n2=0;S.moving=false;S.dest=-1;S.spot=null;S.perch=-1;ELAS.stop(a);TRAP.clear();
-    Object.assign(S.cd,{smg:2,fb:5,tr:3,smk:4,sn:1,fl:8});EP.bossPh=n;this.fx({k:'ph',n});EP.reviveAll();
+    Object.assign(S.cd,{smg:2,fb:5,tr:3,smk:4,sn:1,fl:8,fr:4,pn:3});EP.bossPh=n;this.fx({k:'ph',n});EP.reviveAll();
     if(n===2){// the descent: off the tower into the middle of them
       const C=this.cen(),nn=navSnap(lerp(c.x,C[0],.72),0,lerp(c.z,C[2],.72),5),lx=nn?nn.x:C[0],ly=nn?nn.y:0,lz=nn?nn.z:C[2];
       if(c.y>3.2){const d=Math.hypot(lx-c.x,lz-c.z),T=clamp(.8+d/22,1,1.8);S.tw=-1;S.mode='p2a';S.mt=T+1.5;a.agPose='beast';a.kin=null;
-        TELE.add({k:'c',x:lx,y:ly,z:lz,r:4,d:T});epKin(a,lx,ly,lz,T,2,()=>{this.slam(a,4,20);S.mode='p2b';S.mt=1.4;this.fx({k:'roar',i:a.id})});this.fx({k:'hop',i:a.id})}
+        TELE.add({k:'c',x:lx,y:ly,z:lz,r:4,d:T});epKin(a,lx,ly,lz,T,2,()=>{this.slam(a,4,30);S.mode='p2b';S.mt=1.4;this.fx({k:'roar',i:a.id})});this.fx({k:'hop',i:a.id})}
       else{S.tw=-1;a.kin=null;S.mode='p2b';S.mt=1.4;this.fx({k:'roar',i:a.id})}
       this.summon(a,3,'squad');EP.say('aP2')}
     else{a.kin=null;S.mode='p3a';S.mt=1.6;this.fx({k:'roar',i:a.id,b:1});this.summon(a,2,'squad');this.summon(a,2,'runner');EP.say('aP3')}},
@@ -394,7 +411,7 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
   seenEl(on){let e=$('epSeen');if(!e){if(!on)return;const h=$('hud');if(!h)return;e=document.createElement('div');e.id='epSeen';h.appendChild(e)}
     const L=LI(),t=L?'◉ ARGUS CAN SEE YOU':'◉ 아르고스가 보고 있다';if(e.textContent!==t)e.textContent=t;if(e.classList.contains('on')!==on)e.classList.toggle('on',on)},
   stageClear(){TRAP.clear()},
-  clear(){TRAP.clear();this.cur=null;this.ltnT=0;this.hid=null;this.seenEl(false)},
+  clear(){TRAP.clear();this.cur=null;this.ltnT=0;this.hid=null;this.seenEl(false);this.frSaid=this.pnSaid=0},
   // the boss bar: gauges and what it is doing (flags: 1 moving, 2 pride hurt, 4 down, 8 invulnerable, 16 enraged, 32 first meeting, 64 burnt out)
   lensBits(S){let m=0;for(let i=0;i<4;i++)if(S.lens[i]>0)m|=1<<i;return m},
   bsOf(b){const S=b.ag;return {id:b.id,ph:S.ph,grog:S.grog,gmax:S.grogMax,pride:S.angry>0?3:S.pride,
@@ -448,7 +465,7 @@ const ARGUS={cur:null,encNext:false,ltnT:0,H:null,
   fxApply(m){const a=m.i!=null?byIdAny(m.i):null,P=G.player,L=LI();
     switch(m.k){
     case 'w':if(a){const e=a.epMuz||a.c;if(m.s==='aim')AU.at('chg',e.x,e.y,e.z,{vol:.55,range:90,rate:1.5});else if(m.s==='fl')AU.at('chg',e.x,e.y,e.z,{vol:.6,range:90,rate:.9});
-      else if(m.s==='smg')AU.at('rack',e.x,e.y,e.z,{vol:.8,range:60});else if(m.s==='thr')AU.at('pin',e.x,e.y,e.z,{vol:.8,range:40})}break;
+      else if(m.s==='smg')AU.at('rack',e.x,e.y,e.z,{vol:.8,range:60});else if(m.s==='thr')AU.at('pin',e.x,e.y,e.z,{vol:.8,range:40});else if(m.s==='pn')AU.at('zgrowl',a.c.x,a.c.y+1.5,a.c.z,{vol:1,range:50,rate:.7})}break;
     case 'mv':break;
     case 'hop':if(a)AU.at('zleap',a.c.x,a.c.y+1.5,a.c.z,{vol:.9,range:60,rate:.8});break;
     case 'land':SCEN.slamFx(m.x/100,m.y/100,m.z/100);AU.at('bodyfall',m.x/100,m.y/100,m.z/100,{vol:1,range:60,rate:.7});break;
@@ -494,7 +511,7 @@ EPZ.argus={hp:()=>ARGUS.hpFor(),init:a=>ARGUS.init(a,ARGUS.encNext),ai:(a,dt)=>A
   spark(t,o){if(!o||!o.hs||o.x==null||AU.throttle('agls',60))return;const f=EP.bf&&EP.bf.id===t.id?EP.bf:null,lens=NET.cli?(f?f.lens:15):(t.ag?ARGUS.lensBits(t.ag):0);if(!lens)return;
     for(let i=0;i<6;i++)FX.spawn({x:o.x,y:o.y,z:o.z,vx:rr(-2,2),vy:rr(0,2),vz:rr(-2,2),life:rr(.15,.3),s0:.04,s1:.02,r:.5,g:1,b:.45,f:0,grav:6,add:1})},
   // its claws (phase 2's close quarters)
-  claw(a,t,heavy){aimDir(a.yaw,0,_dv);const kb=heavy?5:3;if(t.isPlayer||!t.pup){t.kvx+=_dv.x*kb;t.kvz+=_dv.z*kb}else SCEN.pushHuman(t,_dv.x*kb,1.5,_dv.z*kb);a.scHit=G.t;hurtHuman(t,EPD(heavy?22:15),a,{claw:1});return true},
+  claw(a,t,heavy){aimDir(a.yaw,0,_dv);const kb=heavy?5:3;if(t.isPlayer||!t.pup){t.kvx+=_dv.x*kb;t.kvz+=_dv.z*kb}else SCEN.pushHuman(t,_dv.x*kb,1.5,_dv.z*kb);a.scHit=G.t;hurtHuman(t,EPD(heavy?32:22),a,{claw:1});return true},
   pre:(a,dt)=>ARGUS.pre(a,dt),attach:a=>ARGUS.attach(a),
   die(t){ELAS.stop(t,true);t.kin=null;TRAP.clear();if(t.ag&&!t.ag.enc&&!NET.cli)EP.say('aDie')},
   gone(a){ELAS.stop(a,true);a.kin=null;if(a.ag)a.ag.mode='gone'}};
@@ -575,6 +592,8 @@ CHAP[2]={id:2,k:'argus',map:'ep2',code:'RT1-07',n:['아르고스','ARGUS'],t:['�
     aFlare:['조명탄이다! 빛 밖으로!','Flare! Get out of the light!',1],
     aP2:['뛰어내렸다! 기관단총이다 — 방벽 뒤로! 붉은 선은 부비트랩이야, 넘지 마!','It jumped down! SMG — get behind the barriers! Red lines are tripwires, do not cross them!',1],
     aFb:['섬광탄! 고개 돌려!','Flashbang! Look away!',1],
+    aFrag:['수류탄이다! 빨간 원 밖으로!','Grenade! Get out of the red ring!',1],
+    aPounce:['위에서 덮친다! 빨간 원에서 빠져!','It is jumping down on us! Out of the red ring!',1],
     aP3:['짐승처럼 날뛴다! 서로 위치 불러!','It is leaping around like an animal! Call out where it is!',1],
     aSmoke:['연막이다 — 레이저만 보여!','Smoke — all you can see is the laser!',1],
     aEnr:['시간 끌면 안 돼 — 놈이 더 빨라진다!','We cannot drag this out — it is getting faster!',0],
