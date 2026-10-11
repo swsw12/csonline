@@ -52,6 +52,18 @@ Object.assign(GUNS,{
 // comes back from another crate.
 WPN.bhole={slot:1,kind:'special',sup:1,n:['이벤트 호라이즌','Event Horizon'],cost:6000,mag:3,res:3,dmg:950,rpm:45,semi:1,proj:'vortex',spread:[.004,.02,.06],rec:[.08,.02],kb:18,stag:.8,hs:1,reload:3,draw:1,speed:.9,snd:'bhole',model:'bhole',hold:'rifle'};
 VM_POS.bhole={p:[.15,-.175,-.36],r:[0,.08,.035]};GUNS.bhole.piv={mag:[0,.115,-.08]};
+// Event Horizon Mini: a pistol with only the pull. The same slow orb opens a small black hole that drags zombies in and lifts them for a
+// moment, but nothing in it hurts (W.pull: no grinding, no collapse blast). 2 rounds, 6 spare; sold in the shop for 30,000 coins.
+Object.assign(GUNS,{
+  bholemini:{parts:[Pt(0,.045,-.06,.03,.034,.19,'voidC'),Pt(0,.066,-.06,.022,.006,.17,'blk'),Pt(.0152,.046,-.05,.002,.014,.12,'voidG'),Pt(-.0152,.046,-.05,.002,.014,.12,'voidG'),
+      Pt(0,.047,-.16,.026,.026,.02,'chrome',{r:.011}),Pt(0,.047,-.172,.014,.014,.004,'muzzle'),Pt(0,.02,-.06,.028,.02,.17,'blk2'),
+      Pt(0,.088,-.05,.034,.034,.034,'voidG',{r:.017}),Pt(0,.088,-.05,.022,.022,.022,'voidC',{r:.011}),Pt(0,.088,-.05,.05,.004,.05,'chrome'),
+      Pt(.022,.08,-.05,.004,.05,.004,'chrome'),Pt(-.022,.08,-.05,.004,.05,.004,'chrome'),Pt(0,.08,-.028,.004,.05,.004,'chrome'),Pt(0,.08,-.072,.004,.05,.004,'chrome'),
+      ...pGrip('grip2',-.035,.012,.22),...tGuard(-.035)],
+    grip:[0,-.02,.005],sup:[-.012,-.045,.01],muzzle:[0,.047,-.175],eject:[.02,.05,-.03]}});
+WPN.bholemini={slot:2,kind:'pistol',n:['이벤트 호라이즌 미니','Event Horizon Mini'],cost:30000,mag:2,res:6,dmg:0,pull:1,vR:7,vT:2.6,rpm:60,semi:1,proj:'vortex',spread:[.004,.02,.06],rec:[.04,.01],kb:0,stag:0,hs:1,reload:2.2,draw:.6,speed:1,snd:'bhole',model:'bholemini',hold:'pistol'};
+VM_POS.bholemini={p:[.12,-.135,-.37],r:[0,.07,.02]};
+BUY_MENU.find(c=>c.k==='pistol').items.push('bholemini');
 function vortexMake(a,w,x,y,z,vx,vy,vz,ghost){const m=new THREE.Mesh(gunGeo('bholep'),matGun());m.position.set(x,y,z);R.scene.add(m);
   const n={kind:'vortex',owner:a,w,x,y,z,vx,vy,vz,t:0,ph:0,ht:0,tick:0,mesh:m,spin:0,hit:new Set(),upd:vortexUpd,ghost:!!ghost};NADES.push(n);return n}
 function vortexLaunch(a,W,eye,dir){const sp=24;const n=vortexMake(a,a.cur,eye.x+dir.x*.6,eye.y+dir.y*.6-.05,eye.z+dir.z*.6,dir.x*sp,dir.y*sp,dir.z*sp,false);
@@ -63,7 +75,7 @@ function vortexUpd(n,dt){const m=n.mesh;
     if(r==='stop'||n.t>1.1){n.ph=1;n.ht=0;n.vx=n.vy=n.vz=0;const fl=floorBelow(n.x,n.y+.2,n.z,.1);if(n.y<fl+1.9&&charFits({hw:.2,h:.3},n.x,fl+1.9,n.z))n.y=fl+1.9;
       n.light=DL.add(n.x,n.y,n.z,'#a050ff',11,2.8,0,{flick:.12});AU.at('vortex',n.x,n.y,n.z,{vol:1,range:70,occ:false})}
     return false}
-  n.ht+=dt;const T=3.2,x=n.x,y=n.y,z=n.z,k0=Math.min(1,n.ht/.35);
+  n.ht+=dt;const VW=WPN[n.w]||WPN.bhole,T=VW.vT||3.2,VR=VW.vR||9,x=n.x,y=n.y,z=n.z,k0=Math.min(1,n.ht/.35);
   if(m){m.position.set(x,y,z);m.rotation.x+=dt*14;m.rotation.y+=dt*11;m.scale.setScalar((1+k0*2.6)*(1+.12*Math.sin(n.ht*30)))}
   // visuals: violet motes spiralling in from all sides, a dark ring on the ground, rings pulsing out of the core
   for(let i=0;i<5;i++){const an=rr(0,TAU),rd=rr(2.5,7),h=rr(-1.2,2);const px=x+Math.cos(an)*rd,pz=z+Math.sin(an)*rd,py=y+h;const ix=(x-px)/rd,iz=(z-pz)/rd;
@@ -71,20 +83,20 @@ function vortexUpd(n,dt){const m=n.mesh;
   if(Math.random()<.35)FX.spawn({x,y,z,life:.5,s0:.4,s1:3.5,r:.55,g:.2,b:1,a:.45,f:14,add:1});
   if(Math.random()<.4){const an=rr(0,TAU),rd=rr(1,5);FX.spawn({x:x+Math.cos(an)*rd,y:y+rr(-1,1),z:z+Math.sin(an)*rd,vx:-Math.cos(an)*3,vy:0,vz:-Math.sin(an)*3,life:.6,s0:.3,s1:.05,r:.1,g:.04,b:.15,a:.6,f:2})}
   // the pull is the host's job (zombies of client players get it as an effect); the grinding is done by the owner's own copy
-  if(!NET.cli)for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;const dx=x-t.c.x,dz=z-t.c.z,dy=y-1-t.c.y,d=Math.hypot(dx,dy,dz);if(d>9||d<.05)continue;
-    if(!losClear(x,y,z,t.c.x,t.c.y+1,t.c.z))continue;const hd=Math.hypot(dx,dz)||1,k=1-d/9,acc=(10+28*k)*(t.host?.7:1);
+  if(!NET.cli)for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;const dx=x-t.c.x,dz=z-t.c.z,dy=y-1-t.c.y,d=Math.hypot(dx,dy,dz);if(d>VR||d<.05)continue;
+    if(!losClear(x,y,z,t.c.x,t.c.y+1,t.c.z))continue;const hd=Math.hypot(dx,dz)||1,k=1-d/VR,acc=(10+28*k)*(t.host?.7:1);
     t.kvx+=dx/hd*acc*dt;t.kvz+=dz/hd*acc*dt;const v=Math.hypot(t.kvx,t.kvz);if(v>9){t.kvx*=9/v;t.kvz*=9/v}
     if(d<4.5){const want=clamp(dy*2,0,3.5);if(t.c.vy<want){t.c.vy=want;t.c.onGround=false;t.c.jumped=true}}
     t.staggerT=Math.max(t.staggerT,.3)}
-  n.tick-=dt;if(n.tick<=0){n.tick=.25;let hit=0;for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;if(Math.hypot(x-t.c.x,y-1-t.c.y,z-t.c.z)>2.6)continue;
+  n.tick-=dt;if(n.tick<=0&&!VW.pull){n.tick=.25;let hit=0;for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;if(Math.hypot(x-t.c.x,y-1-t.c.y,z-t.c.z)>2.6)continue;
       damageActor(t,60,n.owner,{w:n.w,dir:[0,0,0],kb:0,stag:.4,x:t.c.x,y:t.c.y+1,z:t.c.z});hit++}if(hit&&n.owner.isPlayer&&!n.ghost)HUD.hitmark(false)}
   if(n.light){n.light.x=x;n.light.y=y;n.light.z=z;n.light.i=2.8*(1+.3*Math.sin(n.ht*20))}
   if(n.ht<T)return false;
   // collapse
-  FX.explode(x,y,z,'he');for(let i=0;i<40;i++){const an=rr(0,TAU),el=rr(-.6,1),sp=rr(6,14);FX.spawn({x,y,z,vx:Math.cos(an)*Math.cos(el)*sp,vy:Math.sin(el)*sp,vz:Math.sin(an)*Math.cos(el)*sp,life:rr(.3,.6),s0:.2,s1:.04,r:.8,g:.45,b:1,f:1,add:1,drag:3})}
+  if(VW.pull)FX.spawn({x,y,z,life:.4,s0:.6,s1:5,r:.6,g:.25,b:1,a:.6,f:14,add:1});else FX.explode(x,y,z,'he');for(let i=0;i<40;i++){const an=rr(0,TAU),el=rr(-.6,1),sp=rr(6,14);FX.spawn({x,y,z,vx:Math.cos(an)*Math.cos(el)*sp,vy:Math.sin(el)*sp,vz:Math.sin(an)*Math.cos(el)*sp,life:rr(.3,.6),s0:.2,s1:.04,r:.8,g:.45,b:1,f:1,add:1,drag:3})}
   FX.spawn({x,y,z,life:.5,s0:1,s1:9,r:.6,g:.25,b:1,a:.7,f:14,add:1});DL.add(x,y,z,'#c070ff',18,4,.6);
   AU.at('explode',x,y,z,{vol:1,range:90,occ:false,rate:.72});nearShake(x,y,z,14,1);
-  blastDamage(n.owner,x,y,z,6.5,WPN.bhole.dmg,18,6,n.w,{he:1});
+  if(!VW.pull)blastDamage(n.owner,x,y,z,6.5,WPN.bhole.dmg,18,6,n.w,{he:1});
   if(n.light)n.light.dead=true;return true}
 
 // ---------- supply crates ----------
