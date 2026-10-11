@@ -1221,6 +1221,21 @@ i.hofc{font-style:normal;display:inline-flex;color:#ffcf3a;margin-left:4px;verti
 #rkWin .hr.on{border-color:#6a5420;background:linear-gradient(#2e2610,#1e1a0c)}#rkWin .hr.me{border-color:#e8a33a;box-shadow:inset 0 0 0 1px rgba(232,163,58,.35)}
 #rkWin .spages .crn{width:14px;height:14px}
 @media (max-width:600px){#rkWin .hrs{grid-template-columns:1fr}}
+/* v6.25: friend chat and online status */
+#frWin .frnm small em.on,#frWin .frh small.on{color:#7be07b;font-style:normal;letter-spacing:0}
+#frWin .frh small.on{font-size:12px}
+#frWin button.frback{flex:0 0 30px;width:30px;height:34px;min-width:0;padding:0;border:0;background:none;color:#ffd56a;font-size:28px;line-height:1;cursor:pointer}
+#frWin .frbt button.chat{position:relative;border-color:#4a9ad8;color:#a9d6ff}
+#frWin .frbt button i.dmn{font-style:normal;position:absolute;top:-6px;right:-5px;min-width:16px;height:16px;line-height:16px;padding:0 3px;border-radius:8px;background:#e5483a;color:#fff;font-size:10px;text-align:center;box-sizing:border-box}
+#frWin .fcb{display:flex;flex-direction:column;padding:10px 14px 14px;min-height:0;flex:1}
+#frWin .fclog{flex:1;min-height:220px;max-height:min(380px,52vh);overflow:auto;padding:8px;background:#101317;border:1px solid #2a2e35;border-radius:4px;display:flex;flex-direction:column;gap:6px}
+#frWin .fcm{display:flex;flex-direction:column;max-width:82%}
+#frWin .fcm .fct{padding:6px 10px;border-radius:10px;font-size:14px;line-height:1.35;word-break:break-word;white-space:pre-wrap}
+#frWin .fcm small{font-size:10px;color:#6f7782;margin-top:2px}
+#frWin .fcm.me{align-self:flex-end;align-items:flex-end}#frWin .fcm.me .fct{background:#5a3e12;border:1px solid #e2b54a;color:#fff;border-bottom-right-radius:3px}
+#frWin .fcm.you{align-self:flex-start}#frWin .fcm.you .fct{background:#222831;border:1px solid #3a3f48;color:#e6eaf0;border-bottom-left-radius:3px}
+#frWin .fcsend{display:flex;gap:6px;margin-top:8px}#frWin .fcsend input{flex:1;min-width:0;padding:9px 10px;background:#0f1114;border:1px solid #3a3f48;color:#fff;border-radius:3px;font-size:14px}
+#frWin .fcsend button{width:auto;min-width:64px;padding:8px 14px;border:1px solid #e2b54a;background:linear-gradient(#5a3e12,#2e200a);color:#fff;border-radius:3px;cursor:pointer}#frWin .fcsend button:disabled{opacity:.5}
 
 </style>
 </head><body>
@@ -12323,6 +12338,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.25','2026-10-11',[
+ ['NEW','친구창 채팅 — 친구 줄의 「채팅」 버튼으로 1:1 메시지를 주고받아요(최대 200자). 상대가 접속해 있지 않아도 남겨 두면 다음에 읽어요. 안 읽은 메시지는 친구 줄과 로비 친구 버튼에 빨간 표시로 떠요. 서버 스키마(supabase/schema.sql) 전체를 SQL Editor에서 다시 실행해야 써져요.','Friend chat — the Chat button on a friend row opens a one-to-one message panel (200 characters). Messages wait if the friend is away; unread ones show a red mark on the row and on the lobby Friends button. Re-run supabase/schema.sql in the SQL Editor to switch it on.'],
+ ['FIX','친구 최근 접속 시간 — 이제 게임이 열려 있는 동안 1분마다 서버에 접속 신호를 보내요. 친구 목록에 「접속 중」(2분 반 안에 본 친구) 또는 「n분 전」이 실제 접속 기준으로 떠요(전엔 매치나 라운드 보상을 받은 때만 바뀌었어요).','Friends\' last seen — the game now pings the server once a minute while it is open, so the list shows 「online」 (seen within 2.5 min) or 「n min ago」 by real presence (it used to move only when a match or round reward was paid).']]],
 ['v6.24','2026-10-11',[
  ['NEW','명예의 전당 — 챕터 × 난이도마다 서버에서 가장 먼저 클리어한 팀이 기록에 남아요. 그 판에 같이 있던 계정(최대 8명)이 모두 팀원이고, v6.24 전에 이미 깬 첫 클리어도 그대로 옮겨졌어요. 랭킹 창의 「명예의 전당」 탭에서 챕터별 · 난이도별 팀원 · 날짜 · 클리어 시간을 볼 수 있어요','Hall of fame: the first team on the server to clear each chapter on each difficulty is kept for good. Every account in that match (up to 8) is in the team; first clears from before v6.24 were carried over. The ranking window\'s 「Hall of fame」 tab lists every chapter and difficulty with the team, the date and the clear time.'],
  ['NEW','최초 클리어 칭호 — 팀원은 이름 옆에 금색 왕관 칭호(예: 「알레프 보통 최초 클리어」, 여러 개면 가장 높은 챕터 · 난이도)를 달아요: 로비 프로필 · 게임 대기실 · 머리 위 이름표 · 채팅 · 점수판 · 결과표 · 랭킹 · 친구 목록. 다른 사람의 칭호는 명예의 전당에 그 팀원으로 올라 있을 때만 보여요','First-clear titles: team members wear a gold crown title next to their name (e.g. 「ALEPH Normal · first clear」; with several, the latest chapter and hardest difficulty): the lobby profile, the waiting room, name tags, chat, the scoreboard and results, the ranking and the friend list. Someone else\'s title only shows when the hall of fame lists them in that team.'],
@@ -12571,8 +12589,8 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       art:`<img class="a1" src="${portrait('h_'+(HSKINS[1]||skin),140)}"><img class="a3" src="${portrait('h_'+(HSKINS[2]||skin),110)}">`},
     {act:'range',cls:'c3',t:L?'SHOOTING RANGE':'사격장',s:L?'Dummies at 10–50 m, moving targets, free weapons':'10–50 m 더미 · 이동 표적 · 무기 무료',tag:L?'Practice':'연습',
       art:`<img class="gun g1" src="${gunIcon('sr8',40)}"><img class="gun g2" src="${gunIcon('kv47',48)}"><img class="gun g3" src="${gunIcon('d50',34)}">`}];
-  const news=L?[['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
-    :[['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
+  const news=L?[['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
+    :[['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
@@ -12585,7 +12603,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.24 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.25 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -13461,12 +13479,18 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     const me=this.me;if(me){me.coins=r.coins;me.dayLeft=r.day_left;if(r.rec)me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:me.rec})}this.emit();return r},
   // ---- friends and gifts (v6.18) ----
   // {code (mine), friends:[{code,nickname,xp,last,since}], incoming:[{code,nickname,xp,at}], outgoing:[…], gifts_new}; ids never come out
-  frGot(r){this.fr={...r,at:Date.now()};const me=this.me;if(me){if(r.code)me.fcode=r.code;me.friendReq=(r.incoming||[]).length;if(r.gifts_new!=null)me.giftsNew=r.gifts_new|0}this.emit();return this.fr},
+  frGot(r){this.fr={...r,at:Date.now()};const me=this.me;if(me){if(r.code)me.fcode=r.code;me.friendReq=(r.incoming||[]).length;if(r.gifts_new!=null)me.giftsNew=r.gifts_new|0;if(r.dm_new!=null)me.dmNew=r.dm_new|0}this.emit();return this.fr},
   async loadFriends(){return this.frGot(await this.rpc('qz_friends'))},
   // a request by friend code or a nickname only one player has → also the list, done: sent | accepted (they had asked me already)
   async friendAdd(who){const r=await this.rpc('qz_friend_add',{p_who:who});this.frGot(r);return r},
   async friendAnswer(code,yes){return this.frGot(await this.rpc('qz_friend_answer',{p_who:code,p_yes:!!yes}))},
   async friendRemove(code){return this.frGot(await this.rpc('qz_friend_remove',{p_who:code}))},
+  // v6.25: 'I am here' (profiles.last_seen; friends read it as online / last seen) and the friend chat. dm_new = unread messages.
+  // qz_dm_list → {msgs:[{id,mine,text,at}], seen, dm_new}; asking for a talk marks what the friend wrote as read. Old databases: no ping, no chat.
+  async ping(){if(this.noPing)return null;let r;try{r=await this.rpc('qz_ping')}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noPing=true;return null}throw e}
+    if(this.me&&r&&r.dm_new!=null&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
+  async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
+  async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
   // a gun from the shop for a friend (the giver's coins): {coins,gun,to}
   async gift(code,gun){const r=await this.rpc('qz_gift',{p_who:code,p_gun:gun});if(this.me){this.me.coins=r.coins;this.saveMe()}this.emit();return r},
   // gifts not shown yet [{gun,from,at}] (shown after this); the guns are on the account already
@@ -13513,6 +13537,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     if(/already_claimed/.test(m))return T2('이미 받은 보상이에요','Already claimed');
     if(/no_mission/.test(m))return T2('오늘의 미션이 바뀌었어요. 다시 열어 주세요','Today\'s missions changed — open them again');
     if(/no_set/.test(m))return T2('근·하·신·년 한 세트가 아직 모자라요','You need one of each letter first');if(/no_tickets/.test(m))return T2('보유한 해독기가 없어요','No kept decoders left');
+    if(/dm_text/.test(m))return T2('메시지는 1~200자로 적어 주세요','A message is 1 to 200 characters');
+    if(/dm_slow/.test(m))return T2('너무 빨리 보내고 있어요. 잠시 후에 다시 보내 주세요','Slow down — try again in a moment');
+    if(/dm_not_friend/.test(m))return T2('친구끼리만 메시지를 보낼 수 있어요','Messages go to friends only');
+    if(/Could not find the function|PGRST202/i.test(m+' '+c)&&/dm_/.test(m))return T2('채팅은 서버 스키마를 갱신해야 쓸 수 있어요','Chat needs the server schema updated');
     if(/friend_self/.test(m))return T2('나 자신은 친구로 추가할 수 없어요','That is you');
     if(/friend_already/.test(m))return T2('이미 친구예요','Already friends');
     if(/friend_pending/.test(m))return T2('이미 친구 요청을 보냈어요','Request already sent');
@@ -14205,6 +14233,8 @@ function rankLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'💬',tag:['신규 기능','New'],t:['친구창 채팅','Friend chat'],
+    d:['친구창에서 친구에게 바로 메시지를 보낼 수 있어요. 친구가 접속해 있는지(접속 중 / n분 전)도 실제 접속 기준으로 보여요.','Message a friend right from the friends window. It also shows whether they are online (online / n min ago) by real presence.']},
   {kind:'feature',ico:'♛',tag:['신규 기능','New'],t:['명예의 전당','Hall of fame'],
     d:['챕터 × 난이도마다 서버에서 가장 먼저 클리어한 팀이 명예의 전당에 남아요. 그 판의 팀원 모두 이름 옆에 금색 칭호(예: 「알레프 보통 최초 클리어」)를 달고 — 로비 · 대기실 · 머리 위 이름표 · 채팅 · 랭킹 · 친구 목록에 보여요. 랭킹 창의 「명예의 전당」 탭, 챕터 카드에서 팀을 볼 수 있어요.','The first team on the server to clear each chapter on each difficulty goes into the hall of fame. Everyone in it wears a gold title next to their name (e.g. 「ALEPH Normal · first clear」) — in the lobby, the waiting room, over their head, in chat, the ranking and friend lists. See the teams on the ranking window\'s 「Hall of fame」 tab and on the chapter cards.']},
   {kind:'zombie',ref:'lyrebird',tag:['좀비 시나리오 4챕터','Zombie scenario · CH.4'],t:['4챕터 「라이어버드」','Chapter 4 「LYREBIRD」'],
@@ -14488,22 +14518,32 @@ function invLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(!
 // by a nickname only one player has, requests in and out, the friend list (level, when they last played) with a gift button that
 // opens the shop in gift mode for that friend (shop.js: SHOP.giftTo). Gifts that came in show once, in a pop-up in the lobby.
 // v6.24: a friend in a hall-of-fame team wears the title (ft) next to the name.
+// v6.25: 'last seen' is real presence now (the game pings the server while it is open: ACC.ping → profiles.last_seen; a friend seen within
+// 2.5 minutes shows as online), and every friend has a chat button: a small direct-message panel (qz_dm_send / qz_dm_list, polled every
+// 4 s while it is open; an unread count on the friend's row and on the lobby button's red dot).
 // The database decides everything (schema.sql v6.18: qz_friends, qz_friend_add / _answer / _remove, qz_gift, qz_gift_inbox).
 const SVG_FRIEND='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M6 2a2.6 2.6 0 110 5.2A2.6 2.6 0 016 2zM1 13.6c.3-2.8 2.4-4.4 5-4.4s4.7 1.6 5 4.4zM12.2 4.5h1.4v2h2v1.4h-2v2h-1.4v-2h-2V6.5h2z"/></svg>';
+const SVG_CHAT='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 2.5h12a1 1 0 011 1v7a1 1 0 01-1 1H7.2L4 14.2v-2.7H2a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>';
 const SVG_GIFT='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 6h12v3H2zM3 9.6h4.3V15H3zM8.7 9.6H13V15H8.7zM8 5.4C6.6 3 4.2 2.6 4.2 4.1c0 1 1.6 1.3 3.8 1.3zm0 0c1.4-2.4 3.8-2.8 3.8-1.3 0 1-1.6 1.3-3.8 1.3z"/></svg>';
 // when a friend last played (their last round or match reward)
-function frAgo(t){const L=LI();if(!t)return L?'no games yet':'플레이 기록 없음';const s=Math.max(0,(Date.now()-Date.parse(t))/1000);
+function frAgo(t){const L=LI();if(!t)return L?'never seen':'접속 기록 없음';const s=Math.max(0,(Date.now()-Date.parse(t))/1000);
   if(s<3600){const m=Math.max(1,Math.round(s/60));return L?m+' min ago':m+'분 전'}if(s<86400){const h=Math.round(s/3600);return L?h+' h ago':h+'시간 전'}
   const d=Math.round(s/86400);return L?d+(d>1?' days ago':' day ago'):d+'일 전'}
-const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,
+// online = seen in the last 2.5 minutes (the heartbeat is every minute)
+function frOn(f){const t=f&&f.seen?Date.parse(f.seen):0;return !!t&&Date.now()-t<150e3}
+function frSub(f){const L=LI();return frOn(f)?(L?'● online':'● 접속 중'):frAgo(f.last)}
+function dmTime(t){const d=new Date(t);if(isNaN(d))return '';const p=n=>(n<10?'0':'')+n,hm=p(d.getHours())+':'+p(d.getMinutes()),n=new Date();
+  return d.toDateString()===n.toDateString()?hm:(d.getMonth()+1)+'/'+d.getDate()+' '+hm}
+const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,chat:null,
   open(){let o=$('frWin');if(!o){o=document.createElement('div');o.id='frWin';document.body.appendChild(o);
       o.addEventListener('click',e=>{if(e.target===o){this.close();return}const t=e.target.closest('[data-fr]');if(t)this.act(t.dataset.fr,t.dataset.v)});
-      o.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='frIn'){e.preventDefault();this.act('add')}})}
-    if($('nbWin')&&typeof NBAN!=='undefined')NBAN.close();this.msg='';this.del=null;this.render();AU.play('ui',{vol:.35});
+      o.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='frIn'){e.preventDefault();this.act('add')}
+        if(e.key==='Enter'&&e.target.id==='fcIn'&&!e.isComposing){e.preventDefault();this.act('csend')}})}
+    if($('nbWin')&&typeof NBAN!=='undefined')NBAN.close();this.msg='';this.del=null;this.chat=null;this.render();AU.play('ui',{vol:.35});
     if(ACC.signed()){this.lastLoad=Date.now();ACC.loadFriends().then(()=>this.render()).catch(e=>{this.msg=ACC.errText(e);this.ok=false;this.render()})}},
-  close(){const o=$('frWin');if(o)o.remove();this.del=null},
-  render(){const o=$('frWin');if(!o)return;const L=LI(),signed=ACC.signed(),F=ACC.fr,inp=$('frIn'),keep=inp?inp.value:'';
-    const row=(f,btns,sub)=>`<div class="frr"><span class="frlv">Lv.${recLevel(f.xp|0).l}</span><span class="frnm"><b>${esc(f.nickname)}${HOF.chip(f.ft,'sm')}</b><small>#${esc(f.code||'')}${sub?' · '+esc(sub):''}</small></span><span class="frbt">${btns}</span></div>`;
+  close(){const o=$('frWin');if(o)o.remove();this.del=null;this.chat=null},
+  render(){const o=$('frWin');if(!o)return;if(this.chat){this.renderChat();return}const L=LI(),signed=ACC.signed(),F=ACC.fr,inp=$('frIn'),keep=inp?inp.value:'';
+    const row=(f,btns,sub)=>`<div class="frr"><span class="frlv">Lv.${recLevel(f.xp|0).l}</span><span class="frnm"><b>${esc(f.nickname)}${HOF.chip(f.ft,'sm')}</b><small>#${esc(f.code||'')}${sub?' · ':''}${sub?(f.seen&&frOn(f)?'<em class="on">'+esc(sub)+'</em>':esc(sub)):''}</small></span><span class="frbt">${btns}</span></div>`;
     let body;
     if(!ACC.on)body=`<p class="frn">${L?'Accounts are not set up yet.':'계정 서버가 아직 연결되지 않았어요.'}</p>`;
     else if(!signed)body=`<p class="frn">${L?'Sign in to add friends and send them guns.':'로그인하면 친구를 추가하고 총을 선물할 수 있어요.'}</p><button class="frbig" data-fr="login">${L?'Sign in':'로그인'}</button>`;
@@ -14514,13 +14554,42 @@ const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,
         ${inc.length?`<h5>${L?'Requests for you':'받은 요청'} <i>${inc.length}</i></h5>${inc.map(f=>row(f,`<button class="ok" data-fr="yes" data-v="${esc(f.code)}">${L?'Accept':'수락'}</button><button data-fr="no" data-v="${esc(f.code)}">${L?'Decline':'거절'}</button>`,L?'wants to be friends':'친구 요청')).join('')}`:''}
         <h5>${L?'Friends':'친구'} <i>${fr.length}</i></h5>${fr.length?fr.map(f=>row(f,this.del===f.code
             ?`<button class="bad" data-fr="delok" data-v="${esc(f.code)}">${L?'Remove':'삭제'}</button><button data-fr="delno">${L?'Keep':'취소'}</button>`
-            :`<button class="gift" data-fr="gift" data-v="${esc(f.code)}">${SVG_GIFT}<span>${L?'Gift':'선물'}</span></button><button data-fr="del" data-v="${esc(f.code)}">${L?'Remove':'삭제'}</button>`,frAgo(f.last))).join('')
+            :`<button class="chat" data-fr="chat" data-v="${esc(f.code)}">${SVG_CHAT}<span>${L?'Chat':'채팅'}</span>${f.dm>0?`<i class="dmn">${f.dm>9?'9+':f.dm}</i>`:''}</button><button class="gift" data-fr="gift" data-v="${esc(f.code)}">${SVG_GIFT}<span>${L?'Gift':'선물'}</span></button><button data-fr="del" data-v="${esc(f.code)}">${L?'Remove':'삭제'}</button>`,frSub(f))).join('')
           :`<p class="frn">${L?'No friends yet — add one by their friend code.':'아직 친구가 없어요. 친구 코드로 추가해 보세요.'}</p>`}
         ${out.length?`<h5>${L?'Sent':'보낸 요청'} <i>${out.length}</i></h5>${out.map(f=>row(f,`<button data-fr="cancel" data-v="${esc(f.code)}">${L?'Cancel':'취소'}</button>`,L?'waiting':'수락 대기 중')).join('')}`:''}`}
     o.innerHTML=`<div class="frw"><div class="frh">${SVG_FRIEND}<b>${L?'Friends':'친구'}</b><small>FRIENDS</small><span class="sgap"></span><button class="frx" data-fr="x" aria-label="close">×</button></div><div class="frb">${body}</div></div>`;
     const ni=$('frIn');if(ni)ni.value=keep},
+  // ---- the chat panel (v6.25) ----
+  chatFriend(){const c=this.chat;return c&&((ACC.fr&&ACC.fr.friends)||[]).find(x=>x.code===c.code)},
+  openChat(code){const f=((ACC.fr&&ACC.fr.friends)||[]).find(x=>x.code===code);if(!f)return;
+    this.chat={code,nick:f.nickname,ft:f.ft,msgs:[],last:0,err:'',busy:false,seen:f.seen,loaded:false};f.dm=0;this.render();this.chatPull(true);
+    const i=$('fcIn');if(i)i.focus()},
+  closeChat(){this.chat=null;this.render();frPoll(true)},
+  renderChat(){const o=$('frWin');if(!o||!this.chat)return;const L=LI(),c=this.chat,f=this.chatFriend(),on=frOn({seen:c.seen||(f&&f.seen)}),keep=$('fcIn')?$('fcIn').value:'';
+    o.innerHTML=`<div class="frw"><div class="frh"><button class="frback" data-fr="cback" aria-label="back">‹</button>${SVG_CHAT}<b>${esc(c.nick)}${HOF.chip(c.ft,'sm')}</b><small class="${on?'on':''}">${on?(L?'● online':'● 접속 중'):f?esc(frAgo(f.last)):''}</small><span class="sgap"></span><button class="frx" data-fr="x" aria-label="close">×</button></div>
+      <div class="fcb"><div id="fcLog" class="fclog"></div>${c.err?`<div class="frm bad">${esc(c.err)}</div>`:''}
+        <div class="fcsend"><input id="fcIn" maxlength="200" placeholder="${L?'Message':'메시지 입력'}" autocomplete="off" spellcheck="false"><button data-fr="csend"${c.busy?' disabled':''}>${L?'Send':'보내기'}</button></div></div></div>`;
+    const i=$('fcIn');if(i)i.value=keep;this.chatLog(true)},
+  chatLog(bottom){const g=$('fcLog'),c=this.chat;if(!g||!c)return;const L=LI(),near=bottom||g.scrollHeight-g.scrollTop-g.clientHeight<40;
+    g.innerHTML=c.msgs.length?c.msgs.map(m=>`<div class="fcm ${m.mine?'me':'you'}"><span class="fct">${esc(m.text)}</span><small>${esc(dmTime(m.at))}</small></div>`).join('')
+      :`<p class="frn">${c.loaded?(L?'No messages yet — say hi!':'아직 대화가 없어요. 먼저 인사해 보세요!'):(L?'Loading…':'불러오는 중…')}</p>`;
+    if(near)g.scrollTop=g.scrollHeight},
+  async chatPull(first){const c=this.chat;if(!c||c.pull)return;c.pull=true;
+    try{const r=await ACC.dmList(c.code,first?0:c.last);if(this.chat!==c)return;c.loaded=true;c.seen=r.seen;
+      const add=(r.msgs||[]).filter(m=>m.id>c.last);if(add.length){c.msgs=c.msgs.concat(add).slice(-100);c.last=c.msgs[c.msgs.length-1].id}
+      if(c.err){c.err='';this.renderChat()}else{this.chatLog(first||add.some(m=>m.mine));const h=document.querySelector('#frWin .frh small');
+        if(h){const on=frOn({seen:c.seen});h.className=on?'on':'';if(on)h.textContent=LI()?'● online':'● 접속 중'}}}
+    catch(e){if(this.chat===c){c.loaded=true;c.err=ACC.errText(e);this.renderChat()}}
+    if(this.chat===c)c.pull=false},
+  async chatSend(){const c=this.chat,i=$('fcIn');if(!c||c.busy||!i)return;const t=i.value.trim();if(!t)return;c.busy=true;c.err='';
+    try{await ACC.dmSend(c.code,t);i.value='';c.busy=false;AU.play('ui',{vol:.3});await this.chatPull(false)}
+    catch(e){c.busy=false;c.err=ACC.errText(e);AU.play('dry',{vol:.4});this.renderChat()}
+    const n=$('fcIn');if(n)n.focus()},
   act(a,v){const L=LI(),F=ACC.fr||{};
     if(a==='x'){this.close();return}
+    if(a==='chat'){this.openChat(v);return}
+    if(a==='cback'){this.closeChat();return}
+    if(a==='csend'){this.chatSend();return}
     if(a==='login'){this.close();ACCW.open('in');return}
     if(a==='copy'){const c='#'+(F.code||ACC.me&&ACC.me.fcode||'');this.msg=(L?'Your code: ':'내 친구 코드: ')+c;this.ok=true;this.render();
       try{navigator.clipboard.writeText(c).then(()=>{this.msg=(L?'Copied ':'복사했어요 ')+c;this.render()},()=>{})}catch(e){}return}
@@ -14551,16 +14620,21 @@ function frLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(!t
   if(!b){b=document.createElement('button');b.className='tfr';b.dataset.act='friends';b.innerHTML=SVG_FRIEND+`<span>${L?'Friends':'친구'}</span>`;
     const after=tb.querySelector('.tinv')||tb.querySelector('.trank')||tb.querySelector('.tmis')||tb.querySelector('.tshop');if(after)after.after(b);else tb.prepend(b)}
   frDot()}
-function frDot(){const b=document.querySelector('#menu .tbtns .tfr');if(!b)return;const me=ACC.signed()&&ACC.me,n=me?(me.friendReq|0)+(me.giftsNew|0):0,d=b.querySelector('.dot');
-  if(n>0&&!d){const i=document.createElement('i');i.className='dot';i.title=LI()?'Friend requests or gifts waiting':'친구 요청이나 선물이 있어요';b.appendChild(i)}else if(!n&&d)d.remove()}
+function frDot(){const b=document.querySelector('#menu .tbtns .tfr');if(!b)return;const me=ACC.signed()&&ACC.me,n=me?(me.friendReq|0)+(me.giftsNew|0)+(me.dmNew|0):0,d=b.querySelector('.dot');
+  if(n>0&&!d){const i=document.createElement('i');i.className='dot';i.title=LI()?'Friend requests, gifts or messages waiting':'친구 요청, 선물, 새 메시지가 있어요';b.appendChild(i)}else if(!n&&d)d.remove()}
 // a fresh look at requests and gifts now and then while in the lobby
-function frPoll(force){if(!ACC.signed()||G.st!=='menu'||document.hidden)return;if(!force&&Date.now()-FR.lastLoad<45e3)return;FR.lastLoad=Date.now();
-  ACC.loadFriends().then(()=>{if($('frWin'))FR.render()}).catch(()=>{})}
+function frPoll(force){if(!ACC.signed()||G.st!=='menu'||document.hidden)return;if(!force&&Date.now()-FR.lastLoad<($('frWin')?20e3:45e3))return;FR.lastLoad=Date.now();
+  ACC.loadFriends().then(()=>{if($('frWin')&&!FR.chat)FR.render()}).catch(()=>{})}
 (function(){const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{frLobby();frPoll()}catch(e){console.error(e)}return r};
   const act0=UI.act;UI.act=function(a,v,el){if(a==='friends'){FR.open();return}return act0.call(this,a,v,el)};
-  addEventListener('keydown',e=>{if(e.key==='Escape'){if($('giftPop'))$('giftPop').remove();else if($('frWin'))FR.close()}});
+  addEventListener('keydown',e=>{if(e.key==='Escape'){if($('giftPop'))$('giftPop').remove();else if($('frWin')){if(FR.chat)FR.closeChat();else FR.close()}}});
   ACC.sub(()=>{try{frDot();GIFTS.check()}catch(e){console.error(e)}});
   setInterval(()=>frPoll(false),15e3);
+  setInterval(()=>{if(FR.chat&&$('frWin')&&!document.hidden)FR.chatPull(false)},4e3);
+  // the heartbeat: once at sign-in, then every minute (and when the tab comes back) while the game is open
+  let hb=0,was=false;const beat=()=>{if(!ACC.signed()||document.hidden||Date.now()-hb<25e3)return;hb=Date.now();ACC.ping().catch(()=>{})};
+  setInterval(beat,60e3);document.addEventListener('visibilitychange',beat);
+  ACC.sub(()=>{const s=ACC.signed();if(s&&!was)beat();was=s});
   const sm=startMatch;startMatch=function(cfg){FR.close();const p=$('giftPop');if(p)p.remove();return sm(cfg)}})();
 
 // ---- touch.js ----

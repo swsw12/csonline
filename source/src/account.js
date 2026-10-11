@@ -108,12 +108,18 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     const me=this.me;if(me){me.coins=r.coins;me.dayLeft=r.day_left;if(r.rec)me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:me.rec})}this.emit();return r},
   // ---- friends and gifts (v6.18) ----
   // {code (mine), friends:[{code,nickname,xp,last,since}], incoming:[{code,nickname,xp,at}], outgoing:[…], gifts_new}; ids never come out
-  frGot(r){this.fr={...r,at:Date.now()};const me=this.me;if(me){if(r.code)me.fcode=r.code;me.friendReq=(r.incoming||[]).length;if(r.gifts_new!=null)me.giftsNew=r.gifts_new|0}this.emit();return this.fr},
+  frGot(r){this.fr={...r,at:Date.now()};const me=this.me;if(me){if(r.code)me.fcode=r.code;me.friendReq=(r.incoming||[]).length;if(r.gifts_new!=null)me.giftsNew=r.gifts_new|0;if(r.dm_new!=null)me.dmNew=r.dm_new|0}this.emit();return this.fr},
   async loadFriends(){return this.frGot(await this.rpc('qz_friends'))},
   // a request by friend code or a nickname only one player has → also the list, done: sent | accepted (they had asked me already)
   async friendAdd(who){const r=await this.rpc('qz_friend_add',{p_who:who});this.frGot(r);return r},
   async friendAnswer(code,yes){return this.frGot(await this.rpc('qz_friend_answer',{p_who:code,p_yes:!!yes}))},
   async friendRemove(code){return this.frGot(await this.rpc('qz_friend_remove',{p_who:code}))},
+  // v6.25: 'I am here' (profiles.last_seen; friends read it as online / last seen) and the friend chat. dm_new = unread messages.
+  // qz_dm_list → {msgs:[{id,mine,text,at}], seen, dm_new}; asking for a talk marks what the friend wrote as read. Old databases: no ping, no chat.
+  async ping(){if(this.noPing)return null;let r;try{r=await this.rpc('qz_ping')}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noPing=true;return null}throw e}
+    if(this.me&&r&&r.dm_new!=null&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
+  async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
+  async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
   // a gun from the shop for a friend (the giver's coins): {coins,gun,to}
   async gift(code,gun){const r=await this.rpc('qz_gift',{p_who:code,p_gun:gun});if(this.me){this.me.coins=r.coins;this.saveMe()}this.emit();return r},
   // gifts not shown yet [{gun,from,at}] (shown after this); the guns are on the account already
@@ -160,6 +166,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     if(/already_claimed/.test(m))return T2('이미 받은 보상이에요','Already claimed');
     if(/no_mission/.test(m))return T2('오늘의 미션이 바뀌었어요. 다시 열어 주세요','Today\'s missions changed — open them again');
     if(/no_set/.test(m))return T2('근·하·신·년 한 세트가 아직 모자라요','You need one of each letter first');if(/no_tickets/.test(m))return T2('보유한 해독기가 없어요','No kept decoders left');
+    if(/dm_text/.test(m))return T2('메시지는 1~200자로 적어 주세요','A message is 1 to 200 characters');
+    if(/dm_slow/.test(m))return T2('너무 빨리 보내고 있어요. 잠시 후에 다시 보내 주세요','Slow down — try again in a moment');
+    if(/dm_not_friend/.test(m))return T2('친구끼리만 메시지를 보낼 수 있어요','Messages go to friends only');
+    if(/Could not find the function|PGRST202/i.test(m+' '+c)&&/dm_/.test(m))return T2('채팅은 서버 스키마를 갱신해야 쓸 수 있어요','Chat needs the server schema updated');
     if(/friend_self/.test(m))return T2('나 자신은 친구로 추가할 수 없어요','That is you');
     if(/friend_already/.test(m))return T2('이미 친구예요','Already friends');
     if(/friend_pending/.test(m))return T2('이미 친구 요청을 보냈어요','Request already sent');

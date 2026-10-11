@@ -134,6 +134,8 @@ alter table public.profiles add column if not exists season_shuffles    integer 
 alter table public.profiles add column if not exists last_round timestamptz;
 alter table public.profiles add column if not exists bonus_day date;
 update public.profiles set bonus_day = day where bonus_day is null and day is not null;
+-- v6.25: last_seen = the last time the game was open (qz_ping, and every look at the friend list); the friend list shows it
+alter table public.profiles add column if not exists last_seen timestamptz;
 create table if not exists public.season_boards (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   nums       integer[] not null,
@@ -1411,6 +1413,20 @@ begin
   return r;
 end $$;
 
+-- v6.25: messages between friends (the friend window's chat). Nobody reads or writes the table directly; qz_dm_send / qz_dm_list do.
+create table if not exists public.friend_msgs (
+  id      bigint generated always as identity primary key,
+  from_id uuid not null references auth.users(id) on delete cascade,
+  to_id   uuid not null references auth.users(id) on delete cascade,
+  body    text not null check (char_length(body) between 1 and 200),
+  at      timestamptz not null default now(),
+  seen    boolean not null default false
+);
+create index if not exists friend_msgs_pair on public.friend_msgs (to_id, from_id, id);
+create index if not exists friend_msgs_from on public.friend_msgs (from_id, at);
+alter table public.friend_msgs enable row level security;
+revoke all on public.friend_msgs from public, anon, authenticated;
+
 -- the friend list as the game shows it: my code; friends (code, nickname, xp, the last time they played, since when); the requests
 -- sent to me and by me; gifts not shown yet. Ids and e-mails never leave the database.
 create or replace function public.qz_friends() returns jsonb
@@ -1425,18 +1441,21 @@ begin
     update public.profiles set fcode = public.qz_fcode_new() where id = uid;
     me := (select t.fcode from public.profiles t where t.id = uid);
   end if;
-  -- (ft: the hall-of-fame title shown next to the name, v6.24)
+  -- (ft: the hall-of-fame title shown next to the name, v6.24; seen / dm: v6.25)
+  update public.profiles set last_seen = now() where id = uid and (last_seen is null or last_seen < now() - interval '20 seconds');
   return jsonb_build_object('code', me,
     'friends', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp,
-        'last', greatest(t.last_claim, t.last_round), 'since', f.accepted_at, 'ft', public.qz_first_best(t.id))
-        order by greatest(t.last_claim, t.last_round) desc nulls last, t.nickname)
+        'last', greatest(t.last_seen, t.last_claim, t.last_round), 'seen', t.last_seen, 'since', f.accepted_at, 'ft', public.qz_first_best(t.id),
+        'dm', (select count(*) from public.friend_msgs m where m.to_id = uid and m.from_id = t.id and not m.seen))
+        order by greatest(t.last_seen, t.last_claim, t.last_round) desc nulls last, t.nickname)
       from public.friends f join public.profiles t on t.id = case when f.a = uid then f.b else f.a end
       where (f.a = uid or f.b = uid) and f.accepted), '[]'::jsonb),
     'incoming', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id)) order by f.at desc)
       from public.friends f join public.profiles t on t.id = f.a where f.b = uid and not f.accepted), '[]'::jsonb),
     'outgoing', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id)) order by f.at desc)
       from public.friends f join public.profiles t on t.id = f.b where f.a = uid and not f.accepted), '[]'::jsonb),
-    'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen));
+    'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen),
+    'dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen));
 end $$;
 
 -- ask someone to be friends. If they had asked me already, this is a yes. At most 100 friends and requests, 30 requests waiting.
@@ -1542,6 +1561,60 @@ begin
   return jsonb_build_object('gifts', r);
 end $$;
 
+-- v6.25: "I am here" - the game calls it when it opens and now and then while it is open. Returns how many messages wait.
+create or replace function public.qz_ping() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  update public.profiles set last_seen = now() where id = uid and (last_seen is null or last_seen < now() - interval '20 seconds');
+  return jsonb_build_object('dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen));
+end $$;
+
+-- a message to a friend (p_who = their code). Friends only; 1..200 characters; at most 20 a minute and 300 an hour; each pair keeps its newest 100.
+create or replace function public.qz_dm_send(p_who text, p_text text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+  b text := btrim(regexp_replace(coalesce(p_text, ''), '[[:cntrl:]]', ' ', 'g'));
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if char_length(b) < 1 or char_length(b) > 200 then raise exception 'dm_text'; end if;
+  t := public.qz_find_player(p_who);
+  if not exists (select 1 from public.friends x where x.accepted and ((x.a = uid and x.b = t) or (x.a = t and x.b = uid))) then raise exception 'dm_not_friend'; end if;
+  if (select count(*) from public.friend_msgs m where m.from_id = uid and m.at > now() - interval '1 minute') >= 20 then raise exception 'dm_slow'; end if;
+  if (select count(*) from public.friend_msgs m where m.from_id = uid and m.at > now() - interval '1 hour') >= 300 then raise exception 'dm_slow'; end if;
+  insert into public.friend_msgs (from_id, to_id, body) values (uid, t, b);
+  delete from public.friend_msgs m where m.id in (select z.id from public.friend_msgs z
+    where (z.from_id = uid and z.to_id = t) or (z.from_id = t and z.to_id = uid) order by z.id desc offset 100);
+  update public.profiles set last_seen = now() where id = uid and (last_seen is null or last_seen < now() - interval '20 seconds');
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- the talk with a friend: the newest 60 messages (oldest first), mine = I wrote it. What they wrote to me is marked read. p_after = only newer ids.
+create or replace function public.qz_dm_list(p_who text, p_after bigint default 0) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+  r jsonb;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  t := public.qz_find_player(p_who);
+  if not exists (select 1 from public.friends x where x.accepted and ((x.a = uid and x.b = t) or (x.a = t and x.b = uid))) then raise exception 'dm_not_friend'; end if;
+  update public.friend_msgs set seen = true where to_id = uid and from_id = t and not seen;
+  update public.profiles set last_seen = now() where id = uid and (last_seen is null or last_seen < now() - interval '20 seconds');
+  r := (select coalesce(jsonb_agg(jsonb_build_object('id', q.id, 'mine', q.from_id = uid, 'text', q.body, 'at', q.at) order by q.id), '[]'::jsonb)
+    from (select m.* from public.friend_msgs m
+      where ((m.from_id = uid and m.to_id = t) or (m.from_id = t and m.to_id = uid)) and m.id > coalesce(p_after, 0)
+      order by m.id desc limit 60) q);
+  return jsonb_build_object('msgs', r,
+    'seen', (select u.last_seen from public.profiles u where u.id = t),
+    'dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen));
+end $$;
+
 revoke all on function public.qz_fcode_new() from public, anon, authenticated;
 revoke all on function public.qz_find_player(text) from public, anon, authenticated;
 revoke all on function public.qz_friends() from public, anon;
@@ -1550,12 +1623,18 @@ revoke all on function public.qz_friend_answer(text, boolean) from public, anon;
 revoke all on function public.qz_friend_remove(text) from public, anon;
 revoke all on function public.qz_gift(text, text) from public, anon;
 revoke all on function public.qz_gift_inbox() from public, anon;
+revoke all on function public.qz_ping() from public, anon;
+revoke all on function public.qz_dm_send(text, text) from public, anon;
+revoke all on function public.qz_dm_list(text, bigint) from public, anon;
 grant execute on function public.qz_friends() to authenticated;
 grant execute on function public.qz_friend_add(text) to authenticated;
 grant execute on function public.qz_friend_answer(text, boolean) to authenticated;
 grant execute on function public.qz_friend_remove(text) to authenticated;
 grant execute on function public.qz_gift(text, text) to authenticated;
 grant execute on function public.qz_gift_inbox() to authenticated;
+grant execute on function public.qz_ping() to authenticated;
+grant execute on function public.qz_dm_send(text, text) to authenticated;
+grant execute on function public.qz_dm_list(text, bigint) to authenticated;
 
 -- ---------- public rooms (v6.12) ----------
 -- 공개 방 목록: 로그인한 방장이 자기 방(PeerJS 방 코드)을 올리고 ~10초마다 갱신합니다. 30초 동안 갱신이 없으면 목록에서 빠지고,

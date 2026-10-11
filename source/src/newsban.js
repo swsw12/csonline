@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'💬',tag:['신규 기능','New'],t:['친구창 채팅','Friend chat'],
+    d:['친구창에서 친구에게 바로 메시지를 보낼 수 있어요. 친구가 접속해 있는지(접속 중 / n분 전)도 실제 접속 기준으로 보여요.','Message a friend right from the friends window. It also shows whether they are online (online / n min ago) by real presence.']},
   {kind:'feature',ico:'♛',tag:['신규 기능','New'],t:['명예의 전당','Hall of fame'],
     d:['챕터 × 난이도마다 서버에서 가장 먼저 클리어한 팀이 명예의 전당에 남아요. 그 판의 팀원 모두 이름 옆에 금색 칭호(예: 「알레프 보통 최초 클리어」)를 달고 — 로비 · 대기실 · 머리 위 이름표 · 채팅 · 랭킹 · 친구 목록에 보여요. 랭킹 창의 「명예의 전당」 탭, 챕터 카드에서 팀을 볼 수 있어요.','The first team on the server to clear each chapter on each difficulty goes into the hall of fame. Everyone in it wears a gold title next to their name (e.g. 「ALEPH Normal · first clear」) — in the lobby, the waiting room, over their head, in chat, the ranking and friend lists. See the teams on the ranking window\'s 「Hall of fame」 tab and on the chapter cards.']},
   {kind:'zombie',ref:'lyrebird',tag:['좀비 시나리오 4챕터','Zombie scenario · CH.4'],t:['4챕터 「라이어버드」','Chapter 4 「LYREBIRD」'],

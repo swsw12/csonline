@@ -676,3 +676,13 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   results/scoreboard and the chapter cards.
 - Old databases keep working: `ACC.claim` falls back through the older signatures; a missing `qz_ep_firsts` is treated as 'old'.
 - Fixed: lyradio SFX warning (setValueCurveAtTime overlapped a ramp; `B.am` now goes on a separate gain).
+
+## v6.25 — friends window: real last-seen time and chat (friends.js, account.js, schema.sql)
+- Schema: `profiles.last_seen`; `qz_ping()` (the heartbeat; touches last_seen at most every 20 s, returns dm_new); `friend_msgs` table (no direct
+  access, RLS on and no grants) with `qz_dm_send(code,text)` (friends only, 1..200 chars after control chars become spaces, 20 / min, 300 / h,
+  each pair keeps its newest 100) and `qz_dm_list(code,after)` (newest 60, oldest first, marks the friend's messages read, returns seen + dm_new).
+  `qz_friends` also touches last_seen and returns per friend `seen`, `dm` (unread) and in total `dm_new`; `last` = greatest(last_seen, last_claim, last_round).
+- friends.js: online = seen in the last 150 s (frOn); the heartbeat is once at sign-in, every 60 s and when the tab comes back; the chat panel
+  polls `ACC.dmList` every 4 s while open; the red dot on the lobby 친구 button counts requests + gifts + unread messages.
+- Old databases: `ACC.ping` stops after the first 'function not found'; chat then shows 'needs the schema updated'.
+- mock.js: qz_ping / qz_dm_send / qz_dm_list, `seen` and `dm` on friends.

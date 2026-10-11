@@ -87,9 +87,17 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     const find=w=>{w=String(w||'').trim();if(!w)throw 'not_found';const c=w.toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.length===6)for(const id in db.prof){FC(id);if(db.prof[id].fcode===c)return id}
       const ids=Object.keys(db.prof).filter(id=>db.prof[id].nickname.toLowerCase()===w.toLowerCase());if(!ids.length)throw 'not_found';if(ids.length>1)throw 'nick_many';return ids[0]};
     const card=(id,x)=>{const Q=db.prof[id];FC(id);return Object.assign({code:Q.fcode,nickname:Q.nickname,xp:REC(Q).xp,ft:hofBest(id)},x||{})};
-    const frJ=()=>{FC(uid);const L=FRL(),last=Q=>{const t=Math.max(Q.last||0,Q.lastR||0);return t?new Date(t).toISOString():null};
-      return {code:db.prof[uid].fcode,friends:L.filter(f=>f.acc&&(f.a===uid||f.b===uid)).map(f=>{const o=f.a===uid?f.b:f.a;return card(o,{last:last(db.prof[o]),since:f.accAt})}),
-        incoming:L.filter(f=>!f.acc&&f.b===uid).map(f=>card(f.a,{at:f.at})),outgoing:L.filter(f=>!f.acc&&f.a===uid).map(f=>card(f.b,{at:f.at})),gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length}};
+    const DML=()=>db.dms||(db.dms=[]),dmNew=()=>DML().filter(m=>m.to===uid&&!m.seen).length,touch=()=>{if(P)P.seenT=Date.now()};
+    const frJ=()=>{FC(uid);touch();const L=FRL(),last=Q=>{const t=Math.max(Q.last||0,Q.lastR||0,Q.seenT||0);return t?new Date(t).toISOString():null};
+      return {code:db.prof[uid].fcode,friends:L.filter(f=>f.acc&&(f.a===uid||f.b===uid)).map(f=>{const o=f.a===uid?f.b:f.a;return card(o,{last:last(db.prof[o]),seen:db.prof[o].seenT?new Date(db.prof[o].seenT).toISOString():null,since:f.accAt,dm:DML().filter(m=>m.to===uid&&m.from===o&&!m.seen).length})}),
+        incoming:L.filter(f=>!f.acc&&f.b===uid).map(f=>card(f.a,{at:f.at})),outgoing:L.filter(f=>!f.acc&&f.a===uid).map(f=>card(f.b,{at:f.at})),gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,dm_new:dmNew()}};
+    if(fn==='qz_ping'){touch();save(db);return res(200,{dm_new:dmNew()})}
+    if(fn==='qz_dm_send'||fn==='qz_dm_list'){try{const t=find(body.p_who),f=pair(uid,t);if(!f||!f.acc)throw 'dm_not_friend';touch();
+      if(fn==='qz_dm_send'){const x=String(body.p_text||'').replace(/[\x00-\x1f]/g,' ').trim();if(x.length<1||x.length>200)throw 'dm_text';
+        if(DML().filter(m=>m.from===uid&&Date.now()-m.at<6e4).length>=20)throw 'dm_slow';db.dmId=(db.dmId|0)+1;DML().push({id:db.dmId,from:uid,to:t,text:x,at:Date.now(),seen:false});save(db);return res(200,{ok:true})}
+      for(const m of DML())if(m.to===uid&&m.from===t)m.seen=true;save(db);
+      return res(200,{msgs:DML().filter(m=>(m.from===uid&&m.to===t||m.from===t&&m.to===uid)&&m.id>(body.p_after|0)).slice(-60).map(m=>({id:m.id,mine:m.from===uid,text:m.text,at:new Date(m.at).toISOString()})),seen:db.prof[t].seenT?new Date(db.prof[t].seenT).toISOString():null,dm_new:dmNew()})}
+    catch(e){if(typeof e==='string')return pgerr(e);throw e}}
     if(['qz_friends','qz_friend_add','qz_friend_answer','qz_friend_remove','qz_gift','qz_gift_inbox'].includes(fn)){try{
       if(fn==='qz_friends'){save(db);return res(200,frJ())}
       if(fn==='qz_friend_add'){const t=find(body.p_who);if(t===uid)throw 'friend_self';const f=pair(uid,t);
