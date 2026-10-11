@@ -224,7 +224,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     if(this.C.onFinish)this.C.onFinish(win,bonus);if(late)this.later(2.8,()=>this.endFx());else this.endFx();this.saveLocal();
     if(NET.host)netEv('epend',{w:win?1:0,b:bonus?1:0,tm:this.res.time,l:this.res.lost,s:this.st,q:late?1:0})},
   endFx(){const r=this.res,L=LI(),esc=this.hasEscape();HUD.announce(r.win?(esc&&r.bonus?(L?'ESCAPED!':'탈출 성공!'):(L?'CHAPTER CLEAR':'챕터 클리어')):(L?'GAME OVER':'게임 오버'),r.win?'h':'z',5);
-    AU.play(r.win?'stingH':'stingZ',{vol:.8});AU.muSet&&AU.muSet(r.win?'win':'dead');if(r.win)this.radio(esc?(r.bonus?'esc':'late'):'clear')},
+    AU.play(r.win?'stingH':'stingZ',{vol:.8});AU.muSet&&AU.muSet(r.win?'win':'dead');if(r.win)this.radio(esc?(r.bonus?'esc':'late'):'clear');if(this.C&&this.C.endFx)this.C.endFx(r)},
   // (the same rule as the server's qz_claim: S no life lost within 16 min, A one at most within 22, B the rest and every clear without the escape)
   medal(r){return !r.win?'':!r.bonus?'B':r.lost===0&&r.time<=960?'S':r.lost<=1&&r.time<=1320?'A':'B'},
   // ---------- getting back up ----------
@@ -260,7 +260,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
   // ---------- the radio ----------
   say(k){this.radio(k);if(NET.host)netEv('epn',{k})},
   radio(k){const R0=this.C&&this.C.radio[k]||EP_RADIO0[k];if(!R0)return;this.radioL.push({txt:R0[LI()],at:G.t,who:R0[2]||0,real:performance.now()});if(this.radioL.length>4)this.radioL.shift();this.radioDraw();AU.play('ui',{vol:.3,rate:1.7})},
-  radioDraw(){const el=$('hRadio');if(!el)return;const L=LI(),now=performance.now(),h=this.radioL.filter(r=>now-r.real<8000).slice(-3).map(r=>`<p class="${r.who===1?'t':r.who===2?'b':'c'}"><b>[${r.who===1?'RT-2':r.who===2?(this.C&&this.C.voice2?this.C.voice2[L]:'???'):(L?'CONTROL':'통제실')}]</b> ${esc(r.txt)}</p>`).join('');
+  radioDraw(){const el=$('hRadio');if(!el)return;const L=LI(),now=performance.now(),h=this.radioL.filter(r=>now-r.real<8000).slice(-3).map(r=>`<p class="${r.who===1?'t':r.who===2?'b':r.who===3?'v':'c'}"><b>[${r.who===1?'RT-2':r.who===2?(this.C&&this.C.voice2?this.C.voice2[L]:'???'):r.who===3?(this.C&&this.C.voice3?this.C.voice3[L]:'???'):(L?'CONTROL':'통제실')}]</b> ${esc(r.txt)}</p>`).join('');
     if(el.dataset.h!==h){el.dataset.h=h;el.innerHTML=h}},
   // ---------- the snapshot (host → clients) ----------
   bs(){const b=this.bossA(),B=this.B();if(!b||!B)return null;if(!NET.cli)return B.bsPack(b)?Object.assign(B.bsOf(b),{a:b}):null;

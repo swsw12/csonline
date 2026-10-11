@@ -5,6 +5,12 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'zombie',ref:'tiamat',tag:['좀비 시나리오 5챕터 · 시즌 1 마지막','Zombie scenario · CH.5 · season 1 finale'],t:['5챕터 「티아마트」','Chapter 5 「TIAMAT」'],
+    d:['폭우 치는 밤, 지하 40 m의 빗물 방수로. 수석연구원과 원종이 합쳐진 거대 지네 티아마트는 물속에선 총알이 안 들어가요 — 솟구칠 때 · 좌초됐을 때 · 코어가 열릴 때를 노리고, 배수 수문으로 물을 빼요. 마지막엔 지상으로 기어오르는 놈을 수직갱 나선 경사로로 쫓아가요. 4챕터를 깨면 열려요.','A storm-water tunnel 40 m down on a night of downpour. TIAMAT, the chief researcher fused with the origin strain into a giant centipede, cannot be hurt under the water — hit it when it rises, when it is stranded, when its core opens, and drain the hall to strand it. Last of all, chase it up the spiral ramp of the shaft before it reaches the surface. Opens once chapter 4 is cleared.']},
+  {kind:'zombie',ref:'drowned',tag:['신규 좀비','New zombie'],t:['익사체 좀비','Drowned Zombie'],
+    d:['방수로에 빠져 죽은 작업자. 물에서 기어 나와 발목을 잡으면 쏴서 떼어 내기 전까지 느려지고 계속 피해를 입어요. 5챕터에 나와요.','A tunnel worker who drowned down there: it climbs out of the water and holds your ankle — slowed and hurt until someone shoots it off. Shows up in chapter 5.']},
+  {kind:'zombie',ref:'hazmat',tag:['신규 좀비','New zombie'],t:['방호복 연구원 좀비','Hazmat Researcher Zombie'],
+    d:['원종 실험실의 Q7 연구원. 방호복이라 단단하고, 쓰러지면 등의 가스통이 터져 포자 구름이 퍼져요 — 가까이서 잡지 마요. 5챕터에 나와요.','A Q7 researcher from the origin-strain lab, tough in its suit — its back tank bursts into a cloud of spores when it falls, so do not finish it up close. Shows up in chapter 5.']},
   {kind:'weapon',ref:'thunder',tag:['상점 9,500 코인','Shop · 9,500 coins'],t:['썬더볼트','Thunderbolt'],
     d:['벽도 좀비도 전부 꿰뚫는 레일건. 전용탄 30발, 재장전 없음. 머리 ×5에 서 있으면 노줌도 100% 명중, 줌 중엔 벽 너머 좀비까지 표시돼요.','A railgun that goes through every wall and every zombie. 30 shots of its own, no reload. Head ×5, never misses standing still, and its scope marks zombies through walls.']},
   {kind:'weapon',ref:'plasma',tag:['상점 7,500 코인','Shop · 7,500 coins'],t:['플라즈마 건','Plasma Gun'],

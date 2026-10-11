@@ -724,3 +724,31 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   now takes a per-gun shell pose), the Plasma Gun's cell change with the muzzle almost straight up (rlCell pose rx .8), the Thunderbolt's recharge
   after every shot (`tbRecharge` clip: swing up, roll, two slaps on the coil housing; a scoped shot drops the scope, `a.tbZ` brings it back when
   the coils are full). Balrog-XI's fore-end is crimson with black ribs and steel horns on the receiver.
+
+## v6.29 — zombie scenario chapter 5 「티아마트」, the season 1 finale (tiamat.js, mapep5.js; multiplayer not tested here: the owner tests it)
+- Build order: mapep5 after mapep4; tiamat after lyrebird, before episode (EPS is built from CHAP at episode.js load). tiamat.js reuses ch3's
+  KX swarms (larva zombies, burst egg sacs) — khepri.js's grenade / flame hooks now also run for EP.id 5; CHAP[5].clear calls KX.clear.
+- mapep5.js 「새벽천 대심도 방수로」 (MAPDEFS.ep5, ep:5): A the control yard on the surface (y 33, storm), the cage lift (gates gLt top /
+  gLb bottom, same footprint 33 m apart), B the inflow tunnel (walkways y 0, channel −1.6 with water at −0.7; three pumps in alcoves), C the
+  surge tank (y 0, roof 18; 24 pillars, two trenches −4 deep, a walkway grid at y 4 with platforms round the pillars, stairs from the floor to
+  the two drain wheels, the pump dais), zone E = the dais (the boss stage's zone), D shaft No. 3 (r 15, 45 deep; a ramp 2.75 turns up the wall
+  with landings at 11 and 22 m to the yard door gX at 33). The shaft's wall, ramp, parapet and column are meshes (ep5Mesh); its collision is
+  invisible 0.5 m grid boxes merged in rows / columns (e5ShaftBoxes; the ramp boxes carry stair:1 so the nav graph takes the slope's steps).
+  E5D + e5H / e5At / e5Near describe the ramp. minimap.js takes any number of cuts (MAP.mini). gunart.js: the atlas grew to 8 × 15 slots.
+- Water (tiamat.js WATER): regions B (fixed), C and D (levels moved by the host, event 'etw'); WATER.surf sets WATER.k (the region).
+  Humans out of their depth float (actorPhysics wrapper: vy toward feet 1.42 under the surface, onGround for the step-up) except in D, where
+  the escape's water drowns (15/s over the head). Deep water: humans −40 %, zombies −25 % (not the drowned), no jumping, grenades fizzle.
+  E5W: the water planes (shader e5WaterMat, churn uniform); the underwater overlay #e5uw and fog.
+- TIAMAT: the actor is the head (no actor physics; its brain moves S.H); TMV lays 14 segments (TM_K 1.4 scale) along the trail of the head on
+  every page and keeps the hit volumes (TMV.parts: head, core, seg, sac, joint; TMT the tail sting's own pieces); hits are matched to a part by
+  TMV.partAt on the host. Bots aim through a.epAimP (ai.js: a chapter body's own aim point) at the best exposed part (TM_AIM) and do not see
+  it when nothing shows (tmSub → epHid). Phase scripts (toPhase / phStep) break the sluice gW (P2, hall floods to 1.2) and the shaft gate gS
+  (P3, the climb). Devices 100+0..1 the drain wheels, 102..103 the fan switches (E5X). Snapshot (bsPack): id, ph, grog, grog max, flags, gauge,
+  len, sacs, joints, coil glow, mode, E5X.pack (wheels, cooldowns, water). Events 'etm' (boss / hazards), 'etw' (water), 'e5r' (the lift ride).
+- Episode hooks added: CHAP.endFx(res) (called from EP.endFx on every page: ch5's season ending — radio end0..end2 with voice3 LEGATUS
+  (#hRadio p.v), then the season card #epCard.s1); CHAP.hostPh handles the lift ('move' = boarding at stage 1, then 'ride' 12 s, teleport 33 m
+  down into stage 2).
+- design.js: drowned (orange raincoat, chest waders, weed) and hazmat (a Q7 researcher's suit, the visor frame, a glowing spore tank);
+  tiamat / centi are hidden placeholders (keys z_tiamat / z_centi), drawn by tiamat.js.
+- Balance from 4-bot simulations on normal (whole chapter, 4 runs): 8–12 min, all wins (the escape made in 3); the boss fight 3–7 min. Stage 3 ~45 s once the stairs to the wheels were added. Solo (one bot) does not get through phase 1: fewer than four
+  humans slow its attacks (up to 1.6×). Hard with 4 bots stalls in the tunnel (zombie pressure). TIAMAT 23,500 × (0.6 + 0.4 × humans) × difficulty (22,000 gave 3 min fights without a wipe, 25,000 one with two).

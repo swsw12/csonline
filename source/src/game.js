@@ -40,7 +40,15 @@ Object.assign(ZCLASS,{
   radioman:{n:['통신병 좀비','Radio-Operator Zombie'],sk:['역탐지','Trace'],d:['4챕터 · 무전기가 지직거린다 — 죽이면 5초 동안 라이어버드 위치가 보인다','Chapter 4 · its radio crackles — kill it and LYREBIRD shows for 5 s'],hp:1500,armor:40,speed:5.6,jump:7.2,kb:1,dmg:22,skill:'none',cd:99,dur:0,hw:.3,h:1.84,eye:1.7},
   spore:{n:['포자 좀비','Spore Zombie'],sk:['포자 안개','Spore fog'],d:['4챕터 · 터지면 그 자리 안개가 짙어진다','Chapter 4 · bursts into a patch of thick fog'],hp:1400,armor:30,speed:5,jump:6.8,kb:1.2,dmg:26,skill:'none',cd:99,dur:0,hw:.32,h:1.86,eye:1.7},
   mirage:{n:['환각','Mirage'],sk:['붙잡기','Grab'],d:['4챕터 · 안개 속의 아군 모습 — 손전등이 없다','Chapter 4 · a teammate in the fog — with no flashlight'],hp:300,armor:0,speed:4.6,jump:6,kb:1.5,dmg:0,skill:'none',cd:99,dur:0,hw:.3,h:1.8,eye:1.65}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 5 (tiamat.js): TIAMAT, the giant centipede (the actor is its head; the body follows its trail and has its own hit volumes),
+// the drowned zombie (climbs out of the water, holds an ankle), the hazmat researcher (its tank bursts into spores) and the little
+// centipede (a severed piece of TIAMAT)
+Object.assign(ZCLASS,{
+  tiamat:{n:['티아마트','TIAMAT'],sk:['원종','Origin strain'],d:['5챕터 보스 · Q7-Ω','Chapter 5 boss · Q7-Ω'],hp:23500,armor:0,speed:6,jump:8,kb:.02,dmg:40,skill:'none',cd:99,dur:0,hw:.9,h:1.6,eye:1.2},
+  drowned:{n:['익사체 좀비','Drowned Zombie'],sk:['발목 잡기','Ankle grab'],d:['5챕터 · 물속에서 기어 나와 발목을 잡는다 (이동 −50%, 쏴서 떼어내기)','Chapter 5 · climbs out of the water and grabs an ankle (−50 % speed until you shoot it off)'],hp:1600,armor:20,speed:5,jump:6.8,kb:1.1,dmg:22,skill:'none',cd:99,dur:0,hw:.3,h:1.82,eye:1.68},
+  hazmat:{n:['방호복 연구원 좀비','Hazmat Researcher Zombie'],sk:['포자 가스통','Spore tank'],d:['5챕터 · 방호복이라 단단하다 — 쓰러지면 등의 가스통이 터져 포자가 퍼진다','Chapter 5 · tough in its suit — its back tank bursts into spores when it falls'],hp:2200,armor:80,speed:4.8,jump:6.6,kb:.8,dmg:26,skill:'none',cd:99,dur:0,hw:.32,h:1.86,eye:1.7},
+  centi:{n:['새끼 지네','Little Centipede'],sk:['독니','Venom bite'],d:['5챕터 · 끊어진 티아마트의 마디 — 낮고 빠르다','Chapter 5 · a severed piece of TIAMAT — low and fast'],hp:900,armor:0,speed:7.2,jump:6,kb:.6,dmg:24,skill:'none',cd:99,dur:0,hw:.42,h:.9,eye:.6}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};

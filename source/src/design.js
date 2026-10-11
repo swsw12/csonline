@@ -373,9 +373,11 @@ function defHuman(k){
 //        | 'khepri' 케프리(3챕터 보스: 거대 쇠똥구리 — 몸은 khepri.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시)
 //        | 'lyrebird' 라이어버드(4챕터 보스: 1차 회수팀 통신병) | 'radioman' 통신병 좀비(4챕터) | 'spore' 포자 좀비(4챕터)
 //        | 'mirage' 환각(4챕터: 아군의 사람 모델을 그대로 빌려 그리므로 여기 몸은 쓰이지 않는다)
+//        | 'tiamat' 티아마트(5챕터 보스: 거대 지네 — 몸은 tiamat.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시) | 'centi' 새끼 지네(5챕터: 마찬가지)
+//        | 'drowned' 익사체 좀비(5챕터) | 'hazmat' 방호복 연구원 좀비(5챕터)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
-function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',boss=k==='boss'||aleph||khepri;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
+function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
   let o={},mats,decor,extra=()=>[];const vein=host||boss?'#ff3020':null,eyeH=host?'#ff3a1a':boss?'#ff5a20':null;
   // shared gore materials: exposed bone, intestine, tumour flesh, nails
   const goreM={bone:{base:'#d4ccae',style:'plate',gloss:243},guts:{base:'#a03a34',style:'meat'},tumor:{base:'#6a3a48',style:'tumor'},nail:{base:'#cfc4a0',style:'plate',gloss:246},flesh:{base:'#8a1c14',style:'flesh'}};
@@ -670,6 +672,58 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',boss=k===
       L.push({n:'cap',b:2,c:[.05,hc[1]+o.headH*.56,o.headZ+.02],s:[.18,.04,.16],m:'cap'},{n:'stem',b:2,c:[.05,hc[1]+o.headH*.5,o.headZ+.02],s:[.04,.04,.04],m:'stem'});
       for(const sd of [-1,1]){const b=sd<0?3:5;L.push({n:'pod',b,c:[H.piv[b][0]+sd*.03,H.piv[b][1]+.06,.03],s:[.15,.12,.15],m:'pod'})}
       L.push({n:'pod',b:1,c:[.16,sY+o.torsoH*.66,zb+.06],s:[.14,.14,.12],m:'pod'});return L}}
+  // ▶ 익사체 좀비 (drowned, 5챕터) — 방수로에 빠져 죽은 시설 관리 작업자
+  //    물에 불어 퉁퉁 부은 몸, 쭈글쭈글한 청회색 피부(손끝·입가가 퍼렇게 죽음), 찢어진 주황 우비(반사띠 두 줄, 등에 '새벽천 관리' 대신 'SB-3'),
+  //    가슴까지 오는 짙은 초록 고무 작업복(멜빵 두 줄), 등에 늘어진 우비 모자, 어깨·팔·머리에 엉겨 늘어진 물풀, 이마에 들러붙은 검은 머리,
+  //    가슴에 매달린 꺼진 손전등, 우윳빛으로 흐린 눈. 물속에서 기어 나와 발목을 잡는다(게임 쪽 규칙).
+  else if(k==='drowned'){// 익사체 — a tunnel maintenance hand pulled out of the water: bloated, wrinkled blue-grey skin, a torn orange raincoat over chest waders, weed hanging off it
+    o={hipY:.9,torsoW:.46,torsoD:.27,torsoH:.52,belly:.08,shX:.26,armW:.125,upper:.29,fore:.28,hand:.13,headW:.245,headH:.26,headD:.26,headZ:-.02,neck:.05,claw:.02,fingL:.55,curl:.35,curlJ:101,ears:[1,1]};
+    const sk='#8a9c98';
+    mats=Object.assign({top:{base:'#d0661c'},legs:{base:'#24382c',style:'rubber'},sleeve:{base:'#d0661c'},fore:{base:sk,style:'zskin',blot:'#4a5a7a'},shin:{base:'#24382c',style:'rubber'},
+      skin:{base:sk,style:'zskin',blot:'#4a5a7a'},hand:{base:dk(sk,.12),style:'zskin',blot:'#3a4a7a'},boot:{base:'#1a2620',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#4a5a7a'},
+      coat:{base:'#c05e1a'},strap:{base:'#1e3024',style:'rubber'},weed:{base:'#3a5a2c',style:'hair'},hair:{base:'#141814',style:'hair'},lamp:{base:'#2a2c2a',style:'plate',gloss:246}},goreM);
+    decor={torso:{front:[['rect',.18,0,.82,.5,'#24382c'],['band',.56,.62,'#e4e4cc'],['band',.76,.82,'#e4e4cc'],['tear',3,101,sk],['soak',0,1,'#1e2e2a',.45],['grime',.8]],
+        back:[['band',.56,.62,'#e4e4cc'],['band',.76,.82,'#e4e4cc'],['text','SB-3',.3,.5,'#1a1a1a'],['tear',2,102,sk],['soak',0,1,'#1e2e2a',.4],['grime',.8]],side:[['band',.56,.62,'#e4e4cc'],['grime',.7]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#dfe8e6',cheek:1}],['rect',.15,.86,.55,1,'#141814'],['rot',1]],top:[['rect',0,0,1,1,'#141814']],side:[['rect',0,.55,1,1,'#141814'],['veins',2,'#3a4a7a']],back:[['rect',0,.3,1,1,'#141814']],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.36],['rect',0,.55,1,.75,'#3a4a6a']],bottom:[['soak',0,1,'#2a3a3a',.7]]},
+      neck:{all:[['veins',3,'#3a4a7a'],['rot',1]]},uaL:{all:[['band',.4,.48,'#e4e4cc'],['tear',2,103,sk],['grime',.6]]},uaR:{all:[['band',.4,.48,'#e4e4cc'],['grime',.6]]},
+      faL:{all:[['veins',3,'#3a4a7a'],['rot',1]]},faR:{all:[['gash',.2,.8,.6,.3,3,.1],['veins',2,'#3a4a7a']]},handL:{all:[['rect',0,0,1,.3,'#3a4a6a']]},handR:{all:[['rect',0,0,1,.3,'#3a4a6a']]},
+      thL:{all:[['grime',.8]]},thR:{all:[['grime',.8],['tear',1,104,'#141c16']]},pelvis:{fb:[['rect',0,0,1,1,'#24382c'],['grime',.7]]},
+      coat:{all:[['grime',.6],['band',.2,.26,'#e4e4cc']]},strap:{all:[['grime',.4]]},weed:{all:[['grime',.3]]},lamp:{front:[['out',.2,.2,.8,.8,'#6a6c66'],['rect',.3,.3,.7,.7,'#4a5052']]}};
+    // the raincoat hood hanging down the back, the waders' two straps, weed tangled on the shoulders, arms and head, a dead torch on the chest
+    extra=H=>{const o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],hc=H.headC,zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2;const L=[];
+      L.push({n:'coat',b:1,c:[0,nY-.07,zb+.07],s:[.26,.15,.1],m:'coat'});
+      for(const sd of [-1,1])L.push({n:'strap',b:1,c:[sd*.12,sY+o.torsoH*.72,zf-.012],s:[.045,o.torsoH*.56,.02],m:'strap'});
+      for(const sd of [-1,1]){const b=sd<0?3:5;L.push({n:'weed',b,c:[H.piv[b][0]+sd*.05,H.piv[b][1]-.08,.06],s:[.03,.26,.03],m:'weed'},{n:'weed',b,c:[H.piv[b][0]+sd*.02,H.piv[b][1]-.03,-.05],s:[.025,.16,.025],m:'weed'})}
+      L.push({n:'weed',b:4,c:[H.piv[4][0]-o.armW*.5,H.piv[4][1]-o.fore*.45,.04],s:[.025,.22,.025],m:'weed'},{n:'weed',b:2,c:[o.headW*.42,hc[1]-.02,o.headZ+.06],s:[.03,.2,.03],m:'weed'},
+        {n:'weed',b:2,c:[-o.headW*.2,hc[1]+o.headH*.36,o.headZ+o.headD*.4],s:[.03,.22,.03],m:'weed'},{n:'lamp',b:1,c:[-.13,sY+o.torsoH*.66,zf-.04],s:[.06,.09,.06],m:'lamp'});
+      return L}}
+  // ▶ 방호복 연구원 좀비 (hazmat, 5챕터) — 원종 실험실의 Q7 연구원
+  //    오염 얼룩이 번진 회백색 방호복(가슴 'Q7-LAB' 명찰, 팔에 노란 띠), 파란 고무장갑, 흰 장화, 깨져 테두리만 남은 안면창과 머리를 감싼 후드,
+  //    등에 멘 포자 가스통(연두색으로 희미하게 빛나는 게이지 창, 후드로 이어진 호스), 창백한 잿빛 얼굴, 연두빛 눈.
+  //    쓰러지면 등의 가스통이 터져 포자 구름이 퍼진다(게임 쪽 규칙).
+  else if(k==='hazmat'){// 방호복 연구원 — a Q7 researcher in a stained hazmat suit: the visor smashed out of its frame, a glowing spore tank on the back
+    o={hipY:.93,torsoW:.44,torsoD:.26,torsoH:.52,belly:.04,shX:.25,armW:.12,upper:.3,fore:.28,hand:.12,legW:.16,legD:.17,shinW:.14,headW:.23,headH:.25,headD:.25,headZ:-.03,neck:.05,claw:.015,fingL:.5,curl:.55,curlJ:111,ears:[0,0]};
+    const sk='#9a9a8e',su='#d4d8ce';
+    mats=Object.assign({top:{base:su},legs:{base:su},sleeve:{base:su},fore:{base:su},shin:{base:'#d8dcd0',style:'rubber'},skin:{base:sk,style:'zskin',blot:'#5a6a3a'},
+      hand:{base:'#2c4a6a',style:'rubber'},boot:{base:'#c8ccc0',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#5a6a3a'},
+      hood:{base:su},frame:{base:'#2a2c2c',style:'rubber'},tank:{base:'#5a6a5e',style:'plate',gloss:245},hose:{base:'#1e2020',style:'rubber'},gauge:{base:'#a8e070'}},goreM);
+    decor={torso:{front:[['zip',.5],['rect',.58,.66,.9,.78,'#e8e8e0'],['text','Q7',.62,.76,'#2a2a2a'],['rot',3],['veins',3,'#a8d060',1],['soak',.2,.7,'#4a5a2a',.5],['grime',.7]],
+        back:[['rot',2],['grime',.6]],side:[['rot',2],['grime',.6]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#b8f070',tears:1}],['rot',1]],side:[['rot',1]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#3a4a1a',.7]]},
+      uaL:{all:[['band',.55,.68,'#d8b020'],['rot',1],['grime',.5]]},uaR:{all:[['band',.55,.68,'#d8b020'],['tear',2,112,sk],['grime',.5]]},
+      faL:{all:[['rot',2],['grime',.6]]},faR:{all:[['soak',0,.6,'#4a0606',.6],['grime',.6]]},thL:{all:[['rot',1],['grime',.7]]},thR:{all:[['soak',.3,1,'#4a5a2a',.5],['grime',.7]]},
+      pelvis:{fb:[['belt',.72,.9,'#3a3c3a','#8a8c88']]},hood:{all:[['rot',2],['grime',.5]]},frame:{all:[['grime',.3]]},
+      tank:{back:[['band',.82,.9,'#d8b020'],['text','BIO',.2,.7,'#1a1a1a']],all:[['grime',.5],['rot',1]]},gauge:{all:[['glow',0,0,1,1,'#a8e070'],['veins',2,'#e8ff9a',1]]}};
+    // the hood round the head (open at the face), the broken visor's frame, the spore tank with its glowing window, the hose to the hood
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,zb=o.belly*.25+(o.torsoD+o.belly)/2,fz=o.headZ-o.headD*.56,W=o.headW,Hh=o.headH;
+      const L=[{n:'hood',b:2,c:[0,hc[1]+Hh*.56,o.headZ+.01],s:[W*1.34,.06,o.headD*1.3],m:'hood'},{n:'hood',b:2,c:[0,hc[1]+.01,o.headZ+o.headD*.6],s:[W*1.34,Hh*1.16,.06],m:'hood'}];
+      for(const sd of [-1,1])L.push({n:'hood',b:2,c:[sd*W*.64,hc[1]+.01,o.headZ+.02],s:[.06,Hh*1.16,o.headD*1.2],m:'hood'},{n:'frame',b:2,c:[sd*W*.5,hc[1]+.01,fz],s:[.035,Hh*1.02,.04],m:'frame'});
+      L.push({n:'frame',b:2,c:[0,hc[1]+Hh*.5,fz],s:[W*1.04,.035,.04],m:'frame'},{n:'frame',b:2,c:[0,hc[1]-Hh*.47,fz],s:[W*1.04,.04,.04],m:'frame'},
+        {n:'tank',b:1,c:[0,sY+o.torsoH*.5,zb+.09],s:[.2,o.torsoH*.8,.16],m:'tank'},{n:'gauge',b:1,c:[0,sY+o.torsoH*.48,zb+.172],s:[.07,o.torsoH*.4,.012],m:'gauge'},
+        {n:'hose',b:1,c:[.12,sY+o.torsoH*.98,zb+.06],s:[.03,.03,.14],m:'hose'});
+      return L}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),
@@ -729,7 +783,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',boss=k===
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
       stumpLL:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]},stumpLR:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]}})}
   H.parts.push(...ex.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
-  return Object.assign(H,{key:'z_'+(aleph?'aleph':khepri?'khepri':boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
+  return Object.assign(H,{key:'z_'+(aleph?'aleph':khepri?'khepri':tiamat?tiamat:boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
 
 // ================================================================================================
 //  4부  총기 아이덴티티 — 실제 총 · 탄창 수 · 약실 · 처음 꺼낼 때의 장전 모션

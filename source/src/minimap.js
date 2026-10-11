@@ -5,12 +5,12 @@
 // (and, for zombies, when a human has just fired).
 const MINI_S=4;// plan pixels per metre
 // floor bands split at these heights (a map can set its own: a hill town is one band, its terraces are outdoors)
-const miniBand=y=>{const c=MAP.miniCut||[2.6,7.8];return y<c[0]?0:y<c[1]?1:2};
+const miniBand=y=>{const c=MAP.miniCut||[2.6,7.8];let b=0;while(b<c.length&&y>=c[b])b++;return b};// (any number of cuts: 5챕터's shaft has five bands)
 function miniBuild(){const bb=MAP.bounds||[-30,-30,30,30],S=MINI_S,W=Math.round((bb[2]-bb[0])*S),H=Math.round((bb[3]-bb[1])*S),N=NAV;
   let nb=0;for(const n of N.nodes)nb=Math.max(nb,miniBand(n.y));
   const layers=[];
   const C=MAP.miniCut||[2.6,7.8],tops=[];
-  for(let b=0;b<=nb;b++){const lo=b===0?-4:C[b-1],hi=C[b]==null?40:C[b];
+  for(let b=0;b<=nb;b++){const lo=b===0?-6:C[b-1],hi=C[b]==null?60:C[b];
     const walk=new Uint8Array(W*H),hgt=new Float32Array(W*H);
     for(let j=0;j<H;j++)for(let i=0;i<W;i++){const wx=bb[0]+(i+.5)/S,wz=bb[1]+(j+.5)/S;
       _bq.length=0;boxesIn(wx,wz,wx,wz,_bq);tops.length=0;

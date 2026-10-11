@@ -820,16 +820,17 @@ CHAP[3]={id:3,k:'khepri',map:'ep3',code:'Q7-303',n:['케프리','KHEPRI'],t:['�
 
 // ---------- hooks ----------
 (function(){
-  // a grenade's blast reaches the drums, the ball, the heaps and the swarms (the host decides; a client tells it about its own)
-  const dt0=detonate;detonate=function(n){dt0(n);if(!EP.on||EP.id!==3||n.ghost||!n.owner||n.owner.team!==TH)return;if(n.kind!=='he'&&n.kind!=='gl')return;
+  // a grenade's blast reaches the drums, the ball, the heaps and the swarms (the host decides; a client tells it about its own; 5챕터 has
+  // only the swarms of its larva zombies and egg sacs)
+  const dt0=detonate;detonate=function(n){dt0(n);if(!EP.on||EP.id!==3&&EP.id!==5||n.ghost||!n.owner||n.owner.team!==TH)return;if(n.kind!=='he'&&n.kind!=='gl')return;
     if(NET.cli){netToHost({t:'ekhb',x:r2(n.x),y:r2(n.y),z:r2(n.z),k:n.kind==='gl'?1:0});return}KX.blast(n.x,n.y,n.z,n.kind==='gl'?4:5.5,{ball:n.kind==='gl'?520:900})};
-  // a flamethrower's jet burns swarms away
-  if(typeof salHits==='function'){const sh=salHits;salHits=function(a,W,eye,dir){const n=sh(a,W,eye,dir);if(EP.on&&EP.id===3&&!NET.ghost&&KX.swarm.length){const R0=W.flame.r;
+  // a flamethrower's jet burns swarms away (3챕터 and 5챕터)
+  if(typeof salHits==='function'){const sh=salHits;salHits=function(a,W,eye,dir){const n=sh(a,W,eye,dir);if(EP.on&&(EP.id===3||EP.id===5)&&!NET.ghost&&KX.swarm.length){const R0=W.flame.r;
       for(let i=KX.swarm.length-1;i>=0;i--){const S0=KX.swarm[i],mx=S0.x-eye.x,mz=S0.z-eye.z,s=mx*dir.x+mz*dir.z;if(s<0||s>R0+S0.r)continue;const lat=Math.hypot(eye.x+dir.x*s-S0.x,eye.z+dir.z*s-S0.z);if(lat>S0.r+.5)continue;
         if(NET.cli){if(!AU.throttle('ekhf',250))netToHost({t:'ekhf',id:S0.id})}else{KX.swarm.splice(i,1);KX.swarmFx(S0);netEv('ekh',{k:'swx',id:S0.id})}}}return n}}
   Object.assign(CLIH,{ekh(L,m){if(['dr','dra','gv','ct','hb','sc','fz','sw','swx','spl','fl'].includes(m.k))KX.fxApply(m);else if(m.k==='ld')LADLE.set(['full','tilt','pour','empty'][m.s],true);else KHEPRI.fxApply(m)}});
   Object.assign(HOSTH,{
     ekhs(L,m){if(EP.on&&EP.id===3&&actorOfKey(L.key))KX.boxHit(m.k,m.i|0,clamp(+m.d||0,0,400))},
-    ekhb(L,m){if(EP.on&&EP.id===3&&actorOfKey(L.key))KX.blast(m.x/100,m.y/100,m.z/100,m.k?4:5.5,{ball:m.k?520:900})},
-    ekhf(L,m){if(!(EP.on&&EP.id===3&&actorOfKey(L.key)))return;const i=KX.swarm.findIndex(S0=>S0.id===m.id);if(i>=0){const S0=KX.swarm[i];KX.swarm.splice(i,1);KX.swarmFx(S0);netEv('ekh',{k:'swx',id:S0.id})}}});
+    ekhb(L,m){if(EP.on&&(EP.id===3||EP.id===5)&&actorOfKey(L.key))KX.blast(m.x/100,m.y/100,m.z/100,m.k?4:5.5,{ball:m.k?520:900})},
+    ekhf(L,m){if(!(EP.on&&(EP.id===3||EP.id===5)&&actorOfKey(L.key)))return;const i=KX.swarm.findIndex(S0=>S0.id===m.id);if(i>=0){const S0=KX.swarm[i];KX.swarm.splice(i,1);KX.swarmFx(S0);netEv('ekh',{k:'swx',id:S0.id})}}});
 })();
