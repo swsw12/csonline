@@ -173,12 +173,12 @@ function meleeHits(a,range,cone,n){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_d
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;out.push({t,d})}
   out.sort((p,q)=>p.d-q.d);return out.slice(0,n).map(o=>o.t)}
 // cleave: how many one blow can hit (a number = the heavy attack only; [light, heavy] = per attack), arc: the cone of that blow (cosine, per attack)
-function meleeStrike(a,heavy,w){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;const W=meleeW(a,w),hi=heavy?1:0;const cl=Array.isArray(W.cleave)?W.cleave[hi]:heavy?W.cleave:0;
+function meleeStrike(a,heavy,w,dc){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;const W=meleeW(a,w),hi=heavy?1:0,mx=(v,i)=>dc&&Array.isArray(v)?Math.max(v[0],v[1]):v?v[i]:0;const cl=Array.isArray(W.cleave)?W.cleave[hi]:heavy?W.cleave:0;
   const many=cl?meleeHits(a,W.range[hi],W.arc?W.arc[hi]:.6,cl):null;
   const r=many&&many.length?{t:many[0]}:meleeHit(a,W.range[hi],heavy?.8:.65);const list=many&&many.length?many:r&&r.t?[r.t]:[];
   if(list.length){aimDir(a.yaw,0,_dv);const sl=W.kbL?W.kbL[hi]:0;if(sl){_dv.x-=Math.cos(a.yaw)*sl;_dv.z+=Math.sin(a.yaw)*sl;_dv.normalize()}let hsAny=false;
     for(const t of list){const hs=Math.abs(a.pitch)<.6&&Math.random()<(heavy?.25:.12);hsAny=hsAny||hs;
-      damageActor(t,W.dmg[hi]*(hs?2:1),a,{w,hs,dir:[_dv.x,0,_dv.z],kb:W.kb[hi],stag:W.stag?W.stag[hi]:.5,up:W.up?W.up[hi]:0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
+      damageActor(t,mx(W.dmg,hi)*(hs?2:1),a,{w,hs,dir:[_dv.x,0,_dv.z],kb:mx(W.kb,hi),stag:W.stag?mx(W.stag,hi):.5,up:W.up?mx(W.up,hi):0,x:t.c.x,y:t.c.y+1.2,z:t.c.z,knife:1,heavy:!!heavy,blunt:!!W.blunt});
       FX.blood(t.c.x,t.c.y+1.2,t.c.z,_dv.x,0,_dv.z,1.6*(W.sw<1?1.6:1),false)}
     const snd=W.hitS||(W.blunt?'hamhit':'khit'),t0=list[0];
     if(a.isPlayer){AU.play(snd,{vol:.85,rate:W.blunt||W.hitS?1:W.sw||1});HUD.hitmark(hsAny);VM.meleeHit&&VM.meleeHit(heavy,1);if(W.sw<1)FX.shake=Math.max(FX.shake,W.shk?W.shk[hi]:W.blunt?(heavy?.6:.42):.25)}else AU.at(snd,t0.c.x,t0.c.y+1,t0.c.z,{vol:.75})}

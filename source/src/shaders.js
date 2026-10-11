@@ -68,7 +68,7 @@ void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;vec3 n=normalize(vN);
   vec3 sh=max(c-.66,0.);c=min(c,.66)+.34*(1.-exp(-sh/.34));
   // texels painted with alpha 232 are glowing (eyes, lamps, veins) and keep their colour in the dark
   if(t.a<.935)c=max(c,t.rgb*uEmisA);
-  c=mix(c,uTint.rgb,uTint.a<0.?.65:uTint.a);c=mix(c,vec3(1.),uFlash);gl_FragColor=vec4(applyFog(c,vPos),1.);}`;
+  c=mix(c,uTint.rgb,uTint.a<0.?.8:uTint.a);c=mix(c,vec3(1.),uFlash);gl_FragColor=vec4(applyFog(c,vPos),1.);}`;
 function matChar(tex){return new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uProbe:{value:new THREE.Color(.5,.5,.55)},uFlash:{value:0},uTint:{value:new THREE.Vector4(0,0,0,0)},uEmisA:{value:1},
   uTexel:{value:new THREE.Vector2(1/tex.image.width,1/tex.image.height)},uBump:{value:0}},LU),vertexShader:VS_WORLD,fragmentShader:FS_CHAR,vertexColors:false,extensions:{derivatives:true}})}
 // shadow pass: packed linear distance from the flashlight (world meshes alpha-test their texture; skinned characters use VS_SKIN)

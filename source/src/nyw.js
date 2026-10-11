@@ -139,9 +139,10 @@ Object.assign(WPN,{
   // Ripper: hold LMB to grind (no knockback, heavy stagger, uses fuel); RMB swings it into a crowd (huge knockback, free)
   ripper:{slot:1,kind:'saw',ny:1,n:['리퍼','Ripper'],cost:5000,mag:200,res:400,dmg:34,rpm:600,range:2.2,alt:'swing',swDmg:120,swKb:20,swCd:.9,reload:3.2,draw:1.1,speed:.95,snd:'sawrev',model:'ripper',hold:'rifle',spread:[0,0,0],rec:[0,0],kb:0,stag:.6,hs:1},
   // Gae Bolg: the harpoon sticks and blows up a second later; RMB blows every harpoon at once (and you can ride the blast)
-  gaebolg:{slot:1,kind:'special',ny:1,n:['게이볼그','Gae Bolg'],cost:6000,mag:3,res:21,dmg:114,rpm:90,semi:1,proj:'harpoon',alt:'detonate',spread:[.003,.02,.06],rec:[.08,.02],kb:4,stag:.5,hs:1,shellRel:.6,relStart:.35,draw:.9,speed:.9,snd:'harpoon',model:'gaebolg',hold:'rifle'},
-  // 혈적자: a spinning blade that cuts through everything for 19 m and comes back; a head hit grinds for 126
-  xdz:{slot:1,kind:'special',ny:1,n:['혈적자','Blood Dripper'],cost:5500,mag:50,res:100,dmg:32,hsDmg:126,rpm:150,proj:'disc',spread:[.002,.015,.05],rec:[.03,.01],kb:3,stag:.4,hs:1,reload:3,draw:.8,speed:.95,snd:'disc',model:'xdz',hold:'rifle'},
+  gaebolg:{slot:1,kind:'special',ny:1,n:['게이볼그','Gae Bolg'],cost:6000,mag:3,res:21,dmg:114,pm:{head:2.5,legs:.6},rpm:90,semi:1,proj:'harpoon',alt:'detonate',spread:[.003,.02,.06],rec:[.08,.02],kb:4,stag:.5,hs:1,shellRel:.6,relStart:.35,draw:.9,speed:.9,snd:'harpoon',model:'gaebolg',hold:'rifle'},
+  // 혈적자: a spinning blade that cuts through everything for 19 m and comes back; a head hit (126, a hard shove) buries it in the head, where it
+  // grinds for 1.6 s (45 every 0.12 s, a steady shove, the head bursts if it kills) and then flies back
+  xdz:{slot:1,kind:'special',ny:1,n:['혈적자','Blood Dripper'],cost:5500,mag:50,res:100,dmg:32,hsDmg:126,gDmg:45,gT:1.6,rpm:150,proj:'disc',spread:[.002,.015,.05],rec:[.03,.01],kb:3,stag:.4,hs:1,reload:3,draw:.8,speed:.95,snd:'disc',model:'xdz',hold:'rifle'},
   // Magnum Drill: automatic 12-gauge through a turning drill; RMB drives the drill into whatever is in front
   mdrill:{slot:1,kind:'shotgun',ny:1,n:['매그넘 드릴','Magnum Drill'],cost:8000,mag:30,res:90,pellets:7,dmg:28,rpm:400,spread:[.05,.065,.1],rec:[.035,.02],kb:2.6,stag:.35,hs:2,reload:3.8,alt:'drill',draw:1,speed:.85,snd:'mdrill',model:'mdrill',hold:'rifle',shell:1},
   // Magnum Launcher: three explosive slugs per pull
@@ -206,7 +207,8 @@ const PROJ_UPD={
       n.fuse-=dt;if(n.mesh)n.mesh.position.set(n.x,n.y,n.z);
       if(Math.random()<dt*24)FX.spawn({x:n.x,y:n.y,z:n.z,vx:rr(-.3,.3),vy:rr(.2,.8),vz:rr(-.3,.3),life:.2,s0:.07,s1:.02,r:1,g:.55,b:.2,f:1,add:1});
       if(n.fuse<=0){harpoonBoom(n);return true}return false}
-    const r=projStep(n,dt,4,(n,ha,dx,dy,dz)=>{const t=ha.a;damageActor(t,W.dmg,n.owner,{w:'gaebolg',hs:false,dir:[dx,dy,dz],kb:W.kb,stag:.6,x:n.x,y:n.y,z:n.z});projHitFx(n,ha,dx,dy,dz,1);
+    const r=projStep(n,dt,4,(n,ha,dx,dy,dz)=>{const t=ha.a,ds=hsForce(n.owner,ha),hs=ha.part==='head',pm=hs?W.pm.head:ha.part==='legs'?W.pm.legs:1;// the part it hit counts for the harpoon and for the blast it carries
+        damageActor(t,W.dmg*pm,n.owner,{w:'gaebolg',hs,ds,dir:[dx,dy,dz],kb:W.kb,stag:.6,x:n.x,y:n.y,z:n.z});projHitFx(n,ha,dx,dy,dz,hs?1.6:1);n.part=ha.part;n.pm=pm;
         n.stuck=true;n.stA=t.alive?t:null;n.off=[n.x-t.c.x,n.y-t.c.y,n.z-t.c.z];n.fuse=1;AU.at('hstick',n.x,n.y,n.z,{vol:.8});return 'stop'},
       (n,wn,box)=>{projWallFx(n,wn,box);n.stuck=true;n.fuse=1;return 'stop'});
     if(r==='kill')return true;
@@ -214,11 +216,21 @@ const PROJ_UPD={
     if(Math.random()<.5)FX.spawn({x:n.x,y:n.y,z:n.z,vx:rr(-.1,.1),vy:rr(0,.2),vz:rr(-.1,.1),life:rr(.3,.5),s0:.05,s1:.18,r:.6,g:.6,b:.6,a:.3,f:2,drag:2});
     return n.t>6||n.y<-10},
   disc(n,dt){const W=WPN.xdz,o=n.owner;n.spin+=dt*38;
+    if(n.gr){const g=n.gr,t=g.a;g.T-=dt;
+      if(!o.alive||!t.alive||g.T<=0){n.gr=null;n.out=false;n.hit.clear()}
+      else{n.spin+=dt*30;n.x=t.head.x-g.dx*.1;n.y=t.head.y;n.z=t.head.z-g.dz*.1;g.k-=dt;
+        if(g.k<=0){g.k=.12;damageActor(t,W.gDmg,o,{w:'xdz',hs:true,ds:g.ds,dir:[g.dx,0,g.dz],kb:2.6,stag:.6,x:n.x,y:n.y,z:n.z,nocap:1});
+          FX.blood(n.x,n.y,n.z,g.dx,.2,g.dz,1.4,false);for(let i=0;i<3;i++)FX.spark(n.x,n.y,n.z,rr(-3,3)+g.dx*2,rr(0,3),rr(-3,3)+g.dz*2,rr(.1,.3));
+          if(!AU.throttle('dg'+o.id,90))AU.at('dischit',n.x,n.y,n.z,{vol:.6,rate:1.5})}
+        if(n.mesh){n.mesh.position.set(n.x,n.y,n.z);n.mesh.rotation.set(0,n.spin,0)}
+        return false}}
     if(!n.out){if(!o.alive)return true;const e=actorEye(o);const dx=e.x-n.x,dy=e.y-.3-n.y,dz=e.z-n.z,d=Math.hypot(dx,dy,dz);if(d<.8){if(o.isPlayer)AU.play('pickup',{vol:.35,rate:1.4});return true}
       const sp=28,k=Math.min(1,dt*7);n.vx=lerp(n.vx,dx/d*sp,k);n.vy=lerp(n.vy,dy/d*sp,k);n.vz=lerp(n.vz,dz/d*sp,k)}
     const x0=n.x,z0=n.z;
-    const r=projStep(n,dt,0,(n,ha,dx,dy,dz)=>{const t=ha.a,ds=hsForce(n.owner,ha),hs=ha.part==='head';damageActor(t,hs?W.hsDmg:W.dmg*(ha.part==='legs'?.75:1),n.owner,{w:'xdz',hs,ds,dir:[dx,0,dz],kb:W.kb,stag:.45,x:n.x,y:n.y,z:n.z});
-        n.hit.add(t);projHitFx(n,ha,dx,dy,dz,hs?2:1);if(!AU.throttle('dh'+n.owner.id,60))AU.at('dischit',n.x,n.y,n.z,{vol:.7});return 'go'},
+    const r=projStep(n,dt,0,(n,ha,dx,dy,dz)=>{const t=ha.a,ds=hsForce(n.owner,ha),hs=ha.part==='head',grind=hs&&n.out&&!t.epRay&&!t.al&&!t.ag&&!t.kh&&!t.ly&&!t.sb;
+        const hl=Math.hypot(dx,dz)||1;damageActor(t,hs?W.hsDmg:W.dmg*(ha.part==='legs'?.75:1),n.owner,{w:'xdz',hs,ds,dir:[dx,0,dz],kb:grind?16:W.kb,stag:grind?.9:.45,x:n.x,y:n.y,z:n.z,nocap:grind?1:0});
+        n.hit.add(t);projHitFx(n,ha,dx,dy,dz,hs?2:1);if(!AU.throttle('dh'+n.owner.id,60))AU.at('dischit',n.x,n.y,n.z,{vol:.7});
+        if(grind&&t.alive){n.gr={a:t,T:W.gT,k:.12,dx:dx/hl,dz:dz/hl,ds};return 'stop'}return 'go'},
       (n,wn,box,dx,dy,dz)=>{projWallFx(n,wn,box,'dischit');for(let i=0;i<6;i++)FX.spark(n.x,n.y,n.z,wn[0]*rr(2,5)+rr(-2,2),rr(0,3),wn[2]*rr(2,5)+rr(-2,2),rr(.1,.3));
         if(n.out){n.out=false;n.hit.clear();const vn=n.vx*wn[0]+n.vy*wn[1]+n.vz*wn[2];n.vx-=2*vn*wn[0];n.vy-=2*vn*wn[1];n.vz-=2*vn*wn[2];return 'stop'}return 'kill'});
     if(r==='kill')return true;
@@ -232,11 +244,13 @@ const PROJ_UPD={
     if(n.t>4){slugBoom(n);return true}return false},
 };
 // explosions
-function blastDamage(src,x,y,z,R0,dmg,kb,up,w,o){let n=0;for(const t of G.actors){if(!t.alive||t.team===src.team)continue;const dx=t.c.x-x,dy=t.c.y+1-y,dz=t.c.z-z,d=Math.hypot(dx,dy,dz);if(d>R0)continue;
+function blastDamage(src,x,y,z,R0,dmg,kb,up,w,o){let n=0;for(const t of G.actors){if(!t.alive||t.team===src.team||o&&o.skip===t)continue;const dx=t.c.x-x,dy=t.c.y+1-y,dz=t.c.z-z,d=Math.hypot(dx,dy,dz);if(d>R0)continue;
     if(!losClear(x,y+.25,z,t.c.x,t.c.y+1,t.c.z))continue;const f=1-d/R0;damageActor(t,dmg*(.35+.65*f),src,Object.assign({w,dir:[dx/(d||1),.3,dz/(d||1)],kb:kb*f,stag:.8,x:t.c.x,y:t.c.y+1,z:t.c.z,up:up*f},o||{}));n++}return n}
 function nearShake(x,y,z,r,k){if(!G.player)return;const d=Math.hypot(G.player.c.x-x,G.player.c.y+1-y,G.player.c.z-z);if(d<r){FX.shake=Math.max(FX.shake,k*(1-d/r));AU.shock(k*.8*(1-d/r))}}
 function harpoonBoom(n){const x=n.x,y=n.y,z=n.z;FX.explode(x,y,z,'he');AU.at('explode',x,y,z,{vol:.9,range:80,occ:false,rate:1.18});nearShake(x,y,z,11,.8);
-  blastDamage(n.owner,x,y,z,4.5,330,14,5,'gaebolg',{he:1});
+  const st=n.stA&&n.stA.alive?n.stA:null;// what it is stuck in takes the full blast, scaled by the part the harpoon hit (head ×2.5, legs ×0.6)
+  if(st){const dx=st.c.x-x,dy=st.c.y+1-y,dz=st.c.z-z,d=Math.hypot(dx,dy,dz)||1;damageActor(st,330*(n.pm||1),n.owner,{w:'gaebolg',hs:n.part==='head',he:1,dir:[dx/d,.3,dz/d],kb:14,stag:.8,x:st.c.x,y:st.c.y+1,z:st.c.z,up:5})}
+  blastDamage(n.owner,x,y,z,4.5,330,14,5,'gaebolg',{he:1,skip:st});
   // the blast can throw its own shooter (a rocket jump); it never hurts humans
   const o=n.owner;if(!NET.ghost&&o&&o.alive&&o.team===TH){const dx=o.c.x-x,dy=o.c.y+.9-y,dz=o.c.z-z,d=Math.hypot(dx,dy,dz);if(d<3.6){const f=1-d/3.6,h=Math.hypot(dx,dz)||1;o.c.vy=Math.max(o.c.vy,4+8.5*f);o.c.onGround=false;o.c.jumped=true;o.kvx+=dx/h*7*f;o.kvz+=dz/h*7*f}}}
 function miniBlast(x,y,z,s){FX.spawn({x,y:y+.2,z,life:.2,s0:1.2*s,s1:3*s,r:1,g:.75,b:.4,f:1,add:1});FX.spawn({x,y:y+.15,z,life:.25,s0:.5*s,s1:5*s,r:1,g:.8,b:.55,a:.6,f:14,add:1});

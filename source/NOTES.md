@@ -686,3 +686,16 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
   polls `ACC.dmList` every 4 s while open; the red dot on the lobby 친구 button counts requests + gifts + unread messages.
 - Old databases: `ACC.ping` stops after the first 'function not found'; chat then shows 'needs the schema updated'.
 - mock.js: qz_ping / qz_dm_send / qz_dm_list, `seen` and `dm` on friends.
+
+## v6.26 — balance and feel patch from player feedback (nyw.js, game.js, weapons.js, vm.js, shaders.js, skull9.js)
+- Gae Bolg: `WPN.gaebolg.pm` = {head 2.5, legs .6}; the harpoon stores the hit part (n.part, n.pm); harpoonBoom hits the stuck zombie with 330 × pm
+  (hs flag = head) and excludes it from blastDamage (`o.skip`).
+- Blood Dripper: a head hit on the outbound disc (not on bosses: epRay / al / ag / kh / ly / sb) deals 126 with kb 16, then the disc follows the head
+  for `gT` 1.6 s: `gDmg` 45 every 0.12 s with kb 2.6 (`o.nocap` skips kbCap), then returns.
+- Draw cut: meleePend / meleeStrike take `dc`; the blow uses max(dmg), max(kb), max(stag), max(up) of the weapon (hammer: 180 / kb 62 instead of 112).
+- Spawns: in mut / orig `startRound` draws from MAP.spawns + MAP.zspawns, random yaw when a point has none (the player's fixed spawnYaw is skipped).
+- Zombies: berserk (rager) takes ×1.3 and loses its kb ×.5; STAG_K = 1.6 on every stagger; staggered speed ×.4.
+- Humans: no fall damage (the host ignores the old client 'fall' message); bunny hop (BHOP_*: +5 % per chained jump up to 6, held jump rejumps within .09 s of
+  landing); grenade hold (a.nHold / a.nT, VM.hold freezes the throw animation at the pulled-back pose; bots still throw at once).
+- Light zombie: the invisibility tint is bright blue (.5,.75,1) at 0.8 mix, 70 % dithered away; host zombies killed by a headshot stay down in mutation;
+  Skull-9 speed 1 and no atkSpd.

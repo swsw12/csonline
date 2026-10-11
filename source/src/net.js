@@ -341,7 +341,7 @@ const HOSTH={
   h(L,m){const src=actorOfKey(L.key);if(!src||!Array.isArray(m.L))return;for(const h of m.L){const t=byId(h[0]);if(!t||!t.alive||t.team!==TZ)continue;const f=h[3];
     damageActor(t,clamp(+h[1]||0,0,5000),src,{w:WL[h[2]]||'',hs:!!(f&1),knife:!!(f&2),heavy:!!(f&4),he:!!(f&8),blunt:!!(f&16),dir:[h[4]/100,h[5]/100,h[6]/100],kb:h[7]/10,stag:h[8]/100,x:h[9]/100,y:h[10]/100,z:h[11]/100,up:h[12]/10})}},
   claw(L,m){const a=actorOfKey(L.key),t=byId(m.i);if(!a||!t||!a.alive||a.team!==TZ||!t.alive||t.team!==TH)return;clawApply(a,t,!!m.h)},
-  fall(L,m){const a=actorOfKey(L.key);if(a&&a.alive&&a.team===TH)hurtHuman(a,clamp(+m.d||0,0,500),null,{fall:1})},
+  fall(){},// (fall damage was removed in v6.26; an older client may still send this)
   eff(L,m){const src=actorOfKey(L.key),t=byId(m.i);if(t&&src)netApplyEff(t,m,src)},
   buy(L,m){const a=actorOfKey(L.key);const ok=!!(a&&buy(a,m.w));netSend(L.key,{t:ok?'buyok':'buyno',w:m.w})},
   // a skill pressed just before the cooldown ends (the client's view of it lags a little) fires the moment it is ready

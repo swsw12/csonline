@@ -4,7 +4,7 @@ const TH=0,TZ=1;
 const HSKINS=['guard','medic','soldier','hazmat'];
 const HSKIN_N={guard:['박재원','Park Jae-won'],medic:['엘레나','Elena'],soldier:['메이슨','Mason'],hazmat:['서유나','Seo Yuna']};
 const ZCLASS={
-  rager:{n:['일반 좀비','Regular Zombie'],sk:['광폭화','Berserk'],d:['기본형 · 스킬 G: 광폭화 (5초간 이동속도 +45%, 넉백 저항 / 체력 소모)','Standard · Skill G: Berserk (5s +45% speed, knockback resistance / costs HP)'],hp:2400,armor:120,speed:5.6,jump:7.3,kb:1,dmg:55,skill:'frenzy',cd:14,dur:5,hw:.3,h:1.8,eye:1.62},
+  rager:{n:['일반 좀비','Regular Zombie'],sk:['광폭화','Berserk'],d:['기본형 · 스킬 G: 광폭화 (5초간 이동속도 +45%, 대신 받는 피해 +30% / 체력 소모)','Standard · Skill G: Berserk (5s +45% speed, but takes +30% damage / costs HP)'],hp:2400,armor:120,speed:5.6,jump:7.3,kb:1,dmg:55,skill:'frenzy',cd:14,dur:5,hw:.3,h:1.8,eye:1.62},
   runner:{n:['라이트 좀비','Light Zombie'],sk:['투명화','Invisibility'],d:['고속·고점프 · 스킬 G: 투명화 (8초간 거의 보이지 않음, 봇은 가까이서만 발견) · 체력 낮음','Fast, jumps high · Skill G: Invisibility (8s, nearly invisible; bots only spot you up close) · low HP'],hp:1700,armor:60,speed:6.4,jump:8.6,kb:1.3,dmg:40,skill:'invis',cd:16,dur:8,hw:.28,h:1.82,eye:1.66},
   brute:{n:['헤비 좀비','Heavy Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:2700,armor:220,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
   coffin:{n:['관짝 좀비','Coffin Zombie'],sk:['관 방패','Coffin Wall'],d:['방어형 · 스킬 G: 앞에 기다란 관을 세로로 세움 (총알·이동을 막음, 부서지면 좀비 폭탄처럼 폭발, 최대 2개)','Defender · Skill G: stands a tall coffin up in front (stops bullets and bodies; bursts like a zombie bomb when broken; up to 2)'],hp:2800,armor:200,speed:5.3,jump:7,kb:.8,dmg:58,skill:'coffin',cd:14,dur:0,hw:.32,h:1.92,eye:1.72},
@@ -68,18 +68,19 @@ function equip(a,id,instant){if(!id||a.cur===id&&!instant)return;const W=WPN[id]
   const fd=!instant&&a.fresh&&a.fresh[id]&&W.fd&&W.fd.act?W.fd:null;if(fd)delete a.fresh[id];
   const quick=!fd&&!instant&&id===a.awayId&&G.t-(a.awayT==null?-9:a.awayT)<QUICK_BACK;
   if(a.cur&&a.cur!==id){a.prev=a.cur;a.awayId=a.cur;a.awayT=G.t;if(!instant)a.swapT=G.t}
-  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1)+(fd?fd.x||.5:0);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.bSt=0;a.bT=0;a.hamB=false;a.dualB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
+  a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1)+(fd?fd.x||.5:0);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.nHold=0;a.bSt=0;a.bT=0;a.hamB=false;a.dualB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
   if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(fd)VM.firstDraw(W.draw||.5,fd.x||.5,fd);else if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.drawS||(W.kind==='melee'?'kdraw':'draw'),{vol:.5,rate:(W.drawS?1:id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
   // 칼 챈샷 (draw cut): a blade drawn within a second of a gunshot, with an enemy in reach in front, comes out as an instant heavy cut —
   // full heavy damage and knockback on top of the shot that was just fired
   if(!instant&&W.kind==='melee'&&!W.noDC&&a.team===TH&&a.alive&&G.t-(a.lastFire==null?-9:a.lastFire)<DRAW_CUT_WIN){const r=meleeHit(a,W.range[1],.8);
-    if(r&&r.t){a.drawT=0;a.nextFire=G.t+W.rate[1]*.8;a.an.atk=1;a.an.heavy=true;a.an.atkD=meleeAtkD(W,true)*.85;if(a.isPlayer)VM.draw(.12);meleeSwing(a,true);meleePend(a,.06,true);a.drawCuts=(a.drawCuts||0)+1}}}
+    if(r&&r.t){a.drawT=0;a.nextFire=G.t+W.rate[1]*.8;a.an.atk=1;a.an.heavy=true;a.an.atkD=meleeAtkD(W,true)*.85;if(a.isPlayer)VM.draw(.12);meleeSwing(a,true);meleePend(a,.06,true,true);a.drawCuts=(a.drawCuts||0)+1}}}
 const DRAW_CUT_WIN=1;
 // a melee swing lands hitT after it starts with the weapon that swung it, even if the player switches weapons in between
 // (swap-cancel: the blade/hammer damage still goes in while the next gun comes up)
-function meleePend(a,t,heavy){if(a.pendingMelee)meleeStrike(a,a.pendingMelee.heavy,a.pendingMelee.w);a.pendingMelee={t,heavy,w:a.cur}}
+// dc = a draw cut (chain shot): it lands with the weapon's biggest blow (the hammer's pound, not its short knock-away stance)
+function meleePend(a,t,heavy,dc){if(a.pendingMelee)meleeStrike(a,a.pendingMelee.heavy,a.pendingMelee.w,a.pendingMelee.dc);a.pendingMelee={t,heavy,w:a.cur,dc:!!dc}}
 function meleePendTick(a,dt){const p=a.pendingMelee;if(!p)return false;if(!a.alive||a.team!==TH){a.pendingMelee=null;return false}
-  p.t-=dt;if(p.t<=0){a.pendingMelee=null;meleeStrike(a,p.heavy,p.w)}return true}
+  p.t-=dt;if(p.t<=0){a.pendingMelee=null;meleeStrike(a,p.heavy,p.w,p.dc)}return true}
 // third-person swing length (seconds) for a melee weapon
 function meleeAtkD(W,heavy){return W&&W.anD?W.anD[heavy?1:0]:heavy?.68:.44}
 function slotPick(a,slot){if(a.team===TZ){if(slot===4&&a.bombs>0)equip(a,'zbomb');else if(slot!==4)equip(a,'claw');return}
@@ -183,7 +184,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   sampleProbe(c.x,c.y+1.1,c.z,_pr);ch.mat.uniforms.uProbe.value.copy(_pr).multiplyScalar(1.25);
   const U=ch.mat.uniforms;U.uFlash.value=Math.max(0,U.uFlash.value-dt*8);
   // status tints: frozen (ice blue), frenzy (red), harden (stone), level glow
-  const T=U.uTint.value;if(a.team===TZ&&a.zc==='runner'&&a.skillT>0&&a.alive)T.set(.08,.1,.14,-(a.skillT<.6?a.skillT/.6*.86:.86));else if(a.frozen>0)T.set(.55,.8,1,.55);else if(a.skillT>0&&a.zc==='rager')T.set(.9,.1,.05,.3+.1*Math.sin(G.t*20));else if(a.skillT>0&&a.zc==='brute')T.set(.45,.42,.38,.45);else T.set(0,0,0,0);
+  const T=U.uTint.value;if(a.team===TZ&&a.zc==='runner'&&a.skillT>0&&a.alive)T.set(.5,.75,1,-(a.skillT<.6?a.skillT/.6*.7:.7));else if(a.frozen>0)T.set(.55,.8,1,.55);else if(a.skillT>0&&a.zc==='rager')T.set(.9,.1,.05,.3+.1*Math.sin(G.t*20));else if(a.skillT>0&&a.zc==='brute')T.set(.45,.42,.38,.45);else T.set(0,0,0,0);
   U.uEmisA.value=a.team===TZ?(a.lvl>=3?1.6:a.lvl>=2?1.25:1):1;
   ensureGun(a);if(a.gun){a.gun.visible=!!ch.gunOn;if(ch.gunOn){a.gun.matrix.multiplyMatrices(ch.M[1],ch.gunM);a.gun.material.uniforms.uProbe.value.copy(U.uProbe.value)}}
   if(a.gun2){a.gun2.visible=!!ch.gunOn2;if(ch.gunOn2)a.gun2.matrix.multiplyMatrices(ch.M[1],ch.gunM2)}
@@ -199,10 +200,13 @@ function mkBeam(){if(!BEAM_GEO){BEAM_GEO=new THREE.ConeGeometry(1.5,9,10,1,true)
       uniforms:{uFogD:LU.uFogD},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})}
   const m=new THREE.Mesh(BEAM_GEO,BEAM_MAT);m.position.set(0,.06,-.3);m.renderOrder=7;return m}
 // ---------- movement ----------
+const BHOP_WIN=.3,BHOP_GAIN=.05,BHOP_MAX=6;// a jump within BHOP_WIN s of landing adds 5 % speed (up to 6 jumps = +30 %); holding jump rejumps on landing
+const STAG_K=1.6;// gunfire stagger lasts 60 % longer (v6.26), and a staggered zombie runs at 40 % speed
 const ZSPD=.95;// every zombie class runs 5 % below its table speed
 function maxSpeed(a){if(a.frozen>0)return 0;let s;
-  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*ZSPD*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1)*(a.spdMul||1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.5;if(a.holdT>0)s*=a.host?.3:.12;if(a.burnT>0&&a.burnW==='salamander')s*=.88;if(a.duck)s*=.45}
-  else{const W=WPN[a.cur];s=5.15*(a.hsk?hskSpeed(a,W):W?W.speed:1);if(W&&W.stance&&a.hamB)s*=W.stanceSpd;if(W&&W.atkSpd&&G.t<a.nextFire)s*=W.atkSpd[a.an.heavy?1:0];if(a.zoom>0)s*=.6;if(a.duck)s*=.36;else if(a.cmd.walk)s*=.52;if(a.shriekT>0)s*=.6}
+  if(a.team===TZ){const Z=ZCLASS[a.zc];s=Z.speed*ZSPD*(a.lvl>=3?1.06:a.lvl>=2?1.03:1)*(a.bot?DIFF_Z.spd[G.diff||0]:1)*(a.spdMul||1);if(a.skillT>0&&a.zc==='rager')s*=1.45;if(a.skillT>0&&a.zc==='brute')s*=.82;if(a.staggerT>0)s*=.4;if(a.holdT>0)s*=a.host?.3:.12;if(a.burnT>0&&a.burnW==='salamander')s*=.88;if(a.duck)s*=.45}
+  else{const W=WPN[a.cur];s=5.15*(a.hsk?hskSpeed(a,W):W?W.speed:1);if(W&&W.stance&&a.hamB)s*=W.stanceSpd;if(W&&W.atkSpd&&G.t<a.nextFire)s*=W.atkSpd[a.an.heavy?1:0];if(a.zoom>0)s*=.6;if(a.duck)s*=.36;else if(a.cmd.walk)s*=.52;if(a.shriekT>0)s*=.6;
+    if(a.bhop>0&&(!a.c.onGround||G.t-(a.landT||-9)<BHOP_WIN+.1))s*=1+BHOP_GAIN*a.bhop}// chained jumps build speed (v6.26)
   return s}
 function jumpV(a){if(a.team===TZ)return ZCLASS[a.zc].jump;return 6.3}
 function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy;
@@ -221,15 +225,17 @@ function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy
   const kd=Math.exp(-dt*(c.onGround?4:1.1));a.kvx*=kd;a.kvz*=kd;
   if(a.frozen>0){a.mvx=a.mvz=0;a.kvx*=.5;a.kvz*=.5}
   // jump
-  if(cmd.jump&&!a.pc.jump&&c.onGround&&a.frozen<=0&&!(a.rootT>0)&&!(a.holdT>0)){c.vy=jumpV(a);c.onGround=false;c.jumped=true;if(a.isPlayer){VM.jumped();if(a.team===TH)AU.play('step_conc',{vol:.35})}}
+  if(cmd.jump&&(!a.pc.jump||a.team===TH&&G.t-(a.landT||-9)<.09)&&c.onGround&&a.frozen<=0&&!(a.rootT>0)&&!(a.holdT>0)){if(a.team===TH)a.bhop=G.t-(a.landT||-9)<BHOP_WIN?Math.min(BHOP_MAX,(a.bhop|0)+1):0;c.vy=jumpV(a);c.onGround=false;c.jumped=true;if(a.isPlayer){VM.jumped();if(a.team===TH)AU.play('step_conc',{vol:.35})}}
   c.vx=a.mvx+a.kvx;c.vz=a.mvz+a.kvz;const ox=c.x,oz=c.z;
   moveChar(c,dt);headStand(a);
   // blocked axes lose their velocity
   const ddx=c.x-ox,ddz=c.z-oz;if(Math.abs(ddx)<Math.abs(c.vx*dt)*.4){a.kvx*=.2;a.mvx*=.6}if(Math.abs(ddz)<Math.abs(c.vz*dt)*.4){a.kvz*=.2;a.mvz*=.6}
   c.vx=ddx/Math.max(dt,1e-4);c.vz=ddz/Math.max(dt,1e-4);
   if(c.onGround)a.airT=0;else a.airT+=dt;
-  if(!wasG&&c.onGround){const v=-vy0;if(v>2.5){a.an.land=Math.max(a.an.land||0,clamp((v-2)/9,.2,1));if(a.isPlayer)VM.landed(clamp((v-2)/10,.15,1))}if(v>6.5){if(a.isPlayer){AU.play('land',{vol:clamp(v/14,.3,.9)})}else if(a.team===TZ)AU.at('zstep',c.x,c.y,c.z,{vol:.8});
-      if(a.team===TH&&v>12.5&&G.st!=='menu'){hurtHuman(a,(v-12.5)*9,null,{fall:1})}}}
+  if(c.onGround&&a.bhop>0&&G.t-(a.landT||-9)>BHOP_WIN+.1)a.bhop=0;
+  if(!wasG&&c.onGround){a.landT=G.t;const v=-vy0;if(v>2.5){a.an.land=Math.max(a.an.land||0,clamp((v-2)/9,.2,1));if(a.isPlayer)VM.landed(clamp((v-2)/10,.15,1))}if(v>6.5){if(a.isPlayer){AU.play('land',{vol:clamp(v/14,.3,.9)})}else if(a.team===TZ)AU.at('zstep',c.x,c.y,c.z,{vol:.8});
+      // (no fall damage for humans since v6.26)
+    }}
   if(c.y<-20){c.y=2;c.x=0;c.z=5}
   // footsteps
   const hs=Math.hypot(c.vx,c.vz);if(c.onGround&&hs>1.5){a.stepAcc+=hs*dt;const stride=a.team===TZ?1.7:1.9;if(a.stepAcc>stride){a.stepAcc=0;footstep(a)}}}
@@ -267,7 +273,9 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(a.grabT>0&&!(a.lyPin>0&&W.kind==='melee')){cmd.fire=cmd.alt=cmd.reload=false}// pinned by a straitjacket zombie: no shooting until a teammate frees you (pinned by 4챕터's LYREBIRD: a knife still works)
   // grenades
   if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){throwNade(a,a.cur);a.inv[a.cur]=Math.max(0,a.inv[a.cur]-1);const nx=['he','frost','flare'].find(k=>a.inv[k]>0);equip(a,nx||bestWeapon(a))}return}
-    if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;if(a.isPlayer){VM.throwNade();AU.play('pin',{vol:.5})}}return}
+    // the player's grenade: press pulls the pin and holds it back; it flies when the button is let go (v6.26). Bots throw at once
+    if(a.nHold){a.nT+=dt;if(!cmd.fire&&a.nT>=.2){a.nHold=0;a.throwT=.08;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;VM.hold=false}return}
+    if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){if(a.isPlayer){a.nHold=1;a.nT=0;VM.throwNade();VM.hold=true;AU.play('pin',{vol:.5})}else{a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false}}return}
   // melee: the swing starts now, the blade lands a moment later (heavier weapons wind up longer)
   if(W.kind==='melee'){if(pend)return;
     // stance weapons (the hammer): right click switches between the overhead pound (A) and the braced knock-away stance (B); left click attacks in the current stance
@@ -361,15 +369,15 @@ function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==
   if(t.team===TH){return}
   if(t.reviving>0)return;
   if(src&&src.team===TH)dmg*=1+.1*G.moraleLvl;if(src&&src.wup&&o.w&&src.wup[o.w])dmg*=1+.1*src.wup[o.w];
-  if(t.skillT>0&&t.zc==='brute')dmg*=.4;
+  if(t.skillT>0&&t.zc==='brute')dmg*=.4;if(t.skillT>0&&t.zc==='rager')dmg*=1.3;// berserk: faster, but it takes 30 % more
   const hp0=t.hp,ar0=t.armor;
   if(t.armor>0){const ab=Math.min(t.armor,dmg*.5);t.armor-=ab;dmg-=ab}
   t.hp-=dmg;t.lastHurt=G.t;
   const dealt=(ar0-t.armor)+(hp0-Math.max(0,t.hp));// what actually came off (armour + health), overkill excluded
-  let kb=(o.kb||0)*ZCLASS[t.zc].kb*(t.host?.75:1)*(t.lvl>=3?.8:t.lvl>=2?.9:1);if(t.skillT>0&&(t.zc==='brute'))kb=0;if(t.skillT>0&&t.zc==='rager')kb*=.5;if(t.frozen>0)kb*=.2;if(zComeback())kb*=ZBAL.cbKb;
-  if(!t.c.onGround)kb*=1.5;t.kvx+=o.dir[0]*kb;t.kvz+=o.dir[2]*kb;{const W=WPN[o.w];if(W&&W.air){const v=Math.hypot(t.kvx,t.kvz),cp=W.air.cap;if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}else if(W&&W.mag&&!o.knife&&!o.he)kbCap(t,src,kb)}// the air gun shoves hard but never launches anyone across the map
+  let kb=(o.kb||0)*ZCLASS[t.zc].kb*(t.host?.75:1)*(t.lvl>=3?.8:t.lvl>=2?.9:1);if(t.skillT>0&&(t.zc==='brute'))kb=0;if(t.frozen>0)kb*=.2;if(zComeback())kb*=ZBAL.cbKb;
+  if(!t.c.onGround)kb*=1.5;t.kvx+=o.dir[0]*kb;t.kvz+=o.dir[2]*kb;{const W=WPN[o.w];if(W&&W.air){const v=Math.hypot(t.kvx,t.kvz),cp=W.air.cap;if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}else if(W&&W.mag&&!o.knife&&!o.he&&!o.nocap)kbCap(t,src,kb)}// the air gun shoves hard but never launches anyone across the map
   if(o.up){t.c.vy=Math.max(t.c.vy,o.up);t.c.onGround=false;t.c.jumped=true}
-  if(t.skillT<=0||t.zc!=='brute')t.staggerT=Math.max(t.staggerT,(o.stag||.2)+Math.min(.1,dealt/500));
+  if(t.skillT<=0||t.zc!=='brute')t.staggerT=Math.max(t.staggerT,((o.stag||.2)+Math.min(.1,dealt/500))*STAG_K);
   {const W=WPN[o.w];if(W&&W.kind==='saw'&&!(t.skillT>0&&t.zc==='brute')){t.holdT=Math.max(t.holdT||0,(o.kb||0)>0?.7:.32);t.mvx*=.3;t.mvz*=.3}}// the Ripper pins whoever it bites (a swing pins longer); a hardened Heavy shrugs it off
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(o.dir)t.an.flx=clamp((t.an.flx||0)+(o.dir[0]*Math.cos(t.yaw)-o.dir[2]*Math.sin(t.yaw))*.6,-1,1);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
   if(src){src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;src.score+=dealt/100;scEarn(src,Math.round(dealt/8));if(src.isPlayer)HUD.dmgNum(t,dealt,!!o.hs,t.hp<=0)}
@@ -387,7 +395,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
   aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;
   // Original: every dead zombie stays down this round. Mutation: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
   // the Nata Knife's (killknife) last blow keeps any zombie down in every mode (hosts too)
-  const perma=G.mode==='orig'||o.w==='killknife'&&G.mode!=='scen'||G.mode==='mut'&&(o.knife||(!t.host&&(o.hs||o.he)));
+  const perma=G.mode==='orig'||o.w==='killknife'&&G.mode!=='scen'||G.mode==='mut'&&(o.knife||o.hs||(!t.host&&o.he));
   if(perma)t.permaDead=true;else if(G.mode==='mut')t.reviveT=8;else t.respawnT=5
   if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills
   HUD.feed(src,o.w,t,{hs:o.hs,perma});nyOnKill(t,src);
@@ -463,15 +471,16 @@ function startMatch(cfg){G.cfg=cfg;G.mode=cfg.mode;G.rounds=cfg.rounds;G.roundTi
   if(cfg.mode==='scen')SCEN.begin();else startRound()}
 function startRound(plan){if(NET.cli&&!plan)return;AU.stopAll('countdown');dropsClear();G.round=plan?plan.n:G.round+1;G.st='prep';FX.clearLimbs();G.time=G.prepTime;G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.winner=-1;G.beepAt=11;G.hostN=0;
   clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
-  const sp=shuffle(MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
+  // v6.26: every round everyone (bots too) starts somewhere else, drawn from the human spawns and the zombie spawn points together
+  const rnd=!plan&&(G.mode==='mut'||G.mode==='orig')&&MAP.zspawns&&MAP.zspawns.length>0,sp=shuffle(rnd?MAP.spawns.concat(MAP.zspawns.filter(z=>!MAP.spawns.includes(z))):MAP.spawns.slice());let k=0;const pm={},out=[];if(plan)for(const q of plan.P)pm[q[0]]=q;
   for(const a of G.actors){const q=pm[a.id];const keep=plan?!!(q&&q[5]):a.survived&&a.team===TH;if(keep)ldSnap(a);a.nb=null;a.r0={k:a.kills,i:a.infects,dm:a.dmgDealt,sc:a.score||0,hs:a.hsKills|0};a.team=TH;a.host=false;a.alive=true;a.dmgRound=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.permaDead=false;a.hp=100;a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;
-    a.an.dead=0;a.an.atk=0;a.pendingClaw=null;a.zoom=0;a.flash=false;a.nv=false;a.turning=0;a.holdT=0;a.bSt=0;a.throwT=0;
+    a.an.dead=0;a.an.atk=0;a.pendingClaw=null;a.zoom=0;a.flash=false;a.nv=false;a.turning=0;a.holdT=0;a.bSt=0;a.throwT=0;a.nHold=0;
     // everyone gets the loadout he had (survivors: what they hold now; the rest: what was noted as they went down or turned)
     ldRestore(a);
-    if(q)placeAt(a,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);else{const p=sp[k++%sp.length];placeAt(a,p[0],p[2]||0,p[1],p[3]!=null?p[3]+rr(-.4,.4):Math.PI+rr(-.6,.6))}ensureRig(a);equip(a,bestWeapon(a),true);a.drawT=0;
+    if(q)placeAt(a,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);else{const p=sp[k++%sp.length];placeAt(a,p[0],p[2]||0,p[1],p[3]!=null?p[3]+rr(-.4,.4):rnd?rr(0,TAU):Math.PI+rr(-.6,.6))}ensureRig(a);equip(a,bestWeapon(a),true);a.drawT=0;
     if(NET.host)out.push([a.id,r2(a.c.x),r2(a.c.y),r2(a.c.z),r3(a.yaw),keep?1:0]);
     if(a.isPlayer){VM.set(a.cur,a.skin);R.PU.uInfect.value=0}if(a.bot)AI.onRound(a)}
-  if(G.player&&MAP.spawnYaw!=null&&!plan){G.player.yaw=MAP.spawnYaw}
+  if(G.player&&MAP.spawnYaw!=null&&!plan&&!rnd){G.player.yaw=MAP.spawnYaw}
   BO.reset();SUP.reset();FX.clearDecals();HUD.roundStart();AU.play('siren',{vol:.5});AU.muSet&&AU.muSet('prep');if(NET.host)netEv('round',{n:G.round,P:out})}
 function selectHosts(ids){if(NET.cli&&!NET.ev)return;let H=G.actors.filter(a=>a.alive&&a.team===TH);const n=ids?Math.max(1,ids.length):hostsFor(G.actors.length);G.hostN=n;const nh=Math.max(1,H.length-n);
   // prefer players who were not host recently, then ones standing apart (few humans within 6 m, not next to another new host)

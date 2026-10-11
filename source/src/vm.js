@@ -85,7 +85,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     if(this.flash.parent)this.flash.parent.remove(this.flash);const W=WPN[id];
     if(id!=='claw'&&W.kind!=='melee'&&W.kind!=='nade'){m.gun.add(this.flash);const mz=GUNS[W.model].muzzle;this.flash.position.set(mz[0],mz[1],mz[2]-.06)}
     this.draw(W.draw||.5)},
-  draw(d){this.drawT=d;this.drawD=d;this.act=null;this.rel=null;this.mel=null;this.throwT=0;this.pull=null;this.pinOut=false;this.pumpT=0;this.boltT=0},
+  draw(d){this.hold=false;this.drawT=d;this.drawD=d;this.act=null;this.rel=null;this.mel=null;this.throwT=0;this.pull=null;this.pinOut=false;this.pumpT=0;this.boltT=0},
   fire(W,side){const m=this.cur,S=this.sp,K=vmKick(W);
     if(m&&m.gun2){const g=side<0?m.gun2:m.gun;if(this.flash.parent!==g){if(this.flash.parent)this.flash.parent.remove(this.flash);g.add(this.flash);const mz=GUNS[W.model].muzzle;this.flash.position.set(mz[0],mz[1],mz[2]-.06)}
       if(side<0)this.kick2=1;else this.kick=1;S.px.v+=side<0?-.15:.15}
@@ -107,7 +107,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     for(let i=0;i<6;i++)A[0][i]=K[i];if(m.doll)m.doll.rotation.x=K[6];
     const n=Math.hypot(A[0][3],A[0][4],A[0][5])||1,dx=A[0][3]/n,dy=A[0][4]/n,dz=A[0][5]/n;
     A[1][0]=A[0][0]+dx*.07-.014;A[1][1]=A[0][1]+dy*.07-.006;A[1][2]=A[0][2]+dz*.07;A[1][3]=dx-.6;A[1][4]=dy;A[1][5]=dz;return tr},
-  throwNade(soft){this.throwT=.5;this.soft=!!soft;this.pull=null},
+  throwNade(soft){this.hold=false;this.throwT=.5;this.soft=!!soft;this.pull=null},
   bombPull(d){this.pull={t:0,d};this.pinOut=false},
   landed(k){const S=this.sp;S.py.v-=k*.55;S.rx.v+=k*1.4},
   jumped(){this.sp.py.v+=.25;this.sp.rx.v-=.3},
@@ -186,7 +186,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];this.camRoll=_vk[5]*.05;this.camYaw=_vk[4]*.025;this.camPitch=_vk[3]*.02;
       if(p>=1)this.mel=null}
     // grenade throw
-    if(this.throwT>0){this.throwT=Math.max(0,this.throwT-dt);const p=1-this.throwT/.5;kfv(this.soft?VMK.lob:VMK.nade,p,_vk);x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];this.camPitch=_vk[3]*.015}
+    if(this.throwT>0){if(!(this.hold&&this.throwT<=.3))this.throwT=Math.max(0,this.throwT-dt);const p=1-this.throwT/.5;kfv(this.soft?VMK.lob:VMK.nade,p,_vk);x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];this.camPitch=_vk[3]*.015}
     if(VMX[this.id]){_vk2.fill(0);VMX[this.id](this,a,dt,_vk2,m);x+=_vk2[0];y+=_vk2[1];z+=_vk2[2];rx+=_vk2[3];ry+=_vk2[4];rz+=_vk2[5]}
     // ---- the gun's own first-draw action (vmdraw.js) ----
     if(this.act&&kind!=='claw'){_vkA.fill(0);this.actFrame(dt,m,W,_vkA);x+=_vkA[0];y+=_vkA[1];z+=_vkA[2];rx+=_vkA[3];ry+=_vkA[4];rz+=_vkA[5]}

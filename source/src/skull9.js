@@ -119,8 +119,8 @@ GUNS.skull9={parts:skParts(),grip:[0,0,0],sup:[0,0,SK.zL],muzzle:[0,.2,SK.zH],vm
 // light: a wide sweep, three at most, thrown forward and to the left; heavy: a slam, two at most, popped up and staggered for long.
 // cleave/arc per attack (light, heavy): how many it can hit and the cone (cosine) it reaches over; kbL = sideways share of the sweep's push
 WPN.skull9={slot:3,kind:'melee',n:['스컬-9','SKULL-9'],cost:3000,dmg:[230,520],rate:[1.05,1.65],range:[2.7,2.9],kb:[13,20],up:[0,6],stag:[.6,1.6],
-  speed:.85,draw:1.3,model:'skull9',hold:'skull9',sw:.55,hitT:[.38,.66],anD:[.83,1.5],cleave:[3,2],arc:[.2,.7],kbL:[.45,0],shk:[.32,.7],slam:1,noDC:1,
-  swS:'skswing',hitS:'skhit',drawS:'skdraw',atkSpd:[.8,.55]};
+  speed:1,draw:1.3,model:'skull9',hold:'skull9',sw:.55,hitT:[.38,.66],anD:[.83,1.5],cleave:[3,2],arc:[.2,.7],kbL:[.45,0],shk:[.32,.7],slam:1,noDC:1,
+  swS:'skswing',hitS:'skhit',drawS:'skdraw'};
 BUY_MENU.find(c=>c.k==='special').items.push('skull9');
 // third person: held up in front of the right shoulder like the sledge; the sweep and the shoulder turn are its own (KF.skA / skTw below)
 HOLDS.skull9={off:[-.02,-.3,-.16],rx:1.15,rz:Math.PI,ham:1,kA:'skA',kH:'skH',twA:'skTw'};
