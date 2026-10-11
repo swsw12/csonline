@@ -54,6 +54,7 @@ const SOUND_DESIGN={
   db2:     {vol:1, rate:1, file:''},  // 더블 배럴 샷건 발사음
   m14:     {vol:1, rate:1, file:''},  // XM1014 자동 샷건 발사음
   as12:    {vol:1, rate:1, file:''},  // USAS-12 자동 샷건 발사음
+  jhfire:  {vol:1, rate:1, file:''},  // 팬코 잭해머 발사음 (묵직한 12게이지 + 카세트 돌아가는 '철컥')
   // ── 총소리 · 기관단총 ────────────────────────────────────────────────────────────────────────
   k5:      {vol:1, rate:1, file:''},  // MP5 발사음
   k9:      {vol:1, rate:1, file:''},  // MAC-10 발사음
@@ -834,6 +835,7 @@ const GUN_DESIGN={
   sg8:     {mag:8,  ch:0, act:'pump', x:.45},                                // 베넬리 M3 슈퍼90 — 군용 튜브 7+약실 1 = 8발. 펌프 척-척
   m14:     {mag:7,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 베넬리 M4 (XM1014) — 튜브 6+약실 1 = 7발. 오른쪽 장전손잡이
   as12:    {mag:20, ch:0, act:'charge', x:.6,  side:'r', d:.055, roll:.32, heavy:.6, rl:'mag', reload:3.2}, // 대우 USAS-12 — 10발 박스 / 20발 드럼 → 드럼. 묵직한 오른쪽 손잡이. 재장전은 드럼 통째로 교체(3.2초)
+  jhammer: {mag:10, ch:0, act:'pump', x:.55, rl:'mag', reload:3.2},       // 팬코 잭해머 — 10발 회전 카세트(리볼버 실린더처럼 한 발마다 돌아감), 재장전은 카세트째 교체. 첫 장전은 앞손잡이를 한 번 당겼다 밂
   db2:     {mag:2,  ch:0, act:'break', x:.85},                               // 더블 배럴 — 2발. 꺾어 열어 약실 확인, 손목으로 탁 닫기
   volc:    {         ch:0, act:'spin', x:.7, rps:2.2, axis:'z', snd:['cylspin',.85,.7], shake:.002}, // 볼케이노 (CSO) — 6연장 회전 드럼을 드르륵 한 바퀴
   mdrill:  {         ch:0, act:'spin', x:.6, rps:16, axis:'z', snd:['drill',.45,1.2], shake:.004},   // 매그넘 드릴 (CSO) — 드릴 비트를 위잉
