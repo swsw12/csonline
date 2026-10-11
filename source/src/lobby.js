@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.33.1','2026-10-12',[
+ ['FIX','카타나 — 들고 있을 때 팔 모양 수정. 오른팔이 옆으로 일자로 뻗어 있던 것을, 손잡이를 비스듬히 감아쥐고 팔뚝이 아래에서 받치는 자세로 바꿨어요(휘두를 때 팔도 같은 방식).','Katana — the arms at rest fixed: instead of the right forearm sticking straight out sideways, the fists grip the handle on a slant with the forearms coming up from below (the swings use the same grip).'],
+]],
 ['v6.33','2026-10-12',[
  ['NEW','신규 근접 무기 「카타나」 출시 (상점 9,000코인) — 두 손으로 쥐는 일본도. 좌클릭은 빠른 사선베기로, 오른쪽 어깨에서 왼쪽 아래로 · 왼쪽 아래에서 오른쪽 위로 번갈아 베고 한 번에 2마리까지(105). 우클릭은 오른쪽으로 크게 젖혔다가 왼쪽까지 한 번에 쓸어 베는 가로베기로 3마리까지(280). 총을 쏘다 1초 안에 꺼내면 발도술처럼 바로 베어요. 베인 좀비는 머리나 팔이 잘려 나가요.','New melee weapon out now: Katana (shop, 9,000 coins) — a two-handed sword. Left click: quick diagonal cuts that alternate (down from the right shoulder, up from the left hip), up to two zombies each (105). Right click: drawn back to the right, then one wide flat sweep to the left through up to three (280). Drawn within a second of a gunshot it cuts at once, like a quick draw. Heads and arms come off.'],
 ]],
@@ -337,7 +340,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.33 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.33.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

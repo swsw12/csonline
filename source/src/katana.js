@@ -83,15 +83,32 @@ function kaParts(){const P=[],N=40,L=KA.z0-KA.z1;
 // ---------- first-person rest pose (camera space → the root transform, see skull9.js skPose) ----------
 // the right fist just under the guard, low on the right; the blade up and forward, leaning in a little, the edge to the left, so the
 // flat of the blade (and the temper line) faces the camera
-const KA_REST={p:[.16,-.18,-.46],d:[-.12,.6,-.79],b:[-.98,-.2,0]};
+const KA_REST={p:[.17,-.17,-.45],d:[-.2,.66,-.72],b:[-.957,-.29,0]};
 VM_POS.katana=skPose(KA_REST.p,KA_REST.d,KA_REST.b);
-// elbows at rest (camera space): [left, right]
-const KA_ELB=[[-.1,-.58,-.08],[.4,-.47,-.1]];
+// a fist round the handle at gun-space point hp with the forearm toward gun-space point e. Unlike the Skull-9's fists (skHand) the
+// forearm need not stand square to the handle: the handle may cross the palm on a slant of up to KA_SLANT, from the heel of the hand
+// to the root of the fingers as a sword grip does, so an upright blade is held with the forearms coming up from below instead of
+// sticking out sideways
+const KA_SLANT=.62;
+function kaHand(hp,e,left){const X0=new THREE.Vector3(0,0,left?-1:1),f=new THREE.Vector3(e[0]-hp[0],e[1]-hp[1],e[2]-hp[2]);if(f.lengthSq()<1e-8)f.set(0,-1,0);f.normalize();
+  const sm=Math.sin(KA_SLANT),a=clamp(f.dot(X0),-sm,sm),fp=f.clone().addScaledVector(X0,-f.dot(X0));if(fp.lengthSq()<1e-8)fp.set(0,-1,0);fp.normalize();
+  const Z=fp.multiplyScalar(Math.sqrt(1-a*a)).addScaledVector(X0,a),X=X0.clone().addScaledVector(Z,-X0.dot(Z)).normalize(),Y=new THREE.Vector3().crossVectors(Z,X);
+  const w=new THREE.Vector3(hp[0],hp[1],hp[2]).addScaledVector(Y,-SK_FIST[1]).addScaledVector(Z,-SK_FIST[2]);return {X,Y,Z,w}}
+// the elbow (camera space) that goes with hand frame H (gun space) when the gun is posed at p turned by q: straight down the forearm
+// from the wrist, so an elbow track always agrees with its fist
+const _kaE=new THREE.Vector3();
+function kaElb(H,p,q){_kaE.copy(H.w).addScaledVector(H.Z,.3).applyQuaternion(q);return [p[0]+_kaE.x,p[1]+_kaE.y,p[2]+_kaE.z]}
+// where the elbows would like to be at rest ([left, right], camera space): each forearm runs down from its fist toward the bottom of
+// the view; the fists turn toward them as far as KA_SLANT lets them, and KA_ELB is where that puts the elbows
+const KA_ELB_RAW=[[.02,-.72,-.26],[.27,-.5,-.48]];
+const KA_ELB=(()=>{const P=VM_POS.katana,q=new THREE.Quaternion().setFromEuler(new THREE.Euler(P.r[0],P.r[1],P.r[2],'XYZ')),qi=q.clone().invert();
+  return [[KA.zL,KA_ELB_RAW[0],true],[0,KA_ELB_RAW[1],false]].map(([z,e,left])=>{const eg=new THREE.Vector3(e[0]-P.p[0],e[1]-P.p[1],e[2]-P.p[2]).applyQuaternion(qi);
+    return kaElb(kaHand([0,0,z],[eg.x,eg.y,eg.z],left),P.p,q)})})();
 // both fists closed round the handle, forearms toward the rest elbows (buildVM hook); the swings turn the gun on a pivot (see kaClip)
 function kaVmArms(armR,armL){const P=VM_POS.katana;_skE.set(P.r[0],P.r[1],P.r[2],'XYZ');_skQ.setFromEuler(_skE).invert();
   const gun=armR.parent,root=gun&&gun.parent;if(root&&!gun.userData.piv){const pv=new THREE.Group();root.remove(gun);pv.add(gun);root.add(pv);gun.userData.piv=pv}
   for(const [arm,z,e,left] of [[armR,0,KA_ELB[1],false],[armL,KA.zL,KA_ELB[0],true]]){if(!arm)continue;
-    const eg=_skB.set(e[0]-P.p[0],e[1]-P.p[1],e[2]-P.p[2]).applyQuaternion(_skQ);const H=skHand([0,0,z],[eg.x,eg.y,eg.z],left);
+    const eg=_skB.set(e[0]-P.p[0],e[1]-P.p[1],e[2]-P.p[2]).applyQuaternion(_skQ);const H=kaHand([0,0,z],[eg.x,eg.y,eg.z],left);
     arm.position.copy(H.w);_skM.makeBasis(H.X,H.Y,H.Z);arm.quaternion.setFromRotationMatrix(_skM);arm.visible=true;if(arm.userData.hand)arm.userData.hand.rest=.95;vmHandCurl(arm,.95)}}
 GUNS.katana={parts:kaParts(),grip:[0,0,0],sup:[0,0,KA.zL],muzzle:[0,kaCy(.5),-.45],vmFix:kaVmArms,
   trail:[0,kaCy(.45),KA.z0-(KA.z0-KA.z1)*.45,0,kaCy(.98),KA.z1+.012]};// the motion trail runs along the outer half of the blade
@@ -134,8 +151,8 @@ const KA_SW={
     [.36,[.03,-.14,-.5],[-.26,.03,-.97],[-.97,0,.26]],
     [.44,[-.18,-.16,-.44],[-.94,0,-.34],[-.34,0,.94]],
     [.6,[-.2,-.2,-.43],[-.96,-.08,-.26],[-.26,0,.97]],
-    [.82,[.05,-.18,-.45],[-.3,.5,-.8],[-.7,-.3,-.65]],
-    [.92,[.16,-.18,-.46],[-.12,.6,-.79],[-.98,-.2,0]]]};
+    [.82,[.06,-.2,-.45],[-.35,.52,-.78],[-.85,-.4,-.35]],
+    [.92,[.17,-.17,-.45],[-.2,.66,-.72],[-.957,-.29,0]]]};
 // camera [t, pitch, yaw, roll], sounds [t, sound, vol, rate], the trail window — seconds
 const KA_FX={
   light:{C:[[0,0,0,0],[.1,.006,-.008,-.012],[.17,-.008,.014,.025],[.26,-.006,.01,.018],[.4,0,0,0]],E:[[.09,'kaswing',.75,1.05]],trail:[.11,.25]},
@@ -155,8 +172,8 @@ function kaClip(name,d){const T=window.__KAT&&window.__KAT[name],K=(T&&T.K)||KA_
     const elR=k[4]||[k[1][0]+.22,k[1][1]-.3,k[1][2]+.3],elL=k[5]||[pL[0]-.22,pL[1]-.3,pL[2]+.28];
     const qk=q.clone().invert();
     for(const [Lk,el,z,left,E] of [[Rk,elR,0,false,eR],[Hk,elL,KA.zL,true,eL]]){const eg=_skB.set(el[0]-k[1][0],el[1]-k[1][1],el[2]-k[1][2]).applyQuaternion(qk);
-      const H=skHand([0,0,z],[eg.x,eg.y,eg.z],left),pm=H.w.clone().addScaledVector(H.Y,-.004).addScaledVector(H.Z,-.045);
-      Lk.push(HK(u,1,[pm.x,pm.y,pm.z-(left?KA.zL:0)],1,[H.Y.x,H.Y.y,H.Y.z],.95));E.push([u,...el])}}
+      const H=kaHand([0,0,z],[eg.x,eg.y,eg.z],left),pm=H.w.clone().addScaledVector(H.Y,-.004).addScaledVector(H.Z,-.045);
+      Lk.push(HK(u,1,[pm.x,pm.y,pm.z-(left?KA.zL:0)],1,[H.Y.x,H.Y.y,H.Y.z],.95));E.push([u,...kaElb(H,k[1],q)])}}
   P.push(pq.w<0?[1,0,0,0,0,0,0,-1]:[1,0,0,0,0,0,0,1]);Rk.push(HK(1,0));Hk.push(HK(1,0));eR.push([1,...KA_ELB[1]]);eL.push([1,...KA_ELB[0]]);
   const sc=r=>[r[0]/d,...r.slice(1)];
   return {P,R:{A:[{grip:1},{p:[0,0,0]}],k:Rk,elbT:eR},H:{A:[{sup:1},{p:[0,0,KA.zL]}],k:Hk,elbT:eL},
