@@ -713,7 +713,7 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Balrog-XI: the Blaze-8 special-shell machinery (spEvery 4, spMax 7) (v6.28.1: the count no longer resets on trigger release; `spRun` removed) and
   `spFlame` (newguns.js spFire → bxFlame): five 'bxfl' projectiles in a ±0.2 rad fan, radius 0.3 + 1.3·t, each stops in the first zombie it touches
   (160, kb 6 uncapped, stagger 1.1, 3 s burn), 24 m/s for 0.6 s. HUD ring #bxRing; ember pips p1..p7 (VMX.balrog11). Shell reload (shellRel .36).
-- Plasma Gun: proj 'plasma' (52 m/s), plBoom splash radius 3.8, dmg 60 since v6.29.1 (direct target 100 %, others 100→80 % by distance, LOS), `o.flat` skips morale
+- Plasma Gun: proj 'plasma' (52 m/s), plBoom splash radius 4.5, dmg 70 since v6.29.2 (direct target 100 %, others 100→80 % by distance, LOS), `o.flat` skips morale
   (game.js damageActor), no hsForce, kbCap applies. Reload rlCell (vmrel rlBuild wrapper): the cell pulled out backwards (rlMag style 'pull', ax +z).
 - Thunderbolt: `W.rail` branch in fireGun → tbShot: walls collected with rayCast + a skip set (×wallK .85 each), tbLine = every enemy on the line
   (×pierceK .9 each), damage 650 × part (head ×2.5 since v6.29.1). `W.noRel` (mag 30, res 0): no reload; loadout.js ammo buy / re-buy, epbase supplies and the range

@@ -111,7 +111,7 @@ GUNS.plasma={parts:[
   Pt(0,.04,.17,.05,.08,.18,'gunmetal'),Pt(0,.08,.15,.03,.02,.14,'blk'),Pt(0,.03,.27,.056,.12,.02,'rub'),Pt(-.0255,.04,.17,.002,.03,.1,'plGlow')],
   grip:[0,-.04,.02],sup:[0,-.02,-.36],muzzle:[0,.05,-.62],mag:[-.062,.04,-.23],eject:[.03,.06,-.06]};
 GUNS.plorb={parts:[Pt(0,0,0,.07,.07,.07,'plGlow'),Pt(0,0,0,.05,.09,.05,'plGlow'),Pt(0,0,0,.09,.05,.05,'plGlow'),Pt(0,0,0,.05,.05,.09,'plGlow')],grip:[0,0,0],muzzle:[0,0,0]};
-WPN.plasma={slot:1,kind:'rifle',n:['플라즈마 건','Plasma Gun'],cost:5500,mag:45,res:270,dmg:60,rpm:600,proj:'plasma',plR:3.8,plSpd:52,spread:[.008,.03,.08],rec:[.012,.006],kb:3.2,stag:.38,hs:1,
+WPN.plasma={slot:1,kind:'rifle',n:['플라즈마 건','Plasma Gun'],cost:5500,mag:45,res:270,dmg:70,rpm:600,proj:'plasma',plR:4.5,plSpd:52,spread:[.008,.03,.08],rec:[.012,.006],kb:3.2,stag:.38,hs:1,
   reload:3.2,draw:.85,speed:.92,snd:'plfire',model:'plasma',hold:'rifle'};
 VM_POS.plasma={p:[.15,-.17,-.36],r:[0,.085,.035]};
 BUY_MENU.find(c=>c.k==='rifle').items.push('plasma');
