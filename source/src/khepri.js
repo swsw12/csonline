@@ -823,7 +823,7 @@ CHAP[3]={id:3,k:'khepri',map:'ep3',code:'Q7-303',n:['케프리','KHEPRI'],t:['�
   // a grenade's blast reaches the drums, the ball, the heaps and the swarms (the host decides; a client tells it about its own; 5챕터 has
   // only the swarms of its larva zombies and egg sacs)
   const dt0=detonate;detonate=function(n){dt0(n);if(!EP.on||EP.id!==3&&EP.id!==5||n.ghost||!n.owner||n.owner.team!==TH)return;if(n.kind!=='he'&&n.kind!=='gl')return;
-    if(NET.cli){netToHost({t:'ekhb',x:r2(n.x),y:r2(n.y),z:r2(n.z),k:n.kind==='gl'?1:0});return}KX.blast(n.x,n.y,n.z,n.kind==='gl'?4:5.5,{ball:n.kind==='gl'?520:900})};
+    if(NET.cli){netToHost({t:'ekhb',x:r2(n.x),y:r2(n.y),z:r2(n.z),k:n.kind==='gl'?1:0});return}KX.blast(n.x,n.y,n.z,n.kind==='gl'?4:5.5,{ball:n.kind==='gl'?Math.round(520*(n.dmg||380)/380):900})};
   // a flamethrower's jet burns swarms away (3챕터 and 5챕터)
   if(typeof salHits==='function'){const sh=salHits;salHits=function(a,W,eye,dir){const n=sh(a,W,eye,dir);if(EP.on&&(EP.id===3||EP.id===5)&&!NET.ghost&&KX.swarm.length){const R0=W.flame.r;
       for(let i=KX.swarm.length-1;i>=0;i--){const S0=KX.swarm[i],mx=S0.x-eye.x,mz=S0.z-eye.z,s=mx*dir.x+mz*dir.z;if(s<0||s>R0+S0.r)continue;const lat=Math.hypot(eye.x+dir.x*s-S0.x,eye.z+dir.z*s-S0.z);if(lat>S0.r+.5)continue;

@@ -5,6 +5,10 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'janus1',tag:['신규 출시 · 상점 8,500 코인','Out now · Shop · 8,500 coins'],t:['JANUS-1','JANUS-1'],
+    d:['두 얼굴 가면이 달린 5연발 유탄 권총. 재장전은 없고 보급으로만 다시 채워져요. 좀비를 맞힌 폭발 5번이면 가면의 눈이 보라색으로 빛나요 — 35초 안에 우클릭하면 총열이 갈라지며 JANUS 모드: 5초간 유탄을 무제한으로 쏟아부어요 (꾹 누르기).','A five-shot grenade pistol with a two-faced mask on its frame. No reload — only supplies fill it again. Five blasts that catch a zombie light the mask\'s eyes violet; right click within 35 s and the barrel splits open into the JANUS form: 5 s of grenades without limit (hold the trigger).']},
+  {kind:'weapon',ref:'cbmav',tag:['신규 출시 · 상점 9,000 코인','Out now · Shop · 9,000 coins'],t:['크로우바 매버릭','Crowbar Maverick'],
+    d:['전기충격기를 묶어 단 쇠지렛대. 좌클릭은 좌우로 크게 휘두르고, 우클릭은 전극으로 찔러 감전시켜요 — 맞은 좀비는 3초간 거의 움직이지 못하고 점프 · 스킬도 못 써요. 찌르기 사거리는 나타나이프보다 길어요.','A crowbar with a stun device strapped under its head. Left click swings it side to side; right click stabs with the prongs and shocks — the zombie can barely move for 3 s and cannot jump or use its skill. The stab reaches further than the Nata Knife.']},
   {kind:'zombie',ref:'fireman',tag:['신규 좀비 · 플레이 가능','New zombie · playable'],t:['소방관 좀비','Firefighter Zombie'],
     d:['불길 속에서 감염된 진압대원. 방화복이라 불과 폭발 피해를 절반만 받아요. G를 누르면 등의 산소통을 앞세워 돌진 — 맞은 인간은 넘어지며 크게 밀려나요. 인간은 돌진 중에 산소통을 쏴서 터뜨릴 수 있어요: 터지면 돌진이 멈추고 주변에 연막이 피어올라요 (새 산소통까지 18초).','A firefighter infected in the blaze. The turnout coat halves fire and blast damage. G: it charges behind the oxygen tank off its back, and humans it hits are knocked flat and thrown back. Shoot the tank mid-charge to burst it: the charge stops dead and smoke billows out round it (a new tank in 18 s).']},
   {kind:'feature',ico:'⇄',tag:['신규 기능 · 멀티플레이','New · Multiplayer'],t:['방장 넘기기','Hand the room over'],

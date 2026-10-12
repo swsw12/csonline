@@ -130,7 +130,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     let rx=VP.r[0]+S.rx.x+Math.sin(this.t*1.6+.5)*.004+Math.abs(Math.cos(ph))*.012*bobA,ry=VP.r[1]+S.ry.x+Math.sin(ph)*.01*bobA,rz=VP.r[2]+S.rz.x+Math.sin(ph)*.016*bobA;
     this.camRoll=0;this.camYaw=0;this.camPitch=0;
     // ---- draw ----
-    let drY=0,drX=0;if(this.drawT>0){this.drawT=Math.max(0,this.drawT-dt);const p=1-this.drawT/this.drawD;const D=kind==='knife'?VMK.drK:kind==='axe'?VMK.drA:kind==='hammer'?VMK.drH:kind==='skull9'?VMK.drS:kind==='katana'?VMK.drKa:kind==='claw'?VMK.drC:(kind==='pistol'||kind==='dual')?VMK.drP:VMK.drR;
+    let drY=0,drX=0;if(this.drawT>0){this.drawT=Math.max(0,this.drawT-dt);const p=1-this.drawT/this.drawD;const D=W.drKey&&VMK[W.drKey]?VMK[W.drKey]:kind==='knife'?VMK.drK:kind==='axe'?VMK.drA:kind==='hammer'?VMK.drH:kind==='skull9'?VMK.drS:kind==='katana'?VMK.drKa:kind==='claw'?VMK.drC:(kind==='pistol'||kind==='dual')?VMK.drP:VMK.drR;
       kfv(D,p,_vk);x+=_vk[0];y+=_vk[1];z+=_vk[2];rx+=_vk[3];ry+=_vk[4];rz+=_vk[5];drY=_vk[1];drX=_vk[3]}
     // reset animated parts
     const tags=m.tags;for(const T of [tags,m.tags2])if(T)for(const t in T){const b=T[t].userData.base;T[t].position.copy(b);T[t].rotation.set(0,0,0);T[t].scale.set(1,1,1)}

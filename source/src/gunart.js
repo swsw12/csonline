@@ -318,7 +318,10 @@ function lookArm(arm,hand,dir){arm.position.set(hand[0],hand[1],hand[2]);arm.loo
 function vmGun(G,mat){const gun=new THREE.Group();const statics=G.parts.filter(p=>!p.tag),tags={};
   if(statics.length){const m=new THREE.Mesh(partGeo(statics),mat);m.frustumCulled=false;gun.add(m)}
   G._tc=G._tc||{};
-  for(const t of ['mag','slide','pump','bolt','spin','chg','aux','cover']){let ps=G.parts.filter(p=>p.tag===t);if(!ps.length)continue;const grp=new THREE.Group();
+  // every tag gets its own group: the named ones (mag, slide, …) have the rules below, any other (the Balrog-XI's pips, the Thunderbolt's
+  // coils and switch, the Winchester's lever, JANUS-1's moving shells …) turns about G.piv[tag] or the gun's origin
+  // (before v6.40 only the eight named tags were built, so parts under any other tag were missing from the first-person view)
+  for(const t of [...new Set(G.parts.filter(p=>p.tag).map(p=>p.tag))]){let ps=G.parts.filter(p=>p.tag===t);if(!ps.length)continue;const grp=new THREE.Group();
     if(!G._tc[t]){const c=[0,0,0];for(const p of ps)for(let i=0;i<3;i++)c[i]+=p.c[i]/ps.length;G._tc[t]=c}// where the hand goes to work this part
     if(G.piv&&G.piv[t]){const [px,py,pz]=G.piv[t];ps=ps.map(p=>Object.assign({},p,{c:[p.c[0]-px,p.c[1]-py,p.c[2]-pz]}));grp.position.set(px,py,pz)}else
     if(t==='spin'&&G.spinAxis){const [ax,ay]=G.spinAxis;ps=ps.map(p=>Object.assign({},p,{c:[p.c[0]-ax,p.c[1]-ay,p.c[2]]}));grp.position.set(ax,ay,0)}

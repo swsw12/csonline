@@ -12,7 +12,7 @@ const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r8'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r9'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40)
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}

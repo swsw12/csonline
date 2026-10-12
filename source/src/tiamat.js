@@ -824,7 +824,7 @@ CHAP[5]={id:5,k:'tiamat',map:'ep5',code:'Q7-Ω',n:['티아마트','TIAMAT'],t:['
       if(n.owner&&n.owner.isPlayer&&!AU.throttle('e5sink',4000))HUD.note(LI()?'The grenade sank — no use under the water':'수류탄이 가라앉았다 — 물속에선 소용없어요',2);return}
     dt0(n);if(!(EP.on&&EP.id===5)||n.ghost||!n.owner||n.owner.team!==TH||NET.cli||(n.kind!=='he'&&n.kind!=='gl'))return;const b=EP.bossA();if(!b||!b.tm)return;
     const hd=Math.hypot(b.c.x-n.x,b.c.y+1-n.y,b.c.z-n.z);if(hd<=(n.kind==='gl'?4.8:7))return;let best=null,bd=1e9;for(const p of TMV.parts){const d=Math.hypot(p.x-n.x,p.y-n.y,p.z-n.z)-p.r;if(d<bd){bd=d;best=p}}
-    const R0=n.kind==='gl'?3.5:5;if(!best||bd>R0)return;const f=1-Math.max(0,bd)/R0;damageActor(b,(n.kind==='gl'?380:700)*f+100,n.owner,{w:n.kind==='gl'?'gl40':'he',he:1,dir:[0,0,0],kb:0,stag:0,x:best.x,y:best.y,z:best.z})};
+    const R0=n.kind==='gl'?3.5:5;if(!best||bd>R0)return;const f=1-Math.max(0,bd)/R0;damageActor(b,(n.kind==='gl'?n.dmg||380:700)*f+100,n.owner,{w:n.kind==='gl'?n.jw||'gl40':'he',he:1,dir:[0,0,0],kb:0,stag:0,x:best.x,y:best.y,z:best.z})};
   // bots do not see what is under the water
   const eh=epHid;epHid=function(a,z,d){if(z.zc==='tiamat'&&z.tmSub)return true;return eh(a,z,d)};// (tmSub: nothing of it above the water)
   Object.assign(CLIH,{

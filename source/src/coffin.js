@@ -71,7 +71,7 @@ COFF.skill=function(a){if(!a.c.onGround)return false;const s=COFF.spot(a);if(!s)
   const ns=nySkill;nySkill=function(a,Z){if(Z.skill==='coffin')return COFF.skill(a);return ns(a,Z)};
   const cl=NY.clear.bind(NY);NY.clear=function(){cl();COFF.clear()};
   const gu=gameUpdate;gameUpdate=function(dt){gu(dt);if(G.st!=='menu')COFF.update(dt)};
-  const det=detonate;detonate=function(n){det(n);if(n.kind==='he')COFF.blast(n,6,700);else if(n.kind==='gl')COFF.blast(n,4.5,WPN.gl40.dmg)};
+  const det=detonate;detonate=function(n){det(n);if(n.kind==='he')COFF.blast(n,6,700);else if(n.kind==='gl')COFF.blast(n,4.5,n.dmg||WPN.gl40.dmg)};// (n.dmg: JANUS-1's grenades, janus.js)
   const sf=skillFx;skillFx=function(a,k){if(k==='coffin'){a.an.skill=.5;return}return sf(a,k)};
   Object.assign(CLIH,{cof(L,m){COFF.add(byId(m.o),m.x/100,m.y/100,m.z/100,m.q|0,m.i)},cofx(L,m){const C=COFF.byId(m.i);if(C)netWithEv(()=>COFF.burst(C,null))},cofr(L,m){const C=COFF.byId(m.i);if(C)COFF.remove(C)}});
   Object.assign(HOSTH,{cofh(L,m){const C=COFF.byId(m.i);if(C)COFF.hurt(C,clamp(+m.d||0,0,3000),actorOfKey(L.key))}});
