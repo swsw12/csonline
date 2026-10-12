@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.35.1','2026-10-12',[
+ ['FIX','PC에서 썬더볼트로 조준하면 마우스 포인터가 튀어나오고 조준 · 사격이 안 되던 문제 수정 — 썬더볼트 조준경 화면이 모바일 버튼과 같은 이름표를 달고 있어서 클릭을 가로채고 있었어요. 조준경에 겹쳐 보이던 흐린 바깥 타원 테두리도 같이 없어졌어요.','Thunderbolt on PC — scoping in no longer pops the mouse pointer out and blocks aiming and firing: the scope overlay shared a class name with the touch buttons and was catching the clicks. The faint extra outer ellipse over the scope is gone too.'],
+]],
 ['v6.35','2026-10-12',[
  ['NEW','신규 권총 「듀얼 데저트 이글」 출시 (상점 8,500코인) — .50AE 데저트 이글 두 자루를 양손 번갈아 쏴요. 한 발 110(머리 330), 맞은 좀비가 크게 밀려나고 오래 휘청여요. 한 자루 7발씩 14발. 오른손은 검정 슬라이드에 금빛 총열 · 검붉은 손잡이, 왼손은 크롬. 총열 옆면엔 금색 각인, 끝에는 구멍 뚫린 머즐 브레이크, 가늠쇠엔 빨간 점. 우클릭은 쌍권총 넓은 자세(누르고 있으면 계속 쏨).','New pistol out now: Dual Desert Eagle (shop, 8,500 coins) — two .50 AE Desert Eagles fired hand after hand. 110 a round (330 to the head), a big shove and a long stagger. 7 rounds a gun, 14 in all. Right: black slide, gold barrel, dark red grips; left: bright chrome. Gold scrollwork on the barrel flats, a ported muzzle brake, a red front-sight dot. Right click: the wide dual stance (hold to keep firing).'],
 ]],
@@ -346,7 +349,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.35 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.35.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

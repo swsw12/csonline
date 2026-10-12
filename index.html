@@ -157,7 +157,7 @@ html.touch #hHsk{display:none!important}
 #hit i{position:absolute;width:9px;height:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
 #hit i:nth-child(1){left:5px;top:5px;transform:rotate(45deg)}#hit i:nth-child(2){left:-14px;top:5px;transform:rotate(-45deg)}#hit i:nth-child(3){left:5px;top:-7px;transform:rotate(-45deg)}#hit i:nth-child(4){left:-14px;top:-7px;transform:rotate(45deg)}
 #hit.hs i{background:var(--z)}
-#scope{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 36vmin,rgba(0,0,0,.9) 36.3vmin,#000 38vmin);display:none}
+#scope{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 36vmin,rgba(0,0,0,.9) 36.3vmin,#000 38vmin);display:none}
 #scope .sv{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#000}#scope .sh{position:absolute;top:50%;left:0;right:0;height:1px;background:#000}
 #hSpec{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);text-align:center;font-size:16px;color:#fff;background:rgba(8,10,14,.55);padding:6px 16px;line-height:1.6}
 #hSpec small{font-size:12px;color:#c8c4b8}
@@ -1246,17 +1246,17 @@ i.hofc{font-style:normal;display:inline-flex;color:#ffcf3a;margin-left:4px;verti
 #bxRing .pg{stroke:#ff8a2a;stroke-dasharray:138.2;stroke-dashoffset:138.2;stroke-linecap:round;filter:drop-shadow(0 0 3px rgba(255,120,30,.8));transition:stroke-dashoffset .08s}
 #bxRing.on .pg{stroke:#ffd060}
 #bxRing b{position:absolute;left:100%;top:100%;margin:-10px 0 0 -6px;font-size:13px;color:#ffb050;text-shadow:0 0 6px rgba(255,110,20,.9),0 1px 2px #000;white-space:nowrap}
-#scope.tb{background:radial-gradient(ellipse 60vmin 40vmin at 50% 50%,transparent 0,transparent 92%,rgba(0,20,30,.35) 100%),linear-gradient(rgba(0,30,40,.18),rgba(0,30,40,.18))}
-#scope.tb::before{content:'';position:absolute;left:50%;top:50%;width:84vmin;height:56vmin;margin:-28vmin 0 0 -42vmin;border:2px solid rgba(90,230,230,.75);border-radius:50%;box-shadow:0 0 12px rgba(90,230,230,.35),inset 0 0 12px rgba(90,230,230,.25)}
-#scope.tb::after{content:'';position:absolute;inset:7vmin 9vmin;border-radius:3vmin;
+#scope.tbsc{background:radial-gradient(ellipse 60vmin 40vmin at 50% 50%,transparent 0,transparent 92%,rgba(0,20,30,.35) 100%),linear-gradient(rgba(0,30,40,.18),rgba(0,30,40,.18))}
+#scope.tbsc::before{content:'';position:absolute;left:50%;top:50%;width:84vmin;height:56vmin;margin:-28vmin 0 0 -42vmin;border:2px solid rgba(90,230,230,.75);border-radius:50%;box-shadow:0 0 12px rgba(90,230,230,.35),inset 0 0 12px rgba(90,230,230,.25)}
+#scope.tbsc::after{content:'';position:absolute;inset:7vmin 9vmin;border-radius:3vmin;
   background:linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 0 0/5vmin 2px,linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 0 0/2px 5vmin,
     linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 100% 0/5vmin 2px,linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 100% 0/2px 5vmin,
     linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 0 100%/5vmin 2px,linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 0 100%/2px 5vmin,
     linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 100% 100%/5vmin 2px,linear-gradient(rgba(90,230,230,.8),rgba(90,230,230,.8)) 100% 100%/2px 5vmin;background-repeat:no-repeat}
-#scope.tb .sv,#scope.tb .sh{background:rgba(90,230,230,.55)}#scope.tb .sv{top:22%;bottom:22%}#scope.tb .sh{left:14%;right:14%}
-#scope.tb.lock::before{border-color:rgba(255,60,50,.9);box-shadow:0 0 16px rgba(255,60,50,.5),inset 0 0 14px rgba(255,60,50,.35)}
-#scope.tb.lock .sv,#scope.tb.lock .sh{background:rgba(255,70,60,.75)}
-#scope.tb.lock::after{filter:hue-rotate(170deg) saturate(3)}
+#scope.tbsc .sv,#scope.tbsc .sh{background:rgba(90,230,230,.55)}#scope.tbsc .sv{top:22%;bottom:22%}#scope.tbsc .sh{left:14%;right:14%}
+#scope.tbsc.lock::before{border-color:rgba(255,60,50,.9);box-shadow:0 0 16px rgba(255,60,50,.5),inset 0 0 14px rgba(255,60,50,.35)}
+#scope.tbsc.lock .sv,#scope.tbsc.lock .sh{background:rgba(255,70,60,.75)}
+#scope.tbsc.lock::after{filter:hue-rotate(170deg) saturate(3)}
 #tbMk{position:absolute;inset:0;pointer-events:none;display:none}
 #tbMk i{position:absolute;left:0;top:0;border:2px solid rgba(255,60,50,.9);border-radius:4px;box-shadow:0 0 8px rgba(255,60,50,.6);display:none}
 #tbMk i.w{border-style:dashed;border-color:rgba(255,120,90,.8)}
@@ -12537,7 +12537,7 @@ function csoHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P
       rg.querySelector('.pg').style.strokeDashoffset=(C*(1-(m>=W.spMax?1:n/W.spEvery))).toFixed(1);const b=rg.querySelector('b'),s=m?'◆'+m:'';if(b.textContent!==s)b.textContent=s;rg.classList.toggle('on',m>0)}}
   // Thunderbolt
   const tb=live&&W&&W.rail,sc=$('scope');let mk=$('tbMk');
-  if(tb&&P.zoom>0&&sc){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const lock=tbLine(P,e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,W.range).length>0;sc.className='tb'+(lock?' lock':'');
+  if(tb&&P.zoom>0&&sc){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const lock=tbLine(P,e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,W.range).length>0;sc.className='tbsc'+(lock?' lock':'');
     if(!mk){mk=document.createElement('div');mk.id='tbMk';hud.appendChild(mk)}mk.style.display='block';
     const cw=innerWidth,ch=innerHeight;let i=0;
     for(const t of G.actors){if(!t.alive||t.team===P.team)continue;const d=Math.hypot(t.head.x-e.x,t.head.y-e.y,t.head.z-e.z);if(d>W.range)continue;
@@ -13623,6 +13623,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.35.1','2026-10-12',[
+ ['FIX','PC에서 썬더볼트로 조준하면 마우스 포인터가 튀어나오고 조준 · 사격이 안 되던 문제 수정 — 썬더볼트 조준경 화면이 모바일 버튼과 같은 이름표를 달고 있어서 클릭을 가로채고 있었어요. 조준경에 겹쳐 보이던 흐린 바깥 타원 테두리도 같이 없어졌어요.','Thunderbolt on PC — scoping in no longer pops the mouse pointer out and blocks aiming and firing: the scope overlay shared a class name with the touch buttons and was catching the clicks. The faint extra outer ellipse over the scope is gone too.'],
+]],
 ['v6.35','2026-10-12',[
  ['NEW','신규 권총 「듀얼 데저트 이글」 출시 (상점 8,500코인) — .50AE 데저트 이글 두 자루를 양손 번갈아 쏴요. 한 발 110(머리 330), 맞은 좀비가 크게 밀려나고 오래 휘청여요. 한 자루 7발씩 14발. 오른손은 검정 슬라이드에 금빛 총열 · 검붉은 손잡이, 왼손은 크롬. 총열 옆면엔 금색 각인, 끝에는 구멍 뚫린 머즐 브레이크, 가늠쇠엔 빨간 점. 우클릭은 쌍권총 넓은 자세(누르고 있으면 계속 쏨).','New pistol out now: Dual Desert Eagle (shop, 8,500 coins) — two .50 AE Desert Eagles fired hand after hand. 110 a round (330 to the head), a big shove and a long stagger. 7 rounds a gun, 14 in all. Right: black slide, gold barrel, dark red grips; left: bright chrome. Gold scrollwork on the barrel flats, a ported muzzle brake, a red front-sight dot. Right click: the wide dual stance (hold to keep firing).'],
 ]],
@@ -13961,7 +13964,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.35 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.35.1 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

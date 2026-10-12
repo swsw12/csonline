@@ -234,7 +234,7 @@ function csoHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P
       rg.querySelector('.pg').style.strokeDashoffset=(C*(1-(m>=W.spMax?1:n/W.spEvery))).toFixed(1);const b=rg.querySelector('b'),s=m?'◆'+m:'';if(b.textContent!==s)b.textContent=s;rg.classList.toggle('on',m>0)}}
   // Thunderbolt
   const tb=live&&W&&W.rail,sc=$('scope');let mk=$('tbMk');
-  if(tb&&P.zoom>0&&sc){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const lock=tbLine(P,e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,W.range).length>0;sc.className='tb'+(lock?' lock':'');
+  if(tb&&P.zoom>0&&sc){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const lock=tbLine(P,e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,W.range).length>0;sc.className='tbsc'+(lock?' lock':'');
     if(!mk){mk=document.createElement('div');mk.id='tbMk';hud.appendChild(mk)}mk.style.display='block';
     const cw=innerWidth,ch=innerHeight;let i=0;
     for(const t of G.actors){if(!t.alive||t.team===P.team)continue;const d=Math.hypot(t.head.x-e.x,t.head.y-e.y,t.head.z-e.z);if(d>W.range)continue;
