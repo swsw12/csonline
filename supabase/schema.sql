@@ -219,6 +219,14 @@ alter table public.gacha_config add column if not exists side_frag_max    intege
 alter table public.gacha_config add column if not exists side_owned_coins integer not null default 5000;   -- a gun line whose gun is owned
 alter table public.gacha_config add column if not exists side_lines text[] not null
   default '{gun:bholemini,gun:crimson,coins:500,coins:1000,coins:1000,coins:2000,coins:3000,frags:20,frags:20,frags:30,tickets:1,tickets:1}';
+-- v6.41: transcendence (초월) fragments. Every decoder (근하신년, season, sidearm) gives trans_frag_min..trans_frag_max of them on top of
+-- the decoder fragments; trans_cost of them trade for one transcendence gun of trans_guns (the M4A1 Dark Knight first: qz_trans_exchange).
+-- Those guns never come from a decoder line, the shop or a gift.
+alter table public.profiles add column if not exists trans_frags integer not null default 0 check (trans_frags >= 0);
+alter table public.gacha_config add column if not exists trans_frag_min integer not null default 2;
+alter table public.gacha_config add column if not exists trans_frag_max integer not null default 4;
+alter table public.gacha_config add column if not exists trans_cost     integer not null default 888;
+alter table public.gacha_config add column if not exists trans_guns     text[]  not null default '{m4dk}';
 alter table public.profiles add column if not exists side_shuffle_day date;                          -- the sidearm card's own shuffles
 alter table public.profiles add column if not exists side_shuffles    integer not null default 0;
 create table if not exists public.side_boards (
@@ -235,7 +243,7 @@ create table if not exists public.gacha_log (
   id       bigint generated always as identity primary key,
   user_id  uuid not null references auth.users(id) on delete cascade,
   at       timestamptz not null default now(),
-  src      text not null,               -- decode | free | ticket | season | side | exchange (pull: the old pouch)
+  src      text not null,               -- decode | free | ticket | season | side | exchange | trans (pull: the old pouch)
   kind     text not null,               -- gun | coins | frags | tickets
   tier     text,
   gun_id   text,
@@ -374,6 +382,8 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('dde',8500,false,true,null),
   ('janus1',8500,false,true,null),
   ('cbmav',9000,false,true,null),
+  ('thanatos9',15000,false,true,null),
+  ('m4dk',0,false,false,null),
   ('bhole',0,false,false,null),
   ('skull9',0,false,false,null),
   ('salamander',0,false,false,null),
@@ -479,7 +489,7 @@ begin
     'fcode', p.fcode, 'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen),
     'friend_req', (select count(*) from public.friends f where f.b = uid and not f.accepted),
     'day_left', 20000 - case when p.day = today then p.day_earned else 0 end,
-    'fragments', p.fragments, 'pity', p.pity, 'tickets', p.dec_tickets,
+    'fragments', p.fragments, 'tfrags', p.trans_frags, 'pity', p.pity, 'tickets', p.dec_tickets,
     'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'season_tickets', p.season_tickets,
     -- (v6.37: by = who invited me, done = that reward settled, left = matches still to play for it; n / paid = players I brought in /
     -- was paid for; new = rewards for them not shown yet)
@@ -1042,7 +1052,7 @@ declare
   v_res jsonb := '[]'::jsonb; v_new jsonb;
   v_num integer; v_pos integer; v_full boolean; v_gun text; v_tier text; v_kind text; v_amt integer; f integer;
   v_card integer := 0;
-  coins_won integer := 0; frags_won integer := 0;
+  coins_won integer := 0; frags_won integer := 0; tf integer; tfr_won integer := 0;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   if n not in (1, 10) then raise exception 'bad_count'; end if;
@@ -1103,7 +1113,9 @@ begin
     end if;
     f := cfg.dec_frag_min + floor(random() * (cfg.dec_frag_max - cfg.dec_frag_min + 1))::integer;
     frags_won := frags_won + f;
-    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'card', v_card));
+    tf := cfg.trans_frag_min + floor(random() * (greatest(cfg.trans_frag_max - cfg.trans_frag_min, 0) + 1))::integer;
+    tfr_won := tfr_won + tf;
+    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'tfrags', tf, 'card', v_card));
     -- a full card makes way for a new one (the rest of a ten goes on the new card)
     if not (false = any(v_marked)) or array_length(v_drawn, 1) > hi then
       update public.bingo_boards set marked = v_marked, drawn = v_drawn, done = v_done where user_id = uid;
@@ -1116,13 +1128,13 @@ begin
     end if;
   end loop;
   update public.bingo_boards set marked = v_marked, drawn = v_drawn, done = v_done, updated_at = now() where user_id = uid;
-  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won,
+  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, trans_frags = trans_frags + tfr_won,
     dec_tickets = dec_tickets - case when p_ticket then n else 0 end,
     free_day = case when p_free then today else free_day end where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'decoder', jsonb_build_object('count', n)); end if;
   if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'bingo_win'); end if;
-  return jsonb_build_object('draws', v_res, 'card', public.qz_bingo_json(uid), 'coins', p.coins, 'fragments', p.fragments, 'cost', v_cost,
+  return jsonb_build_object('draws', v_res, 'card', public.qz_bingo_json(uid), 'coins', p.coins, 'fragments', p.fragments, 'tfrags', p.trans_frags, 'cost', v_cost,
     'tickets', p.dec_tickets, 'free_today', cfg.daily_free and p.free_day is distinct from today);
 end $$;
 -- a fresh card (what was stamped on this one is gone)
@@ -1224,7 +1236,7 @@ declare
   v_res jsonb := '[]'::jsonb; v_new jsonb;
   v_num integer; v_pos integer; v_full boolean; v_code text; v_kind text; v_arg text; v_gun text; v_amt integer; f integer;
   v_card integer := 0;
-  coins_won integer := 0; frags_won integer := 0; tickets_won integer := 0;
+  coins_won integer := 0; frags_won integer := 0; tickets_won integer := 0; tf integer; tfr_won integer := 0;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   if n not in (1, 10) then raise exception 'bad_count'; end if;
@@ -1289,7 +1301,9 @@ begin
     end if;
     f := cfg.season_frag_min + floor(random() * (greatest(cfg.season_frag_max - cfg.season_frag_min, 0) + 1))::integer;
     frags_won := frags_won + f;
-    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'card', v_card));
+    tf := cfg.trans_frag_min + floor(random() * (greatest(cfg.trans_frag_max - cfg.trans_frag_min, 0) + 1))::integer;
+    tfr_won := tfr_won + tf;
+    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'tfrags', tf, 'card', v_card));
     -- a full card makes way for a new one (the rest of a ten goes on the new card)
     if not (false = any(v_marked)) or array_length(v_drawn, 1) > hi then
       update public.season_boards set marked = v_marked, drawn = v_drawn, done = v_done where user_id = uid;
@@ -1302,13 +1316,13 @@ begin
     end if;
   end loop;
   update public.season_boards set marked = v_marked, drawn = v_drawn, done = v_done, updated_at = now() where user_id = uid;
-  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, dec_tickets = dec_tickets + tickets_won,
+  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, trans_frags = trans_frags + tfr_won, dec_tickets = dec_tickets + tickets_won,
     season_tickets = season_tickets - case when coalesce(p_ticket, false) then n else 0 end
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'season_decoder', jsonb_build_object('count', n)); end if;
   if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'season_win'); end if;
-  return jsonb_build_object('draws', v_res, 'card', public.qz_season_json(uid), 'coins', p.coins, 'fragments', p.fragments,
+  return jsonb_build_object('draws', v_res, 'card', public.qz_season_json(uid), 'coins', p.coins, 'fragments', p.fragments, 'tfrags', p.trans_frags,
     'tickets', p.dec_tickets, 'season_tickets', p.season_tickets, 'cost', v_cost);
 end $$;
 -- a fresh season card (what was stamped on this one is gone)
@@ -1409,7 +1423,7 @@ declare
   v_res jsonb := '[]'::jsonb; v_new jsonb;
   v_num integer; v_pos integer; v_full boolean; v_code text; v_kind text; v_arg text; v_gun text; v_amt integer; f integer;
   v_card integer := 0;
-  coins_won integer := 0; frags_won integer := 0; tickets_won integer := 0;
+  coins_won integer := 0; frags_won integer := 0; tickets_won integer := 0; tf integer; tfr_won integer := 0;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   if n not in (1, 10) then raise exception 'bad_count'; end if;
@@ -1473,7 +1487,9 @@ begin
     end if;
     f := cfg.side_frag_min + floor(random() * (greatest(cfg.side_frag_max - cfg.side_frag_min, 0) + 1))::integer;
     frags_won := frags_won + f;
-    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'card', v_card));
+    tf := cfg.trans_frag_min + floor(random() * (greatest(cfg.trans_frag_max - cfg.trans_frag_min, 0) + 1))::integer;
+    tfr_won := tfr_won + tf;
+    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'tfrags', tf, 'card', v_card));
     -- a full card makes way for a new one (the rest of a ten goes on the new card)
     if not (false = any(v_marked)) or array_length(v_drawn, 1) >= hi then
       update public.side_boards set marked = v_marked, drawn = v_drawn, done = v_done where user_id = uid;
@@ -1486,12 +1502,12 @@ begin
     end if;
   end loop;
   update public.side_boards set marked = v_marked, drawn = v_drawn, done = v_done, updated_at = now() where user_id = uid;
-  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, dec_tickets = dec_tickets + tickets_won
+  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, trans_frags = trans_frags + tfr_won, dec_tickets = dec_tickets + tickets_won
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'side_decoder', jsonb_build_object('count', n)); end if;
   if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'side_win'); end if;
-  return jsonb_build_object('draws', v_res, 'card', public.qz_side_json(uid), 'coins', p.coins, 'fragments', p.fragments,
+  return jsonb_build_object('draws', v_res, 'card', public.qz_side_json(uid), 'coins', p.coins, 'fragments', p.fragments, 'tfrags', p.trans_frags,
     'tickets', p.dec_tickets, 'cost', v_cost);
 end $$;
 -- a fresh sidearm card (what was stamped on this one is gone)
@@ -1562,6 +1578,31 @@ begin
   return jsonb_build_object('gun', p_gun, 'fragments', f);
 end $$;
 
+-- v6.41: a transcendence gun of your choice (one of trans_guns) for trans_cost transcendence fragments
+create or replace function public.qz_trans_exchange(p_gun text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  cfg public.gacha_config;
+  f integer;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  cfg := (select g from public.gacha_config g where g.id = 1);
+  if cfg.id is null then raise exception 'no_config'; end if;
+  if p_gun is null or not (p_gun = any(cfg.trans_guns)) then raise exception 'not_for_exchange'; end if;
+  if not exists (select 1 from public.gun_prices gp where gp.gun_id = p_gun) then raise exception 'not_for_exchange'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  if exists (select 1 from public.owned_guns where user_id = uid and gun_id = p_gun) then raise exception 'already_owned'; end if;
+  f := (select t.trans_frags from public.profiles t where t.id = uid);
+  if f < cfg.trans_cost then raise exception 'not_enough_tfrags'; end if;
+  update public.profiles set trans_frags = trans_frags - cfg.trans_cost where id = uid;
+  f := (select t.trans_frags from public.profiles t where t.id = uid);
+  insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, p_gun, 0);
+  insert into public.gacha_log (user_id, src, kind, tier, gun_id, amount) values (uid, 'trans', 'gun', null, p_gun, -cfg.trans_cost);
+  return jsonb_build_object('gun', p_gun, 'tfrags', f);
+end $$;
+
 -- ---------- who may call what ----------
 revoke all on function public.qz_new_profile(uuid, text) from public, anon, authenticated;
 revoke all on function public.qz_on_signup() from public, anon, authenticated;
@@ -1591,6 +1632,7 @@ revoke all on function public.qz_side_decode(integer) from public, anon;
 revoke all on function public.qz_side_reset() from public, anon;
 revoke all on function public.qz_side_shuffle() from public, anon;
 revoke all on function public.qz_exchange(text) from public, anon;
+revoke all on function public.qz_trans_exchange(text) from public, anon;
 revoke all on function public.qz_import_rec(integer, integer, integer, integer, integer) from public, anon;
 revoke all on function public.qz_rec(public.profiles) from public, anon, authenticated;
 revoke all on function public.qz_eps(uuid) from public, anon, authenticated;
@@ -1614,6 +1656,7 @@ grant execute on function public.qz_side_decode(integer) to authenticated;
 grant execute on function public.qz_side_reset() to authenticated;
 grant execute on function public.qz_side_shuffle() to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;
+grant execute on function public.qz_trans_exchange(text) to authenticated;
 grant execute on function public.qz_import_rec(integer, integer, integer, integer, integer) to authenticated;
 
 -- ---------- friends and gifts (v6.18) ----------

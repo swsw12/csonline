@@ -1341,3 +1341,31 @@ html.touch #touch .tAlt.jn{border-color:rgba(200,140,255,.95)!important;backgrou
 /* v6.40 Crowbar Maverick (crowbar.js): a shocked zombie player's screen flickers blue at the edges */
 #hud.shk::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(80,160,255,.28) 85%,rgba(150,210,255,.45) 100%);animation:cbShk .11s steps(2) infinite}
 @keyframes cbShk{from{opacity:.55}to{opacity:1}}
+/* v6.41 THANATOS-9 (thanatos.js): a violet crosshair in the drill form, a ring under it (transforming · ready · the barrage's time) */
+#cross.th i{background:#c9a0ff;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 8px rgba(160,90,255,.95)}
+#thRing{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;pointer-events:none;display:none}
+#thRing svg{width:100%;height:100%;transform:rotate(-90deg)}
+#thRing circle{fill:none;stroke-width:2.4}
+#thRing .tr{stroke:rgba(255,255,255,.13)}
+#thRing .pg{stroke:#9a6af0;stroke-dasharray:150.8;filter:drop-shadow(0 0 3px rgba(150,80,255,.85));transition:stroke-dashoffset .06s}
+#thRing.rdy .pg{stroke:#cfa8ff;animation:jnPulse .8s ease-in-out infinite alternate}
+#thRing.bar .pg{stroke:#e8ccff;stroke-width:3.4;filter:drop-shadow(0 0 6px rgba(190,110,255,1))}
+#thRing b{position:absolute;left:100%;top:100%;margin:-10px 0 0 -6px;font-size:13px;color:#d0a8ff;text-shadow:0 0 6px rgba(150,70,255,.95),0 1px 2px #000;white-space:nowrap}
+html.touch #touch .tAlt.th{border-color:rgba(190,140,255,.9)!important;background:rgba(60,24,100,.45)!important;box-shadow:0 0 10px rgba(160,90,255,.6)}
+/* v6.41 M4A1 Dark Knight (m4dk.js): a crimson crosshair in B */
+#cross.dkb i{background:#ff5a4a;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 8px rgba(255,40,30,.95)}
+/* v6.41 the transcendence exchange (shop.js): its fragment (a crimson crystal set in gold), its tab, cards, button and progress bar */
+.tfi{display:inline-block;width:11px;height:14px;margin-right:4px;vertical-align:-2px;clip-path:polygon(50% 0,100% 30%,82% 100%,18% 100%,0 30%);background:linear-gradient(160deg,#ffe2a0 0,#ff5a46 30%,#a8101c 70%,#3a0408);box-shadow:0 0 5px rgba(255,60,40,.6);flex:none}
+#shopWin .scoin.tfr{border-color:#a8343c;cursor:pointer}#shopWin .scoin.tfr b{color:#ffb090}
+#shopWin .spages button.tp.on{background:linear-gradient(#4a0c12,#1a0406);border-color:#e8b450;color:#ffe6c0}
+#shopWin .btr{background:linear-gradient(#e8b450,#8a1418);color:#fff}
+#shopWin .sc.trans,#shopWin .sc.tX.own{background:linear-gradient(#2a1416,#140a0c);border-color:#a8343c}
+#shopWin .sc.tX.on{box-shadow:0 0 0 2px #e8b450,0 0 14px rgba(255,80,60,.45)}
+#shopWin .sdi.tX{background:radial-gradient(ellipse at 50% 60%,#5a0e16,#0e0506);border-color:#e8b450;box-shadow:inset 0 0 20px rgba(255,60,40,.4)}
+#shopWin .scp .pr.tf{color:#ffb090}#shopWin .scp .pr.tf.poor{color:#a86a5a}
+#shopWin .sbb.trx{background:linear-gradient(#c8242c,#5a0a10);border-color:#e8b450;color:#fff}#shopWin .sbb.trx:hover{background:linear-gradient(#d83038,#6a0e14)}
+#shopWin .trbar{position:relative;height:16px;margin:8px 0 4px;border:1px solid #6a2a20;border-radius:8px;background:#1a0a0a;overflow:hidden}
+#shopWin .trbar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#8a1418,#ff5a46,#e8b450)}
+#shopWin .trbar span{position:relative;display:block;text-align:center;font-size:11px;line-height:14px;color:#fff;text-shadow:0 1px 2px #000}
+.bi.lk .c small.gb.gt,.mbi.lk .c small.gb.gt{color:#ffb070}
+#gPop .hist b.tX{color:#ff9a6a}
