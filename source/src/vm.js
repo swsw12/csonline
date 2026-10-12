@@ -202,6 +202,10 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
           // the other arm pulls back as the body turns into the swipe
           const O=A[sd>0?1:0],k=Math.sin(p*Math.PI);O[2]+=k*.05;O[1]-=k*.03;trailOn=p>.36&&p<.64;this.camRoll=sd*Math.sin(clamp((p-.3)/.4,0,1)*Math.PI)*.035;this.camYaw=sd*Math.sin(clamp((p-.3)/.4,0,1)*Math.PI)*.02}
         if(p>=1)this.mel=null}
+      // the firefighter's charge: both hands out on the oxygen tank held across in front (fireman.js)
+      if(m.fmTank){const k=typeof FM!=='undefined'?FM.vmK(a):0;m.fmTank.visible=k>.02&&this.vis;
+        if(k>0){const H=FM.VMH;for(let i=0;i<2;i++)for(let j=0;j<6;j++)A[i][j]+=(H[i][j]-A[i][j])*k;const s=Math.sin(this.t*31)*.006*k;A[0][1]+=s;A[1][1]+=s;
+          m.fmTank.position.set(0,-.272+s-(1-k)*.25,-.52);m.fmTank.rotation.set(.05,0,Math.PI/2)}}
       // breathing, walk bob, finger twitches
       const idle=Math.sin(this.t*2.4)*.01;A[0][1]+=idle-Math.abs(Math.cos(ph))*.014*bobA;A[1][1]+=-idle-Math.abs(Math.sin(ph))*.014*bobA;A[0][2]+=Math.sin(ph)*.02*bobA;A[1][2]-=Math.sin(ph)*.02*bobA;
       const tw=[jerk(this.t,3,1.9,.4)*.12,jerk(this.t,5,2.3,.4)*.1];

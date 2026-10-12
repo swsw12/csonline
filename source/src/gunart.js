@@ -3,7 +3,7 @@
 // gun frame: origin at the firing hand's grip, barrel along -Z, up +Y, metres
 const GA_MATS=['blk','blk2','steel','bright','wood','olive','tan','rub','brass','glove','sl_guard','sl_medic','sl_soldier','sl_hazmat','skin','zs_rager',
   'zs_runner','zs_brute','zs_scream','claw','red','heGreen','frost','lens','muzzle','white','wood2','gunmetal','cuff','hglove','nail','flesh',
-  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap','coffW','coffL','zs_coffin','dred','dyel'];
+  'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap','coffW','coffL','zs_coffin','dred','dyel','zs_fireman','sl_fmcoat'];
 const GA={W:1024,H:1920,P:128,idx:{},tex:null,texVM:null,canvas:null};// 8 x 15 slots of 128 px (v6.21: two more rows for the chapters' props; v6.29: two more for 5챕터)
 const GA_SLOTS=GA.W/GA.P*(GA.H/GA.P);// slots the atlas holds (the module painters skip a material past it)
 GA_MATS.forEach((m,i)=>GA.idx[m]=i);
@@ -46,14 +46,14 @@ function paintGunAtlas(){const PS=GA.P;
     const sleeve=(name,base,camo)=>patch(name,(x,y,X,Y)=>{const t=nz(X,Y,11,22)+(Math.sin(x*.2+hash2(Math.floor(y/12),2,1)*4)*.5)*.2;let c=t>.62?lt(base,.08):t<.38?dk(base,.15):base;
       if(camo){const n=nz(X,Y,13,24);if(n>.62)c=mix(c,camo[0],.7);else if(n<.36)c=mix(c,camo[1],.7)}if(y<2||y>125)c=dk(c,.3);if(x%40===0)c=dk(c,.2);return c});
     // sleeve and zombie-arm colours come from ARM_DESIGN (design.js)
-    for(const k of ['sl_guard','sl_medic','sl_soldier','sl_hazmat']){const a=ARM_DESIGN[k];sleeve(k,a[0],a.length>2?[a[1],a[2]]:null)}
+    for(const k of ['sl_guard','sl_medic','sl_soldier','sl_hazmat','sl_fmcoat']){const a=ARM_DESIGN[k];sleeve(k,a[0],a.length>2?[a[1],a[2]]:null)}
     patch('skin',(x,y,X,Y)=>{const t=nz(X,Y,14,18);return t>.6?'#d4a684':t<.4?'#b48464':'#c49474'});
     const zs=(name,base,blot)=>patch(name,(x,y,X,Y)=>{const t=nz(X,Y,15,10),t2=nz(X,Y,16,24);let c=t>.62?dk(base,.25):t<.32?lt(base,.1):base;if(t2>.64)c=mix(c,blot,.5);
       if(hash2(X,Y,17)<.02)c='#3a0c0a';if(((x*7+y*3)%41===0)&&hash2(x,y,18)<.5)c=dk(base,.45);const v=Math.abs(Math.sin(x*.09+Math.sin(y*.07)*2.5));if(v<.03)c=mix(c,'#3a2a40',.6);
       // torn skin showing muscle, smeared blood
       const w=nz(X,Y,46,22);if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55);
       const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,'#5a0808',clamp((bl-.66)*4,0,.8));return c});
-    for(const k of ['zs_rager','zs_runner','zs_brute','zs_scream','zs_coffin']){const a=ARM_DESIGN[k];zs(k,a[0],a[1])}
+    for(const k of ['zs_rager','zs_runner','zs_brute','zs_scream','zs_coffin','zs_fireman']){const a=ARM_DESIGN[k];zs(k,a[0],a[1])}
     patch('claw',(x,y,X,Y)=>{const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=mix(c,'#6a0a08',.7);return c});
     patch('nail',(x,y)=>mix('#c8bca0','#2a1c14',y/127));
     patch('coffW',(x,y,X,Y)=>{const pl=Math.floor(x/26),g=nz(X,Y,91+pl,14)+Math.sin(y*.35+pl*2.1+nz(X,Y,92,30)*4)*.08;let c=g>.62?'#2e1c10':g<.4?'#4a3020':'#3a2616';if(x%26===0)c='#160c06';if(hash2(X,Y,93)<.01)c='#5a4030';return c});
@@ -342,8 +342,9 @@ function buildVM(id,skinKey,U,dual){const G=GUNS[id];const mat=matVM(GA.texVM,U)
   if(G.vmFix)G.vmFix(armR,armL);// a model may place its hands itself (the Skull-9's fists round its haft)
   return {id,root,gun,tags:A.tags,armR,armL,mat,gun2,tags2}}
 // zombie claws: two arms only
-function buildClaws(zk,U){const mat=matVM(GA.texVM,U);const root=new THREE.Group();const sk='zs_'+zk;
-  const mk=s=>{const g=new THREE.Group();const a=armMesh(sk,sk,mat,{claws:1});g.add(a);a.rotation.set(0,0,0);return g};
+function buildClaws(zk,U){const mat=matVM(GA.texVM,U);const root=new THREE.Group();const sk='zs_'+zk,fm=zk==='fireman';
+  // the firefighter: turnout-coat sleeves with a reflective cuff, and the oxygen tank it holds out in front while charging (fireman.js)
+  const mk=s=>{const g=new THREE.Group();const a=fm?armMesh('sl_fmcoat',sk,mat,{claws:1,cuff:'fmRefl'}):armMesh(sk,sk,mat,{claws:1});g.add(a);a.rotation.set(0,0,0);return g};
   const R=mk(1),L=mk(-1);root.add(R);root.add(L);
   lookArm(R.children[0],[0,0,0],[.25,-.5,1]);lookArm(L.children[0],[0,0,0],[-.25,-.5,1]);
   let vd=false,doll=null;if(zk==='scream'){vd=true;// voodoo zombie: a pinned rag doll in the right fist, legs in the grip, head forward
@@ -353,4 +354,5 @@ function buildClaws(zk,U){const mat=matVM(GA.texVM,U);const root=new THREE.Group
     for(const [x,z,h] of [[-.02,-.24,.06],[.022,-.226,.05],[.012,-.14,.055]]){dp.push(Pt(x,.03+h/2,z,.004,h,.004,'steel'),Pt(x,.032+h,z,.012,.012,.012,'red',{r:.005}))}
     // the doll hangs from a wrist pivot at the fist so the swing can flick it up and chop it down
     for(const q of dp)q.c=[q.c[0],q.c[1]+.004,q.c[2]+.065];doll=new THREE.Group();doll.position.set(0,-.004,-.065);doll.add(new THREE.Mesh(partGeo(dp),mat));R.children[0].add(doll)}
-  return {id:'claw',root,gun:root,tags:{},armR:R,armL:L,mat,vd,doll}}
+  let fmTank=null;if(fm&&GUNS.fmTank){fmTank=new THREE.Group();const tm=new THREE.Mesh(partGeo(GUNS.fmTank.parts),mat);tm.frustumCulled=false;fmTank.add(tm);fmTank.scale.setScalar(.6);fmTank.visible=false;root.add(fmTank)}
+  return {id:'claw',root,gun:root,tags:{},armR:R,armL:L,mat,vd,doll,fmTank}}

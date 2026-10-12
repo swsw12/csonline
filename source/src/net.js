@@ -12,7 +12,7 @@ const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r7'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r8'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39)
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
@@ -356,7 +356,10 @@ function netApplyEff(a,e,src){if(!a||!a.alive)return;
   if(a.isPlayer&&e.dz)FX.shake=Math.max(FX.shake,.5)}
 // a hit this page saw on someone it does not own: shown at once, judged by the host
 function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||t.team===TH)return 0;
-  NET.hits.push([t.id,Math.round(dmg),WI[o.w]??-1,(o.hs?1:0)|(o.knife?2:0)|(o.heavy?4:0)|(o.he?8:0)|(o.blunt?16:0),o.dir?r2(o.dir[0]):0,o.dir?r2(o.dir[1]):0,o.dir?r2(o.dir[2]):0,r1(o.kb),r2(o.stag),r2(o.x),r2(o.y),r2(o.z),r1(o.up)]);
+  // a hit on the firefighter's oxygen tank (as this page saw it) is claimed as one: the host does not judge it again
+  const tk=typeof FM!=='undefined'&&FM.tankHit(t,o);
+  NET.hits.push([t.id,Math.round(dmg),WI[o.w]??-1,(o.hs?1:0)|(o.knife?2:0)|(o.heavy?4:0)|(o.he?8:0)|(o.blunt?16:0)|(tk?32:0),o.dir?r2(o.dir[0]):0,o.dir?r2(o.dir[1]):0,o.dir?r2(o.dir[2]):0,r1(o.kb),r2(o.stag),r2(o.x),r2(o.y),r2(o.z),r1(o.up)]);
+  if(tk&&!o.he){t.fmFl=.12;return 0}// (the tank flashes, not the body)
   const d=dmg*(1+.1*G.moraleLvl)*(src.wup&&src.wup[o.w]?1+.1*src.wup[o.w]:1),ab=Math.min(Math.max(0,t.armor),d*.5),dealt=Math.max(0,Math.min(d-ab,Math.max(0,t.hp))+ab);
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
   HUD.dmgNum(t,dealt,!!o.hs,false);if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
@@ -372,7 +375,7 @@ const HOSTH={
   pong(L,m){if(m.h&&!(L.srtt&&NET.ui==='game'))L.rtt=lerp(L.rtt||0,Math.max(0,netNow()-m.h),L.rtt?.3:1)},
   bye(L){netLinkDown(L,'bye')},
   h(L,m){const src=actorOfKey(L.key);if(!src||!Array.isArray(m.L))return;for(const h of m.L){const t=byId(h[0]);if(!t||!t.alive||t.team!==TZ)continue;const f=h[3];
-    damageActor(t,clamp(+h[1]||0,0,5000),src,{w:WL[h[2]]||'',hs:!!(f&1),knife:!!(f&2),heavy:!!(f&4),he:!!(f&8),blunt:!!(f&16),dir:[h[4]/100,h[5]/100,h[6]/100],kb:h[7]/10,stag:h[8]/100,x:h[9]/100,y:h[10]/100,z:h[11]/100,up:h[12]/10})}},
+    damageActor(t,clamp(+h[1]||0,0,5000),src,{w:WL[h[2]]||'',hs:!!(f&1),knife:!!(f&2),heavy:!!(f&4),he:!!(f&8),blunt:!!(f&16),tank:f&32?1:0,dir:[h[4]/100,h[5]/100,h[6]/100],kb:h[7]/10,stag:h[8]/100,x:h[9]/100,y:h[10]/100,z:h[11]/100,up:h[12]/10})}},
   claw(L,m){const a=actorOfKey(L.key),t=byId(m.i);if(!a||!t||!a.alive||a.team!==TZ||!t.alive||t.team!==TH)return;clawApply(a,t,!!m.h)},
   fall(){},// (fall damage was removed in v6.26; an older client may still send this)
   eff(L,m){const src=actorOfKey(L.key),t=byId(m.i);if(t&&src)netApplyEff(t,m,src)},

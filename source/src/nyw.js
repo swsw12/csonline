@@ -180,7 +180,8 @@ function rayActorsX(n,ox,oy,oz,dx,dy,dz,tmax){const src=n.owner;let best=null,bt
     if(t.epRay&&t.epRayZc===t.zc){const r=t.epRay(ox,oy,oz,dx,dy,dz,bt);if(r&&r.t<bt){bt=r.t;best=t;part=r.part}continue}const lx=c.x-ox,lz=c.z-oz;const tc=lx*dx+lz*dz;if(tc<-1||tc>bt+1)continue;
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h*1.15,bt);if(th>=0){bt=th;best=t;part='head'}
     const hw=(t.hitW||c.hw)+.04,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);if(tb>=0&&tb<bt){bt=tb;best=t;part=(oy+dy*tb)<c.y+(top-c.y)*.45?'legs':'body'}
-    if(t.team===TZ){const ta=rayArms(t,ox,oy,oz,dx,dy,dz,bt,1.15);if(ta>=0&&ta<bt){bt=ta;best=t;part='body'}}}
+    if(t.team===TZ){const ta=rayArms(t,ox,oy,oz,dx,dy,dz,bt,1.15);if(ta>=0&&ta<bt){bt=ta;best=t;part='body'}}
+    if(t.xRay){const lim=best===t&&part!=='head'?bt+.15:bt;const r=t.xRay(ox,oy,oz,dx,dy,dz,lim);if(r&&r.t<lim){bt=r.t;best=t;part=r.part}}}
   return best?{a:best,t:bt,part}:null}
 // move a projectile through the world for dt: onActor/onWorld answer 'go' (keep flying), 'stop' (stay where it is) or 'kill' (remove)
 function projStep(n,dt,grav,onActor,onWorld){const sp0=Math.hypot(n.vx,n.vy,n.vz);const steps=Math.max(1,Math.ceil(sp0*dt/.5));const h=dt/steps;
@@ -191,7 +192,7 @@ function projStep(n,dt,grav,onActor,onWorld){const sp0=Math.hypot(n.vx,n.vy,n.vz
       if(hw&&hw.t<=rem+.02){const k=Math.max(0,tW-.03);n.x+=dx*k;n.y+=dy*k;n.z+=dz*k;return onWorld(n,wn,box,dx,dy,dz)}
       n.x+=dx*rem;n.y+=dy*rem;n.z+=dz*rem;rem=0}}
   return null}
-function projHitFx(n,ha,dx,dy,dz,amt){if(ha.part==='ball')FX.impact(n.x,n.y,n.z,-dx,-dy,-dz,'metal');else FX.blood(n.x,n.y,n.z,dx,dy,dz,amt,false);AU.at('imp_flesh',n.x,n.y,n.z,{vol:.6});if(n.owner.isPlayer){HUD.hitmark(ha.part==='head');if(ha.part==='head')AU.play('headshot',{vol:.6})}}
+function projHitFx(n,ha,dx,dy,dz,amt){if(ha.part==='ball'||ha.part==='tank')FX.impact(n.x,n.y,n.z,-dx,-dy,-dz,'metal');else FX.blood(n.x,n.y,n.z,dx,dy,dz,amt,false);AU.at('imp_flesh',n.x,n.y,n.z,{vol:.6});if(n.owner.isPlayer){HUD.hitmark(ha.part==='head');if(ha.part==='head')AU.play('headshot',{vol:.6})}}
 function projWallFx(n,wn,box,snd){const m=box&&(box.o.f&&box.o.f[nf(wn)]||box.mat)||'conc';FX.impact(n.x,n.y,n.z,wn[0],wn[1],wn[2],m);AU.at(snd||'hstick',n.x,n.y,n.z,{vol:.55,range:28})}
 const PROJ_UPD={
   bolt(n,dt){const W=WPN[n.w]||WPN.xbow;
@@ -332,7 +333,7 @@ function updBurn(dt){for(const t of G.actors){if(!(t.burnT>0))continue;if(!t.ali
     if(Math.random()<dt*26){const h=rr(.2,t.c.h*.95);FX.spawn({x:t.c.x+rr(-.25,.25),y:t.c.y+h,z:t.c.z+rr(-.25,.25),vx:rr(-.2,.2),vy:rr(.8,1.6),vz:rr(-.2,.2),life:rr(.25,.45),s0:rr(.2,.34),s1:.06,r:1,g:rr(.45,.65),b:.15,f:11,add:1})}
     if(Math.random()<dt*5)FX.spawn({x:t.c.x,y:t.c.y+t.c.h,z:t.c.z,vx:rr(-.2,.2),vy:rr(.6,1.2),vz:rr(-.2,.2),life:rr(.8,1.4),s0:.2,s1:.8,r:.15,g:.14,b:.13,a:.45,f:2,drag:1,lit:1});
     if(t.burnAcc>=.25&&NET.cli)t.burnAcc=0;
-    if(t.burnAcc>=.25){t.burnAcc-=.25;const src=t.burnSrc&&G.actors.includes(t.burnSrc)?t.burnSrc:null;damageActor(t,11,src,{w:t.burnW||'bdc',dir:[0,0,0],kb:0,stag:.05,x:t.c.x,y:t.c.y+1,z:t.c.z})}}}
+    if(t.burnAcc>=.25){t.burnAcc-=.25;const src=t.burnSrc&&G.actors.includes(t.burnSrc)?t.burnSrc:null;damageActor(t,11,src,{w:t.burnW||'bdc',dir:[0,0,0],kb:0,stag:.05,x:t.c.x,y:t.c.y+1,z:t.c.z,dot:1})}}}
 
 // ---------- CSO zombie skills: Light (invisibility), Heavy (trap), Voodoo (heal) ----------
 function nySkill(a,Z){const c=a.c;

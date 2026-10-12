@@ -2,7 +2,7 @@
 // ============ v6.28 weapons: Balrog-XI (flame-fan shotgun), Plasma Gun (green splash orbs), Thunderbolt (wall-piercing railgun) ============
 // Names and mechanics follow the CSO weapons; the models are this game's own box designs on the weapon atlas (three new glowing / lacquer slots).
 //
-// Balrog-XI: a 7-round auto shotgun fed shell by shell. Four shells in ONE pull of the trigger (spRun: letting go starts the count again) put a
+// Balrog-XI: a 7-round auto shotgun fed shell by shell. Four shells in ONE pull of the trigger (spShot, newguns.js: a pause longer than 1.5 shot intervals starts the count again) put a
 // special charge into its own slot (up to 7; the Blaze-8's special-shell machinery, newguns.js). Right click looses five fireballs in a fan
 // (spFlame): each grows as it flies, stops in the first zombie it touches and sets it alight, so at point blank all five land in one body.
 // The charge shows as a ring round the crosshair (bxRing) and as seven ember pips on the receiver.
@@ -11,8 +11,8 @@
 // The reload pulls the glowing cell out of its cradle on the right side backwards and pushes a fresh one in (rlCell).
 // Thunderbolt: a railgun with its own ammunition (30 shots, no magazine and no reload; buying ammo or a supply refills it: W.noRel).
 // The beam goes through every wall (×0.85 each) and every zombie on its line (×0.9 for each one before). Standing still it never misses,
-// scoped or not. Its own scope: a teal ring that turns red while the line runs over a zombie, and while scoped every zombie in view is marked,
-// through walls too (tbHud). The coils along the rails light up again as it recharges (VMX.thunder).
+// scoped or not. Its own scope: a teal ring that turns red while the line runs over a zombie, and while scoped every zombie in view is marked
+// (only with a clear line to it since v6.38.1: no marks through walls; tbHud). The coils along the rails light up again as it recharges (VMX.thunder).
 
 // ---------- atlas: plasma glow (self-lit green), the Thunderbolt's blue-violet plating, its self-lit cyan ----------
 const CSO_MATS=['plGlow','tbBody','tbGlow'];

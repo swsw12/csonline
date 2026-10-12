@@ -256,6 +256,8 @@ const ARM_DESIGN={
   zs_brute:  ['#8a7a6a','#6a3a32'],             // 헤비 좀비 팔 — 누런 살색, 적갈색 얼룩
   zs_scream: ['#2a1a15','#4a3020'],             // 부두 좀비 팔 — 짙은 갈색 피부
   zs_coffin: ['#282321','#3a1c10'],             // 관짝 좀비 팔 — 거의 검은 피부
+  zs_fireman:['#5e4c42','#2a1410'],             // 소방관 좀비 팔 — 그을린 잿빛 피부 (손등)
+  sl_fmcoat: ['#8a6c3e'],                       // 소방관 좀비 소매 — 그을린 황갈색 방화복 (손목에 형광 띠: fmRefl, fireman.js)
 };
 
 // ================================================================================================
@@ -380,6 +382,7 @@ function defHuman(k){
 //        | 'mirage' 환각(4챕터: 아군의 사람 모델을 그대로 빌려 그리므로 여기 몸은 쓰이지 않는다)
 //        | 'tiamat' 티아마트(5챕터 보스: 거대 지네 — 몸은 tiamat.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시) | 'centi' 새끼 지네(5챕터: 마찬가지)
 //        | 'drowned' 익사체 좀비(5챕터) | 'hazmat' 방호복 연구원 좀비(5챕터)
+//        | 'fireman' 소방관 좀비 (등의 산소통은 몸이 아니라 fireman.js 가 따로 붙인다: 돌진할 때 앞으로 들기 때문)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
 function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
@@ -728,6 +731,41 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       L.push({n:'frame',b:2,c:[0,hc[1]+Hh*.5,fz],s:[W*1.04,.035,.04],m:'frame'},{n:'frame',b:2,c:[0,hc[1]-Hh*.47,fz],s:[W*1.04,.04,.04],m:'frame'},
         {n:'tank',b:1,c:[0,sY+o.torsoH*.5,zb+.09],s:[.2,o.torsoH*.8,.16],m:'tank'},{n:'gauge',b:1,c:[0,sY+o.torsoH*.48,zb+.172],s:[.07,o.torsoH*.4,.012],m:'gauge'},
         {n:'hose',b:1,c:[.12,sY+o.torsoH*.98,zb+.06],s:[.03,.03,.14],m:'hose'});
+      return L}}
+  // ▶ 소방관 좀비 (fireman, 플레이 가능) — 불길 속에서 감염된 진압대원
+  //    그을리고 찢어진 황갈색 방화복(몸통·소매·장화 위에 형광 연두+은색 반사띠, 등에 'FD07'), 검은 고무 장화, 허리에 호흡기 벨트,
+  //    등에 공기호흡기 등판과 어깨끈, 가슴에 늘어진 면체(마스크)와 호스, 짙은 붉은 헬멧(뒤로 긴 챙, 앞에 금테 두른 가죽 휘장 '07'),
+  //    불에 그을린 잿빛 피부에 숯불처럼 빛나는 금(주황 혈관), 주황 눈.  등의 산소통은 fireman.js 가 따로 붙인다(돌진할 때 앞으로 든다).
+  else if(k==='fireman'){// 진압대원 — a firefighter infected in the blaze: scorched turnout coat with reflective bands, red helmet, charred skin cracked like embers
+    o={hipY:.95,thigh:.43,legW:.17,legD:.19,shinW:.155,torsoW:.48,torsoH:.52,torsoD:.3,belly:.03,shX:.27,armW:.135,upper:.3,fore:.28,hand:.12,headW:.23,headH:.25,headD:.25,headZ:-.02,neck:.05,claw:.022,fingL:.52,curl:.5,curlJ:121,ears:[0,0],browH:.03};
+    const sk='#5e4c42',co='#8a6c3e',rf='#c8dc3a',sv='#c4c8c8',em='#ff7a28';
+    mats=Object.assign({top:{base:co},legs:{base:dk(co,.06)},sleeve:{base:co},fore:{base:co},shin:{base:'#1a1816',style:'rubber'},skin:{base:sk,style:'zskin',blot:'#2a1410'},
+      hand:{base:dk(sk,.15),style:'zskin',blot:'#2a1410'},boot:{base:'#141210',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#2a1410'},
+      helm:{base:'#7a1c14',style:'plate',gloss:244},badge:{base:'#2a1612',style:'plate',gloss:240},strap:{base:'#1c1c1c',style:'rubber'},mask:{base:'#22262a',style:'rubber'},
+      plate:{base:'#2c2e30',style:'plate',gloss:242},collar:{base:dk(co,.1)}},goreM);
+    const RB=(v0,v1)=>[['band',v0,v1,rf],['band',v0+(v1-v0)*.36,v1-(v1-v0)*.36,sv]];// a reflective band: lime with a silver stripe through it
+    decor={torso:{front:[['vband',.45,.55,dk(co,.18)],...RB(.06,.15),...RB(.56,.65),['tear',3,121,sk],['rot',2],['veins',3,em,1],['soak',.1,.55,'#3a0606',.5],['grime',.95]],
+        back:[...RB(.06,.15),...RB(.56,.65),['text','FD07',.3,.84,rf],['tear',2,122,sk],['grime',.95]],side:[...RB(.06,.15),...RB(.56,.65),['grime',.9]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#ff9a30',cheek:1}],['veins',3,em,1],['rot',1]],side:[['veins',2,em,1],['rot',1]],back:[['rot',1]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.36],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#2a0606',.7]]},
+      neck:{all:[['veins',2,em,1],['rot',1]]},
+      uaL:{all:[...RB(.55,.68),['tear',1,123,sk],['grime',.8]]},uaR:{all:[...RB(.55,.68),['grime',.8]]},
+      faL:{all:[...RB(.08,.2),['grime',.85],['rot',1]]},faR:{all:[...RB(.08,.2),['tear',1,124,sk],['grime',.85]]},
+      handL:{all:[['veins',2,em,1],['soak',0,.4,'#3a0606',.6]]},handR:{all:[['veins',2,em,1],['soak',0,.4,'#3a0606',.6]]},
+      thL:{all:[['grime',.9],['tear',1,125,sk]]},thR:{all:[['grime',.9],['rot',1]]},shL:{all:[...RB(.82,.94),['grime',.5]]},shR:{all:[...RB(.82,.94),['grime',.5]]},
+      pelvis:{fb:[['belt',.72,.92,'#1c1c1c','#8a8a88'],['grime',.8]]},
+      helm:{all:[['grime',.75],['rot',1]],side:[['band',.3,.5,rf]]},badge:{front:[['out',0,0,1,1,'#c8a648'],['out',.08,.06,.92,.94,'#c8a648'],['text','07',.22,.64,'#d8b858']],all:[['grime',.4]]},
+      strap:{all:[['grime',.5]]},mask:{front:[['rect',.18,.42,.82,.88,'#3a4a52'],['out',.18,.42,.82,.88,'#101214']],all:[['grime',.4]]},plate:{all:[['grime',.6]]},collar:{all:[['grime',.9]]}};
+    // the helmet (dome, comb, a brim longer at the back, the shield on the front), the turned-up collar, the breathing set's back plate and
+    // harness (two straps down the front and over the shoulders), the face mask hanging on the chest with its hose
+    extra=H=>{const o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],hc=H.headC,W=o.headW,Hh=o.headH,zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2;
+      const L=[{n:'helm',b:2,c:[0,hc[1]+Hh*.5,o.headZ+.012],s:[W*1.2,.13,o.headD*1.18],m:'helm'},{n:'helm',b:2,c:[0,hc[1]+Hh*.6,o.headZ+.012],s:[.045,.075,o.headD*1.12],m:'helm'},
+        {n:'helm',b:2,c:[0,hc[1]+Hh*.33,o.headZ+o.headD*.22],s:[W*1.5,.026,o.headD*1.62],m:'helm'},
+        {n:'badge',b:2,c:[0,hc[1]+Hh*.64,o.headZ-o.headD*.62],s:[.09,.125,.02],m:'badge'},
+        {n:'collar',b:1,c:[0,nY-.02,o.headZ+.03],s:[.32,.09,.3],m:'collar'},
+        {n:'plate',b:1,c:[0,sY+o.torsoH*.52,zb+.018],s:[.26,o.torsoH*.86,.03],m:'plate'},
+        {n:'mask',b:1,c:[0,sY+o.torsoH*.8,zf-.055],s:[.17,.14,.08],m:'mask'},{n:'strap',b:1,c:[-.1,sY+o.torsoH*.96,zf-.035],s:[.03,.03,.12],m:'strap'}];
+      for(const sd of [-1,1])L.push({n:'strap',b:1,c:[sd*.12,sY+o.torsoH*.56,zf-.016],s:[.055,o.torsoH*.8,.022],m:'strap'},{n:'strap',b:1,c:[sd*.12,sY+o.torsoH*1.0,0],s:[.055,.022,o.torsoD+.04],m:'strap'});
       return L}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,

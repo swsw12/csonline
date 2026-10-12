@@ -83,7 +83,10 @@ function rayActors(src,ox,oy,oz,dx,dy,dz,tmax,teamMask){let best=null,bt=tmax,pa
     const h=t.headR||.14;const th=raySphere(ox,oy,oz,dx,dy,dz,t.head.x,t.head.y,t.head.z,h,bt);if(th>=0){bt=th;best=t;part='head'}
     const hw=(t.hitW||c.hw)+.02,top=t.head.y-h*.85;const tb=rayAABB(ox,oy,oz,dx,dy,dz,c.x-hw,c.y,c.z-hw,c.x+hw,top,c.z+hw,bt);
     if(tb>=0&&tb<bt){bt=tb;best=t;const hy=oy+dy*tb;part=hy<c.y+(top-c.y)*.45?'legs':'body'}
-    if(t.team===TZ){const ta=rayArms(t,ox,oy,oz,dx,dy,dz,bt);if(ta>=0&&ta<bt){bt=ta;best=t;part='body'}}}
+    if(t.team===TZ){const ta=rayArms(t,ox,oy,oz,dx,dy,dz,bt);if(ta>=0&&ta<bt){bt=ta;best=t;part='body'}}
+    // extra hit volumes in front of the body (the firefighter's oxygen tank while it charges: part 'tank', fireman.js)
+    // (the hands round the tank sit a few cm in front of it: within 15 cm of this body's own hit, the tank wins)
+    if(t.xRay){const lim=best===t&&part!=='head'?bt+.15:bt;const r=t.xRay(ox,oy,oz,dx,dy,dz,lim);if(r&&r.t<lim){bt=r.t;best=t;part=r.part}}}
   return best?{a:best,t:bt,part}:null}
 // ---------- firing ----------
 const _dv=new THREE.Vector3(),_rv=new THREE.Vector3(),_uv=new THREE.Vector3();
@@ -147,8 +150,8 @@ function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
   if(ha){const t=ha.a;let dmg=W.dmg;if(W.pellets){const fall=clamp(1-(ha.t-10)/25,.35,1);dmg*=fall}
     const ds=hsForce(a,ha),hs=ha.part==='head';dmg*=hs?(W.hs||3):ha.part==='legs'?.75:1;
     const pb=1+Math.max(0,(4-ha.t)/4)*.8;// point-blank shots shove harder
-    damageActor(t,dmg,a,{w:a.cur,hs,ds,dir:[dx,dy,dz],kb:W.kb*pb,stag:W.stag,x:ex,y:ey,z:ez,up:W.spUp&&t.c.onGround?W.spUp:0});
-    if(ha.part==='ball'){FX.impact(ex,ey,ez,-dx,-dy,-dz,'metal');if(Math.random()<.5)AU.at('imp_metal',ex,ey,ez,{vol:.5,range:30})}else FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
+    damageActor(t,dmg,a,{w:a.cur,hs,ds,dir:[dx,dy,dz],kb:W.kb*pb,stag:W.stag,x:ex,y:ey,z:ez,up:W.spUp&&t.c.onGround?W.spUp:0,tank:ha.part==='tank'?1:0});
+    if(ha.part==='ball'||ha.part==='tank'){FX.impact(ex,ey,ez,-dx,-dy,-dz,'metal');if(Math.random()<.5)AU.at('imp_metal',ex,ey,ez,{vol:.5,range:30})}else FX.blood(ex,ey,ez,dx,dy,dz,(W.pellets?.6:1.1)*(hs?1.6:1),false);
     if(hs&&!t.isPlayer&&a.isPlayer)AU.play('headshot',{vol:.7});else if(!a.isPlayer&&t.isPlayer){}else if(Math.random()<.5)AU.at('imp_flesh',ex,ey,ez,{vol:.6});
     return {hit:true,hs,dmg}}
   if(hw){if(wbox.coffin&&a.team===TH)COFF.hurt(wbox.coffin,W.pellets?W.dmg*.8:W.dmg,a);if((wbox.o.epanel!=null||wbox.o.esteam!=null)&&typeof ALEPH!=='undefined')ALEPH.devShot(wbox,a);// B4's pillar panels and steam valves (aleph.js)

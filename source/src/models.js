@@ -499,11 +499,11 @@ function poseHuman(ch,st){const R=ch.R,A=ch.A,P=A.piv;const sc=P[0][1]/.93;ch.gu
     let x=.15-g.arm*.6,fl=.35+.4*g.run;if(a>0&&H.kind==='melee'){x+=.5*Math.sin(a*Math.PI);fl+=.4*Math.sin(a*Math.PI)}if(a>0&&H.kind==='nade'){x=kf1([[0,.15],[.32,1.3],[.5,1.35],[.62,-.2],[.8,-.3],[1,.15]],a);fl=.5}
     setE(R[3],x,0,-.12);setE(R[4],fl,0,0)}}
 // zombie class motion profiles
-const ZGAIT={coffin:{stride:.92,knee:.8,runK:.65,bob:1.35,twist:1.3,roll:1.15},rager:{stride:.95,knee:.85,runK:.75,limp:1,bob:1.1,twist:1.2},runner:{stride:1.15,knee:1.4,runK:1.2,bob:1.2,twist:1.3},brute:{stride:1.05,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},scream:{stride:.9,knee:.9,runK:.7,sway:1.6,roll:1.5}};
+const ZGAIT={fireman:{stride:1,knee:.85,runK:.75,bob:1.3,wide:1.4,twist:1.25,roll:1.2},coffin:{stride:.92,knee:.8,runK:.65,bob:1.35,twist:1.3,roll:1.15},rager:{stride:.95,knee:.85,runK:.75,limp:1,bob:1.1,twist:1.2},runner:{stride:1.15,knee:1.4,runK:1.2,bob:1.2,twist:1.3},brute:{stride:1.05,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},scream:{stride:.9,knee:.9,runK:.7,sway:1.6,roll:1.5}};
 // doll bash (third person): [shoulders forward, elbows, spine pitch, jaw, twist]
 KF.vdA=[[0,[0,0,0,0,0]],[.25,[2.1,.9,.18,.25,.1]],[.34,[2.2,.95,.2,.3,.1]],[.45,[-.5,-.3,-.38,.65,-.05]],[.62,[-.55,-.25,-.3,.5,-.05]],[1,[0,0,0,0,0]]];
 KF.vdH=[[0,[0,0,0,0,0]],[.32,[2.5,1,.25,.35,0]],[.44,[2.6,1.05,.28,.4,0]],[.55,[-.65,-.35,-.55,.9,0]],[.72,[-.7,-.3,-.45,.7,0]],[1,[0,0,0,0,0]]];
-const JAW0={coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34,bomber:.1,spitter:.3,strait:.02};
+const JAW0={fireman:.14,coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34,bomber:.1,spitter:.3,strait:.02};
 Object.assign(ZGAIT,{bomber:{stride:.85,knee:.7,runK:.6,bob:1.5,wide:2.5,twist:1.2,roll:1.6},spitter:{stride:1.05,knee:1.1,runK:.9,bob:1.2,twist:1.4,sway:1.2},boss:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},aleph:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},strait:{stride:1.05,knee:1.1,runK:.95,bob:1.25,twist:.6,sway:1.3}});
 function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.dead>0){poseDead(ch,st);return}
@@ -517,7 +517,7 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   ch.root.set(g.sway*sc,-g.drop*sc,rootZ*sc);
   // twitches: the head snaps sideways, a shoulder jerks; frequency differs per class
   const jH=jerk(t,sd,z==='runner'?1.1:1.7,.55),jH2=jerk(t+.3,sd+3,2.3,.45),jS=jerk(t,sd+7,2.9,.4);
-  const hunch={coffin:-.34,rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1,bomber:-.04,spitter:-.4}[z]||-.2;
+  const hunch={fireman:-.2,coffin:-.34,rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1,bomber:-.04,spitter:-.4}[z]||-.2;
   let spP=hunch-g.run*.12*(z==='runner'?1.6:1)+(st.flinch||0)*.45+(st.stun>0?.2:0),twist=0,spR=Math.sin(t*1.1+sd)*.05;
   let aL,aR,zL,zR,fL,fR;// shoulder X (forward), shoulder Z (out), elbow flex
   if(z==='runner'){aL=-.45-g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;aR=-.45+g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;zL=-.18;zR=.18;fL=fR=1.25+.2*g.run}
@@ -525,6 +525,7 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   else if(z==='scream'){aL=aR=.72+g.arm*.1;zL=.3;zR=-.3;fL=fR=.62;spR+=Math.sin(st.phase)*.08*g.amp}// both hands on the doll in front of the belly
   else if(z==='bomber'){aL=.42+Math.sin(t*1.4+sd)*.07-g.arm*.55;aR=.46+Math.sin(t*1.6+sd)*.07+g.arm*.55;zL=-.46;zR=.46;fL=fR=.5}// arms held out round the belly
   else if(z==='strait'){aL=aR=.62+Math.sin(t*2.1+sd)*.05;zL=.62+Math.sin(t*5.3+sd)*.04;zR=-.62-Math.sin(t*4.7+sd)*.04;fL=fR=2.05;spR+=Math.sin(t*3.3+sd)*.07}// sleeves strapped across the chest, straining
+  else if(z==='fireman'){aL=.42+Math.sin(t*1.5+sd)*.05-g.arm*.7;aR=.46+Math.sin(t*1.7+sd)*.05+g.arm*.7;zL=-.2;zR=.22;fL=.6+Math.max(0,Math.sin(t*2.1+sd))*.15;fR=.55}// heavy arms swinging in the padded coat
   else if(z==='spitter'){aL=.3+Math.sin(t*1.3+sd)*.08-g.arm*.45;aR=.26+Math.sin(t*1.5+sd*2)*.08+g.arm*.45;zL=-.14;zR=.16;fL=.75;fR=.8}
   else{// rager: reaching, grasping hands that open and close
     aL=1.02+Math.sin(t*1.7+sd)*.1-g.arm*.25;aR=.95+Math.sin(t*1.9+sd*2)*.1+g.arm*.25;zL=-.1;zR=.12;fL=.3+Math.max(0,Math.sin(t*2.6+sd))*.25;fR=.25+Math.max(0,Math.sin(t*2.2+sd*3))*.3}
@@ -542,6 +543,8 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.skill>0&&z==='scream'){const k=Math.min(1,st.skill*2.5);const tr=Math.sin(t*60)*.05;aL=lerp(aL,.45,k);aR=lerp(aR,.45,k);zL=lerp(zL,-1.25+tr,k);zR=lerp(zR,1.25-tr,k);fL=fR=lerp(fL,-.1,k);spP=lerp(spP,.32,k);jaw=lerp(jaw,1.3+tr*2,k)}
   // coffin zombie: both arms drive the coffin down in front
   if(st.skill>0&&z==='coffin'){const k=Math.min(1,st.skill*2.2);aL=lerp(aL,2.3,k);aR=lerp(aR,2.3,k);zL=lerp(zL,.2,k);zR=lerp(zR,-.2,k);fL=fR=lerp(fL,.25,k);spP=lerp(spP,-.45,k);jaw=lerp(jaw,1,k)}
+  // firefighter charging: both arms out in front gripping the oxygen tank across the chest, the body driven forward behind it (fireman.js)
+  if(st.chg>0&&z==='fireman'){const k=smooth(clamp(st.chg,0,1));aL=lerp(aL,1.28,k);aR=lerp(aR,1.28,k);zL=lerp(zL,.4,k);zR=lerp(zR,-.4,k);fL=lerp(fL,.82,k);fR=lerp(fR,.82,k);spP=lerp(spP,-.45,k);jaw=lerp(jaw,.8,k)}
   // bomber about to burst: arms thrown wide, shaking, mouth open; spitter: rears back, then lunges the acid out
   if(st.skill>0&&z==='bomber'){const k=Math.min(1,st.skill*3),tr=Math.sin(t*50)*.08;aL=lerp(aL,1.2+tr,k);aR=lerp(aR,1.2-tr,k);zL=lerp(zL,-1.1,k);zR=lerp(zR,1.1,k);fL=fR=lerp(fL,.25,k);spP=lerp(spP,.3,k);jaw=lerp(jaw,1.35,k)}
   if(st.skill>0&&z==='spitter'){const p=1-Math.min(1,st.skill/.55);spP+=kf1([[0,0],[.3,.4],[.5,-.55],[.8,-.4],[1,0]],p);jaw=Math.max(jaw,kf1([[0,.3],[.3,.7],[.45,1.45],[.8,1.2],[1,.3]],p))}

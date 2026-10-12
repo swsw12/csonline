@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'zombie',ref:'fireman',tag:['신규 좀비 · 플레이 가능','New zombie · playable'],t:['소방관 좀비','Firefighter Zombie'],
+    d:['불길 속에서 감염된 진압대원. 방화복이라 불과 폭발 피해를 절반만 받아요. G를 누르면 등의 산소통을 앞세워 돌진 — 맞은 인간은 넘어지며 크게 밀려나요. 인간은 돌진 중에 산소통을 쏴서 터뜨릴 수 있어요: 터지면 돌진이 멈추고 주변에 연막이 피어올라요 (새 산소통까지 18초).','A firefighter infected in the blaze. The turnout coat halves fire and blast damage. G: it charges behind the oxygen tank off its back, and humans it hits are knocked flat and thrown back. Shoot the tank mid-charge to burst it: the charge stops dead and smoke billows out round it (a new tank in 18 s).']},
   {kind:'feature',ico:'⇄',tag:['신규 기능 · 멀티플레이','New · Multiplayer'],t:['방장 넘기기','Hand the room over'],
     d:['방장이 나가도 방이 끝나지 않아요 — 다음 플레이어가 자동으로 방장이 되고, 게임 중이면 지금 라운드(시나리오는 지금 구역)부터 다시 이어가요. 점수와 킬 기록은 그대로. 대기실에선 「방장 넘기기」로 직접 넘길 수도 있어요.','The room no longer ends when the host leaves: the next player takes over by itself, and a match picks up again from the current round (the scenario: the current zone) with the score and kill stats kept. In the waiting room the host can also hand the room over with 「Make host」.']},
   {kind:'feature',ico:'✉',tag:['신규 기능','New'],t:['친구 초대','Invite friends'],
@@ -28,11 +30,11 @@ const NEW_CONTENT=[
   {kind:'zombie',ref:'hazmat',tag:['신규 좀비','New zombie'],t:['방호복 연구원 좀비','Hazmat Researcher Zombie'],
     d:['원종 실험실의 Q7 연구원. 방호복이라 단단하고, 쓰러지면 등의 가스통이 터져 포자 구름이 퍼져요 — 가까이서 잡지 마요. 5챕터에 나와요.','A Q7 researcher from the origin-strain lab, tough in its suit — its back tank bursts into a cloud of spores when it falls, so do not finish it up close. Shows up in chapter 5.']},
   {kind:'weapon',ref:'thunder',tag:['상점 9,500 코인','Shop · 9,500 coins'],t:['썬더볼트','Thunderbolt'],
-    d:['벽도 좀비도 전부 꿰뚫는 레일건. 전용탄 30발, 재장전 없음. 머리 ×2.5, 서 있으면 노줌도 100% 명중, 줌 중엔 벽 너머 좀비까지 표시돼요.','A railgun that goes through every wall and every zombie. 30 shots of its own, no reload. Head ×2.5, never misses standing still, and its scope marks zombies through walls.']},
+    d:['벽도 좀비도 전부 꿰뚫는 레일건. 전용탄 30발, 재장전 없음. 머리 ×2.5, 서 있으면 노줌도 100% 명중, 줌 중엔 눈에 보이는 좀비가 네모로 표시돼요.','A railgun that goes through every wall and every zombie. 30 shots of its own, no reload. Head ×2.5, never misses standing still, and its scope marks the zombies in sight.']},
   {kind:'weapon',ref:'plasma',tag:['상점 7,500 코인','Shop · 7,500 coins'],t:['플라즈마 건','Plasma Gun'],
     d:['초록 플라즈마 구체를 연사하고, 구체마다 넓은 스플래시가 터져요. 부위와 상관없이 같은 데미지 — 좀비 무리를 한꺼번에 녹이는 총.','Rapid green plasma orbs, each bursting with a wide splash. The same damage wherever it hits — a crowd melter.']},
   {kind:'weapon',ref:'balrog11',tag:['상점 7,000 코인','Shop · 7,000 coins'],t:['발록-XI','Balrog-XI'],
-    d:['4발 쏠 때마다 특수탄 충전(최대 7발까지 저장). 우클릭으로 화염구 5개를 부채꼴로 — 가까이서 쏘면 한 몸에 다 박혀요.','Every four shells fired charge a special round (stack up to 7). Right click looses five fireballs in a fan — at point blank they all go into one body.']},
+    d:['왼클릭을 끊지 않고 4발 연사할 때마다 특수탄 충전(최대 7발까지 저장). 우클릭으로 화염구 5개를 부채꼴로 — 가까이서 쏘면 한 몸에 다 박혀요.','Every four shells in one unbroken held burst charge a special round (stack up to 7). Right click looses five fireballs in a fan — at point blank they all go into one body.']},
   {kind:'weapon',ref:'balrog5',tag:['상점 6,500 코인','Shop · 6,500 coins'],t:['발록-5','Balrog-5'],
     d:['묵직한 돌격소총. 맞출 때마다 콤보 게이지가 차고(헤드샷은 2), 8이 되면 다음 한 발이 맞은 곳에서 폭발해요. 총 왼쪽(보이는 쪽)에 게이지가 켜지고, 가득 차면 위의 램프가 깜박여요.','A heavy assault rifle with a combo gauge. Every hit fills it (a headshot counts 2); at 8 the next bullet explodes where it lands. The gauge lights up on the left of the handguard (the side you see) and a lamp blinks on top when it is full.']},
   {kind:'feature',ico:'💬',tag:['신규 기능','New'],t:['친구창 채팅','Friend chat'],

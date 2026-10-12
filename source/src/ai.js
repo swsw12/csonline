@@ -108,7 +108,7 @@ const AI={
     // teammate and the one it is already on count as closer), whether the line to the aim point is clear, and the zombies close enough
     // to back away from
     if(B.think<=0){B.think=.12+Math.random()*.05;const e=actorEye(a);let best=null,bd=1e9;
-      for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>(spread?HBOT.sight:48))continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;if(z.epHide&&epHid(a,z,d))continue;const pz=B.panicT>0&&B.panicZ===z;
+      for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>(spread?HBOT.sight:48))continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;if((z.epHide||!EP.on&&ESMK.list.length)&&epHid(a,z,d))continue;const pz=B.panicT>0&&B.panicZ===z;
         const ang=Math.abs(wrapA(Math.atan2(-(z.c.x-c.x),-(z.c.z-c.z))-a.yaw));if(ang>1.5&&d>6&&!(B.seen&&B.seen.a===z)&&!pz)continue;
         {const P=z.epAimP;if(P?!losClear(e.x,e.y,e.z,P.x,P.y,P.z):!losClear(e.x,e.y,e.z,z.c.x,z.c.y+(z.epAimY||(ZBIG[z.zc]?2.8:1.2)),z.c.z))continue}const sc=d*(z.epPri||1)*(ang>1.5?1.5:1)*(pz?.3:1)*(B.seen&&B.seen.a===z?.75:1)*(spread&&d>4&&hNear(z.c.x,z.c.y,z.c.z,3.5,a)?.6:1);if(sc<bd){bd=sc;best=z}}
       if(best){if(!B.seen||B.seen.a!==best){B.seen={a:best,t:G.t};B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<4?.35:1);B.aimT0=G.t;B.hsT=0}B.seen.ls=G.t}
@@ -272,6 +272,7 @@ const AI={
       else if(Z.skill==='shriek'&&see&&dh<8)cmd.skill=true;
       else if(Z.skill==='invis'&&go&&(see||rs)&&dh>4&&dh<26)cmd.skill=true;else if(Z.skill==='trap'&&st!=='retreat'&&dh<12&&Math.random()<.35)cmd.skill=true;
       else if(Z.skill==='coffin'&&go&&see&&dh>4&&dh<22&&(B.hurtAcc>a.maxHp*.04||Math.random()<.02)){cmd.skill=true;B.detour=.9}// then step round the coffin it just stood up in its own way
+      else if(Z.skill==='charge'&&go&&see&&B.straight&&dh>3.5&&dh<12.5&&!(a.fmTkT>0))cmd.skill=true;// the firefighter: on a clear, walkable line
       else if(Z.skill==='heal'&&(a.hp<a.maxHp*.6||G.actors.some(z=>z!==a&&z.alive&&z.team===TZ&&z.hp<z.maxHp*.5&&dist3(z.c,c)<8)))cmd.skill=true}
     B.hurtAcc=Math.max(0,B.hurtAcc*Math.exp(-dt/2)+(B.lastHp-a.hp>0?B.lastHp-a.hp:0));B.lastHp=a.hp;
     // spore bomb (one a life, on the rush): at groups, at someone up high or out of reach, when taking fire, or now and then on a clear view

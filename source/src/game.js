@@ -9,8 +9,11 @@ const ZCLASS={
   brute:{n:['헤비 좀비','Heavy Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:3400,armor:220,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
   coffin:{n:['관짝 좀비','Coffin Zombie'],sk:['관 방패','Coffin Wall'],d:['방어형 · 스킬 G: 앞에 기다란 관을 세로로 세움 (총알·이동을 막음, 부서지면 좀비 폭탄처럼 폭발, 최대 2개)','Defender · Skill G: stands a tall coffin up in front (stops bullets and bodies; bursts like a zombie bomb when broken; up to 2)'],hp:3300,armor:200,speed:5.3,jump:7,kb:.8,dmg:58,skill:'coffin',cd:14,dur:0,hw:.32,h:1.92,eye:1.72},
   scream:{n:['부두 좀비','Voodoo Zombie'],sk:['치유','Heal'],d:['지원형 · 스킬 G: 치유 (자신 25%, 주변 좀비 20% 회복)','Support · Skill G: Heal (25% to itself, 20% to nearby zombies)'],hp:2400,armor:100,speed:5.5,jump:7.3,kb:1.1,dmg:48,skill:'heal',cd:12,dur:1.2,hw:.29,h:1.85,eye:1.68},
+  // v6.39 (fireman.js): the turnout coat halves fire and blast damage; G = a charge behind the back tank held in front (knocks humans
+  // flat and throws them back); shooting the tank during the charge breaks it: the charge stops and a smoke cloud billows out
+  fireman:{n:['소방관 좀비','Firefighter Zombie'],sk:['산소통 돌진','Tank Charge'],d:['돌격형 · 방화복: 불·폭발 피해 ½ · 스킬 G: 산소통 돌진 (넘어뜨리며 밀어냄 · 돌진 중 산소통을 쏘면 멈추고 연막)','Assault · Turnout coat: fire and blasts ½ · Skill G: Tank Charge (knocks humans flat and back; shoot the tank mid-charge to stop it, smoke bursts out)'],hp:3000,armor:170,speed:5.4,jump:7.1,kb:.75,dmg:60,skill:'charge',cd:15,dur:1.4,hw:.32,h:1.9,eye:1.72},
 };
-const ZLIST=['rager','runner','brute','scream','coffin'];
+const ZLIST=['rager','runner','brute','scream','coffin','fireman'];
 // every gun carries twice the spare ammo it used to
 for(const W of Object.values(WPN))if(W.res&&W.kind!=='nade'&&!W.resX2){W.res=Math.round(W.res*2);W.resX2=1}
 // scenario-only zombies (never picked by players). ZALL lists every class; its order is also the network index.
@@ -48,7 +51,7 @@ Object.assign(ZCLASS,{
   drowned:{n:['익사체 좀비','Drowned Zombie'],sk:['발목 잡기','Ankle grab'],d:['5챕터 · 물속에서 기어 나와 발목을 잡는다 (이동 −50%, 쏴서 떼어내기)','Chapter 5 · climbs out of the water and grabs an ankle (−50 % speed until you shoot it off)'],hp:1600,armor:20,speed:5,jump:6.8,kb:1.1,dmg:22,skill:'none',cd:99,dur:0,hw:.3,h:1.82,eye:1.68},
   hazmat:{n:['방호복 연구원 좀비','Hazmat Researcher Zombie'],sk:['포자 가스통','Spore tank'],d:['5챕터 · 방호복이라 단단하다 — 쓰러지면 등의 가스통이 터져 포자가 퍼진다','Chapter 5 · tough in its suit — its back tank bursts into spores when it falls'],hp:2200,armor:80,speed:4.8,jump:6.6,kb:.8,dmg:26,skill:'none',cd:99,dur:0,hw:.32,h:1.86,eye:1.7},
   centi:{n:['새끼 지네','Little Centipede'],sk:['독니','Venom bite'],d:['5챕터 · 끊어진 티아마트의 마디 — 낮고 빠르다','Chapter 5 · a severed piece of TIAMAT — low and fast'],hp:900,armor:0,speed:7.2,jump:6,kb:.6,dmg:24,skill:'none',cd:99,dur:0,hw:.42,h:.9,eye:.6}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};
@@ -158,7 +161,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
     // the local player's body is not drawn, but its head (the hit sphere, and where claws and bot bullets aim) must still follow it
     if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14}return}
   const an=a.an;an.atk=Math.max(0,an.atk-dt/(an.atkD||.42));an.flinch=Math.max(0,an.flinch-dt*4);an.flx=(an.flx||0)*Math.exp(-dt*5);an.skill=Math.max(0,an.skill-dt);
-  if(!a.alive)an.dead=Math.min(1,an.dead+dt*2.2);else if(a.reviving>0){an.dead=a.reviving/1.2}else an.dead=0;
+  if(!a.alive)an.dead=Math.min(1,an.dead+dt*2.2);else if(a.reviving>0){an.dead=a.reviving/1.2}else an.dead=a.kdP>0?Math.min(.999,a.kdP):0;// kdP: knocked flat by a charge (fireman.js), drawn with the get-up pose
   // locomotion state for animation: body-space velocity, a stride clock tied to distance, turn rate, acceleration, smoothed crouch / air / sprint
   const sp=Math.hypot(c.vx,c.vz);const k10=1-Math.exp(-dt*10),k6=1-Math.exp(-dt*6);
   const fx=-Math.sin(a.yaw),fz=-Math.cos(a.yaw);const vF=c.vx*fx+c.vz*fz,vS=-c.vx*fz+c.vz*fx;an.mvF=lerp(an.mvF||0,vF,k10);an.mvS=lerp(an.mvS||0,vS,k10);
@@ -176,7 +179,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   const stride=strideLen(sp)*legScale(ch.A)*(a.team===TZ?((ZGAIT[a.zc]||{}).stride||1):1);a.stepPh+=dt*(sp>.12?sp/stride*TAU:0);
   const Wv=WPN[a.cur]||{};const sprintW=a.team===TH&&a.alive&&sp>4.3&&G.t-(a.lastFire||-9)>.6&&a.reloadT<=0&&!(an.atk>0)&&a.zoom<=0;an.spr=approach(an.spr||0,sprintW?1:0,dt*4);
   const st={spd:a.alive&&a.frozen<=0?sp:0,phase:a.stepPh,stride,footYaw:_fyo,mvF:an.mvF,mvS:an.mvS,crouch:Math.max(an.cr,a.epDown||0),air:an.airS,land:an.land,accel:an.acc,turnRate:an.trn,pitch:a.pitch,t:G.t+a.id*1.7,seed:a.id,zclass:a.zc,
-    dead:an.dead,deadT:a.deadT,deadDir:a.deadDir,reviving:a.alive&&a.reviving>0,zombie:a.team===TZ,
+    dead:an.dead,deadT:a.deadT,deadDir:a.deadDir,reviving:a.alive&&(a.reviving>0||a.kdP>0),zombie:a.team===TZ,chg:a.fmP||0,
     hold:a.team===TH?holdFor(a.cur):null,kick:Wv.dual&&a.dualSide<0?0:a.kick,kick2:Wv.dual&&a.dualSide<0?a.kick:0,
     reload:a.reloadT>0&&a.relKind==='mag'?1-a.reloadT/(Wv.reload||2):0,relKind:a.reloadT>0?a.relKind:null,shellP:a.relKind==='shell'?1-a.reloadT/(Wv.shellRel||.5):a.relKind==='start'?1-a.reloadT/(Wv.relStart||.4):0,brk:!!Wv.brk,sprint:an.spr,
     atk:an.atk>0?1-an.atk:0,atkSide:an.atkSide,heavy:!!an.heavy,flinch:an.flinch,flinchX:an.flx,skill:an.skill,stun:a.frozen,turn:a.turning>0?Math.min(1,a.turning*1.5):0,frenzy:a.team===TZ&&a.zc==='rager'&&a.skillT>0,shield:!!a.epShield,down:a.epDown||0};
@@ -358,7 +361,7 @@ function clawStrike(a,heavy){const r=meleeHit(a,heavy?CLAW_R[1]:CLAW_R[0],heavy?
 function clawApply(a,t,heavy){aimDir(a.yaw,0,_dv);t.kvx+=_dv.x*(heavy?4:2);t.kvz+=_dv.z*(heavy?4:2);infect(t,a)}
 function useSkill(a){if(NET.cli&&!NET.ev){if(a===G.player&&a.skillCD<=0&&(G.st==='fight'||G.st==='prep'))netToHost({t:'sk'});return}
   if(a.skillCD>0||G.st!=='fight'&&G.st!=='prep')return;const Z=ZCLASS[a.zc];const c=a.c;
-  if(Z.skill==='invis'||Z.skill==='trap'||Z.skill==='heal'||Z.skill==='coffin'){if(nySkill(a,Z)){a.skillCD=Z.cd;if(NET.host)netEv('sk',{i:a.id,k:Z.skill})}return}
+  if(Z.skill==='invis'||Z.skill==='trap'||Z.skill==='heal'||Z.skill==='coffin'||Z.skill==='charge'){if(nySkill(a,Z)){a.skillCD=Z.cd;if(NET.host)netEv('sk',{i:a.id,k:Z.skill})}return}
   if(Z.skill==='frenzy'){if(a.hp<a.maxHp*.15)return;a.hp-=a.maxHp*.08;a.skillT=Z.dur;AU.at('zroar',c.x,c.y+1.5,c.z,{vol:1,range:50})}
   else if(Z.skill==='leap'){if(!c.onGround)return;aimDir(a.yaw,0,_dv);a.kvx+=_dv.x*11;a.kvz+=_dv.z*11;c.vy=6.5;c.onGround=false;c.jumped=true;a.skillT=.8;AU.at('zleap',c.x,c.y+1.5,c.z,{vol:1})}
   else if(Z.skill==='harden'){a.skillT=Z.dur;AU.at('zharden',c.x,c.y+1.5,c.z,{vol:1,range:40})}
