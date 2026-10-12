@@ -129,7 +129,7 @@ function plBoom(n,direct){const W=WPN.plasma,o=n.owner,x=n.x,y=n.y,z=n.z,R0=W.pl
   if(!AU.throttle('plh'+(o?o.id:0),70))AU.at('plhit',x,y,z,{vol:.55,range:35});
   for(const t of G.actors){if(!t.alive||!o||t.team===o.team)continue;const c=t.c,cy=clamp(y,c.y+.2,t.head.y),dx=c.x-x,dz=c.z-z,d=Math.max(0,Math.hypot(dx,cy-y,dz)-c.hw);
     if(t!==direct&&(d>R0||!losClear(x,y,z,c.x,cy,c.z)))continue;const f=t===direct?1:1-.2*clamp(d/R0,0,1),hl=Math.hypot(dx,dz)||1;
-    damageActor(t,W.dmg*f,o,{w:'plasma',flat:1,dir:[dx/hl,.05,dz/hl],kb:W.kb*(.5+.5*f),stag:W.stag,x,y,z});hit=true}
+    damageActor(t,W.dmg*f*(G.mode==='scen'?2:1),o,{w:'plasma',flat:1,dir:[dx/hl,.05,dz/hl],kb:W.kb*(.5+.5*f),stag:W.stag,x,y,z});hit=true}
   if(hit&&o&&o.isPlayer)HUD.hitmark(false)}
 // the reload: the cell out backwards along its cradle, carried down; the fresh one up, pushed in, a hum as it takes
 function rlCell(W,G,m,L){const E=fdExt(G,'mag');const S=rlMag(W,G,m,L,{style:'pull',ax:[0,0,1],gp:[E.c[0],E.c[1],E.mx[2]],on:[0,0,.024],bk:[0,0,1],
@@ -238,10 +238,11 @@ function csoHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P
     if(!mk){mk=document.createElement('div');mk.id='tbMk';hud.appendChild(mk)}mk.style.display='block';
     const cw=innerWidth,ch=innerHeight;let i=0;
     for(const t of G.actors){if(!t.alive||t.team===P.team)continue;const d=Math.hypot(t.head.x-e.x,t.head.y-e.y,t.head.z-e.z);if(d>W.range)continue;
+      if(!losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z))continue;
       _dn.set(t.c.x,(t.c.y+t.head.y)/2,t.c.z).project(R.cam);if(_dn.z>1||Math.abs(_dn.x)>1||Math.abs(_dn.y)>1)continue;
       let el=mk.children[i];if(!el){el=document.createElement('i');mk.appendChild(el)}i++;const s=clamp(1500/Math.max(d,1),16,160);
       el.style.cssText=`display:block;width:${(s*.55).toFixed(0)}px;height:${s.toFixed(0)}px;transform:translate(${((_dn.x*.5+.5)*cw).toFixed(1)}px,${((-_dn.y*.5+.5)*ch).toFixed(1)}px) translate(-50%,-50%)`;
-      el.className=losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z)?'':'w'}
+      el.className=''}
     for(;i<mk.children.length;i++)mk.children[i].style.display='none'}
   else if(mk)mk.style.display='none';
   if(live&&W&&W.noRel){const r=$('hRes');if(r&&r.textContent!=='')r.textContent=''}}

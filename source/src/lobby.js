@@ -8,6 +8,11 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.38.1','2026-10-12',[
+ ['FIX','플라즈마 건 — 좀비 시나리오·챕터에서 데미지 2배','Plasma Gun: double damage in the zombie scenario and chapters'],
+ ['FIX','썬더볼트 — 벽 너머 적은 감지 네모가 뜨지 않음 (조준선 색 변화는 그대로)','Thunderbolt: enemies behind walls no longer get a detection box (the crosshair colour change stays)'],
+ ['FIX','발록-XI — 왼클릭을 끊지 않고 연사한 4발만 차징으로 침, 끊어서 쏘면 처음부터 다시 셈','Balrog-XI: only four shells in one unbroken held burst charge a special shell; pauses restart the count'],
+ ['FIX','챕터 5 보스전 — 동료 봇이 4초 넘게 멍하니 서 있으면 길과 자리를 새로 잡음','Chapter 5 boss fight: ally bots standing idle for 4 s now re-path and pick a new spot']]],
 ['v6.38','2026-10-12',[
  ['NEW','방장 넘기기 · 방장이 나가도 방이 이어져요 — 대기실에서 방장은 다른 플레이어 칸의 「방장 넘기기」를 두 번 눌러 방장을 넘길 수 있어요. 방장이 나가거나 창을 닫으면(게임 중엔 방장 연결이 6초 넘게 끊겨도) 다음 차례가 자동으로 방장이 되고 나머지는 그 사람에게 다시 연결돼요 — 들어온 순서대로, PC가 폰보다 먼저. 대기실은 그대로 이어지고, 게임 중이면 잠깐 멈췄다가 새 방장이 지금 라운드를 다시 시작해요(점수 · 라운드 번호 · 킬 기록은 그대로, 봇은 새 방장이 넘겨받아요). 시나리오는 지금 스테이지(챕터는 지금 구역, 보스전은 도달한 페이즈)부터 다시, 엘리베이터 · 탈출 중이면 그대로 이어져요. 방 코드도 그대로라 친구는 같은 코드로 들어올 수 있어요.','Hand the room over · the room goes on when the host leaves — in the waiting room the host can tap 「Make host」 twice on another player\'s seat. When the host leaves or closes the tab (in a match: or drops for more than 6 s), the next in line becomes the host by itself and the others reconnect to them — join order, computers before phones. The waiting room just carries on; a match stops for a moment, then the new host restarts the current round (score, round number and kill stats stay; the new host takes over the bots). The scenario starts over from the current stage (chapters: the current zone, a boss fight from the phase it reached); the lift ride and the escape carry on. The room code stays, so friends can still join with it.'],
  ['UP','멀티플레이 — 이번 버전부터 이전 버전과는 같은 방에서 못 놀아요 (「게임 버전이 달라요」가 뜨면 새로고침).','Multiplayer — this version no longer shares rooms with older ones (seeing 「Different game version」: refresh the page).'],

@@ -10680,7 +10680,10 @@ BUY_MENU.find(c=>c.k==='special').items.push('killknife');
 // ---------- the special shell (Blaze-8) ----------
 // a.spN[id] = normal shells fired toward the next special shell; a.spAm[id] = special shells in their own slot (at most spMax).
 // Right click fires one: a wide fan of pellets that staggers and blows zombies back (game.js calls spFire).
-function spShot(a,W){if(!W.spEvery||W.sp)return W;const c=a.spN||(a.spN={}),m=a.spAm||(a.spAm={}),n=(c[a.cur]|0)+1;
+function spShot(a,W){if(!W.spEvery||W.sp)return W;const c=a.spN||(a.spN={}),m=a.spAm||(a.spAm={});
+  // Balrog-XI: the four shells must come in one unbroken held burst; a pause longer than the next shot's turn starts the count again
+  if(W.spFlame){if(G.t-(a.spT||0)>60/W.rpm*1.5+.06)c[a.cur]=0;a.spT=G.t}
+  const n=(c[a.cur]|0)+1;
   if(n>=W.spEvery){c[a.cur]=0;if((m[a.cur]|0)<W.spMax){m[a.cur]=(m[a.cur]|0)+1;if(a.isPlayer)AU.play(W.spGain||'shellin',{vol:.5,rate:W.spGain?1:1.3})}}else c[a.cur]=n;return W}
 function spFire(a,W){const m=a.spAm||(a.spAm={});if(!((m[a.cur]|0)>0))return false;m[a.cur]--;
   if(W.spFlame){bxFlame(a,W);a.nextFire=G.t+60/W.rpm*1.6;return true}// Balrog-XI: five fireballs (csoguns.js)
@@ -12503,7 +12506,7 @@ function plBoom(n,direct){const W=WPN.plasma,o=n.owner,x=n.x,y=n.y,z=n.z,R0=W.pl
   if(!AU.throttle('plh'+(o?o.id:0),70))AU.at('plhit',x,y,z,{vol:.55,range:35});
   for(const t of G.actors){if(!t.alive||!o||t.team===o.team)continue;const c=t.c,cy=clamp(y,c.y+.2,t.head.y),dx=c.x-x,dz=c.z-z,d=Math.max(0,Math.hypot(dx,cy-y,dz)-c.hw);
     if(t!==direct&&(d>R0||!losClear(x,y,z,c.x,cy,c.z)))continue;const f=t===direct?1:1-.2*clamp(d/R0,0,1),hl=Math.hypot(dx,dz)||1;
-    damageActor(t,W.dmg*f,o,{w:'plasma',flat:1,dir:[dx/hl,.05,dz/hl],kb:W.kb*(.5+.5*f),stag:W.stag,x,y,z});hit=true}
+    damageActor(t,W.dmg*f*(G.mode==='scen'?2:1),o,{w:'plasma',flat:1,dir:[dx/hl,.05,dz/hl],kb:W.kb*(.5+.5*f),stag:W.stag,x,y,z});hit=true}
   if(hit&&o&&o.isPlayer)HUD.hitmark(false)}
 // the reload: the cell out backwards along its cradle, carried down; the fresh one up, pushed in, a hum as it takes
 function rlCell(W,G,m,L){const E=fdExt(G,'mag');const S=rlMag(W,G,m,L,{style:'pull',ax:[0,0,1],gp:[E.c[0],E.c[1],E.mx[2]],on:[0,0,.024],bk:[0,0,1],
@@ -12612,10 +12615,11 @@ function csoHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P
     if(!mk){mk=document.createElement('div');mk.id='tbMk';hud.appendChild(mk)}mk.style.display='block';
     const cw=innerWidth,ch=innerHeight;let i=0;
     for(const t of G.actors){if(!t.alive||t.team===P.team)continue;const d=Math.hypot(t.head.x-e.x,t.head.y-e.y,t.head.z-e.z);if(d>W.range)continue;
+      if(!losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z))continue;
       _dn.set(t.c.x,(t.c.y+t.head.y)/2,t.c.z).project(R.cam);if(_dn.z>1||Math.abs(_dn.x)>1||Math.abs(_dn.y)>1)continue;
       let el=mk.children[i];if(!el){el=document.createElement('i');mk.appendChild(el)}i++;const s=clamp(1500/Math.max(d,1),16,160);
       el.style.cssText=`display:block;width:${(s*.55).toFixed(0)}px;height:${s.toFixed(0)}px;transform:translate(${((_dn.x*.5+.5)*cw).toFixed(1)}px,${((-_dn.y*.5+.5)*ch).toFixed(1)}px) translate(-50%,-50%)`;
-      el.className=losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z)?'':'w'}
+      el.className=''}
     for(;i<mk.children.length;i++)mk.children[i].style.display='none'}
   else if(mk)mk.style.display='none';
   if(live&&W&&W.noRel){const r=$('hRes');if(r&&r.textContent!=='')r.textContent=''}}
@@ -13872,6 +13876,11 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.38.1','2026-10-12',[
+ ['FIX','플라즈마 건 — 좀비 시나리오·챕터에서 데미지 2배','Plasma Gun: double damage in the zombie scenario and chapters'],
+ ['FIX','썬더볼트 — 벽 너머 적은 감지 네모가 뜨지 않음 (조준선 색 변화는 그대로)','Thunderbolt: enemies behind walls no longer get a detection box (the crosshair colour change stays)'],
+ ['FIX','발록-XI — 왼클릭을 끊지 않고 연사한 4발만 차징으로 침, 끊어서 쏘면 처음부터 다시 셈','Balrog-XI: only four shells in one unbroken held burst charge a special shell; pauses restart the count'],
+ ['FIX','챕터 5 보스전 — 동료 봇이 4초 넘게 멍하니 서 있으면 길과 자리를 새로 잡음','Chapter 5 boss fight: ally bots standing idle for 4 s now re-path and pick a new spot']]],
 ['v6.38','2026-10-12',[
  ['NEW','방장 넘기기 · 방장이 나가도 방이 이어져요 — 대기실에서 방장은 다른 플레이어 칸의 「방장 넘기기」를 두 번 눌러 방장을 넘길 수 있어요. 방장이 나가거나 창을 닫으면(게임 중엔 방장 연결이 6초 넘게 끊겨도) 다음 차례가 자동으로 방장이 되고 나머지는 그 사람에게 다시 연결돼요 — 들어온 순서대로, PC가 폰보다 먼저. 대기실은 그대로 이어지고, 게임 중이면 잠깐 멈췄다가 새 방장이 지금 라운드를 다시 시작해요(점수 · 라운드 번호 · 킬 기록은 그대로, 봇은 새 방장이 넘겨받아요). 시나리오는 지금 스테이지(챕터는 지금 구역, 보스전은 도달한 페이즈)부터 다시, 엘리베이터 · 탈출 중이면 그대로 이어져요. 방 코드도 그대로라 친구는 같은 코드로 들어올 수 있어요.','Hand the room over · the room goes on when the host leaves — in the waiting room the host can tap 「Make host」 twice on another player\'s seat. When the host leaves or closes the tab (in a match: or drops for more than 6 s), the next in line becomes the host by itself and the others reconnect to them — join order, computers before phones. The waiting room just carries on; a match stops for a moment, then the new host restarts the current round (score, round number and kill stats stay; the new host takes over the bots). The scenario starts over from the current stage (chapters: the current zone, a boss fight from the phase it reached); the lift ride and the escape carry on. The room code stays, so friends can still join with it.'],
  ['UP','멀티플레이 — 이번 버전부터 이전 버전과는 같은 방에서 못 놀아요 (「게임 버전이 달라요」가 뜨면 새로고침).','Multiplayer — this version no longer shares rooms with older ones (seeing 「Different game version」: refresh the page).'],
@@ -20808,7 +20817,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
       if(D.k==='act'){const L=this.devs(),open=[];for(let j=0;j<L.length;j++)if(this.devOpen(j))open.push(j);if(open.length){const j=open[i%open.length],v=L[j];a.bot.epDev=j;return [v.x+(v.bx||0),v.y,v.z+(v.bz||0),.6]}}
       if(D.k==='hold'&&D.hp)return [D.hp[0],D.hp[1],D.hp[2],D.hp[3]||2.4];
       if(D.k==='breach'){const gb=E.goal&&E.goal[D.goal];if(gb)return [gb.p[0],gb.p[1],gb.p[2],2]}
-      if(D.k==='boss'){const B=this.B();if(B&&B.botGoal){const g=B.botGoal(a,i);if(g)return g}const b=this.bossA(),Z=this.zone(D.z);
+      if(D.k==='boss'){const B=this.B();if(B&&B.botGoal){const g=B.botGoal(a,i+((a.bot&&a.bot.stN)|0));if(g)return g}const b=this.bossA(),Z=this.zone(D.z);
         if(b&&Z){const an=i*1.9+Math.floor(G.t/6)*.7,bx=Z.box;return [clamp(b.c.x+Math.cos(an)*12,bx[0]+3,bx[2]-3),b.c.y>2?Z.start[0][1]:b.c.y,clamp(b.c.z+Math.sin(an)*12,bx[1]+3,bx[3]-3),1.5]}}
       if(D.k==='escape'&&E.exit){const X=E.exit;return [(X.x0+X.x1)/2,0,(X.z0+X.z1)/2,1]}}
     if(D.k==='boss'&&ph==='prep'&&D.prepPt)return D.prepPt;
@@ -20825,6 +20834,9 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     const k=this.goalKey();if(B.epG!==k){SCEN.spotNear(a);B.epG=k}},
   botPost(a,dt){const B=a.bot,c=a.c,Bo=this.B();if(this.C.botPost)this.C.botPost(a,dt);
     if(a.knockT>0){a.cmd.f=a.cmd.s=0;a.cmd.jump=false;a.cmd.fire=false;return}
+    // the boss fight: standing about for 4 s without firing (no way to the spot, nothing in sight) = a new path and the next spot
+    if(this.ph==='run'&&this.S().k==='boss'&&a.alive){if(Math.hypot(c.x-(B.stX||0),c.z-(B.stZ||0))>1.2||Math.abs(c.y-(B.stY||0))>1||a.cmd.fire||a.epUse>=0){B.stX=c.x;B.stZ=c.z;B.stY=c.y;B.stT=0}
+      else{B.stT=(B.stT||0)+dt;if(B.stT>4){B.stT=0;B.stN=(B.stN||0)+1;B.path=null;B.repath=0;B.epG=null;SCEN.spotNear(a)}}}
     if(a.blindT>0){a.cmd.fire=a.cmd.fire&&Math.random()<.15}
     // in a red warning: out of it, now (the boss may add its own dangers: laser sights, tripwires)
     const hz=TELE.at(c.x,c.z,.8)||(Bo&&Bo.danger?Bo.danger(a):null);if(hz){AI.moveDir(a,hz.ax,hz.az);a.cmd.walk=false;a.cmd.duck=!!hz.duck;a.epUse=-1;return}

@@ -282,7 +282,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
       if(D.k==='act'){const L=this.devs(),open=[];for(let j=0;j<L.length;j++)if(this.devOpen(j))open.push(j);if(open.length){const j=open[i%open.length],v=L[j];a.bot.epDev=j;return [v.x+(v.bx||0),v.y,v.z+(v.bz||0),.6]}}
       if(D.k==='hold'&&D.hp)return [D.hp[0],D.hp[1],D.hp[2],D.hp[3]||2.4];
       if(D.k==='breach'){const gb=E.goal&&E.goal[D.goal];if(gb)return [gb.p[0],gb.p[1],gb.p[2],2]}
-      if(D.k==='boss'){const B=this.B();if(B&&B.botGoal){const g=B.botGoal(a,i);if(g)return g}const b=this.bossA(),Z=this.zone(D.z);
+      if(D.k==='boss'){const B=this.B();if(B&&B.botGoal){const g=B.botGoal(a,i+((a.bot&&a.bot.stN)|0));if(g)return g}const b=this.bossA(),Z=this.zone(D.z);
         if(b&&Z){const an=i*1.9+Math.floor(G.t/6)*.7,bx=Z.box;return [clamp(b.c.x+Math.cos(an)*12,bx[0]+3,bx[2]-3),b.c.y>2?Z.start[0][1]:b.c.y,clamp(b.c.z+Math.sin(an)*12,bx[1]+3,bx[3]-3),1.5]}}
       if(D.k==='escape'&&E.exit){const X=E.exit;return [(X.x0+X.x1)/2,0,(X.z0+X.z1)/2,1]}}
     if(D.k==='boss'&&ph==='prep'&&D.prepPt)return D.prepPt;
@@ -299,6 +299,9 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     const k=this.goalKey();if(B.epG!==k){SCEN.spotNear(a);B.epG=k}},
   botPost(a,dt){const B=a.bot,c=a.c,Bo=this.B();if(this.C.botPost)this.C.botPost(a,dt);
     if(a.knockT>0){a.cmd.f=a.cmd.s=0;a.cmd.jump=false;a.cmd.fire=false;return}
+    // the boss fight: standing about for 4 s without firing (no way to the spot, nothing in sight) = a new path and the next spot
+    if(this.ph==='run'&&this.S().k==='boss'&&a.alive){if(Math.hypot(c.x-(B.stX||0),c.z-(B.stZ||0))>1.2||Math.abs(c.y-(B.stY||0))>1||a.cmd.fire||a.epUse>=0){B.stX=c.x;B.stZ=c.z;B.stY=c.y;B.stT=0}
+      else{B.stT=(B.stT||0)+dt;if(B.stT>4){B.stT=0;B.stN=(B.stN||0)+1;B.path=null;B.repath=0;B.epG=null;SCEN.spotNear(a)}}}
     if(a.blindT>0){a.cmd.fire=a.cmd.fire&&Math.random()<.15}
     // in a red warning: out of it, now (the boss may add its own dangers: laser sights, tripwires)
     const hz=TELE.at(c.x,c.z,.8)||(Bo&&Bo.danger?Bo.danger(a):null);if(hz){AI.moveDir(a,hz.ax,hz.az);a.cmd.walk=false;a.cmd.duck=!!hz.duck;a.epUse=-1;return}

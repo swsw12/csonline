@@ -802,3 +802,6 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Invite links: profiles.ref_by / ref_done, table referrals (referee pk, referrer, paid_at, rewarded, seen), gacha_config ref_new_coins 2000 / ref_new_tickets 2 / ref_coins 3000 / ref_tickets 2 / ref_matches 3 / ref_cap 10 / ref_days 7. qz_ref_set(p_code) (new accounts only: ref_old; once: ref_already; no self / loop; makes them friends), qz_ref_check() (after ACC.claim: pays both once matches ≥ ref_matches; locks the referrer row to keep the cap), qz_ref_info() (record; marks rewards seen). qz_me returns `ref` {by, done, left, n, paid, new}.
 - Client REFL: ?ref= kept in localStorage qz_ref (7 days) → applied on the first signed-in emit; welcome / paid / inviter pop-ups (#refPop); the sign-up form shows the pending code; the friends window shows my link card (+ the room card while in a PeerJS room). The URL params are stripped at load.
 - inv.js already owns the global INV (the inventory): the invite objects are INVT / REFL.
+
+## v6.38.1
+- Plasma Gun: plBoom multiplies by 2 when G.mode==='scen'. Thunderbolt marks skip targets without losClear. Balrog-XI: spShot resets spN when the gap since the last shell exceeds 1.5 shot intervals. EP.botPost: boss-stage stall breaker (B.stT/stN; botGoal gets i+stN).
