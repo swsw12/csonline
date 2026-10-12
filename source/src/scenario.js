@@ -282,7 +282,7 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
     if(a.zc==='spitter')SCEN.spitAI(a,dt);
     else if(a.zc==='boss'&&a.sb){if(a.sb.mode&&a.sb.mode!=='leap'){a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=false}else{const t=a.bot.target;if(t&&t.alive&&Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z)<2.6&&Math.abs(t.c.y-a.c.y)<2.2)a.cmd.fire=Math.random()<.85}}};
   // dead players watch their teammates, not the horde
-  const ns=Main.nextSpec.bind(Main);Main.nextSpec=function(){if(G.mode!=='scen')return ns();const L=SCEN.H.filter(a=>a.alive&&!a.isPlayer);if(!L.length)return ns();G.specIdx=(G.specIdx+1)%L.length;G.spec=L[G.specIdx]};
+  const ns=Main.nextSpec.bind(Main);Main.nextSpec=function(){if(G.mode!=='scen')return ns();const L=SCEN.H.filter(a=>a.alive&&!a.isPlayer);if(!L.length)return ns();G.specIdx=(L.indexOf(G.spec)+1)%L.length;G.spec=L[G.specIdx]};
   const T0=T;T=function(k,...a){if(k==='permaDead'&&G.mode==='scen')k='scDead';return T0(k,...a)};
   // scoreboard and results list people, not the zombie pool
   const bd=UI.board.bind(UI);UI.board=function(on){if(G.mode!=='scen')return bd(on);const all=G.actors;G.actors=SCEN.H;try{bd(on)}finally{G.actors=all}

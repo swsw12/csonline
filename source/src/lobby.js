@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.39.1','2026-10-12',[
+ ['FIX','관전 — 좌클릭(모바일은 발사 버튼)으로 다음 대상으로 넘어가지 않던 문제 수정 (데스캠이 끝난 뒤의 클릭이 무시됐음) · 지금 보는 사람의 다음 차례로 넘어감','Spectating: left click (the fire button on touch) moves on to the next player again (clicks were ignored once the death cam ended) · it goes to the one after whoever is watched now']]],
 ['v6.39','2026-10-12',[
  ['NEW','신규 좀비 「소방관 좀비」 (플레이 가능) — 방화복: 불·폭발 피해 절반 · G 산소통 돌진: 맞은 인간은 1.1초 넘어지며 크게 밀려남 (벽에 부딪히면 멈춤)','New zombie: the Firefighter Zombie (playable) — turnout coat: half damage from fire and blasts · G Tank Charge: humans it hits are knocked flat for 1.1 s and thrown back (a wall stops it)'],
  ['NEW','돌진 중 앞에 든 산소통은 총으로 부술 수 있음 (380) — 부서지면 돌진이 멈추고 좀비가 휘청, 주변에 연막이 퍼짐 (봇은 연막 속·너머의 좀비를 못 봄) · 새 산소통까지 18초','The tank it holds out while charging can be shot to pieces (380): the charge stops, the zombie staggers and smoke billows out round it (bots cannot see zombies in or through it) · a new tank in 18 s'],

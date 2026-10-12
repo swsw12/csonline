@@ -817,3 +817,6 @@ Built from parallel agent branches merged into v611 (base 59769a1 = my core fixe
 - Bots: ai.js zombie skills — charge on the rush with a clear, walkable straight line (B.straight) 3.5–12.5 m from the target and a tank on its back.
 - First person (vm.js claws + gunart.js buildClaws): the fireman's arms are 'sl_fmcoat' sleeves with an 'fmRefl' cuff over 'zs_fireman' hands; m.fmTank (scale .6) shows while FM.vmK(a) (= a.fmP) > 0 and the hands blend to FM.VMH. Atlas: zs_fireman + sl_fmcoat in gunart's list, fmRefl painted by fireman.js (119 of 120 slots used).
 - NET_VER '-r8'.
+
+## v6.39.1 — spectating clicks
+- G.deathCam counts down past 0 (camera: `if(G.deathCam>0)G.deathCam-=dt`), so the old `!G.deathCam` test on the left click (main.js) and the touch fire button (touch.js) never passed once the death cam ended. Main.specOn() = dead, not in the menu, deathCam <= 0 and the camera is actually spectating (permaDead, or a human down); nextSpec (and the scenario's SCEN.H override) steps from the one watched now (L.indexOf(G.spec)+1), not from a stored index, so a changed list cannot land on the same player again.

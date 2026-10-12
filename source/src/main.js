@@ -59,7 +59,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     document.addEventListener('pointerlockerror',()=>this.onLockFail());
     cv.addEventListener('mousedown',e=>{AU.init();if(G.st==='menu'||G.st==='over'||this.paused)return;if(!this.locked&&!this.lockFail&&!this.overlay){this.lock();return}
       if(e.button===0)this.ml=true;if(e.button===2)this.mr=true;
-      if(e.button===0&&G.player&&!G.player.alive&&!G.deathCam)this.nextSpec()});
+      if(e.button===0&&this.specOn())this.nextSpec()});
     addEventListener('mouseup',e=>{if(e.button===0)this.ml=false;if(e.button===2)this.mr=false});
     addEventListener('contextmenu',e=>{if(G.st!=='menu')e.preventDefault()});
     addEventListener('mousemove',e=>{this.mx=e.clientX;this.my=e.clientY;if(!G.player||this.paused||G.st==='menu'||G.st==='over')return;if(!this.locked&&!this.lockFail)return;if(this.overlay&&!this.locked)return;
@@ -105,7 +105,11 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(Math.random()<dt*30)FX.spawn({x:f[0]+rr(-.2,.2),y:f[1],z:f[2]+rr(-.2,.2),vx:rr(-.2,.2),vy:rr(.8,1.6),vz:rr(-.2,.2),life:rr(.35,.6),s0:.35,s1:.12,r:1,g:rr(.45,.7),b:.2,f:11,add:1});
       if(Math.random()<dt*6)FX.spawn({x:f[0]+rr(-.1,.1),y:f[1]+.5,z:f[2]+rr(-.1,.1),vx:rr(-.3,.3),vy:rr(.8,1.4),vz:rr(-.3,.3),life:rr(2,3.5),s0:.25,s1:1.2,r:.16,g:.15,b:.14,a:.5,f:2,drag:.4,fadeIn:.3});
       if(Math.random()<dt*4)FX.spawn({x:f[0],y:f[1]+.2,z:f[2],vx:rr(-.6,.6),vy:rr(2,4),vz:rr(-.6,.6),life:rr(.8,1.6),s0:.04,s1:.02,r:1,g:.6,b:.2,f:0,grav:-.5,drag:1,add:1})}},
-  nextSpec(){const L=G.actors.filter(a=>a.alive&&!a.isPlayer);if(!L.length){G.spec=null;return}G.specIdx=(G.specIdx+1)%L.length;G.spec=L[G.specIdx]},
+  // spectating: the player is down for good (or a human down in the scenario) and the death cam is over. (deathCam counts down past 0,
+  // so it is compared, never tested for 0: a left click that checked !G.deathCam never moved on to the next player)
+  specOn(){const P=G.player;return !!P&&!P.alive&&G.st!=='menu'&&G.deathCam<=0&&(P.permaDead||P.team===TH)},
+  // the next one after the one watched now (the list changes as people die and rise)
+  nextSpec(){const L=G.actors.filter(a=>a.alive&&!a.isPlayer);if(!L.length){G.spec=null;return}G.specIdx=(L.indexOf(G.spec)+1)%L.length;G.spec=L[G.specIdx]},
   playerCmd(dt){const P=G.player,k=this.keys,c=P.cmd;if(!P.alive)return;const free=!this.overlay||this.overlay;
     c.f=(k.KeyW||k.ArrowUp?1:0)-(k.KeyS||k.ArrowDown?1:0);c.s=(k.KeyD?1:0)-(k.KeyA?1:0);c.jump=!!k.Space;c.duck=!!(k.KeyC||k.ControlLeft||k.ControlRight);c.walk=!!(k.ShiftLeft||k.ShiftRight);
     const canShoot=!this.overlay||this.locked;c.fire=this.ml&&canShoot;c.alt=this.mr&&canShoot;c.reload=!!k.KeyR;c.skill=!!(k.KeyG||k.KeyE);c.drop=!!k.KeyG;
