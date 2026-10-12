@@ -7,12 +7,12 @@
 // PeerJS cloud server. If no direct connection can be made inside claude.ai, the room itself relays the traffic.
 const NET={on:false,host:false,cli:false,ghost:0,ev:0,kind:null,api:null,code:'',me:'',hostKey:'',ui:'',
   links:new Map(),out:new Map(),inQ:[],fx:[],fxQ:[],hits:[],off:new Map(),ids:new Map(),
-  lob:{cfg:{mode:'mut',bots:8,diff:1,rounds:7,time:180},pl:[]},k:0,lastK:0,tAcc:0,msg:'',hostTs:0,hostRx:0,netT:0};
+  lob:{cfg:{mode:'mut',bots:8,diff:1,rounds:7,time:180},pl:[]},k:0,lastK:0,tAcc:0,msg:'',hostTs:0,hostRx:0,netT:0,gen:0,mig:null};
 const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r6'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r7'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38)
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
@@ -36,6 +36,13 @@ Object.assign(STR.en,{mp:'Multiplayer',mpName:'Nickname',mpCreate:'Create room',
   mpCopy:'Copy code',mpCopied:'Copied',mpBots:'Bots',mpJoined:n=>`${n} joined`,mpLeft:n=>`${n} left — a bot takes over`,mpLeftL:n=>`${n} left`,
   mpDirect:'P2P direct',mpRelay:'claude relay',mpHost:'Host',mpToLobby:'Back to lobby',mpCodeIs:'Room code',mpShare:'Give your friends the code',mpMe:'you',mpSet:'Match settings',mpOnlyHost:'The host picks the settings',
   mpBad:'Codes have 4 letters',mpNatPJ:'No direct connection (a router or firewall blocks it) — on different networks, use the claude.ai link instead: it relays automatically when this fails',mpP2POnly:'P2P only (never use the claude relay)',mpP2PFail:'Could not make a direct P2P connection',mpP2PHost:'The host allows P2P only and a direct connection failed',mpPaused:'The game keeps running in multiplayer',mpNoRoom:'This view cannot join rooms — open the shared link while signed in to claude.ai'});
+// host migration (v6.38)
+Object.assign(STR.ko,{mpMigLeft:'방장이 나갔어요',mpMigConn:'새 방장에게 연결 중…',mpMigWaitP:(a,b)=>`다른 플레이어 기다리는 중… ${a}/${b}`,mpMigIn:'연결됨 — 곧 다시 시작해요',mpMigMe:'이제 내가 방장이에요',mpMigNew:n=>`새 방장: ${n}`,
+  mpMigRound:'라운드를 다시 시작해요',mpMigStage:'이 스테이지를 다시 시작해요',mpMigZone:'지금 구역부터 다시 시작해요',mpMigPhase:'보스전을 지금 페이즈부터 다시 시작해요',mpMigGo:'이어서 진행해요',
+  mpMigFail:'새 방장과 연결하지 못했어요',mpGive:'방장 넘기기',mpGiveQ:'넘길까요?',mpGiving:'방장을 넘기는 중…',mpGave:n=>`${n} 님에게 방장을 넘겼어요`});
+Object.assign(STR.en,{mpMigLeft:'The host left',mpMigConn:'Connecting to the new host…',mpMigWaitP:(a,b)=>`Waiting for the others… ${a}/${b}`,mpMigIn:'Connected — starting again in a moment',mpMigMe:'You are the host now',mpMigNew:n=>`New host: ${n}`,
+  mpMigRound:'The round starts over',mpMigStage:'This stage starts over',mpMigZone:'Starting this zone over',mpMigPhase:'The boss fight starts over from this phase',mpMigGo:'Carrying on',
+  mpMigFail:'Could not reach the new host',mpGive:'Make host',mpGiveQ:'Sure?',mpGiving:'Handing the room over…',mpGave:n=>`${n} is the host now`});
 
 // ---------- transport detection ----------
 async function netDetect(){if(NET.kind)return NET.kind;
@@ -150,30 +157,52 @@ function netUseRelay(k,why){if(NET.kind!=='room')return;
   const L=relayLink(k);NET.links.set(k,L);if(NET.cli){RSIG.set({rq:NET.relayWhy||1,sig:null})}else RSIG.setSig(k,null);L.ok=true;netLinkUp(L)}
 
 // ---------- signalling through PeerJS (standalone file) ----------
-const PJ={peer:null,
+// v6.38: every page's peer takes connections (a client may become the host), and a new host also claims the room code's id (the
+// doorbell, bell) so friends can still join with the code; the room's original id may stay taken for a while after a crash.
+const PJ={peer:null,bell:null,bellP:null,bellT:0,bellN:0,onErr:null,
   // the free PeerJS cloud (its default STUN/TURN servers included); always over TLS, even when this file is opened from disk
   // more STUN servers than PeerJS's default (one) so a public address is found on more networks; PeerJS's own TURN kept, over UDP and TCP
   opts(){return Object.assign({debug:0,secure:true,config:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'},
     {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478','turn:eu-0.turn.peerjs.com:3478?transport=tcp','turn:us-0.turn.peerjs.com:3478?transport=tcp'],username:'peerjs',credential:'peerjsp'}],sdpSemantics:'unified-plan'}},window.__peerOpts||{})},
-  host(){return new Promise((res,rej)=>{let done=false;const p=new Peer('qzg-'+NET.code.toLowerCase(),this.opts());this.peer=p;
-    p.on('open',id=>{done=true;NET.me=id;res()});p.on('connection',c=>{let L=NET.links.get(c.peer);if(!L||L.kind!=='p2p'){L=pjLink(c.peer);NET.links.set(c.peer,L)}L.attach(c)});
-    p.on('error',e=>{if(!done)rej(e);else console.warn('peerjs',e.type)});p.on('disconnected',()=>{try{p.reconnect()}catch(e){}})})},
-  join(){return new Promise((res,rej)=>{let done=false;const p=new Peer(this.opts());this.peer=p;
-    p.on('open',id=>{NET.me=id;const hk='qzg-'+NET.code.toLowerCase();NET.hostKey=hk;const L=pjLink(hk);NET.links.set(hk,L);
-      L.attach(p.connect(hk,{label:'r',reliable:true,serialization:'raw'}));L.attach(p.connect(hk,{label:'u',reliable:false,serialization:'raw'}));
-      // a relayed (TURN) path can take a while to come up: wait longer, then say what got stuck
-      setTimeout(()=>{if(done)return;done=true;let st='';try{const pc=L.r&&L.r.peerConnection;st=pc?pc.iceConnectionState:''}catch(e){}rej({type:st==='checking'||st==='failed'||st==='disconnected'?'nat':'timeout'})},25000);L.onUp=()=>{done=true;res()}});
-    p.on('error',e=>{if(!done){done=true;rej(e)}else console.warn('peerjs',e.type)})})},
-  close(){if(this.peer)try{this.peer.destroy()}catch(e){}this.peer=null}};
+  // this page's own peer: the room code's id for a host, a random one for a client
+  mk(id){return new Promise((res,rej)=>{let open=false;const p=id?new Peer(id,this.opts()):new Peer(this.opts());this.peer=p;
+    p.on('open',pid=>{if(this.peer!==p)return;open=true;NET.me=pid;res(pid)});p.on('connection',c=>pjAccept(c));
+    p.on('error',e=>{if(this.peer!==p)return;if(!open){open=true;rej(e);return}if(this.onErr&&this.onErr(e))return;if(e&&e.type==='peer-unavailable'&&netMigUnavail(e))return;console.warn('peerjs',e&&e.type)});
+    p.on('disconnected',()=>{if(this.peer===p&&!p.destroyed)try{p.reconnect()}catch(e){}})})},
+  host(){return this.mk('qzg-'+NET.code.toLowerCase())},
+  join(){return this.mk().then(()=>new Promise((res,rej)=>{const hk='qzg-'+NET.code.toLowerCase();NET.hostKey=hk;const L=pjLink(hk);NET.links.set(hk,L);let done=false;
+    const fin=e=>{if(done)return;done=true;this.onErr=null;if(e)rej(e);else res()};this.onErr=e=>{fin(e);return true};
+    L.attach(this.peer.connect(hk,{label:'r',reliable:true,serialization:'raw'}));L.attach(this.peer.connect(hk,{label:'u',reliable:false,serialization:'raw'}));
+    // a relayed (TURN) path can take a while to come up: wait longer, then say what got stuck
+    setTimeout(()=>{if(done)return;let st='';try{const pc=L.r&&L.r.peerConnection;st=pc?pc.iceConnectionState:''}catch(e){}fin({type:st==='checking'||st==='failed'||st==='disconnected'?'nat':'timeout'})},25000);L.onUp=()=>fin()}))},
+  // the doorbell: a new host claims the room code's id next to its own (retried every 5 s while someone, or a crashed host's ghost,
+  // holds it; after 30 tries the old host is taken to be still there and the code stays its)
+  bellOn(){if(this.bellP||this.bellT||!NET.on||!NET.host||NET.kind!=='peerjs'||!NET.code)return;const id='qzg-'+NET.code.toLowerCase();if(this.peer&&this.peer.id===id)return;
+    const p=new Peer(id,this.opts());this.bellP=p;
+    p.on('open',()=>{if(this.bellP===p){this.bell=p;this.bellN=0}});p.on('connection',c=>pjAccept(c));
+    p.on('error',e=>{if(this.bellP!==p||this.bell&&!(e&&e.type==='unavailable-id'))return;try{p.destroy()}catch(_){}this.bellP=this.bell=null;if(++this.bellN>=30)return;this.bellT=setTimeout(()=>{this.bellT=0;this.bellOn()},5000)});
+    p.on('disconnected',()=>{if(this.bellP===p&&!p.destroyed)try{p.reconnect()}catch(e){}})},
+  bellOff(){if(this.bellT)clearTimeout(this.bellT);this.bellT=0;const p=this.bellP;this.bellP=this.bell=null;if(p)try{p.destroy()}catch(e){}},
+  // let go of this page's peers now; they are destroyed when the returned function runs (after the goodbyes have gone out)
+  detach(){const p=this.peer,b=this.bellP;if(this.bellT)clearTimeout(this.bellT);this.bellT=this.bellN=0;this.peer=this.bellP=this.bell=null;this.onErr=null;return ()=>{for(const x of [p,b])if(x)try{x.destroy()}catch(e){}}},
+  close(){this.detach()()}};
+function pjAccept(c){if(!NET.on||NET.kind!=='peerjs'){try{c.close()}catch(e){}return}let L=NET.links.get(c.peer);
+  // (a dial of ours to the same page that has not opened yet gives way to theirs)
+  if(L&&L.kind==='p2p'&&!L.dead&&!L.ok&&L.dialed){L.dead=true;try{L.close()}catch(e){}L=null}
+  if(!L||L.kind!=='p2p'||L.dead){L=pjLink(c.peer);NET.links.set(c.peer,L)}L.attach(c)}
 
 // ---------- link lifecycle ----------
 function netLinkUp(L){if(L.onUp)L.onUp();
   // the handshake is done: clear it from the room presence (it is small, but many friends at once would not fit)
   if(NET.kind==='room'&&L.kind==='p2p'){if(NET.host)RSIG.setSig(L.key,null);else RSIG.set({sig:null})}
-  if(NET.cli){NET.msg='';netSend(L.key,{t:'hello',v:NET_VER,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,...HOF.hello()});UI.mpRender&&UI.mpRender()}}
+  // a client says hello to its host only (other pages may open links to it while a new host is being found)
+  if(NET.cli&&L.key===NET.hostKey){const M=NET.mig;if(M&&M.dial&&M.dial.k===L.key)M.dial.up=true;NET.msg='';netSend(L.key,netHello());UI.mpRender&&UI.mpRender();netMigUI()}}
+function netHello(){const o={t:'hello',v:NET_VER,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,...HOF.hello()};if(typeof TOUCH!=='undefined'&&TOUCH.on)o.tc=1;
+  // on the way to a new host: which hand-over this is, who turned out to be gone, and (scenario) this player's weapon upgrades
+  const M=NET.mig;if(M&&M.role==='cli'){o.mg=M.g||1;o.sk=[...M.gone].slice(0,NET_MAXP);const P=G.player;if(NET.ui==='game'&&P&&G.mode==='scen'&&P.wup)o.wu=P.wup}return o}
 function netLinkDown(L,why){if(L.dead)return;console.warn('net: link down',L.kind,why);L.dead=true;L.ok=false;try{L.close()}catch(e){}
   if(NET.links.get(L.key)!==L)return;NET.links.delete(L.key);NET.out.delete(L.key);if(!NET.on)return;
-  if(NET.cli){if(L.key===NET.hostKey)netFatal(NET.ui==='game'||NET.ui==='lobby'?T('mpHostGone'):T('mpFail'))}
+  if(NET.cli){if(L.key===NET.hostKey){if(NET.mig)netFatal(T('mpMigFail'));else if(netMigOK())netMigStart(why);else netFatal(NET.ui==='game'||NET.ui==='lobby'?T('mpHostGone'):T('mpFail'))}}
   else netDropPlayer(L.key)}
 function netDropPlayer(k){const i=NET.lob.pl.findIndex(p=>p.k===k);if(i>0)NET.lob.pl.splice(i,1);
   if(NET.ui==='game'){const a=actorOfKey(k);if(a){a.net=null;a.pup=false;a.nb=null;a.nraw=null;a.bot=AI.mk(a);if(a.alive)AI.onTeam(a);netEv('bot',{i:a.id});HUD.note(T('mpLeft',a.name),3)}}
@@ -211,11 +240,14 @@ NET.frameStart=function(dt){netTables();
 NET.frameEnd=function(dt){
   if(NET.ui==='game'){netPost();if(NET.cli&&NET.hits.length){netToHost({t:'h',L:NET.hits});NET.hits=[]}
     if(NET.host)for(const a of G.actors)if(a.skPend){if(G.t>a.skPend||!a.alive||a.team!==TZ)a.skPend=0;else if(a.skillCD<=0){a.skPend=0;useSkill(a)}}
-    NET.tAcc+=dt;if(NET.tAcc>=1/NET_HZ){NET.tAcc=Math.min(NET.tAcc-1/NET_HZ,.1);if(NET.host)netHostTick();else netCliTick()}}
+    NET.tAcc+=dt;if(NET.tAcc>=1/NET_HZ){NET.tAcc=Math.min(NET.tAcc-1/NET_HZ,.1);if(NET.host){if(!netHold())netHostTick()}else netCliTick()}}
+  if(NET.mig)netMigTick();
   netFlushR();
   if(NET.kind==='room'){RSIG.flushT-=dt;if(RSIG.flushT<=0){RSIG.flushT=1/NET_HZ;RSIG.flush()}}
-  // a page that went quiet for too long is gone
-  NET.netT+=dt;if(NET.netT>1){NET.netT=0;const now=netNow();for(const L of [...NET.links.values()])if(L.ok&&now-L.lastRx>(NET.toMs||(L.kind==='relay'?15000:10000)))netLinkDown(L,'timeout');
+  // a page that went quiet for too long is gone (a host silent for 6 s in a match, past its first 15 s: its players look for the next one)
+  NET.netT+=dt;if(NET.netT>1){NET.netT=0;const now=netNow();for(const L of [...NET.links.values()]){if(!L.ok)continue;const q=now-L.lastRx;
+      if(NET.cli&&L.key===NET.hostKey&&!NET.mig&&NET.ui==='game'&&NET.kind==='peerjs'&&q>6000&&now-(NET.t0||0)>15000&&netMigOK()){netMigStart('quiet');continue}
+      if(q>(NET.toMs||(L.kind==='relay'?15000:10000)))netLinkDown(L,'timeout')}
     if(NET.host){netAll({t:'ping',h:Math.round(now)});if(NET.ui==='lobby'&&(NET.lobT=(NET.lobT||0)+1)%2===0)netLobbyCast()}}};
 function netSafe(f){try{f()}catch(e){console.error(e)}}
 
@@ -235,7 +267,7 @@ function netOnState(L,m){if(m.t)return;if(!(m.k>L.lastK))return;L.lastK=m.k;cons
   for(const f of netFxList(L,m)){if(!Array.isArray(f)||f[1]!==a.id)continue;netQueueFx(a,f);NET.fx.push(f);
     if(f[0]==='n'&&a.inv&&a.inv[f[2]]>0)a.inv[f[2]]--}}
 // the host's snapshot on a client
-function netOnSnap(L,m){if(m.t||!(m.k>NET.lastK))return;NET.lastK=m.k;const now=netNow();NET.hostTs=m.ts;NET.hostRx=now;netClock('h',m.ts,now);
+function netOnSnap(L,m){if(m.t||L.key!==NET.hostKey||!(m.k>NET.lastK))return;NET.lastK=m.k;const now=netNow();NET.hostTs=m.ts;NET.hostRx=now;netClock('h',m.ts,now);
   if(NET.ui!=='game')return;const g=m.g;if(g){G.time=g[1]/10;if(g[5]>G.moraleLvl&&G.mode==='mut'){HUD.announce(T('moraleUp',g[5]*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}G.moraleLvl=g[5];G.hostN=g[6]}
   const P=G.player;
   for(const e of m.A||[]){const a=byId(e[0]);if(!a)continue;const F=e[8];const same=((F&2)?TZ:TH)===a.team&&!!(F&1)===a.alive;
@@ -332,9 +364,10 @@ function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||t.
 // ---------- host: handlers for what clients send ----------
 const HOSTH={
   hello(L,m){if(m.v!==NET_VER){netSend(L.key,{t:'bye',why:'ver'});return}
-    if(NET.ui==='game'&&!actorOfKey(L.key)){netSend(L.key,{t:'bye',why:'ingame'});return}
+    if(NET.ui==='game'&&!actorOfKey(L.key)){netSend(L.key,{t:'bye',why:m.mg?'mig':'ingame'});return}
     let p=NET.lob.pl.find(p=>p.k===L.key);if(!p){if(NET.lob.pl.length>=NET_MAXP){netSend(L.key,{t:'bye',why:'full'});return}p={k:L.key};NET.lob.pl.push(p);HUD.note(T('mpJoined',String(m.n||'?').slice(0,14)),2.5);AU.play('uiok',{vol:.4})}
-    p.n=String(m.n||'?').slice(0,14);p.s=HSKINS.includes(m.s)?m.s:'guard';p.z=ZLIST.includes(m.z)?m.z:'rager';p.f=HOF.valid(m.f)?+m.f:0;p.an=p.f?String(m.an||'').slice(0,16):'';L.name=p.n;netLobbyCast()},
+    p.n=String(m.n||'?').slice(0,14);p.s=HSKINS.includes(m.s)?m.s:'guard';p.z=ZLIST.includes(m.z)?m.z:'rager';p.f=HOF.valid(m.f)?+m.f:0;p.an=p.f?String(m.an||'').slice(0,16):'';p.t=m.tc?1:0;L.name=p.n;netLobbyCast();
+    if(m.mg)netMigHello(L,m)},
   ping(L){},
   pong(L,m){if(m.h&&!(L.srtt&&NET.ui==='game'))L.rtt=lerp(L.rtt||0,Math.max(0,netNow()-m.h),L.rtt?.3:1)},
   bye(L){netLinkDown(L,'bye')},
@@ -351,7 +384,21 @@ function netWithEv(f){NET.ev++;try{f()}finally{NET.ev--}}
 const CLIH={
   lobby(L,m){if(!m.lob||!Array.isArray(m.lob.pl))return;NET.lob=m.lob;const mp=m.lob.cfg&&m.lob.cfg.map;if(NET.ui!=='game'&&MAPDEFS[mp]&&MAP.id!==mp&&MAP.want!==mp)loadMapUI(mp);if(NET.ui!=='game'){const was=NET.ui;NET.ui='lobby';if(was!=='lobby'||UI.open!=='lobby')UI.mpLobby();else UI.mpRender()}},
   ping(L,m){netToHost({t:'pong',h:m.h})},
-  bye(L,m){netFatal(m.why==='full'?T('mpFull'):m.why==='ingame'?T('mpInGame'):m.why==='ver'?T('mpVer'):T('mpHostGone'))},
+  // a refusal ends it; the host leaving (with the succession it picked) starts the hand-over
+  bye(L,m){if(m.why){netFatal(m.why==='full'?T('mpFull'):m.why==='ingame'?T('mpInGame'):m.why==='ver'?T('mpVer'):m.why==='mig'?T('mpMigFail'):T('mpHostGone'));return}
+    if(netMigOK())netMigStart('bye',m.mg);else netFatal(T('mpHostGone'))},
+  // the new host has this page back (a match then waits for the others: mgo)
+  mig(L,m){NET.gen=m.g|0;const M=NET.mig;if(!M||M.role!=='cli')return;M.joined=netNow();M.dial=null;M.hn=String(m.n||'').slice(0,14);
+    if(NET.ui!=='game'){NET.mig=null;netMigDone(M.why==='give'?T('mpGave',M.hn||'?'):T('mpMigNew',M.hn||'?'))}else netMigUI()},
+  mgo(L,m){const M=NET.mig;if(!M)return;NET.mig=null;const n=String(m.n||M.hn||'').slice(0,14);netMigDone(T('mpMigNew',n||'?')+(m.w&&m.w!=='over'?' — '+netMigWhat(m.w):''))},
+  mignot(){if(NET.mig&&NET.mig.role==='cli')netFatal(T('mpHostGone'))},
+  mbot(L,m){if(Array.isArray(m.i))for(const i of m.i){const a=byId(i);if(a&&!a.isPlayer)a.net=null}},
+  migto(L,m){const M=NET.mig;if(!M||M.role!=='cli')return;const k=typeof m.k==='string'?m.k:'';
+    if(k===NET.me){netMigPromote();return}
+    if(!k||M.gone.has(k)||++M.redir>3){netFatal(T('mpMigFail'));return}
+    // the page asked is not taking over: drop that link and go where it points
+    L.dead=true;try{L.close()}catch(e){}NET.links.delete(L.key);NET.out.delete(L.key);M.dial=null;NET.hostKey='';
+    let i=M.list.indexOf(k);if(i<0){M.list.splice(M.i,0,k);i=M.i}M.i=i;netMigDial(k)},
   start(L,m){netBegin(m.cfg,m.ro)},
   round(L,m){netWithEv(()=>startRound(m))},
   hosts(L,m){for(let i=0;i<m.i.length;i++){const a=byId(m.i[i]);if(a)a.zpick=a.isPlayer?a.zpick:m.z[i]}netWithEv(()=>selectHosts(m.i));G.st='fight';G.time=G.roundTime},
@@ -371,15 +418,18 @@ const CLIH={
   tsnap(L,m){nyTrapSnap(m.i,byId(m.v))},
   snd(L,m){AU.at(m.n,m.x/100,m.y/100,m.z/100,{vol:m.v||.9});if(m.n==='clawarmor')FX.spawn({x:m.x/100,y:m.y/100,z:m.z/100,vy:1,life:.2,s0:.3,s1:.5,r:1,g:.9,b:.6,f:1,add:1})},
   bot(L,m){const a=byId(m.i);if(a){HUD.note(T('mpLeft',a.name),3);a.net=null}}};
-function netHandle(L,m){const H=NET.host?HOSTH:CLIH;const f=H[m.t];if(f)f(L,m)}
+// (a client hears only its host; another page that opens a link to it is looking for a new host: netMigAsk)
+function netHandle(L,m){if(NET.cli&&L.key!==NET.hostKey){netMigAsk(L,m);return}const H=NET.host?HOSTH:CLIH;const f=H[m.t];if(f)f(L,m)}
 
 // ---------- lobby ----------
-function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=CFG.mpName;me.s=CFG.skin;me.z=CFG.zclass;Object.assign(me,HOF.hello())}
+function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=CFG.mpName;me.s=CFG.skin;me.z=CFG.zclass;Object.assign(me,HOF.hello());me.t=typeof TOUCH!=='undefined'&&TOUCH.on?1:0}
   for(const p of NET.lob.pl){const L=NET.links.get(p.k);p.p=L?Math.round(L.rtt):0;p.r=L&&L.kind==='relay'?1:0}
+  // (every player keeps the list: if this page vanishes they agree on who takes over; pub: whether the room is listed)
+  NET.lob.pub=ROOMS.pubOn?1:0;NET.lob.g=NET.gen|0;
   netAll({t:'lobby',lob:NET.lob});UI.mpRender&&UI.mpRender()}
 const NET_FIXED_CODE='1234';
 NET.create=async function(){netTables();const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
-  NET.on=true;NET.host=true;NET.cli=false;NET.ui='lobby';NET.links.clear();NET.out.clear();NET.inQ=[];NET.msg=T('mpConnecting');
+  NET.on=true;NET.host=true;NET.cli=false;NET.ui='lobby';NET.links.clear();NET.out.clear();NET.inQ=[];NET.msg=T('mpConnecting');NET.gen=0;NET.mig=null;
   NET.lob={cfg:Object.assign({mode:CFG.mode,bots:8,diff:CFG.diff,rounds:CFG.rounds,time:CFG.time,blackout:1},CFG.mpCfg||{}),pl:[]};if(!MAPDEFS[NET.lob.cfg.map])NET.lob.cfg.map=MAPDEFS[CFG.map]?CFG.map:'q7';if(MAP.id!==NET.lob.cfg.map)loadMapUI(NET.lob.cfg.map);
   // inside claude.ai the room code is always the same (NET_FIXED_CODE): friends just press create / join.
   // Through PeerJS every room gets a random 4-letter code (no 0/O/1/I); a code someone already holds is redrawn a few times.
@@ -389,17 +439,21 @@ NET.create=async function(){netTables();const kind=await netDetect();if(!kind){N
   NET.lob.pl=[{k:NET.me,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,h:1,...HOF.hello()}];NET.msg='';ROOMS.pubOn=kind==='peerjs'&&CFG.mpPub!==false;UI.mpLobby();ROOMS.tick()};
 NET.join=async function(code){netTables();code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){NET.msg=T('mpBad');UI.mpRender();return}
   const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
-  NET.on=true;NET.host=false;NET.cli=true;NET.ui='join';NET.code=code;NET.hostKey='';NET.links.clear();NET.out.clear();NET.inQ=[];NET.lastK=0;NET.msg=T('mpConnecting');UI.mpRender();
+  NET.on=true;NET.host=false;NET.cli=true;NET.ui='join';NET.code=code;NET.hostKey='';NET.links.clear();NET.out.clear();NET.inQ=[];NET.lastK=0;NET.msg=T('mpConnecting');NET.gen=0;NET.mig=null;UI.mpRender();
   NET.forceRelay=/[?&]relay=1/.test(location.search);NET.p2pRetry=0;NET.hostP2P=false;NET.relayWhy='';
   try{if(kind==='room'){NET.me='k'+netKey(9);await RSIG.open();setTimeout(()=>{if(NET.on&&NET.cli&&!NET.hostKey)netFatal(T('mpNotFound'))},8000)}
     else await PJ.join()}
   catch(e){netFatal(e&&e.type==='peer-unavailable'?T('mpNotFound'):e&&(e.type==='nat'||e.type==='timeout')?T('mpNatPJ'):T('mpFail')+(e&&e.type?' ('+e.type+')':''))}};
-NET.leave=function(){ROOMS.down();if(!NET.on)return;netAll({t:'bye'});netFlushR();if(NET.kind==='room'){RSIG.dirty=true;RSIG.flush()}
-  const links=[...NET.links.values()];NET.links.clear();const kind=NET.kind;
-  setTimeout(()=>{for(const L of links)try{L.dead=true;L.close()}catch(e){}if(kind==='room')RSIG.close();else PJ.close()},150);
-  NET.on=NET.host=NET.cli=false;NET.ui='';NET.out.clear();NET.inQ=[];NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.hostKey=''};
+NET.leave=function(){ROOMS.down();if(!NET.on)return;
+  // a PeerJS host hands the room on: the order of who takes over goes with the goodbye (clients also keep it from the lobby updates)
+  const mg=NET.host&&NET.kind==='peerjs'&&(NET.ui==='lobby'||NET.ui==='game')?netMigOrder(NET.lob.pl,NET.me):null;
+  netAll(mg&&mg.length?{t:'bye',mg,g:(NET.gen|0)+1}:{t:'bye'});netFlushR();if(NET.kind==='room'){RSIG.dirty=true;RSIG.flush()}
+  const links=[...NET.links.values()];NET.links.clear();const kind=NET.kind,pj=kind==='peerjs'?PJ.detach():null;
+  setTimeout(()=>{for(const L of links)try{L.dead=true;L.close()}catch(e){}if(kind==='room')RSIG.close();else if(pj)pj()},150);
+  NET.on=NET.host=NET.cli=false;NET.ui='';NET.out.clear();NET.inQ=[];NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.hostKey='';NET.mig=null;netMigUI(true)};
 function netFatal(msg){console.warn('net: end',msg);const wasGame=NET.ui==='game';NET.leave();NET.msg=msg;if(wasGame||G.st!=='menu'){Main.toTitle();UI.act('mp')}else UI.act('mp');setTimeout(()=>{NET.msg=msg;UI.mpRender&&UI.mpRender()},30)}
-NET.start=function(){if(!NET.host||NET.ui!=='lobby')return;const cfg=Object.assign({},NET.lob.cfg);if(cfg.mode==='scen'){cfg.ep=epSel(cfg);cfg.map=epMapOf(cfg)}else cfg.ep=0;CFG.mpCfg=Object.assign({},cfg);saveCfg();
+// (a new host waits until its players are back before a match can start: netMigResume)
+NET.start=function(){if(!NET.host||NET.ui!=='lobby'||NET.mig)return;const cfg=Object.assign({},NET.lob.cfg);if(cfg.mode==='scen'){cfg.ep=epSel(cfg);cfg.map=epMapOf(cfg)}else cfg.ep=0;CFG.mpCfg=Object.assign({},cfg);saveCfg();
   cfg.mt=netKey(12);if(NET.lob.pl[0])Object.assign(NET.lob.pl[0],HOF.hello());
   const ro=[];let id=0;for(const p of NET.lob.pl)ro.push([id++,p.n,p.s,p.z,p.k,0,p.f|0,p.an||'']);const names=shuffle(BOT_NAMES.slice());const nb=cfg.mode==='scen'?Math.max(0,Math.min(cfg.bots|0,NET_MAXP-NET.lob.pl.length)):cfg.bots;for(let i=0;i<nb;i++)ro.push([id++,names[i%names.length],rpick(HSKINS),rpick(ZLIST),'']);
   if(cfg.mode==='scen')for(let i=0;i<=SCEN.POOL;i++)ro.push([id++,'Z','guard','rager','',1]);
@@ -407,23 +461,142 @@ NET.start=function(){if(!NET.host||NET.ui!=='lobby')return;const cfg=Object.assi
   netEv('start',{cfg,ro});netBegin(cfg,ro)};
 // every page builds the same actors from the host's roster
 function netBegin(cfg,ro){netTables();AU.init();MAP.want=MAPDEFS[cfg.map]?cfg.map:'q7';loadMap(MAP.want);Main.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);
-  NET.ui='game';NET.k=0;NET.lastK=0;NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.tAcc=0;UI.hideAll();
+  NET.ui='game';NET.k=0;NET.lastK=0;NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.tAcc=0;NET.t0=netNow();UI.hideAll();
   startMatch(Object.assign({},cfg,{ro}));for(const a of G.actors)NET.ids.set(a.id,a);
   HUD.show(true);Main.paused=false;Main.overlay=null;if(NET.host)Main.lock();else HUD.note(T('clickToPlay'),4);window.onbeforeunload=e=>{if(NET.on){e.preventDefault();e.returnValue='';return ''}}}
 function netToLobby(){if(NET.host)netEv('tolobby');for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);G.actors=[];G.player=null;clearNades();NY.clear();FX.clearDecals();
   AU.stopAll('countdown');Main.closeOverlay(true);Main.paused=false;R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;NET.ui='lobby';NET.ids.clear();NET.fxQ=[];
   Main.menuDemo();Main.unlock();UI.mpLobby();if(NET.host)netLobbyCast()}
 
+// ---------- host migration (v6.38, PeerJS rooms) ----------
+// When the host goes (leaves, closes the tab, or falls silent in a match) the room carries on under the next player in line. The line:
+// everyone after the host in join order, players on a computer before those on a phone or tablet; every page works it out from the
+// last lobby update (the host also sends it with its goodbye), so they agree. The next in line keeps its own peer id and takes
+// connections on it (and claims the room code's id once that is free: friends can still join with the code); the others connect to it
+// directly. Someone the PeerJS server no longer knows is skipped. In the waiting room that is all. In a match everything stops while
+// the others come back (15 s at most); then the new host runs the bots and restarts the round (score, round number and stats stay),
+// or in the scenario the stage / zone (a boss fight from the phase it reached; the lift ride and the escape carry on).
+// The host can also hand the room over from the waiting room (방장 넘기기). The claude.ai room relay keeps the old rule (the room ends).
+function netHold(){return !!(NET.on&&NET.mig&&NET.mig.hold&&NET.ui==='game')}
+function netMigOK(){return NET.on&&NET.kind==='peerjs'&&(NET.ui==='lobby'||NET.ui==='game')&&!!PJ.peer&&!PJ.peer.destroyed}
+function netMigOrder(pl,ex){const L=(pl||[]).filter((p,i)=>i>0&&p&&typeof p.k==='string'&&p.k&&p.k!==ex);return L.filter(p=>!p.t).concat(L.filter(p=>p.t)).map(p=>p.k)}
+const netMigWhat=w=>T(w==='round'?'mpMigRound':w==='stage'?'mpMigStage':w==='zone'?'mpMigZone':w==='phase'?'mpMigPhase':'mpMigGo');
+// a client lost its host: why = bye · quiet · ask (another page asked this one to take over) · a link-down reason; mg = the host's order
+// (the host's own key is the first in the lobby list; the link to it may have another name: friends who joined a new host with the
+// room code reached it at the code's id)
+function netMigStart(why,mg,wait){if(NET.mig||!NET.on||!NET.cli)return;const old=NET.hostKey,ui=NET.ui,h0=NET.lob.pl[0],oldK=h0&&typeof h0.k==='string'&&h0.k?h0.k:old;
+  const list=Array.isArray(mg)&&mg.length?mg.filter(k=>typeof k==='string'&&k&&k!==old&&k!==oldK).slice(0,NET_MAXP):netMigOrder(NET.lob.pl,oldK);if(!list.includes(NET.me))list.push(NET.me);
+  const oa=ui==='game'?actorOfKey(oldK):null;
+  NET.mig={g:(NET.lob.g|0)+1,old:oldK,oldId:oa?oa.id:-1,list,i:0,gone:new Set([old,oldK]),t0:netNow(),hold:ui==='game',role:'cli',dial:null,redir:0,why};
+  // the old host's link goes (one that only fell quiet is told, in case it can still hear: it lets this player go)
+  const L=NET.links.get(old);if(L){if(!L.dead&&L.ok&&(why==='quiet'||why==='ask')){netSend(old,{t:'bye',why:'mig'});netFlushR()}L.dead=true;NET.links.delete(old);setTimeout(()=>{try{L.close()}catch(e){}},150)}NET.out.delete(old);
+  // its player is a bot from now on; nothing timed by its clock counts any more
+  if(oa)oa.net=null;NET.hostKey='';NET.lastK=0;NET.hostTs=0;NET.off.clear();NET.fxQ=[];NET.hits=[];for(const a of G.actors)a.nb=null;
+  netMigUI();if(!wait)netMigNext()}
+function netMigNext(){const M=NET.mig;if(!M||M.role!=='cli')return;while(M.i<M.list.length&&M.gone.has(M.list[M.i]))M.i++;
+  const k=M.list[M.i];if(!k||k===NET.me){netMigPromote();return}netMigDial(k)}
+function netMigDial(k){const M=NET.mig,p=PJ.peer;if(!M||!p)return;
+  if(!M.dial||M.dial.k!==k)M.dial={k,at:netNow(),up:false};NET.hostKey=k;
+  // (our own line to the PeerJS server is down for a moment: try again shortly)
+  if(p.disconnected||p.destroyed){setTimeout(()=>{if(NET.mig===M&&M.dial&&M.dial.k===k&&!M.dial.up)netMigDial(k)},1000);return}
+  let L=NET.links.get(k);
+  if(L&&L.ok&&!L.dead){M.dial.up=true;netSend(k,netHello())}// (that page already has a link open to this one)
+  else{if(L){L.dead=true;try{L.close()}catch(e){}}L=pjLink(k);L.dialed=true;NET.links.set(k,L);
+    const r=p.connect(k,{label:'r',reliable:true,serialization:'raw'}),u=p.connect(k,{label:'u',reliable:false,serialization:'raw'});
+    if(!r||!u){setTimeout(()=>{if(NET.mig===M&&M.dial&&M.dial.k===k&&!M.dial.up)netMigDial(k)},1000);return}L.attach(r);L.attach(u)}
+  netMigUI()}
+// the PeerJS server does not know that page (it left too): the next in line
+function netMigGone(k){const M=NET.mig;if(!M||M.role!=='cli')return;M.gone.add(k);const L=NET.links.get(k);if(L){L.dead=true;try{L.close()}catch(e){}NET.links.delete(k)}NET.out.delete(k);
+  if(M.dial&&M.dial.k===k){M.dial=null;NET.hostKey='';M.i++;netMigNext()}}
+function netMigUnavail(e){const M=NET.mig;if(!M||M.role!=='cli'||!M.dial)return false;const k=(/peer (\S+)/.exec(e&&e.message||'')||[])[1];if(k&&k!==M.dial.k)return false;netMigGone(M.dial.k);return true}
+// another page, looking for a new host, opened a link to this one (still a client): take over if our host is gone too and this page
+// is next in line (after the ones that page found gone), else point it on; a host that is still there: say so
+function netMigAsk(L,m){if(!m||m.t!=='hello'||!m.mg||NET.kind!=='peerjs')return;if(m.v!==NET_VER){netSend(L.key,{t:'bye',why:'ver'});return}
+  if(!NET.mig){const H=NET.links.get(NET.hostKey),q=!H||H.dead||!H.ok||netNow()-H.lastRx>(NET.ui==='game'?1500:2500);
+    if(!q||!netMigOK()){netSend(L.key,{t:'mignot'});return}netMigStart('ask',null,true);if(!NET.mig)return}
+  const M=NET.mig;if(M.role!=='cli')return;
+  if(Array.isArray(m.sk))for(const k of m.sk)if(typeof k==='string'&&k&&k!==NET.me)M.gone.add(k);
+  const first=M.list.find(k=>!M.gone.has(k))||NET.me;
+  if(first===NET.me){netMigPromote();HOSTH.hello(L,m);return}
+  netSend(L.key,{t:'migto',k:first});if(!M.dial){M.i=Math.max(0,M.list.indexOf(first));netMigNext()}}
+// this page is the host now
+function netMigPromote(){const M=NET.mig;if(!M||M.role!=='cli')return;
+  if(M.dial){const L=NET.links.get(M.dial.k);if(L&&!L.ok){L.dead=true;try{L.close()}catch(e){}NET.links.delete(M.dial.k)}}// (a dial still under way goes)
+  M.role='host';M.dial=null;M.hostAt=netNow();NET.host=true;NET.cli=false;NET.hostKey='';NET.gen=M.g;
+  const me=NET.lob.pl.find(p=>p.k===NET.me)||{k:NET.me},rest=NET.lob.pl.filter(p=>p&&p!==me&&p.k!==M.old&&!M.gone.has(p.k));for(const p of rest)delete p.h;me.h=1;NET.lob.pl=[me,...rest];
+  M.want=new Set(rest.map(p=>p.k));M.got=new Set();
+  ROOMS.pubOn=!!NET.lob.pub;setTimeout(()=>{if(NET.on&&NET.host)PJ.bellOn()},1500);
+  if(NET.ui==='game')netMigTakeover();else if(UI.open==='lobby')UI.mpLobby();
+  netLobbyCast();netMigUI()}
+// a match: the bots (and the old host's player) run here from now on; the other players stay puppets driven by their own pages
+function netMigTakeover(){const M=NET.mig;M.bots=[];
+  for(const a of G.actors){a.nb=null;a.nraw=null;a._ef=null;a.skPend=0;if(a===G.player){a.pup=false;continue}
+    if(a.net&&(a.net===M.old||M.gone.has(a.net))){a.net=null;M.bots.push(a.id)}if(a.net){a.pup=true;continue}
+    a.pup=false;if(!a.bot){a.bot=AI.mk(a);if(a.alive)AI.onTeam(a)}}
+  NET.off.clear();NET.fxQ=[];NET.hits=[];for(const L of NET.links.values())L.inGame=false}
+// (host) a player on the way here said hello: back in the match (its scenario upgrades with it)
+function netMigHello(L,m){const M=NET.mig;
+  if(NET.ui==='game'){L.inGame=true;const a=actorOfKey(L.key);
+    if(a&&G.mode==='scen'&&m.wu&&typeof m.wu==='object'){const w={};for(const k in m.wu)if(Object.prototype.hasOwnProperty.call(WPN,k))w[k]=clamp(m.wu[k]|0,0,5);a.wup=w}}
+  if(M&&M.role==='host'&&M.want)M.got.add(L.key);
+  netSend(L.key,{t:'mig',g:NET.gen|0,n:CFG.mpName||''});
+  if(NET.ui==='game'&&!(M&&M.hold))netSend(L.key,{t:'mgo',w:'go',n:CFG.mpName||''});// (the match is already going again)
+  netMigUI()}
+// everyone is back (or 15 s went by): whoever is missing becomes a bot, the match starts again, the pause ends
+function netMigResume(){const M=NET.mig;if(!M||M.role!=='host')return;NET.mig=null;
+  for(const k of M.want)if(!M.got.has(k))netDropPlayer(k);
+  let w='';if(NET.ui==='game'){if(M.bots&&M.bots.length)netEv('mbot',{i:M.bots});w=netMigRestart();netEv('mgo',{w,n:CFG.mpName||''})}
+  netLobbyCast();if(typeof CHAT!=='undefined'&&CHAT.sys)CHAT.sys(T('mpMigNew',CFG.mpName||'?'));netMigDone(T('mpMigMe')+(w&&w!=='over'?' — '+netMigWhat(w):''))}
+// what starts over: the round (infection), the stage (free scenario), the zone or the boss phase (chapters); the lift ride and the
+// escape carry on (their clocks come with every snapshot); a finished round or match goes on as it was
+function netMigRestart(){if(G.st==='over'){netMigResults();return 'over'}
+  if(G.mode==='scen'&&SCEN.on){
+    if(EP.on){const ph=EP.ph,D=EP.S(),C=EP.C;if(ph==='over')return 'over';SCEN.best=Math.max(SCEN.best|0,Math.min(4,ph==='move'?EP.st:EP.st-1));
+      if(ph==='board'||ph==='ride'||D.k==='escape'){const Zn=EP.zone(D.z);SCEN.zsp=Zn?(C.zsp?C.zsp(EP.st,Zn):Zn.zsp):null;return 'go'}
+      if(ph==='move'&&C.stages[EP.st+1]){EP.stageStart(EP.st+1,'next');return 'zone'}
+      if(D.k==='boss'){EP.stageStart(EP.st,'phase');return 'phase'}
+      EP.stageStart(EP.st,'retry');return 'zone'}
+    if(SCEN.ph==='over')return 'over';SCEN.best=Math.max(SCEN.best|0,SCEN.stage-1);SCEN.stageStart('retry');return 'stage'}
+  if(G.st==='end')return 'go';
+  G.round=Math.max(0,G.round-1);startRound();return 'round'}
+// the results card on a new host: the button that takes everyone back to the waiting room
+function netMigResults(){const w=document.querySelector('#results .mbtns .mpwait');if(w)w.outerHTML=`<button data-act="mplobby" class="big">${T('mpToLobby')}</button>`}
+// (host) the players still to come back: the ones it waits for that have not said hello and have not left meanwhile
+function netMigNeed(M){let n=0,g=0;for(const k of M.want){if(M.got.has(k)){n++;g++}else if(NET.lob.pl.some(p=>p.k===k))n++}return [g,n]}
+function netMigTick(){const M=NET.mig,now=netNow();
+  if(M.role==='host'){const [g,n]=netMigNeed(M);if(g>=n||now-M.hostAt>15000)netMigResume();else if(M.uiN!==g*100+n){M.uiN=g*100+n;netMigUI()}return}
+  if(M.dial&&!M.dial.up&&now-M.dial.at>14000){netFatal(T('mpMigFail'));return}
+  if(now-(M.joined||M.t0)>(M.joined?20000:30000))netFatal(T('mpMigFail'))}
+// the waiting room's 방장 넘기기: the chosen player takes over; this page drops the room code's id and joins them as a player
+NET.give=async function(k){if(!NET.on||!NET.host||NET.ui!=='lobby'||NET.kind!=='peerjs'||NET.mig)return;const p=NET.lob.pl.find(x=>x.k===k);if(!p||k===NET.me)return;
+  const old=NET.me,order=[k,...netMigOrder(NET.lob.pl,old).filter(x=>x!==k)];
+  ROOMS.down();netAll({t:'bye',mg:order,g:(NET.gen|0)+1});netFlushR();
+  const links=[...NET.links.values()];NET.links.clear();NET.out.clear();NET.inQ=[];const pj=PJ.detach();setTimeout(()=>{for(const L of links)try{L.dead=true;L.close()}catch(e){}pj()},150);
+  NET.host=false;NET.cli=true;NET.hostKey='';NET.lastK=0;NET.gen=(NET.gen|0)+1;
+  NET.mig={g:NET.gen,old,oldId:-1,list:[k],i:0,gone:new Set([old]),t0:netNow(),hold:false,role:'cli',dial:null,redir:0,why:'give'};
+  NET.lob.pl=[p,...NET.lob.pl.filter(x=>x!==p&&x.k!==old)];if(UI.open==='lobby')UI.mpLobby();netMigUI();
+  try{await PJ.mk()}catch(e){netFatal(T('mpMigFail'));return}
+  if(NET.mig&&NET.mig.why==='give'&&NET.mig.role==='cli')netMigDial(k)};
+// the notice: while it lasts (a match: centred, the game paused), then what happened for a few seconds
+function netMigBox(){let el=$('migBox');if(!el){el=document.createElement('div');el.id='migBox';(document.getElementById('app')||document.body).appendChild(el)}return el}
+function netMigUI(off){const M=NET.mig,el=$('migBox');
+  if(off||!M||!NET.on){if(el&&(off||!el.classList.contains('done')))el.className='';return}
+  let h,s='';if(M.role==='host'){h=T('mpMigMe');const [g,n]=M.want?netMigNeed(M):[0,0];if(n)s=T('mpMigWaitP',g,n)}
+  else{h=M.why==='give'?T('mpGiving'):T('mpMigLeft');s=M.joined?T('mpMigIn'):T('mpMigConn')}
+  const box=netMigBox();box.innerHTML=`<b>${esc(h)}</b>${s?`<span>${esc(s)}</span>`:''}`;box.className='on'+(M.hold?' hold':'')+(NET.ui!=='game'?' atop':'')}
+function netMigDone(msg){const box=netMigBox();box.innerHTML=`<b>${esc(msg)}</b>`;box.className='on done'+(NET.ui!=='game'?' atop':'');clearTimeout(netMigDone.t);netMigDone.t=setTimeout(()=>{if(!NET.mig&&box.classList.contains('done'))box.className=''},3500)}
+
 // ---------- the public room list (v6.12): a signed-in PeerJS host lists its room (supabase: rooms, qz_room_up / qz_room_down / qz_rooms) ----------
 // The host refreshes its row every 10 s (and at once when players, map, mode or lobby/playing change); the server drops a row after 30 s
 // without one. The list is read by anyone (signed in or not) and refreshed every 5 s while the multiplayer menu is open.
-const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:false,bad:'',pubOn:false,
+// (a code another account still lists is tried again after 20 s: a new host after a hand-over waits for the old row to lapse)
+const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:false,bad:'',badT:0,pubOn:false,
   srv(){return typeof ACC!=='undefined'&&ACC.on},
-  can(){return NET.on&&NET.host&&NET.kind==='peerjs'&&this.pubOn&&this.srv()&&ACC.signed()&&this.bad!==NET.code},
+  can(){return NET.on&&NET.host&&NET.kind==='peerjs'&&this.pubOn&&this.srv()&&ACC.signed()&&!(this.bad===NET.code&&Date.now()-this.badT<20000)},
   st(){const c=NET.lob.cfg;return {p_code:NET.code,p_name:CFG.mpName||'',p_map:c.map||'',p_mode:c.mode||'mut',p_players:NET.lob.pl.length,p_max:NET_MAXP,p_status:NET.ui==='game'?'playing':'lobby'}},
   async up(){const a=this.st(),s=JSON.stringify(a);this.upBusy=true;this.upT=Date.now();
     try{const r=await ACC.rpc('qz_room_up',a);this.pub=a.p_code;if(!(r&&r.skipped))this.last=s}
-    catch(e){if(/room_taken|bad_code/.test(e&&e.message||''))this.bad=a.p_code;console.warn('rooms: up',e&&e.message)}
+    catch(e){if(/room_taken|bad_code/.test(e&&e.message||'')){this.bad=a.p_code;this.badT=Date.now()}console.warn('rooms: up',e&&e.message)}
     this.upBusy=false;if(!this.can()||NET.code!==a.p_code)this.down()},
   down(keep){const c=this.pub;this.last='';if(!c)return;this.pub='';if(!this.srv())return;if(keep)ACC.beacon('qz_room_down',{p_code:c});else ACC.rpc('qz_room_down',{p_code:c}).catch(()=>{})},
   tick(){const now=Date.now();
@@ -487,11 +660,16 @@ UI.mpAct=function(a,v){
   else if(a==='mpstart'){NET.start()}
   else if(a==='mpp2p'){CFG.p2pOnly=!CFG.p2pOnly;saveCfg();UI.mpMenu()}
   else if(a==='mpset'&&NET.host){const [k,val]=v.split(':');NET.lob.cfg[k]=isNaN(+val)?val:+val;if(k==='map'&&MAPDEFS[val])loadMapUI(val);netLobbyCast()}
-  else if(a==='mpme'){const [k,val]=v.split(':');CFG[k]=val;saveCfg();if(NET.host)netLobbyCast();else{netToHost({t:'hello',v:NET_VER,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,...HOF.hello()});UI.mpLobby()}}
+  else if(a==='mpme'){const [k,val]=v.split(':');CFG[k]=val;saveCfg();if(NET.host)netLobbyCast();else{netToHost(netHello());UI.mpLobby()}}
   else if(a==='mpcopy'){const b=document.querySelector('[data-act="mpcopy"]');const ok=()=>{if(b)b.textContent=T('mpCopied')};
     const sel=()=>{const el=document.querySelector('.mpcode');if(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}};
     try{navigator.clipboard.writeText(NET.code).then(ok,sel)}catch(e){sel()}}
   else if(a==='mplobby'&&NET.host){netToLobby()}
+  // 방장 넘기기: the first tap asks, a second within 3 s hands the room over
+  else if(a==='mpgive'){if(!NET.host)return true;const b=[...document.querySelectorAll('#lobby [data-act="mpgive"]')].find(e=>e.dataset.v===v);
+    if(b&&!b.classList.contains('ask')){for(const o of document.querySelectorAll('#lobby [data-act="mpgive"].ask')){o.classList.remove('ask');o.textContent=T('mpGive')}
+      b.classList.add('ask');b.textContent=T('mpGiveQ');clearTimeout(b._t);b._t=setTimeout(()=>{if(b.isConnected){b.classList.remove('ask');b.textContent=T('mpGive')}},3000)}
+    else NET.give(v)}
   else return false;return true};
 
 // ---------- in-game overlays: connection line, friends' name tags ----------

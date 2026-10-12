@@ -165,6 +165,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     try{
       if(NET.on)NET.frameStart(dt);
       if(G.st==='menu'){this.demoUpdate(dt);gameUpdate(dt)}
+      else if(netHold()){for(const a of G.actors)updateVisual(a,dt)}// (a multiplayer match waits while a new host takes over)
       else if(!this.paused||NET.on){if(G.player){if(!this.paused)this.playerCmd(dt);else{const c=G.player.cmd;c.f=c.s=0;c.jump=c.duck=c.walk=c.fire=c.alt=c.reload=c.skill=false}}gameUpdate(dt)}
       if(NET.on)NET.frameEnd(dt);
       if(!draw){FX.update(dt);return}

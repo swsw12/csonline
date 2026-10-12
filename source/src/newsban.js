@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'⇄',tag:['신규 기능 · 멀티플레이','New · Multiplayer'],t:['방장 넘기기','Hand the room over'],
+    d:['방장이 나가도 방이 끝나지 않아요 — 다음 플레이어가 자동으로 방장이 되고, 게임 중이면 지금 라운드(시나리오는 지금 구역)부터 다시 이어가요. 점수와 킬 기록은 그대로. 대기실에선 「방장 넘기기」로 직접 넘길 수도 있어요.','The room no longer ends when the host leaves: the next player takes over by itself, and a match picks up again from the current round (the scenario: the current zone) with the score and kill stats kept. In the waiting room the host can also hand the room over with 「Make host」.']},
   {kind:'feature',ico:'✉',tag:['신규 기능','New'],t:['친구 초대','Invite friends'],
     d:['대기실의 「친구 초대」로 친구를 바로 방에 불러요 — 친구 화면에 초대 알림이 뜨고 「참가하기」 한 번이면 들어와요. 친구 창의 내 초대 링크로 가입한 친구는 2,000코인을 받고, 그 친구가 3판을 끝내면 둘 다 근하신년 해독기 2개 (나는 3,000코인도).','Call friends straight into your room with 「Invite friends」 in the waiting room — they get a pop-up and one tap brings them in. A friend who signs up through the invite link in your friends window gets 2,000 coins, and after their 3rd match you both get 2 근하신년 decoders (you also 3,000 coins).']},
   {kind:'feature',ico:'◉',tag:['신규 기능 · 상점','New · Shop'],t:['보조무기 해독기','Sidearm decoder'],
