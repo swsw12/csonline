@@ -9,7 +9,7 @@
 // SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
 const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
 if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
-const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
+const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:null,mis:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
   sub(fn){this.subs.push(fn)},
@@ -62,7 +62,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
   oauth(p){location.assign(SB.url.replace(/\/+$/,'')+'/auth/v1/authorize?provider='+encodeURIComponent(p)+(this.here()?'&redirect_to='+encodeURIComponent(this.here()):''))},
   async recover(email){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';await this.req('POST','/auth/v1/recover'+q,{email},false)},
   async newPassword(pw){await this.call('PUT','/auth/v1/user',{password:pw})},
-  async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.mis=null;this.ls('qz_me',null);this.emit()},
+  async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.side=null;this.mis=null;this.ls('qz_me',null);this.emit()},
   async setNick(n){const r=await this.rpc('qz_set_nickname',{p_nick:n});if(this.me){this.me.nickname=r;this.ls('qz_me',{...this.ls('qz_me'),nickname:r})}this.emit();return r},
   async buy(id){const r=await this.rpc('qz_buy',{p_gun:id});if(this.me){this.me.coins=r.coins;this.me.owned.add(id);this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,owned:[...this.me.owned]})}this.emit();return r},
   // the 근하신년 decoder bingo: the player's card {nums[25], marked[25], drawn[], rewards[12], done[12], boards, shuffles_left}
@@ -84,6 +84,12 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
   async nyExchange(choice){const r=await this.rpc('qz_ny_exchange',{p_choice:choice});if(this.me){this.me.ny=r.ny.map(v=>v|0);this.me.tickets=r.tickets|0;this.me.sTickets=r.season_tickets|0;this.emit()}return r},
   async seasonReset(){this.season=await this.rpc('qz_season_reset');this.emit();return this.season},
   async seasonShuffle(){this.season=await this.rpc('qz_season_shuffle');this.emit();return this.season},
+  // the sidearm decoder bingo (v6.36): the season card's rules on a third card, numbers 1..side_hi (the Event Horizon Mini and the
+  // Crimson Peacemaker come from its lines only). Coins only: n = 1 or 10
+  async loadSide(){const r=await this.rpc('qz_side');this.side=r;this.emit();return r},
+  async sideDecode(n){const r=await this.rpc('qz_side_decode',{p_count:n});this.gotDraws(r);this.side=r.card;return r},
+  async sideReset(){this.side=await this.rpc('qz_side_reset');this.emit();return this.side},
+  async sideShuffle(){this.side=await this.rpc('qz_side_shuffle');this.emit();return this.side},
   async exchange(id){const r=await this.rpc('qz_exchange',{p_gun:id});const me=this.me;if(me){me.frags=r.fragments;me.owned.add(id);this.saveMe()}this.emit();return r},
   async history(){return await this.call('GET','/rest/v1/gacha_log?select=at,src,kind,tier,gun_id,amount,pity_hit&order=id.desc&limit=50',null)},
   saveMe(){const me=this.me;if(!me)return;this.ls('qz_me',{...this.ls('qz_me'),coins:me.coins,owned:[...me.owned],nickname:me.nickname})},
@@ -179,7 +185,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,mis:nul
     if(/no_request/.test(m))return T2('친구 요청이 없어요 (이미 처리됐을 수 있어요)','No such request (it may be answered already)');
     if(/not_friends/.test(m))return T2('친구에게만 선물할 수 있어요','Gifts go to friends only');
     if(/friend_has_it/.test(m))return T2('친구가 이미 가지고 있는 총이에요','Your friend has that gun already');
-    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');

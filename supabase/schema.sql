@@ -1,11 +1,12 @@
 -- ============================================================================================================
--- QUARANTINE Z — accounts, coins, the gun shop and the decoder bingos: 근하신년 + season, the public room list (Supabase)
+-- QUARANTINE Z — accounts, coins, the gun shop and the decoder bingos: 근하신년 + season + sidearm, the public room list (Supabase)
 -- Supabase 대시보드 → SQL Editor → New query → 이 파일 전체를 붙여넣고 Run. 여러 번 실행해도 안전합니다.
 --
 -- 규칙
 --   * 코인 · 조각 · 보유 총 · 보유 해독기는 테이블에 직접 쓸 수 없고(RLS: 자기 것 읽기만), 아래 함수로만 바뀝니다.
 --   * 총 가격은 gun_prices 테이블이 기준입니다 (게임 화면도 그 값을 씀). tier = 'S' / 'A' 는 근하신년 무기:
---     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole) · 스컬-9(skull9) · 샐러맨더(salamander)는 시즌 해독기 빙고에서만.
+--     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole) · 스컬-9(skull9) · 샐러맨더(salamander)는 시즌 해독기 빙고에서만,
+--     이벤트 호라이즌 미니(bholemini) · 크림슨 피스메이커(crimson)는 보조무기 해독기 빙고(v6.36, 숫자 1~80)에서만.
 --   * 보상은 서버가 계산합니다. 라운드 보상(v6.17): 라운드가 끝날 때마다 최대 600 (지난 라운드 보상 뒤 1초당 4까지,
 --     25초 안에 두 번은 안 됨) + 경험치. 판 보상: 판당 최대 1,200, 지난 판 보상 뒤 1분당 100까지, 그날 첫 판 +250.
 --     라운드 + 판 보상을 합쳐 하루(한국 시간) 20,000까지. 가입하면 3,000 코인.
@@ -18,7 +19,7 @@
 --     달아요(로비 · 대기실 · 이름표 · 채팅 · 랭킹 · 친구). 기록은 qz_claim이 남기고, 누구나 qz_ep_firsts로 읽습니다.
 --     이 파일을 처음 돌릴 때 v6.24 전의 첫 클리어(ep_records.first_at)도 그대로 옮겨집니다.
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
---     시즌 해독기 숫자는 같은 줄의 season_* 칸에 있습니다.
+--     시즌 해독기 숫자는 같은 줄의 season_* 칸에, 보조무기 해독기 숫자는 side_* 칸에 있습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -49,7 +50,7 @@ create table if not exists public.gun_prices (
   gun_id text primary key,
   price  integer not null check (price >= 0),
   free   boolean not null default false,  -- everyone has it from the start
-  sold   boolean not null default true    -- false: not in the shop (bhole, skull9, salamander: the season decoder; tier S / A: the 근하신년 decoder)
+  sold   boolean not null default true    -- false: not in the shop (bhole, skull9, salamander: the season decoder; bholemini, crimson: the sidearm decoder; tier S / A: the 근하신년 decoder)
 );
 alter table public.gun_prices add column if not exists tier text check (tier in ('S', 'A'));  -- 근하신년: pouch only
 create table if not exists public.owned_guns (
@@ -172,11 +173,34 @@ from t where b.user_id = t.user_id and t.k is not null;
 update public.gacha_config set season_lines = '{gun:bhole,gun:skull9,gun:salamander,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}'::text[]
 where id = 1 and season_lines = '{gun:bhole,gun:skull9,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}'::text[];
 alter table public.gacha_config alter column season_lines set default '{gun:bhole,gun:skull9,gun:salamander,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
+-- v6.36: the sidearm decoder (보조무기 해독기): a third card per player, numbers 1..side_hi (1~80). Its 12 lines carry the items in
+-- side_lines the way the season card's do: gun:<id> (the Event Horizon Mini and the Crimson Peacemaker come from here only; owned
+-- already: side_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (n 근하신년 decoders). Coins only: no free one, none kept.
+alter table public.gacha_config add column if not exists side_cost1       integer not null default 500;    -- one sidearm decoder
+alter table public.gacha_config add column if not exists side_cost10      integer not null default 4500;   -- ten
+alter table public.gacha_config add column if not exists side_hi          integer not null default 80;     -- numbers 1 .. this (25 at least)
+alter table public.gacha_config add column if not exists side_frag_min    integer not null default 1;      -- fragments every sidearm decoder gives
+alter table public.gacha_config add column if not exists side_frag_max    integer not null default 2;
+alter table public.gacha_config add column if not exists side_owned_coins integer not null default 5000;   -- a gun line whose gun is owned
+alter table public.gacha_config add column if not exists side_lines text[] not null
+  default '{gun:bholemini,gun:crimson,coins:500,coins:1000,coins:1000,coins:2000,coins:3000,frags:20,frags:20,frags:30,tickets:1,tickets:1}';
+alter table public.profiles add column if not exists side_shuffle_day date;                          -- the sidearm card's own shuffles
+alter table public.profiles add column if not exists side_shuffles    integer not null default 0;
+create table if not exists public.side_boards (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  nums       integer[] not null,
+  marked     boolean[] not null,
+  drawn      integer[] not null default '{}',
+  rewards    text[]    not null,   -- the 12 line items (rows 1-5, columns 6-10, diagonals 11-12), e.g. gun:crimson, coins:1000
+  done       boolean[] not null,
+  boards     integer   not null default 1,
+  updated_at timestamptz not null default now()
+);
 create table if not exists public.gacha_log (
   id       bigint generated always as identity primary key,
   user_id  uuid not null references auth.users(id) on delete cascade,
   at       timestamptz not null default now(),
-  src      text not null,               -- decode | free | ticket | season | exchange (pull: the old pouch)
+  src      text not null,               -- decode | free | ticket | season | side | exchange (pull: the old pouch)
   kind     text not null,               -- gun | coins | frags | tickets
   tier     text,
   gun_id   text,
@@ -238,6 +262,7 @@ alter table public.gacha_config enable row level security;
 alter table public.gacha_log    enable row level security;
 alter table public.bingo_boards enable row level security;
 alter table public.season_boards enable row level security;
+alter table public.side_boards  enable row level security;
 alter table public.ep_records   enable row level security;
 alter table public.ep_firsts        enable row level security;   -- (no policies: the hall of fame comes out of qz_ep_firsts only)
 alter table public.ep_first_members enable row level security;
@@ -259,6 +284,8 @@ drop policy if exists "read own card" on public.bingo_boards;
 create policy "read own card" on public.bingo_boards for select to authenticated using ((select auth.uid()) = user_id);
 drop policy if exists "read own season card" on public.season_boards;
 create policy "read own season card" on public.season_boards for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists "read own sidearm card" on public.side_boards;
+create policy "read own sidearm card" on public.side_boards for select to authenticated using ((select auth.uid()) = user_id);
 drop policy if exists "read own episodes" on public.ep_records;
 create policy "read own episodes" on public.ep_records for select to authenticated using ((select auth.uid()) = user_id);
 
@@ -301,8 +328,8 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('balrog11',7000,false,true,null),
   ('plasma',7500,false,true,null),
   ('thunder',9500,false,true,null),
-  ('bholemini',30000,false,true,null),
-  ('crimson',12000,false,true,null),
+  ('bholemini',0,false,false,null),
+  ('crimson',0,false,false,null),
   ('katana',9000,false,true,null),
   ('jhammer',7500,false,true,null),
   ('dde',8500,false,true,null),
@@ -1278,6 +1305,189 @@ begin
   return public.qz_season_json(uid);
 end $$;
 
+-- ---------- the sidearm decoder bingo (v6.36: Event Horizon Mini, Crimson Peacemaker) ----------
+-- a new sidearm card: 25 different numbers from 1..side_hi, the side_lines items shuffled onto the 12 lines
+create or replace function public.qz_side_new(uid uuid) returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  hi integer := greatest(coalesce((select c.side_hi from public.gacha_config c where c.id = 1), 80), 25);
+  v_nums integer[];
+  v_rw text[];
+begin
+  v_nums := (select array_agg(s.x) from (select x from generate_series(1, hi) x order by random() limit 25) s);
+  v_rw := coalesce((select array_agg(l.it order by random()) from public.gacha_config c, unnest(c.side_lines) l(it) where c.id = 1), '{}');
+  while coalesce(array_length(v_rw, 1), 0) < 12 loop
+    v_rw := v_rw || 'coins:500'::text;
+  end loop;
+  insert into public.side_boards (user_id, nums, marked, drawn, rewards, done, boards, updated_at)
+  values (uid, v_nums, array_fill(false, array[25]), '{}', v_rw[1:12], array_fill(false, array[12]), 1, now())
+  on conflict (user_id) do update set nums = excluded.nums, marked = excluded.marked, drawn = excluded.drawn, rewards = excluded.rewards,
+    done = excluded.done, boards = public.side_boards.boards + 1, updated_at = now();
+end $$;
+-- the sidearm card as the game reads it (its shuffles are counted apart from the other two cards')
+create or replace function public.qz_side_json(uid uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('nums', b.nums, 'marked', b.marked, 'drawn', b.drawn, 'rewards', b.rewards, 'done', b.done, 'boards', b.boards,
+    'shuffles_left', greatest(0, coalesce((select c.shuffle_free from public.gacha_config c where c.id = 1), 3)
+      - (select case when p.side_shuffle_day = (now() at time zone 'Asia/Seoul')::date then p.side_shuffles else 0 end from public.profiles p where p.id = uid)))
+  from public.side_boards b where b.user_id = uid
+$$;
+-- my sidearm card (a first one is made on the spot)
+create or replace function public.qz_side() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.side_boards where user_id = uid;
+  if not found then perform public.qz_side_new(uid); end if;
+  return public.qz_side_json(uid);
+end $$;
+-- open one or ten sidearm decoders (coins only): the season card's draw on the sidearm card, numbers 1..side_hi. A finished line pays
+-- its item: gun:<id> the gun (owned already: side_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (근하신년 decoders to open later).
+-- Every sidearm decoder also gives side_frag_min..side_frag_max fragments. A full card is replaced by a new one at once.
+create or replace function public.qz_side_decode(p_count integer) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  cfg public.gacha_config;
+  p public.profiles;
+  n integer := coalesce(p_count, 1);
+  v_cost integer;
+  hi integer;
+  lines integer[] := array[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],
+                           [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],
+                           [0,6,12,18,24],[4,8,12,16,20]];
+  v_nums integer[]; v_marked boolean[]; v_drawn integer[]; v_rw text[]; v_done boolean[];
+  v_owned text[];
+  v_res jsonb := '[]'::jsonb; v_new jsonb;
+  v_num integer; v_pos integer; v_full boolean; v_code text; v_kind text; v_arg text; v_gun text; v_amt integer; f integer;
+  v_card integer := 0;
+  coins_won integer := 0; frags_won integer := 0; tickets_won integer := 0;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if n not in (1, 10) then raise exception 'bad_count'; end if;
+  cfg := (select g from public.gacha_config g where g.id = 1);
+  if cfg.id is null then raise exception 'no_config'; end if;
+  hi := greatest(cfg.side_hi, 25);
+  v_cost := case when n = 10 then cfg.side_cost10 else cfg.side_cost1 end;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
+  if p.coins < v_cost then raise exception 'not_enough_coins'; end if;
+  perform 1 from public.side_boards where user_id = uid for update;
+  if not found then perform public.qz_side_new(uid); end if;
+  v_nums := (select b.nums from public.side_boards b where b.user_id = uid);
+  v_marked := (select b.marked from public.side_boards b where b.user_id = uid);
+  v_drawn := (select b.drawn from public.side_boards b where b.user_id = uid);
+  v_rw := (select b.rewards from public.side_boards b where b.user_id = uid);
+  v_done := (select b.done from public.side_boards b where b.user_id = uid);
+  v_owned := (select coalesce(array_agg(o.gun_id), '{}') from public.owned_guns o where o.user_id = uid);
+  for i in 1..n loop
+    v_num := (select x from generate_series(1, hi) x where not (x = any(v_drawn)) order by random() limit 1);
+    v_drawn := v_drawn || v_num;
+    v_pos := array_position(v_nums, v_num);
+    v_new := '[]'::jsonb;
+    if v_pos is not null then
+      v_marked[v_pos] := true;
+      for k in 1..12 loop
+        if not v_done[k] then
+          v_full := true;
+          for j in 1..5 loop
+            if not v_marked[lines[k][j] + 1] then v_full := false; exit; end if;
+          end loop;
+          if v_full then
+            v_done[k] := true;
+            v_code := coalesce(v_rw[k], '');
+            v_kind := split_part(v_code, ':', 1);
+            v_arg := split_part(v_code, ':', 2);
+            v_amt := case when length(v_arg) between 1 and 7 and v_arg !~ '[^0-9]' then v_arg::integer else 0 end;
+            v_gun := null;
+            if v_kind = 'gun' then
+              v_amt := 0;
+              v_gun := (select g.gun_id from public.gun_prices g where g.gun_id = v_arg);
+              if v_gun is not null and not (v_gun = any(v_owned)) then
+                v_owned := v_owned || v_gun;
+                insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, v_gun, 0);
+              else
+                v_kind := 'coins'; v_amt := cfg.side_owned_coins; coins_won := coins_won + v_amt;
+              end if;
+            elsif v_kind = 'frags' then
+              frags_won := frags_won + v_amt;
+            elsif v_kind = 'tickets' then
+              tickets_won := tickets_won + v_amt;
+            else
+              v_kind := 'coins'; coins_won := coins_won + v_amt;
+            end if;
+            insert into public.gacha_log (user_id, src, kind, tier, gun_id, amount) values (uid, 'side', v_kind, null, v_gun, v_amt);
+            v_new := v_new || jsonb_build_array(jsonb_build_object('line', k - 1, 'kind', v_kind, 'gun', v_gun, 'amount', v_amt, 'item', v_code));
+          end if;
+        end if;
+      end loop;
+    end if;
+    f := cfg.side_frag_min + floor(random() * (greatest(cfg.side_frag_max - cfg.side_frag_min, 0) + 1))::integer;
+    frags_won := frags_won + f;
+    v_res := v_res || jsonb_build_array(jsonb_build_object('n', v_num, 'cell', v_pos - 1, 'lines', v_new, 'frags', f, 'card', v_card));
+    -- a full card makes way for a new one (the rest of a ten goes on the new card)
+    if not (false = any(v_marked)) or array_length(v_drawn, 1) >= hi then
+      update public.side_boards set marked = v_marked, drawn = v_drawn, done = v_done where user_id = uid;
+      perform public.qz_side_new(uid);
+      v_card := v_card + 1;
+      v_nums := (select b.nums from public.side_boards b where b.user_id = uid);
+      v_marked := (select b.marked from public.side_boards b where b.user_id = uid);
+      v_drawn := '{}'; v_rw := (select b.rewards from public.side_boards b where b.user_id = uid);
+      v_done := (select b.done from public.side_boards b where b.user_id = uid);
+    end if;
+  end loop;
+  update public.side_boards set marked = v_marked, drawn = v_drawn, done = v_done, updated_at = now() where user_id = uid;
+  update public.profiles set coins = coins - v_cost + coins_won, fragments = fragments + frags_won, dec_tickets = dec_tickets + tickets_won
+  where id = uid;
+  p := (select t from public.profiles t where t.id = uid);
+  if v_cost > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, -v_cost, 'side_decoder', jsonb_build_object('count', n)); end if;
+  if coins_won > 0 then insert into public.coin_log (user_id, delta, reason) values (uid, coins_won, 'side_win'); end if;
+  return jsonb_build_object('draws', v_res, 'card', public.qz_side_json(uid), 'coins', p.coins, 'fragments', p.fragments,
+    'tickets', p.dec_tickets, 'cost', v_cost);
+end $$;
+-- a fresh sidearm card (what was stamped on this one is gone)
+create or replace function public.qz_side_reset() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  perform public.qz_side_new(uid);
+  return public.qz_side_json(uid);
+end $$;
+-- move the sidearm card's numbers not stamped yet to other unstamped cells (shuffle_free times a day, apart from the other cards')
+create or replace function public.qz_side_shuffle() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  p public.profiles;
+  today date := (now() at time zone 'Asia/Seoul')::date;
+  used integer;
+  v_nums integer[]; v_marked boolean[]; v_idx integer[]; v_vals integer[];
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select t from public.profiles t where t.id = uid);
+  used := case when p.side_shuffle_day = today then p.side_shuffles else 0 end;
+  if used >= coalesce((select c.shuffle_free from public.gacha_config c where c.id = 1), 3) then raise exception 'no_shuffles'; end if;
+  perform 1 from public.side_boards where user_id = uid for update;
+  if not found then perform public.qz_side_new(uid); end if;
+  v_nums := (select b.nums from public.side_boards b where b.user_id = uid);
+  v_marked := (select b.marked from public.side_boards b where b.user_id = uid);
+  v_idx := (select array_agg(i) from generate_subscripts(v_marked, 1) i where not v_marked[i]);
+  if v_idx is not null then
+    v_vals := (select array_agg(v_nums[i] order by random()) from unnest(v_idx) i);
+    for j in 1..array_length(v_idx, 1) loop v_nums[v_idx[j]] := v_vals[j]; end loop;
+  end if;
+  update public.side_boards set nums = v_nums, updated_at = now() where user_id = uid;
+  update public.profiles set side_shuffle_day = today, side_shuffles = used + 1 where id = uid;
+  return public.qz_side_json(uid);
+end $$;
+
 -- a pouch gun of your choice for fragments
 create or replace function public.qz_exchange(p_gun text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -1327,6 +1537,12 @@ revoke all on function public.qz_ny_add(integer, integer, integer, integer) from
 revoke all on function public.qz_ny_exchange(text) from public, anon;
 revoke all on function public.qz_season_reset() from public, anon;
 revoke all on function public.qz_season_shuffle() from public, anon;
+revoke all on function public.qz_side_new(uuid) from public, anon, authenticated;
+revoke all on function public.qz_side_json(uuid) from public, anon, authenticated;
+revoke all on function public.qz_side() from public, anon;
+revoke all on function public.qz_side_decode(integer) from public, anon;
+revoke all on function public.qz_side_reset() from public, anon;
+revoke all on function public.qz_side_shuffle() from public, anon;
 revoke all on function public.qz_exchange(text) from public, anon;
 revoke all on function public.qz_import_rec(integer, integer, integer, integer, integer) from public, anon;
 revoke all on function public.qz_rec(public.profiles) from public, anon, authenticated;
@@ -1346,6 +1562,10 @@ grant execute on function public.qz_ny_add(integer, integer, integer, integer) t
 grant execute on function public.qz_ny_exchange(text) to authenticated;
 grant execute on function public.qz_season_reset() to authenticated;
 grant execute on function public.qz_season_shuffle() to authenticated;
+grant execute on function public.qz_side() to authenticated;
+grant execute on function public.qz_side_decode(integer) to authenticated;
+grant execute on function public.qz_side_reset() to authenticated;
+grant execute on function public.qz_side_shuffle() to authenticated;
 grant execute on function public.qz_exchange(text) to authenticated;
 grant execute on function public.qz_import_rec(integer, integer, integer, integer, integer) to authenticated;
 

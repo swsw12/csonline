@@ -5,15 +5,17 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'◉',tag:['신규 기능 · 상점','New · Shop'],t:['보조무기 해독기','Sidearm decoder'],
+    d:['상점의 새 해독기 탭. 숫자 1~80의 5×5 빙고판에서 줄을 채우면 줄 끝의 보상 — 이벤트 호라이즌 미니 · 크림슨 피스메이커는 이제 여기서만 나와요. 해독기 1개 500코인, 10개 4,500코인. 나머지 줄은 코인 · 해독 조각 · 근하신년 해독기.','A new decoder tab in the shop: finish a line on a 5×5 card of the numbers 1–80 and take the reward at its end — the Event Horizon Mini and the Crimson Peacemaker now come from here only. 500 coins a decoder, 4,500 for ten. The other lines pay coins, fragments and 근하신년 decoders.']},
   {kind:'weapon',ref:'dde',tag:['신규 출시 · 상점 8,500 코인','Out now · Shop · 8,500 coins'],t:['듀얼 데저트 이글','Dual Desert Eagle'],
     d:['.50AE 데저트 이글 두 자루. 한 발 110(머리 330)에 맞은 좀비가 크게 밀려나고 휘청여요. 금빛 총열의 검정 이글과 크롬 이글 한 쌍.','Two .50 AE Desert Eagles: 110 a round (330 to the head), a big shove and a stagger. A black eagle with a gold barrel and a chrome one.']},
   {kind:'weapon',ref:'jhammer',tag:['신규 출시 · 상점 7,500 코인','Out now · Shop · 7,500 coins'],t:['잭해머','Jackhammer'],
     d:['1980년대에 시제품만 나온 실제 불펍 자동 샷건. 10발 회전 카세트가 쏠 때마다 돌아가고, 재장전은 카세트째 갈아 끼워요. 누르고 있으면 분당 240발.','A real 1980s bullpup automatic shotgun that never got past prototypes. The 10-shell cassette turns with every shot; a reload swaps the whole cassette. Hold the trigger: 240 rounds a minute.']},
   {kind:'weapon',ref:'katana',tag:['신규 출시 · 상점 9,000 코인','Out now · Shop · 9,000 coins'],t:['카타나','Katana'],
     d:['두 손으로 쥐는 일본도. 좌클릭 사선베기는 좌우를 번갈아 2마리까지, 우클릭 가로베기는 3마리를 한 번에 베어요. 총을 쏘다 바로 꺼내면 발도술처럼 즉시 베어요.','A two-handed sword. Left click cuts diagonally, alternating sides, through two; right click sweeps flat through three. Drawn right after a gunshot it cuts at once.']},
-  {kind:'weapon',ref:'crimson',tag:['신규 출시 · 상점 12,000 코인','Out now · Shop · 12,000 coins'],t:['크림슨 피스메이커','Crimson Peacemaker'],
+  {kind:'weapon',ref:'crimson',tag:['보조무기 해독기','Sidearm decoder'],t:['크림슨 피스메이커','Crimson Peacemaker'],
     d:['빨강과 검정의 싱글 액션 리볼버. 6발, 몸통 250 · 머리 600에 맞은 좀비가 멀리 날아가는 넉백. 우클릭 해머 연타로 남은 탄을 한꺼번에 쏟아내요.','A red-and-black single-action revolver. 6 rounds, body 250 / head 600, a shove that throws zombies back. Right click fans the hammer to dump the cylinder at once.']},
-  {kind:'weapon',ref:'bholemini',tag:['신규 출시 · 상점 30,000 코인','Out now · Shop · 30,000 coins'],t:['이벤트 호라이즌 미니','Event Horizon Mini'],
+  {kind:'weapon',ref:'bholemini',tag:['보조무기 해독기','Sidearm decoder'],t:['이벤트 호라이즌 미니','Event Horizon Mini'],
     d:['이벤트 호라이즌의 빨아들이는 힘만 가진 권총. 2발, 데미지 없음 — 작은 블랙홀이 2.6초간 9 m 안의 좀비를 끌어모아요. 좀비를 모아두거나 시간을 버는 용도.','A pistol with only the Event Horizon\'s pull. 2 rounds, no damage — a small black hole gathers zombies within 9 m for 2.6 s. For bunching them up and buying time.']},
   {kind:'zombie',ref:'tiamat',tag:['좀비 시나리오 5챕터 · 시즌 1 마지막','Zombie scenario · CH.5 · season 1 finale'],t:['5챕터 「티아마트」','Chapter 5 「TIAMAT」'],
     d:['폭우 치는 밤, 지하 40 m의 빗물 방수로. 수석연구원과 원종이 합쳐진 거대 지네 티아마트는 물속에선 총알이 안 들어가요 — 솟구칠 때 · 좌초됐을 때 · 코어가 열릴 때를 노리고, 배수 수문으로 물을 빼요. 마지막엔 지상으로 기어오르는 놈을 수직갱 나선 경사로로 쫓아가요. 4챕터를 깨면 열려요.','A storm-water tunnel 40 m down on a night of downpour. TIAMAT, the chief researcher fused with the origin strain into a giant centipede, cannot be hurt under the water — hit it when it rises, when it is stranded, when its core opens, and drain the hall to strand it. Last of all, chase it up the spiral ramp of the shaft before it reaches the surface. Opens once chapter 4 is cleared.']},

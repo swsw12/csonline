@@ -890,6 +890,47 @@ html.touch #hRange .rgK{display:none}
 #gFx .gcap small{font-size:13px;color:#ffd8b0;margin-left:6px}#gFx .gstage>.gcap{font-size:30px;font-weight:bold;color:#ffd24a;text-shadow:0 0 18px rgba(255,200,60,.7)}
 #gFx .gln{position:absolute;left:0;right:0;bottom:5px;font-style:normal;font-size:10px;color:#9aa4b2;text-align:center}
 #gFx .gback .mini{height:62%}
+/* ---------- the sidearm decoder bingo (v6.36): gunmetal and crimson, a revolver cylinder (shop.js) ---------- */
+#shopWin .spages{overflow-x:auto;scrollbar-width:none}#shopWin .spages::-webkit-scrollbar{display:none}
+#shopWin .spages button.dp.on{background:linear-gradient(#5e1218,#240709);border-color:#f0505a;color:#ffe0dc}
+#shopWin .bsd{background:linear-gradient(#f0505a,#8a1418)}
+#shopWin .sc.side{background:linear-gradient(#2e1c1e,#221618)}#shopWin .sc.tP.side,#shopWin .sc.tP.own{border-color:#a8343c}
+#shopWin .sdi.tP{background:radial-gradient(ellipse at 50% 60%,#5a1218,#100809);border-color:#c8343c;box-shadow:inset 0 0 18px rgba(255,80,70,.3)}
+#shopWin .sbb.crim{background:linear-gradient(#e0404a,#8a1418);border-color:#ffaaa0;color:#fff}#shopWin .sbb.crim:hover{background:linear-gradient(#f0505a,#9a1c22)}
+#shopWin .bwrap.sd .gleft{background:radial-gradient(ellipse at 50% 26%,#4a1216,#0e0808 72%)}
+#shopWin .sd .bdec .dz{filter:drop-shadow(0 8px 18px rgba(255,70,60,.4))}
+.cyl{transform-origin:60px 72px;animation:sdcyl 4.8s ease-in-out infinite}#shopWin .bdec.roll .cyl{animation:szspin .3s linear infinite}
+@keyframes sdcyl{0%,10%{transform:rotate(0)}16.67%,26.67%{transform:rotate(60deg)}33.33%,43.33%{transform:rotate(120deg)}50%,60%{transform:rotate(180deg)}66.67%,76.67%{transform:rotate(240deg)}83.33%,93.33%{transform:rotate(300deg)}100%{transform:rotate(360deg)}}
+#shopWin .sd .bnum{border-color:#5a2a2e;background:linear-gradient(#120809,#1e0e10)}#shopWin .sd .bnum b{text-shadow:0 0 12px rgba(255,110,90,.5)}
+#shopWin .sd .gbtn{background:linear-gradient(#d8343c,#7a1016);border-color:#ff9a90;color:#fff0ec}
+#shopWin .sd .gbtn.ten{background:linear-gradient(#e8b030,#9a6a0c);border-color:#ffe080;color:#1c1406}
+#shopWin .sd .gbtn.skip{background:linear-gradient(#4a505a,#2a2e34);border-color:#7a808a;color:#fff3e0}
+#shopWin .sd .gbtn:disabled{background:#33363c;border-color:#4a4e56;color:#8a8e96}
+#shopWin .sd .btools button,#shopWin .sd .bq button{background:#30181a;border-color:#6a3a3e;color:#f2dcdc}#shopWin .sd .btools button small{color:#ff9a90}#shopWin .sd .bq{color:#ffd0c8}
+#shopWin .sd .bboard{background:radial-gradient(ellipse at 50% 45%,#2e1012,#0c0606 75%);border-color:#5a2a2e;box-shadow:inset 0 0 30px rgba(0,0,0,.6),0 0 22px rgba(255,60,50,.18)}
+#shopWin .sd .bc{background:linear-gradient(#cc444c,#76141a);border-color:#ffaaa4}
+#shopWin .sd .bc.mk{background:linear-gradient(#3a2224,#1c1011);border-color:#5a3a3c}#shopWin .sd .bc.mk span{color:#a08486}
+#shopWin .sd .bc i{border-color:#ffd24a;box-shadow:0 0 6px rgba(255,210,74,.6),inset 0 0 6px rgba(255,210,74,.4)}#shopWin .sd .bc i::after{border-color:#ffd24a}
+#shopWin .sd .bc.hl{outline-color:#ffd08a}
+#shopWin .sd .bstat .ehs{color:#ffb4ac}#shopWin .sd .bstat .ehs b{color:#ffe4e0}#shopWin .sd .bstat .ehs img{filter:drop-shadow(0 0 3px rgba(255,110,90,.8))}
+/* the sidearm guns' line tiles */
+#shopWin .brw.rP{border-color:#ff6a5a;background:radial-gradient(circle at 50% 48%,#4a0c10,#0a0404 72%);box-shadow:0 0 10px rgba(255,80,60,.55),inset 0 0 10px rgba(255,120,90,.3)}
+#shopWin .brw.rP::after{content:'';position:absolute;inset:-30%;background:conic-gradient(rgba(0,0,0,0) 0 18%,rgba(255,90,70,.55) 30%,rgba(0,0,0,0) 44% 66%,rgba(255,210,110,.42) 80%,rgba(0,0,0,0) 94%);animation:szspin 5s linear infinite;pointer-events:none}
+#shopWin .brw.rP img{position:relative;z-index:1;max-height:56%;filter:drop-shadow(0 0 4px rgba(255,140,120,.95))}
+#shopWin .brw.rP.got::after,#shopWin .brw.rP.own::after{opacity:.3}#shopWin .brw.rP em{color:#ffd24a}
+/* the sidearm line cards */
+#gFx.sd{background:radial-gradient(ellipse at 50% 45%,rgba(78,14,18,.95),rgba(8,2,2,.97))}
+#gFx.sd .gstage>.gcap{color:#ffd8d0;text-shadow:0 0 18px rgba(255,90,70,.85)}#gFx.sd .gcap small{color:#f0c8c0}
+#gFx .gflash.tP{background:radial-gradient(circle at 50% 45%,rgba(255,255,255,1),rgba(255,120,90,.7) 22%,rgba(170,20,30,.4) 45%,rgba(0,0,0,0) 70%)}
+#gFx .gcard.sd .gback{background:repeating-linear-gradient(45deg,#3a0c10 0 8px,#521418 8px 16px);border-color:#ff8a7a}
+#gFx .gcard.tP .gfront{background:radial-gradient(circle at 50% 36%,#5a0c12,#0e0405 72%);border-color:#ff9a8a;box-shadow:0 0 26px rgba(255,80,60,.8)}
+#gFx .gcard.tP.open .gfront{animation:gsglow 1.6s ease-in-out .45s infinite}
+#gFx .gci.eh.dp::before{background:conic-gradient(rgba(0,0,0,0) 0 15%,rgba(255,100,80,.75) 28%,rgba(0,0,0,0) 42% 62%,rgba(255,210,110,.6) 76%,rgba(0,0,0,0) 90%)}
+#gFx .gci.eh.dp img{filter:drop-shadow(0 0 6px rgba(255,150,130,.95))}
+#gFx .gtg.tP{background:linear-gradient(#ff8a7a,#a8141c);color:#fff!important}
+#gFx .gagain.crim{background:linear-gradient(#d8343c,#7a1016);border-color:#ff9a90}
+#gPop .grt b.tP{color:#ff9a8a}#gPop .gpw.sd .awh{border-bottom-color:#f0505a}#gPop .gpw.sd .awh b{color:#ffd8d0}
+.bi.lk .c small.gb.gd,.mbi.lk .c small.gb.gd{color:#ff8a80}
 
 /* ===== the ranking and the daily missions (rank.js): the shop window's look ===== */
 #rkWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.66);display:flex;align-items:center;justify-content:center;padding:10px}
