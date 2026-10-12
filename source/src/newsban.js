@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'dde',tag:['신규 출시 · 상점 8,500 코인','Out now · Shop · 8,500 coins'],t:['듀얼 데저트 이글','Dual Desert Eagle'],
+    d:['.50AE 데저트 이글 두 자루. 한 발 110(머리 330)에 맞은 좀비가 크게 밀려나고 휘청여요. 금빛 총열의 검정 이글과 크롬 이글 한 쌍.','Two .50 AE Desert Eagles: 110 a round (330 to the head), a big shove and a stagger. A black eagle with a gold barrel and a chrome one.']},
   {kind:'weapon',ref:'jhammer',tag:['신규 출시 · 상점 7,500 코인','Out now · Shop · 7,500 coins'],t:['잭해머','Jackhammer'],
     d:['1980년대에 시제품만 나온 실제 불펍 자동 샷건. 10발 회전 카세트가 쏠 때마다 돌아가고, 재장전은 카세트째 갈아 끼워요. 누르고 있으면 분당 240발.','A real 1980s bullpup automatic shotgun that never got past prototypes. The 10-shell cassette turns with every shot; a reload swaps the whole cassette. Hold the trigger: 240 rounds a minute.']},
   {kind:'weapon',ref:'katana',tag:['신규 출시 · 상점 9,000 코인','Out now · Shop · 9,000 coins'],t:['카타나','Katana'],

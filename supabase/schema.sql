@@ -305,6 +305,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('crimson',12000,false,true,null),
   ('katana',9000,false,true,null),
   ('jhammer',7500,false,true,null),
+  ('dde',8500,false,true,null),
   ('bhole',0,false,false,null),
   ('skull9',0,false,false,null),
   ('salamander',0,false,false,null),
