@@ -46,7 +46,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],email:this.ses&&this.ses.user&&this.ses.user.email||''};
+      frags:r.fragments|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||''};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
@@ -114,7 +114,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     const me=this.me;if(me){me.coins=r.coins;me.dayLeft=r.day_left;if(r.rec)me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:me.rec})}this.emit();return r},
   // ---- friends and gifts (v6.18) ----
   // {code (mine), friends:[{code,nickname,xp,last,since}], incoming:[{code,nickname,xp,at}], outgoing:[…], gifts_new}; ids never come out
-  frGot(r){this.fr={...r,at:Date.now()};const me=this.me;if(me){if(r.code)me.fcode=r.code;me.friendReq=(r.incoming||[]).length;if(r.gifts_new!=null)me.giftsNew=r.gifts_new|0;if(r.dm_new!=null)me.dmNew=r.dm_new|0}this.emit();return this.fr},
+  frGot(r){this.fr={...r,at:Date.now()};const me=this.me;if(me){if(r.code)me.fcode=r.code;me.friendReq=(r.incoming||[]).length;if(r.gifts_new!=null)me.giftsNew=r.gifts_new|0;if(r.dm_new!=null)me.dmNew=r.dm_new|0;if(r.inv!=null)me.invN=r.inv|0}this.emit();return this.fr},
   async loadFriends(){return this.frGot(await this.rpc('qz_friends'))},
   // a request by friend code or a nickname only one player has → also the list, done: sent | accepted (they had asked me already)
   async friendAdd(who){const r=await this.rpc('qz_friend_add',{p_who:who});this.frGot(r);return r},
@@ -123,13 +123,24 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   // v6.25: 'I am here' (profiles.last_seen; friends read it as online / last seen) and the friend chat. dm_new = unread messages.
   // qz_dm_list → {msgs:[{id,mine,text,at}], seen, dm_new}; asking for a talk marks what the friend wrote as read. Old databases: no ping, no chat.
   async ping(){if(this.noPing)return null;let r;try{r=await this.rpc('qz_ping')}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noPing=true;return null}throw e}
-    if(this.me&&r&&r.dm_new!=null&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
+    const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(ch)this.emit()}return r},
   async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
   async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
   // a gun from the shop for a friend (the giver's coins): {coins,gun,to}
   async gift(code,gun){const r=await this.rpc('qz_gift',{p_who:code,p_gun:gun});if(this.me){this.me.coins=r.coins;this.saveMe()}this.emit();return r},
   // gifts not shown yet [{gun,from,at}] (shown after this); the guns are on the account already
   async giftInbox(){const r=await this.rpc('qz_gift_inbox');const L0=r.gifts||[];const me=this.me;if(me){for(const g of L0)me.owned.add(g.gun);me.giftsNew=0;this.saveMe()}this.emit();return L0},
+  // ---- invites (v6.37) ----
+  // a friend into my PeerJS room (code = friend code, room = the 4-letter room code) → {ok,to}; the invites waiting for me
+  // [{code,map,mode,at,from,fc,ft}]; one answered (joined or declined) → the rest
+  invite(code,room,map,mode){return this.rpc('qz_invite',{p_who:code,p_code:room,p_map:map||'',p_mode:mode||''})},
+  async invites(){const r=await this.rpc('qz_invites');const L0=Array.isArray(r)?r:[];if(this.me&&(this.me.invN|0)!==L0.length){this.me.invN=L0.length;this.emit()}return L0},
+  async inviteAnswer(fc,room){const r=await this.rpc('qz_invite_answer',{p_fc:fc,p_code:room});if(this.me)this.me.invN=Array.isArray(r)?r.length:0;return r},
+  // invite links: apply the code of the link that brought this (new) account → {by,bonus,coins,left,tickets}; settle its reward after
+  // enough matches → {state: none|done|wait|paid, left, got_tickets, tickets, inviter_paid, by}; my link's record (marks rewards seen)
+  async refSet(code){const r=await this.rpc('qz_ref_set',{p_code:code});const me=this.me;if(me){me.coins=r.coins;me.ref={...(me.ref||{}),by:r.by,done:false,left:r.left|0};this.saveMe()}this.emit();return r},
+  async refCheck(){const r=await this.rpc('qz_ref_check');const me=this.me;if(me&&me.ref){if(r.state==='paid'||r.state==='done')me.ref.done=true;if(r.state==='wait')me.ref.left=r.left|0;if(r.tickets!=null)me.tickets=r.tickets|0}this.emit();return r},
+  async refInfo(){const r=await this.rpc('qz_ref_info');const me=this.me;if(me){me.ref={...(me.ref||{}),n:r.n|0,paid:r.paid|0,new:0}}this.refRec={...r,at:Date.now()};this.emit();return r},
   // daily missions (v6.12): {day,resets_in,missions:[{slot,id,tier,kind,goal,progress,coins,tickets,ko,en,claimed}]}, the time it came (at)
   async loadMissions(){if(!this.ses)return null;const r=await this.rpc('qz_missions');this.mis={...r,at:Date.now()};this.emit();return this.mis},
   async misClaim(slot){const r=await this.rpc('qz_mission_claim',{p_slot:slot});this.mis={...r.missions,at:Date.now()};const me=this.me;
@@ -185,7 +196,13 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/no_request/.test(m))return T2('친구 요청이 없어요 (이미 처리됐을 수 있어요)','No such request (it may be answered already)');
     if(/not_friends/.test(m))return T2('친구에게만 선물할 수 있어요','Gifts go to friends only');
     if(/friend_has_it/.test(m))return T2('친구가 이미 가지고 있는 총이에요','Your friend has that gun already');
-    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/inv_friends/.test(m))return T2('친구만 초대할 수 있어요','Only friends can be invited');
+    if(/inv_wait/.test(m))return T2('방금 초대했어요. 잠시 뒤에 다시 보낼 수 있어요','Invited just now — try again in a moment');
+    if(/inv_many/.test(m))return T2('초대를 너무 많이 보냈어요. 1분 뒤에 다시 해 주세요','Too many invites — wait a minute');
+    if(/ref_already/.test(m))return T2('이미 초대 코드를 적용한 계정이에요','This account already used an invite');
+    if(/ref_old/.test(m))return T2('초대 링크는 가입하고 7일 안에만 쓸 수 있어요','Invite links work for new accounts only (first 7 days)');
+    if(/ref_loop/.test(m))return T2('서로를 초대할 수는 없어요','You cannot invite each other');
+    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_invite|qz_ref_|qz_mission|qz_ranking|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');

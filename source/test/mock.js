@@ -11,10 +11,11 @@ window.__mockCalls=[];
 const ses=(db,uid)=>{const a='at_'+uuid(),r='rt_'+uuid();db.tok[a]={uid,exp:Date.now()+3600e3};db.tok[r]={uid,refresh:1};const u=db.users[uid];
   return {access_token:a,token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,refresh_token:r,user:{id:uid,email:u.email,user_metadata:u.meta}}};
 const REC=Q=>Object.assign({g:0,k:0,inf:0,best:0,xp:0,imported:false},Q.rec||{});
-const newProfile=(db,uid,nick)=>{if(db.prof[uid])return;db.prof[uid]={nickname:clean(nick),coins:3000,earned:0,matches:0,last:null,day:null,dayE:0,frags:0,pity:0,freeDay:null};db.own[uid]=[];db.glog=db.glog||[];db.log.push([uid,3000,'welcome'])};
+const newProfile=(db,uid,nick)=>{if(db.prof[uid])return;db.prof[uid]={nickname:clean(nick),coins:3000,earned:0,matches:0,last:null,day:null,dayE:0,frags:0,pity:0,freeDay:null,created:Date.now()};db.own[uid]=[];db.glog=db.glog||[];db.log.push([uid,3000,'welcome'])};
 const GCFG={id:1,dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,cost1:500,cost10:4500,rate_s:0.02,rate_a:0.08,rate_coin:0.3,pity:60,coin_table:[[100,30],[200,30],[300,20],[500,15],[1000,5]],frag_min:2,frag_max:5,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
   season_lines:['gun:bhole','gun:skull9','gun:salamander','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3'],
+  ref_new_coins:2000,ref_new_tickets:2,ref_coins:3000,ref_tickets:2,ref_matches:3,ref_cap:10,ref_days:7,
   side_cost1:500,side_cost10:4500,side_hi:80,side_frag_min:1,side_frag_max:2,side_owned_coins:5000,
   side_lines:['gun:bholemini','gun:crimson','coins:500','coins:1000','coins:1000','coins:2000','coins:3000','frags:20','frags:20','frags:30','tickets:1','tickets:1']};
 const today=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
@@ -90,10 +91,34 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       const ids=Object.keys(db.prof).filter(id=>db.prof[id].nickname.toLowerCase()===w.toLowerCase());if(!ids.length)throw 'not_found';if(ids.length>1)throw 'nick_many';return ids[0]};
     const card=(id,x)=>{const Q=db.prof[id];FC(id);return Object.assign({code:Q.fcode,nickname:Q.nickname,xp:REC(Q).xp,ft:hofBest(id)},x||{})};
     const DML=()=>db.dms||(db.dms=[]),dmNew=()=>DML().filter(m=>m.to===uid&&!m.seen).length,touch=()=>{if(P)P.seenT=Date.now()};
+    // ---- invites (v6.37; same rules as qz_invite* / qz_ref_*) ----
+    const IVL=()=>db.inv||(db.inv=[]),invMine=()=>IVL().filter(i=>i.to===uid&&Date.now()-i.at<180e3),invN=()=>invMine().length;
+    const invJ=()=>invMine().sort((a,b)=>b.at-a.at).map(i=>({code:i.code,map:i.map,mode:i.mode,at:new Date(i.at).toISOString(),from:db.prof[i.from].nickname,fc:FC(i.from),ft:hofBest(i.from)}));
+    const RFL=()=>db.refs||(db.refs=[]),refJ=Q=>({by:Q.refBy&&db.prof[Q.refBy]?db.prof[Q.refBy].nickname:null,done:!!Q.refDone,left:Math.max(0,GCFG.ref_matches-(Q.matches|0)),
+      n:RFL().filter(r=>r.referrer===uid).length,paid:RFL().filter(r=>r.referrer===uid&&r.rewarded).length,new:RFL().filter(r=>r.referrer===uid&&!r.seen).length});
     const frJ=()=>{FC(uid);touch();const L=FRL(),last=Q=>{const t=Math.max(Q.last||0,Q.lastR||0,Q.seenT||0);return t?new Date(t).toISOString():null};
       return {code:db.prof[uid].fcode,friends:L.filter(f=>f.acc&&(f.a===uid||f.b===uid)).map(f=>{const o=f.a===uid?f.b:f.a;return card(o,{last:last(db.prof[o]),seen:db.prof[o].seenT?new Date(db.prof[o].seenT).toISOString():null,since:f.accAt,dm:DML().filter(m=>m.to===uid&&m.from===o&&!m.seen).length})}),
-        incoming:L.filter(f=>!f.acc&&f.b===uid).map(f=>card(f.a,{at:f.at})),outgoing:L.filter(f=>!f.acc&&f.a===uid).map(f=>card(f.b,{at:f.at})),gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,dm_new:dmNew()}};
-    if(fn==='qz_ping'){touch();save(db);return res(200,{dm_new:dmNew()})}
+        incoming:L.filter(f=>!f.acc&&f.b===uid).map(f=>card(f.a,{at:f.at})),outgoing:L.filter(f=>!f.acc&&f.a===uid).map(f=>card(f.b,{at:f.at})),gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,dm_new:dmNew(),inv:invN()}};
+    if(fn==='qz_ping'){touch();save(db);return res(200,{dm_new:dmNew(),inv:invN()})}
+    if(['qz_invite','qz_invites','qz_invite_answer','qz_ref_set','qz_ref_check','qz_ref_info'].includes(fn)){try{const g=GCFG;
+      if(fn==='qz_invite'){const code=String(body.p_code||'').toUpperCase().slice(0,8);if(!/^[A-Z0-9]{4}$/.test(code))throw 'bad_code';const t=find(body.p_who);if(t===uid)throw 'friend_self';
+        const f=pair(uid,t);if(!f||!f.acc)throw 'inv_friends';db.inv=IVL().filter(i=>!(i.from===uid&&Date.now()-i.at>600e3));
+        if(IVL().some(i=>i.from===uid&&i.to===t&&i.code===code&&Date.now()-i.at<10e3))throw 'inv_wait';if(IVL().filter(i=>i.from===uid&&Date.now()-i.at<60e3).length>=15)throw 'inv_many';
+        db.inv=IVL().filter(i=>!(i.from===uid&&i.to===t));IVL().push({from:uid,to:t,code,map:String(body.p_map||'').slice(0,24),mode:String(body.p_mode||'').slice(0,12),at:Date.now()});save(db);return res(200,{ok:true,to:db.prof[t].nickname})}
+      if(fn==='qz_invites')return res(200,invJ());
+      if(fn==='qz_invite_answer'){const fc=String(body.p_fc||'').toUpperCase().replace(/[^A-Z0-9]/g,''),code=String(body.p_code||'').toUpperCase();db.inv=IVL().filter(i=>!(i.to===uid&&FC(i.from)===fc&&i.code===code));save(db);return res(200,invJ())}
+      if(fn==='qz_ref_set'){const c=String(body.p_code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(P.refBy)throw 'ref_already';if(Date.now()-(P.created||Date.now())>g.ref_days*864e5)throw 'ref_old';
+        if(c.length!==6)throw 'not_found';const t=Object.keys(db.prof).find(id=>FC(id)===c);if(!t)throw 'not_found';if(t===uid)throw 'friend_self';if(db.prof[t].refBy===uid)throw 'ref_loop';
+        P.refBy=t;P.coins+=g.ref_new_coins;RFL().push({referee:uid,referrer:t,at:Date.now(),paid:false,rewarded:false,seen:true});db.log.push([uid,g.ref_new_coins,'ref_welcome']);
+        const f=pair(uid,t);if(f){f.acc=true;f.accAt=f.accAt||new Date().toISOString()}else if(FRL().filter(x=>x.a===t||x.b===t).length<100)FRL().push({a:t,b:uid,acc:true,at:new Date().toISOString(),accAt:new Date().toISOString()});
+        save(db);return res(200,{by:db.prof[t].nickname,bonus:g.ref_new_coins,coins:P.coins,left:Math.max(0,g.ref_matches-(P.matches|0)),tickets:g.ref_new_tickets})}
+      if(fn==='qz_ref_check'){if(!P.refBy)return res(200,{state:'none'});if(P.refDone)return res(200,{state:'done'});if((P.matches|0)<g.ref_matches)return res(200,{state:'wait',left:g.ref_matches-(P.matches|0)});
+        P.refDone=true;P.tickets=(P.tickets|0)+g.ref_new_tickets;const R=db.prof[P.refBy],row=RFL().find(r=>r.referee===uid),n=RFL().filter(r=>r.referrer===P.refBy&&r.rewarded).length;let paid=false;
+        if(R&&n<g.ref_cap){R.coins+=g.ref_coins;R.tickets=(R.tickets|0)+g.ref_tickets;if(row){row.paid=true;row.rewarded=true;row.seen=false}db.log.push([P.refBy,g.ref_coins,'ref_reward']);paid=true}else if(row)row.paid=true;
+        save(db);return res(200,{state:'paid',got_tickets:g.ref_new_tickets,inviter_paid:paid,tickets:P.tickets,by:R?R.nickname:null})}
+      if(fn==='qz_ref_info'){const L0=RFL().filter(r=>r.referrer===uid).sort((a,b)=>b.at-a.at);const out={code:FC(uid),n:L0.length,paid:L0.filter(r=>r.rewarded).length,cap:g.ref_cap,matches:g.ref_matches,coins:g.ref_coins,tickets:g.ref_tickets,new_coins:g.ref_new_coins,new_tickets:g.ref_new_tickets,
+          list:L0.slice(0,30).map(r=>({nick:db.prof[r.referee].nickname,at:new Date(r.at).toISOString(),m:Math.min(db.prof[r.referee].matches|0,g.ref_matches),paid:r.paid,rewarded:r.rewarded,new:!r.seen}))};for(const r of L0)r.seen=true;save(db);return res(200,out)}
+    }catch(e){if(typeof e==='string')return pgerr(e);throw e}}
     if(fn==='qz_dm_send'||fn==='qz_dm_list'){try{const t=find(body.p_who),f=pair(uid,t);if(!f||!f.acc)throw 'dm_not_friend';touch();
       if(fn==='qz_dm_send'){const x=String(body.p_text||'').replace(/[\x00-\x1f]/g,' ').trim();if(x.length<1||x.length>200)throw 'dm_text';
         if(DML().filter(m=>m.from===uid&&Date.now()-m.at<6e4).length>=20)throw 'dm_slow';db.dmId=(db.dmId|0)+1;DML().push({id:db.dmId,from:uid,to:t,text:x,at:Date.now(),seen:false});save(db);return res(200,{ok:true})}
@@ -116,7 +141,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(fn==='qz_gift_inbox'){const L=GFL().filter(g=>g.to===uid&&!g.seen);for(const g of L)g.seen=true;save(db);return res(200,{gifts:L.map(g=>({gun:g.gun,from:db.prof[g.from]?db.prof[g.from].nickname:'?',at:g.at}))})}
     }catch(e){if(typeof e==='string')return pgerr(e);throw e}}
     if(fn==='qz_me'){if(!P)newProfile(db,uid,db.users[uid].email.split('@')[0]);const Q=db.prof[uid];FC(uid);save(db);
-      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid)})}
+      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid),ref:refJ(Q)})}
     if(fn==='qz_ny_add'){let q=Math.max(P.nyQ|0,0);const v=[body.p_g,body.p_h,body.p_s,body.p_n].map(x=>Math.min(Math.max(x|0,0),8)),ad=v.map(x=>{const t=Math.min(x,q);q-=t;return t});
       P.ny=(P.ny||[0,0,0,0]).map((x,i)=>x+ad[i]);P.nyQ=0;save(db);return res(200,{added:ad,ny:P.ny})}
     if(fn==='qz_ny_exchange'){const c=body.p_choice;if(c!=='ny'&&c!=='season')return pgerr('bad_choice');const N=P.ny||[0,0,0,0];if(Math.min(...N)<1)return pgerr('no_set');

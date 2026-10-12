@@ -13,7 +13,8 @@ const GACHA_DEF={dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_fr
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
   season_lines:['gun:bhole','gun:skull9','gun:salamander','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3'],
   side_cost1:500,side_cost10:4500,side_hi:80,side_frag_min:1,side_frag_max:2,side_owned_coins:5000,
-  side_lines:['gun:bholemini','gun:crimson','coins:500','coins:1000','coins:1000','coins:2000','coins:3000','frags:20','frags:20','frags:30','tickets:1','tickets:1']};
+  side_lines:['gun:bholemini','gun:crimson','coins:500','coins:1000','coins:1000','coins:2000','coins:3000','frags:20','frags:20','frags:30','tickets:1','tickets:1'],
+  ref_new_coins:2000,ref_new_tickets:2,ref_coins:3000,ref_tickets:2,ref_matches:3,ref_cap:10,ref_days:7};// invite links (v6.37, invite.js)
 // the 12 lines of the 5×5 card: rows 0-4, columns 5-9, the diagonal from the top left 10, from the top right 11
 const BINGO_LINES=[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
 // a season (or sidearm) card's line items: 'gun:<id>' (owned already: season_owned_coins / side_owned_coins coins), 'coins:<n>', 'frags:<n>', 'tickets:<n>' (n 근하신년 decoders)

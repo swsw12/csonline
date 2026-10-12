@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'✉',tag:['신규 기능','New'],t:['친구 초대','Invite friends'],
+    d:['대기실의 「친구 초대」로 친구를 바로 방에 불러요 — 친구 화면에 초대 알림이 뜨고 「참가하기」 한 번이면 들어와요. 친구 창의 내 초대 링크로 가입한 친구는 2,000코인을 받고, 그 친구가 3판을 끝내면 둘 다 근하신년 해독기 2개 (나는 3,000코인도).','Call friends straight into your room with 「Invite friends」 in the waiting room — they get a pop-up and one tap brings them in. A friend who signs up through the invite link in your friends window gets 2,000 coins, and after their 3rd match you both get 2 근하신년 decoders (you also 3,000 coins).']},
   {kind:'feature',ico:'◉',tag:['신규 기능 · 상점','New · Shop'],t:['보조무기 해독기','Sidearm decoder'],
     d:['상점의 새 해독기 탭. 숫자 1~80의 5×5 빙고판에서 줄을 채우면 줄 끝의 보상 — 이벤트 호라이즌 미니 · 크림슨 피스메이커는 이제 여기서만 나와요. 해독기 1개 500코인, 10개 4,500코인. 나머지 줄은 코인 · 해독 조각 · 근하신년 해독기.','A new decoder tab in the shop: finish a line on a 5×5 card of the numbers 1–80 and take the reward at its end — the Event Horizon Mini and the Crimson Peacemaker now come from here only. 500 coins a decoder, 4,500 for ten. The other lines pay coins, fragments and 근하신년 decoders.']},
   {kind:'weapon',ref:'dde',tag:['신규 출시 · 상점 8,500 코인','Out now · Shop · 8,500 coins'],t:['듀얼 데저트 이글','Dual Desert Eagle'],

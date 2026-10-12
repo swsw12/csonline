@@ -11,6 +11,9 @@
 --     25초 안에 두 번은 안 됨) + 경험치. 판 보상: 판당 최대 1,200, 지난 판 보상 뒤 1분당 100까지, 그날 첫 판 +250.
 --     라운드 + 판 보상을 합쳐 하루(한국 시간) 20,000까지. 가입하면 3,000 코인.
 --   * 친구 · 선물(v6.18): 친구 코드(또는 한 명만 쓰는 닉네임)로 친구를 맺고, 상점에서 파는 총을 친구에게 선물합니다(보낸 사람 코인).
+--   * 초대(v6.37): 방 초대 — 대기실에서 친구를 초대하면 친구 게임에 3분 동안 알림(room_invites). 추천인 — 내 초대 링크(?ref=친구코드)로
+--     가입한 새 계정(가입 7일 안)은 바로 2,000코인을 받고, 3판을 끝내면 새 계정은 근하신년 해독기 2개, 초대한 계정은 3,000코인 + 해독기 2개
+--     (초대한 계정은 10명까지). 숫자는 gacha_config의 ref_* 칸.
 --   * 좀비 시나리오 챕터(v6.20): 클리어 기록은 ep_records(챕터 × 난이도)에. 판 보상은 (100 + 구역 150 + 클리어 400 + 탈출 300
 --     + 킬 5) × 난이도(쉬움 .7 · 보통 1 · 어려움 1.4 · 전문가 2), 판당 3,000 · 1분당 150까지. 난이도마다 첫 클리어 1번:
 --     1,000 / 3,000 / 5,000 / 8,000 코인(하루 상한과 별개) + 보통 이상은 근하신년 해독기 1개. 클리어는 4분 이상 걸린 판이어야 하고(v6.21: 5분 → 4분),
@@ -137,6 +140,38 @@ alter table public.profiles add column if not exists bonus_day date;
 update public.profiles set bonus_day = day where bonus_day is null and day is not null;
 -- v6.25: last_seen = the last time the game was open (qz_ping, and every look at the friend list); the friend list shows it
 alter table public.profiles add column if not exists last_seen timestamptz;
+-- v6.37: invites. ref_by = the account whose invite link brought this one in (set once, within ref_days of signing up); ref_done = its
+-- reward was settled (after ref_matches finished matches). The numbers live in gacha_config (ref_*).
+alter table public.profiles add column if not exists ref_by uuid references auth.users(id) on delete set null;
+alter table public.profiles add column if not exists ref_done boolean not null default false;
+alter table public.gacha_config add column if not exists ref_new_coins   integer not null default 2000;  -- the new player, when the link is applied
+alter table public.gacha_config add column if not exists ref_new_tickets integer not null default 2;     -- the new player, after ref_matches matches
+alter table public.gacha_config add column if not exists ref_coins       integer not null default 3000;  -- the inviter, after ref_matches matches
+alter table public.gacha_config add column if not exists ref_tickets     integer not null default 2;
+alter table public.gacha_config add column if not exists ref_matches     integer not null default 3;     -- finished matches the new player needs
+alter table public.gacha_config add column if not exists ref_cap         integer not null default 10;    -- invited players an inviter is paid for
+alter table public.gacha_config add column if not exists ref_days        integer not null default 7;     -- how new an account must be to take a link
+-- who brought whom (one row per new player); rewarded = the inviter was paid (false once over ref_cap); seen = the inviter saw the reward
+create table if not exists public.referrals (
+  referee  uuid primary key references auth.users(id) on delete cascade,
+  referrer uuid not null references auth.users(id) on delete cascade,
+  at       timestamptz not null default now(),
+  paid_at  timestamptz,
+  rewarded boolean not null default false,
+  seen     boolean not null default true
+);
+create index if not exists referrals_referrer on public.referrals(referrer);
+-- a friend invited into a PeerJS room (its 4-letter code): one row per inviter and friend, a new invite replaces the old; 3 minutes to answer
+create table if not exists public.room_invites (
+  from_id uuid not null references auth.users(id) on delete cascade,
+  to_id   uuid not null references auth.users(id) on delete cascade,
+  code    text not null,
+  map     text not null default '',
+  mode    text not null default '',
+  at      timestamptz not null default now(),
+  primary key (from_id, to_id)
+);
+create index if not exists room_invites_to on public.room_invites(to_id, at);
 create table if not exists public.season_boards (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   nums       integer[] not null,
@@ -266,8 +301,12 @@ alter table public.side_boards  enable row level security;
 alter table public.ep_records   enable row level security;
 alter table public.ep_firsts        enable row level security;   -- (no policies: the hall of fame comes out of qz_ep_firsts only)
 alter table public.ep_first_members enable row level security;
+alter table public.referrals    enable row level security;   -- (no policies: read through qz_me / qz_ref_info only)
+alter table public.room_invites enable row level security;   -- (no policies: qz_invite / qz_invites only)
 revoke all on table public.ep_firsts from anon, authenticated;
 revoke all on table public.ep_first_members from anon, authenticated;
+revoke all on table public.referrals from anon, authenticated;
+revoke all on table public.room_invites from anon, authenticated;
 drop policy if exists "read own profile" on public.profiles;
 create policy "read own profile" on public.profiles for select to authenticated using ((select auth.uid()) = id);
 drop policy if exists "read prices" on public.gun_prices;
@@ -440,6 +479,12 @@ begin
     'day_left', 20000 - case when p.day = today then p.day_earned else 0 end,
     'fragments', p.fragments, 'pity', p.pity, 'tickets', p.dec_tickets,
     'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n), 'season_tickets', p.season_tickets,
+    -- (v6.37: by = who invited me, done = that reward settled, left = matches still to play for it; n / paid = players I brought in /
+    -- was paid for; new = rewards for them not shown yet)
+    'ref', jsonb_build_object('by', (select x.nickname from public.profiles x where x.id = p.ref_by), 'done', p.ref_done,
+      'left', greatest(0, coalesce((select c.ref_matches from public.gacha_config c where c.id = 1), 3) - p.matches),
+      'n', (select count(*) from public.referrals f where f.referrer = uid), 'paid', (select count(*) from public.referrals f where f.referrer = uid and f.rewarded),
+      'new', (select count(*) from public.referrals f where f.referrer = uid and not f.seen)),
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
     'rec', public.qz_rec(p), 'eps', public.qz_eps(uid), 'firsts', public.qz_firsts_of(uid),
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
@@ -1684,7 +1729,8 @@ begin
     'outgoing', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id)) order by f.at desc)
       from public.friends f join public.profiles t on t.id = f.b where f.a = uid and not f.accepted), '[]'::jsonb),
     'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen),
-    'dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen));
+    'dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen),
+    'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'));
 end $$;
 
 -- ask someone to be friends. If they had asked me already, this is a yes. At most 100 friends and requests, 30 requests waiting.
@@ -1798,7 +1844,8 @@ declare
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   update public.profiles set last_seen = now() where id = uid and (last_seen is null or last_seen < now() - interval '20 seconds');
-  return jsonb_build_object('dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen));
+  return jsonb_build_object('dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen),
+    'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'));
 end $$;
 
 -- a message to a friend (p_who = their code). Friends only; 1..200 characters; at most 20 a minute and 300 an hour; each pair keeps its newest 100.
@@ -1951,3 +1998,158 @@ revoke all on function public.qz_rooms() from public;
 grant execute on function public.qz_room_up(text, text, text, text, integer, integer, text) to authenticated;
 grant execute on function public.qz_room_down(text) to authenticated;
 grant execute on function public.qz_rooms() to anon, authenticated;
+
+-- ---------- invites (v6.37) ----------
+-- Room invites: someone in a PeerJS room invites a friend (by friend code); the friend's game shows it while it is in the lobby (it asks
+-- qz_invites every few seconds only while a friend of theirs is online, and qz_ping / qz_friends carry the count) and joins with the
+-- code. 15 invites a minute at most, the same friend again after 10 seconds.
+create or replace function public.qz_invite(p_who text, p_code text, p_map text default '', p_mode text default '') returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+  v_code text := upper(left(coalesce(p_code, ''), 8));
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if v_code !~ '^[A-Z0-9]{4}$' then raise exception 'bad_code'; end if;
+  t := public.qz_find_player(p_who);
+  if t = uid then raise exception 'friend_self'; end if;
+  if not exists (select 1 from public.friends x where ((x.a = uid and x.b = t) or (x.a = t and x.b = uid)) and x.accepted) then raise exception 'inv_friends'; end if;
+  delete from public.room_invites where from_id = uid and at < now() - interval '10 minutes';
+  if exists (select 1 from public.room_invites i where i.from_id = uid and i.to_id = t and i.code = v_code and i.at > now() - interval '10 seconds') then raise exception 'inv_wait'; end if;
+  if (select count(*) from public.room_invites i where i.from_id = uid and i.at > now() - interval '1 minute') >= 15 then raise exception 'inv_many'; end if;
+  insert into public.room_invites (from_id, to_id, code, map, mode, at) values (uid, t, v_code, left(coalesce(p_map, ''), 24), left(coalesce(p_mode, ''), 12), now())
+  on conflict (from_id, to_id) do update set code = excluded.code, map = excluded.map, mode = excluded.mode, at = now();
+  return jsonb_build_object('ok', true, 'to', (select x.nickname from public.profiles x where x.id = t));
+end $$;
+-- the room invites waiting for me (the last 3 minutes, newest first): who (nickname, friend code, title), the room code, its map and mode
+create or replace function public.qz_invites() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('code', i.code, 'map', i.map, 'mode', i.mode, 'at', i.at,
+      'from', t.nickname, 'fc', t.fcode, 'ft', public.qz_first_best(t.id)) order by i.at desc)
+    from public.room_invites i join public.profiles t on t.id = i.from_id
+    where i.to_id = uid and i.at > now() - interval '3 minutes'), '[]'::jsonb);
+end $$;
+-- an invite answered (joined or declined): it is gone; the ones still waiting come back
+create or replace function public.qz_invite_answer(p_fc text, p_code text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  delete from public.room_invites i using public.profiles t
+  where i.to_id = uid and t.id = i.from_id and t.fcode = upper(regexp_replace(coalesce(p_fc, ''), '[^A-Za-z0-9]', '', 'g'))
+    and i.code = upper(left(coalesce(p_code, ''), 8));
+  return public.qz_invites();
+end $$;
+
+-- Invite links: a new account (made within ref_days) applies the friend code of the link that brought it, once: it gets ref_new_coins at
+-- once and the two become friends. After its ref_matches-th finished match (qz_ref_check, asked by the game after each match), it gets
+-- ref_new_tickets 근하신년 decoders and the inviter ref_coins coins + ref_tickets decoders — for the first ref_cap players they bring in.
+create or replace function public.qz_ref_set(p_code text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  cfg public.gacha_config;
+  p public.profiles;
+  c text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
+  t uuid;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  cfg := (select g from public.gacha_config g where g.id = 1);
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select x from public.profiles x where x.id = uid);
+  if p.ref_by is not null then raise exception 'ref_already'; end if;
+  if p.created_at < now() - make_interval(days => greatest(cfg.ref_days, 0)) then raise exception 'ref_old'; end if;
+  if char_length(c) <> 6 then raise exception 'not_found'; end if;
+  t := (select x.id from public.profiles x where x.fcode = c);
+  if t is null then raise exception 'not_found'; end if;
+  if t = uid then raise exception 'friend_self'; end if;
+  if (select x.ref_by from public.profiles x where x.id = t) is not distinct from uid then raise exception 'ref_loop'; end if;
+  update public.profiles set ref_by = t, coins = coins + greatest(cfg.ref_new_coins, 0) where id = uid;
+  insert into public.referrals (referee, referrer) values (uid, t) on conflict (referee) do nothing;
+  if cfg.ref_new_coins > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, cfg.ref_new_coins, 'ref_welcome', jsonb_build_object('code', c)); end if;
+  -- friends at once: a request either way is accepted, else a new pair (unless the inviter's list is full)
+  update public.friends set accepted = true, accepted_at = now() where ((a = t and b = uid) or (a = uid and b = t)) and not accepted;
+  if not exists (select 1 from public.friends x where (x.a = t and x.b = uid) or (x.a = uid and x.b = t))
+     and (select count(*) from public.friends x where x.a = t or x.b = t) < 100 then
+    insert into public.friends (a, b, accepted, accepted_at) values (t, uid, true, now()) on conflict do nothing;
+  end if;
+  return jsonb_build_object('by', (select x.nickname from public.profiles x where x.id = t), 'bonus', greatest(cfg.ref_new_coins, 0),
+    'coins', (select x.coins from public.profiles x where x.id = uid), 'left', greatest(0, cfg.ref_matches - p.matches),
+    'tickets', cfg.ref_new_tickets);
+end $$;
+-- settle the invite reward once the new player has played ref_matches matches (the inviter's row is locked while it is counted,
+-- so two of their players finishing at once cannot both pass the cap)
+create or replace function public.qz_ref_check() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  cfg public.gacha_config;
+  p public.profiles;
+  n integer;
+  v_ok boolean;
+  v_paid boolean := false;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  cfg := (select g from public.gacha_config g where g.id = 1);
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  p := (select x from public.profiles x where x.id = uid);
+  if p.ref_by is null then return jsonb_build_object('state', 'none'); end if;
+  if p.ref_done then return jsonb_build_object('state', 'done'); end if;
+  if p.matches < cfg.ref_matches then return jsonb_build_object('state', 'wait', 'left', cfg.ref_matches - p.matches); end if;
+  update public.profiles set ref_done = true, dec_tickets = dec_tickets + greatest(cfg.ref_new_tickets, 0) where id = uid;
+  perform 1 from public.profiles where id = p.ref_by for update;
+  v_ok := found;
+  n := (select count(*) from public.referrals r where r.referrer = p.ref_by and r.rewarded);
+  if v_ok and n < cfg.ref_cap then
+    update public.profiles set coins = coins + greatest(cfg.ref_coins, 0), dec_tickets = dec_tickets + greatest(cfg.ref_tickets, 0) where id = p.ref_by;
+    if cfg.ref_coins > 0 then
+      insert into public.coin_log (user_id, delta, reason, detail) values (p.ref_by, cfg.ref_coins, 'ref_reward', jsonb_build_object('from', p.nickname));
+    end if;
+    update public.referrals set paid_at = now(), rewarded = true, seen = false where referee = uid;
+    v_paid := true;
+  else
+    update public.referrals set paid_at = now() where referee = uid;
+  end if;
+  return jsonb_build_object('state', 'paid', 'got_tickets', greatest(cfg.ref_new_tickets, 0), 'inviter_paid', v_paid,
+    'tickets', (select x.dec_tickets from public.profiles x where x.id = uid),
+    'by', (select x.nickname from public.profiles x where x.id = p.ref_by));
+end $$;
+-- my invite link's record: the players it brought in (last 30), how far each is, what was paid; the rewards not shown yet count as shown after this
+create or replace function public.qz_ref_info() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  cfg public.gacha_config;
+  r jsonb;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  cfg := (select g from public.gacha_config g where g.id = 1);
+  r := jsonb_build_object('code', (select x.fcode from public.profiles x where x.id = uid),
+    'n', (select count(*) from public.referrals f where f.referrer = uid),
+    'paid', (select count(*) from public.referrals f where f.referrer = uid and f.rewarded),
+    'cap', cfg.ref_cap, 'matches', cfg.ref_matches, 'coins', cfg.ref_coins, 'tickets', cfg.ref_tickets,
+    'new_coins', cfg.ref_new_coins, 'new_tickets', cfg.ref_new_tickets,
+    'list', coalesce((select jsonb_agg(jsonb_build_object('nick', t.nickname, 'at', q.at, 'm', least(t.matches, cfg.ref_matches),
+        'paid', q.paid_at is not null, 'rewarded', q.rewarded, 'new', not q.seen) order by q.at desc)
+      from (select f.* from public.referrals f where f.referrer = uid order by f.at desc limit 30) q join public.profiles t on t.id = q.referee), '[]'::jsonb));
+  update public.referrals set seen = true where referrer = uid and not seen;
+  return r;
+end $$;
+revoke all on function public.qz_invite(text, text, text, text) from public, anon;
+revoke all on function public.qz_invites() from public, anon;
+revoke all on function public.qz_invite_answer(text, text) from public, anon;
+revoke all on function public.qz_ref_set(text) from public, anon;
+revoke all on function public.qz_ref_check() from public, anon;
+revoke all on function public.qz_ref_info() from public, anon;
+grant execute on function public.qz_invite(text, text, text, text) to authenticated;
+grant execute on function public.qz_invites() to authenticated;
+grant execute on function public.qz_invite_answer(text, text) to authenticated;
+grant execute on function public.qz_ref_set(text) to authenticated;
+grant execute on function public.qz_ref_check() to authenticated;
+grant execute on function public.qz_ref_info() to authenticated;
