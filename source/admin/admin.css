@@ -207,3 +207,8 @@ input[type=number]{font-family:var(--pix);font-variant-numeric:tabular-nums}
 }
 @media (max-width:520px){.hud b{font-size:22px;min-width:52px;padding:6px 10px}.hud>div{min-width:64px}.kpis{gap:10px 0}.wallet{grid-template-columns:repeat(2,minmax(0,1fr))}.wallet>div:last-child:nth-child(odd){grid-column:span 2}}
 @media (prefers-reduced-motion:reduce){.sheet{animation:none}.tog input::after{transition:none}}
+/* ---------- v6.43: the question with a line to fill in, reward bundles ---------- */
+.ask .ain{width:100%}.ask .ain.need{border-color:var(--zombie)}
+.ask .chips{margin-top:-2px}
+.rwe .cfg{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px 10px}
+.who .tag{margin-left:4px}

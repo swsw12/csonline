@@ -39,7 +39,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null};
+      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null,mailN:r.mail_new|0};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
@@ -121,7 +121,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   // a database from before v6.42 has qz_ping without arguments (asked that way from then on)
   async ping(play,fresh){if(this.noPing)return null;let r;const a=this.pingOld?{}:{p_play:Math.max(0,play|0),p_fresh:!!fresh};
     try{r=await this.rpc('qz_ping',a)}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){if(!this.pingOld){this.pingOld=true;return this.ping(play,fresh)}this.noPing=true;return null}throw e}
-    const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(ch)this.emit()}return r},
+    const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(r.mail!=null&&(me.mailN|0)!==(r.mail|0)){me.mailN=r.mail|0;ch=true}if(ch)this.emit()}return r},
   async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
   async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
   // a gun from the shop for a friend (the giver's coins): {coins,gun,to}
@@ -170,6 +170,15 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/rate limit|over_email_send_rate_limit|too many/i.test(c+m))return T2('요청이 너무 많아요. 잠시 후 다시 해 주세요','Too many tries. Wait a moment and try again');
     if(/signup_disabled|Signups not allowed/i.test(c+m))return T2('지금은 가입을 받지 않아요','Sign-ups are closed right now');
     if(/banned/.test(m))return T2('이용이 정지된 계정이라 할 수 없어요','This account is suspended');
+    if(/coupon_not_found/.test(m))return T2('없는 쿠폰 코드예요','No such coupon code');
+    if(/coupon_used/.test(m))return T2('이미 쓴 쿠폰이에요','You used this coupon already');
+    if(/coupon_expired/.test(m))return T2('기간이 끝난 쿠폰이에요','This coupon has expired');
+    if(/coupon_off/.test(m))return T2('지금은 쓸 수 없는 쿠폰이에요','This coupon is switched off for now');
+    if(/coupon_soldout/.test(m))return T2('사용 가능 횟수가 다 찬 쿠폰이에요','This coupon has run out');
+    if(/coupon_not_started/.test(m))return T2('아직 쓸 수 없는 쿠폰이에요','This coupon is not open yet');
+    if(/coupon_slow/.test(m))return T2('틀린 코드를 너무 많이 넣었어요. 10분 뒤에 다시 해 주세요','Too many wrong codes — try again in 10 minutes');
+    if(/no_mail/.test(m))return T2('이미 받은 우편이에요','That letter was taken already');
+    if(/room_closed/.test(m))return T2('운영자가 공개 목록에서 내린 방이에요 (비공개로는 계속할 수 있어요)','An admin took this room off the public list (it goes on privately)');
     if(/not_admin/.test(m))return T2('관리자 계정이 아니에요','Not an admin account');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
     if(/not_enough_tfrags/.test(m))return T2('초월 조각이 부족해요','Not enough transcendence fragments');
@@ -203,7 +212,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/ref_already/.test(m))return T2('이미 초대 코드를 적용한 계정이에요','This account already used an invite');
     if(/ref_old/.test(m))return T2('초대 링크는 가입하고 7일 안에만 쓸 수 있어요','Invite links work for new accounts only (first 7 days)');
     if(/ref_loop/.test(m))return T2('서로를 초대할 수는 없어요','You cannot invite each other');
-    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_invite|qz_ref_|qz_mission|qz_ranking|qz_trans|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_invite|qz_ref_|qz_mission|qz_ranking|qz_trans|qz_mail|qz_coupon|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');

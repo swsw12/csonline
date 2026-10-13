@@ -1397,3 +1397,31 @@ html.touch #touch .tAlt.th{border-color:rgba(190,140,255,.9)!important;backgroun
 .prof .banTag{grid-column:1/-1;justify-self:start;font-size:10px;padding:1px 6px;background:var(--z);color:#fff;border-radius:2px;cursor:pointer;letter-spacing:1px}
 @media (max-height:520px){.srvBan{padding:3px 8px;font-size:11px;gap:6px}.srvBan span,.srvBan small{display:none}.srvBan b{max-width:none}}
 @media (max-height:520px) and (orientation:landscape){.lob.hasBan .mc{height:calc(100vh - 146px)!important}}
+/* ---------- v6.43: the mailbox (mailbox.js) ---------- */
+.accChip .amail{position:relative;padding:6px 9px}.accChip .amail svg{width:15px;height:15px}
+.accChip .amail.has{border-color:#c8901e;color:#ffe2a0;background:linear-gradient(#4a3810,#2a200a)}
+.accChip .amail i.n{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--z);color:#fff;font:bold 10px/16px var(--font);font-style:normal;text-align:center;box-shadow:0 0 0 2px #17191d}
+#mailWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}
+#mailWin .pwin{width:min(520px,100%);max-height:100%;display:flex;flex-direction:column;background:#23262c;border:1px solid #4a4e58;box-shadow:0 10px 40px #000}
+#mailWin .pwh{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#2c2f36;border-bottom:2px solid #e8a33a;font-size:15px;color:#ffd890}
+#mailWin .pwh svg{width:18px;height:18px}#mailWin .pwh small{color:#8a8f98;font-size:12px}
+#mailWin .pwh button{margin-left:auto;min-width:0;width:32px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer}
+#mailWin .pwb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 14px;display:flex;flex-direction:column;gap:8px;min-height:90px}
+#mailWin .mem{margin:18px 0;text-align:center;color:#8a8f98;font-size:13px}
+#mailWin .ml{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:10px 12px;background:#1b1d22;border:1px solid #3a3e46;border-left:3px solid #e8a33a}
+#mailWin .mlh{display:flex;align-items:baseline;gap:8px;min-width:0}#mailWin .mlh b{color:#fff;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mailWin .mlh time{font-size:11px;color:#8a8f98;white-space:nowrap}
+#mailWin .ml p{grid-column:1;margin:0;font-size:12px;color:#c8ccd2;white-space:pre-wrap;line-height:1.5}
+#mailWin .mrws{grid-column:1;display:flex;flex-wrap:wrap;gap:5px}
+#mailWin .mrw{display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 5px;font-size:12px;background:#2a2d34;border:1px solid #444955;border-radius:3px;color:#e6e2d6}
+#mailWin .mrw{white-space:nowrap;max-width:100%}#mailWin .mrw img{height:16px;max-width:64px;object-fit:contain;image-rendering:pixelated}#mailWin .mrw svg{width:13px;height:13px;color:#ffd890}#mailWin .mrw b{font-weight:normal}
+#mailWin .mrw.g{border-color:#7a6430}
+#mailWin .ml>button{grid-column:2;grid-row:1/4;min-width:72px;padding:8px 12px;font-size:13px;border-color:#c8901e;color:#ffe2a0;background:linear-gradient(#5a4310,#3a2a08)}
+#mailWin .ml>button:hover{background:#e8a33a;color:#111}
+#mailWin .mres{margin:0 14px 8px;padding:8px 10px;font-size:12px;color:#bfe3ff;background:rgba(90,180,255,.08);border:1px solid rgba(90,180,255,.35)}
+#mailWin .mres.bad{color:#ffb3a8;background:rgba(255,75,58,.08);border-color:rgba(255,75,58,.4)}
+#mailWin .pwf{display:flex;gap:6px;padding:10px 14px 12px;border-top:1px solid #353941;flex-wrap:wrap}
+#mailWin .pwf input{flex:1 1 160px;min-width:0;font:inherit;font-size:13px;padding:8px 10px;background:#15171b;border:1px solid #4a4e56;color:#fff;text-transform:uppercase;letter-spacing:1px}
+#mailWin .pwf input::placeholder{text-transform:none;letter-spacing:0}
+#mailWin .pwf button{min-width:0;padding:8px 14px;font-size:13px}#mailWin .pwf button.all{border-color:#c8901e;color:#ffe2a0}
+html.touch #mailWin .pwf button,html.touch #mailWin .ml>button{min-height:44px}

@@ -26,6 +26,8 @@
 --   * 관리자(v6.42): 관리자 페이지(/admin)는 admins 테이블에 있는 계정만 씁니다. 지정은 이 파일 맨 끝 「admin」 부분의 SQL 한 줄로(SQL Editor).
 --     관리자가 한 일은 admin_log에 남고, 정지된 계정(profiles.banned_until)은 보상 · 상점 · 해독기 · 방 올리기 · 친구 · 메시지가 막힙니다(혼자 하기는 됨).
 --     이용 시간: 게임이 켜져 있고 화면에 보이는 동안 1분마다 qz_ping → profiles.online_secs(켜 둔 시간) / play_secs(그중 판 안), 날짜별은 daily_activity.
+--   * 관리자 2차(v6.43): 부운영자(admins.role 'staff': 조회 · 닉네임 · 정지 · 의심 유저 · 방 내리기 · 기록), 우편(mails: 전체 또는 고른 플레이어, 로비 우편함에서 받기),
+--     쿠폰(coupons: 계정마다 한 번, 총 횟수 · 기간), 공개 방 내리기(room_blocks: 그 방장은 정한 시간 동안 다시 못 올림).
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -571,6 +573,7 @@ begin
     'rec', public.qz_rec(p), 'eps', public.qz_eps(uid), 'firsts', public.qz_firsts_of(uid),
     -- (v6.42: admin = may open the admin page; ban = {until, forever, reason} while banned)
     'admin', exists (select 1 from public.admins a where a.user_id = uid),
+    'mail_new', (select count(*) from public.qz_mail_open(uid)),   -- (v6.43: letters waiting in the mailbox)
     'ban', case when p.banned_until > now() then jsonb_build_object('until', p.banned_until, 'forever', p.banned_until = 'infinity'::timestamptz, 'reason', p.ban_reason) end,
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
@@ -2007,7 +2010,8 @@ begin
   on conflict (day, user_id) do update set online_secs = public.daily_activity.online_secs + excluded.online_secs,
     play_secs = public.daily_activity.play_secs + excluded.play_secs, last_at = now();
   return jsonb_build_object('dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen),
-    'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'));
+    'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'),
+    'mail', (select count(*) from public.qz_mail_open(uid)));
 end $$;
 
 -- a message to a friend (p_who = their code). Friends only; 1..200 characters; at most 20 a minute and 300 an hour; each pair keeps its newest 100.
@@ -2111,6 +2115,7 @@ declare
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform public.qz_guard(uid);
+  if exists (select 1 from public.room_blocks b where b.host = uid and b.until > now()) then raise exception 'room_closed'; end if;   -- (v6.43)
   if v_code !~ '^[A-Z0-9]{4}$' then raise exception 'bad_code'; end if;
   if v_mode = '' then v_mode := 'mut'; end if;
   v_players := least(v_players, v_max);
@@ -2415,6 +2420,7 @@ create or replace function public.qz_admin_users(p_q text default '', p_sort tex
 language plpgsql stable security definer set search_path = '' as $$
 declare
   uid uuid := public.qz_admin_uid();
+  own boolean := (select a.role from public.admins a where a.user_id = auth.uid()) = 'owner';   -- (staff see no e-mails)
   q text := btrim(coalesce(p_q, ''));
   lk text := '%' || replace(replace(replace(btrim(coalesce(p_q, '')), '\', '\\'), '%', '\%'), '_', '\_') || '%';
   fc text := upper(regexp_replace(btrim(coalesce(p_q, '')), '[^A-Za-z0-9]', '', 'g'));
@@ -2427,9 +2433,9 @@ declare
 begin
   if q ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then qid := q::uuid; end if;
   n := (select count(*) from public.profiles t join auth.users u on u.id = t.id
-    where (q = '' or t.id = qid or t.fcode = fc or t.nickname ilike lk or u.email ilike lk)
+    where (q = '' or t.id = qid or t.fcode = fc or t.nickname ilike lk or own and u.email ilike lk)
       and (srt <> 'banned' or t.banned_until > now()) and (srt <> 'admins' or exists (select 1 from public.admins a where a.user_id = t.id)));
-  r := (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'nickname', s.nickname, 'fcode', s.fcode, 'email', s.email, 'coins', s.coins,
+  r := (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'nickname', s.nickname, 'fcode', s.fcode, 'email', case when own then s.email end, 'coins', s.coins,
       'frags', s.fragments, 'tfrags', s.trans_frags, 'xp', s.xp, 'games', s.rec_games, 'created_at', s.created_at, 'last_seen', s.last_seen,
       'online_secs', s.online_secs, 'play_secs', s.play_secs, 'banned_until', s.banned_until, 'admin', s.adm) order by s.n), '[]'::jsonb)
     from (select t.*, u.email, exists (select 1 from public.admins a where a.user_id = t.id) as adm,
@@ -2442,7 +2448,7 @@ begin
               case when srt = 'banned' then t.banned_until end desc nulls last,
               t.created_at desc, t.id) as n
           from public.profiles t join auth.users u on u.id = t.id
-          where (q = '' or t.id = qid or t.fcode = fc or t.nickname ilike lk or u.email ilike lk)
+          where (q = '' or t.id = qid or t.fcode = fc or t.nickname ilike lk or own and u.email ilike lk)
             and (srt <> 'banned' or t.banned_until > now()) and (srt <> 'admins' or exists (select 1 from public.admins a where a.user_id = t.id))
           order by n limit lim offset off) s);
   return jsonb_build_object('total', n, 'rows', r);
@@ -2455,6 +2461,7 @@ language plpgsql stable security definer set search_path = '' as $$
 declare
   uid uuid := public.qz_admin_uid();
   p public.profiles;
+  own boolean := (select a.role from public.admins a where a.user_id = auth.uid()) = 'owner';
   today date := (now() at time zone 'Asia/Seoul')::date;
 begin
   p := (select t from public.profiles t where t.id = p_id);
@@ -2464,7 +2471,7 @@ begin
     'earned', p.earned_total, 'matches', p.matches, 'rec', public.qz_rec(p), 'created_at', p.created_at, 'last_seen', p.last_seen,
     'day_earned', case when p.day = today then p.day_earned else 0 end, 'online_secs', p.online_secs, 'play_secs', p.play_secs,
     'banned_until', p.banned_until, 'ban_reason', p.ban_reason,
-    'email', (select x.email from auth.users x where x.id = p_id),
+    'email', case when own then (select x.email from auth.users x where x.id = p_id) end,
     'provider', (select coalesce(x.raw_app_meta_data ->> 'provider', 'email') from auth.users x where x.id = p_id),
     'signed_in_at', (select x.last_sign_in_at from auth.users x where x.id = p_id),
     'admin', exists (select 1 from public.admins a where a.user_id = p_id),
@@ -2490,7 +2497,7 @@ end $$;
 create or replace function public.qz_admin_grant(p_id uuid, p_kind text, p_amount integer, p_reason text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   rsn text := public.qz_admin_reason(p_reason);
   a bigint := coalesce(p_amount, 0);
   o bigint;
@@ -2521,7 +2528,7 @@ end $$;
 create or replace function public.qz_admin_gun(p_id uuid, p_gun text, p_give boolean, p_reason text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   rsn text := public.qz_admin_reason(p_reason);
   pr public.gun_prices;
   give boolean := coalesce(p_give, true);
@@ -2594,7 +2601,7 @@ end $$;
 -- the price list as the admin page shows it: what the file says (file_price / file_sold), whether an admin changed it, how many own it
 create or replace function public.qz_admin_prices() returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
-declare uid uuid := public.qz_admin_uid();
+declare uid uuid := public.qz_admin_owner();
 begin
   return coalesce((select jsonb_agg(jsonb_build_object('gun', g.gun_id, 'price', g.price, 'sold', g.sold, 'free', g.free, 'tier', g.tier,
       'admin_set', g.admin_set, 'file_price', g.file_price, 'file_sold', g.file_sold,
@@ -2606,7 +2613,7 @@ end $$;
 create or replace function public.qz_admin_price(p_gun text, p_price integer, p_sold boolean, p_reason text default '') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   pr public.gun_prices;
   s boolean;
 begin
@@ -2625,7 +2632,7 @@ end $$;
 create or replace function public.qz_admin_price_reset(p_gun text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   pr public.gun_prices;
 begin
   pr := (select g from public.gun_prices g where g.gun_id = p_gun);
@@ -2639,7 +2646,7 @@ end $$;
 -- the decoder / invite numbers (the one gacha_config row)
 create or replace function public.qz_admin_config_get() returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
-declare uid uuid := public.qz_admin_uid();
+declare uid uuid := public.qz_admin_owner();
 begin
   return (select to_jsonb(g) from public.gacha_config g where g.id = 1);
 end $$;
@@ -2649,7 +2656,7 @@ end $$;
 create or replace function public.qz_admin_config(p_values jsonb, p_reason text default '') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   k text;
   v jsonb;
   o jsonb;
@@ -2687,14 +2694,14 @@ end $$;
 -- the daily mission pool, and one mission saved (a new id adds one; a row saved here is left alone by later runs of schema.sql)
 create or replace function public.qz_admin_missions() returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
-declare uid uuid := public.qz_admin_uid();
+declare uid uuid := public.qz_admin_owner();
 begin
   return coalesce((select jsonb_agg(to_jsonb(q) order by q.tier, q.id) from public.mission_pool q), '[]'::jsonb);
 end $$;
 create or replace function public.qz_admin_mission_save(p_row jsonb, p_reason text default '') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   mid text := btrim(coalesce(p_row ->> 'id', ''));
   o public.mission_pool;
   m public.mission_pool;
@@ -2726,7 +2733,7 @@ language sql stable security definer set search_path = '' as $$
 $$;
 create or replace function public.qz_admin_notices() returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
-declare uid uuid := public.qz_admin_uid();
+declare uid uuid := public.qz_admin_owner();
 begin
   return coalesce((select jsonb_agg(jsonb_build_object('id', n.id, 'title', n.title, 'body', n.body, 'level', n.level, 'popup', n.popup,
       'starts_at', n.starts_at, 'ends_at', n.ends_at, 'active', n.active, 'created_at', n.created_at, 'updated_at', n.updated_at,
@@ -2737,7 +2744,7 @@ end $$;
 create or replace function public.qz_admin_notice_save(p_row jsonb) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   nid bigint := nullif(p_row ->> 'id', '')::bigint;
   ti text := left(btrim(regexp_replace(coalesce(p_row ->> 'title', ''), '[[:cntrl:]]', ' ', 'g')), 80);
   bo text := left(coalesce(p_row ->> 'body', ''), 1000);
@@ -2763,7 +2770,7 @@ end $$;
 create or replace function public.qz_admin_notice_delete(p_id bigint) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
-  uid uuid := public.qz_admin_uid();
+  uid uuid := public.qz_admin_owner();
   ti text;
 begin
   ti := (select n.title from public.notices n where n.id = p_id);
@@ -2831,3 +2838,517 @@ grant execute on function public.qz_admin_notices() to authenticated;
 grant execute on function public.qz_admin_notice_save(jsonb) to authenticated;
 grant execute on function public.qz_admin_notice_delete(bigint) to authenticated;
 grant execute on function public.qz_admin_logs(uuid, bigint, integer) to authenticated;
+
+-- ---------- admin, part two (v6.43): mail, coupons, staff, suspicious players, closing a public room ----------
+-- 부운영자(staff): admins.role = 'staff'. 현황 · 플레이어 조회(이메일은 안 보임) · 닉네임 변경 · 이용 정지/해제 · 의심 유저 · 방 내리기 · 기록만.
+-- 지급 · 무기 · 게임 설정 · 공지 · 우편 · 쿠폰 · 부운영자 관리는 주인(owner)만. 주인은 SQL Editor에서만 만들어요 (부운영자는 관리자 페이지에서도).
+-- 우편: 전체(보낸 뒤 가입한 계정은 for_new일 때만) 또는 고른 플레이어에게 보상 묶음 {coins, frags, tfrags, tickets, season_tickets, guns};
+-- 플레이어는 게임 로비의 우편함에서 받아요(qz_mails / qz_mail_claim). 쿠폰: 코드 하나에 보상 묶음, 계정마다 한 번, 총 횟수 · 기간 제한(qz_coupon_redeem).
+create index if not exists coin_log_reason_at on public.coin_log(reason, at desc);
+create table if not exists public.mails (
+  id         bigint generated always as identity primary key,
+  title      text not null check (char_length(title) between 1 and 60),
+  body       text not null default '' check (char_length(body) <= 500),
+  rewards    jsonb not null,
+  to_all     boolean not null default true,    -- false: the players in mail_targets
+  for_new    boolean not null default false,   -- to_all: accounts made after it was sent get it too
+  expires_at timestamptz,
+  active     boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.mail_targets (
+  mail_id bigint not null references public.mails(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  primary key (mail_id, user_id)
+);
+create index if not exists mail_targets_user on public.mail_targets(user_id);
+create table if not exists public.mail_claims (
+  mail_id bigint not null references public.mails(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  at      timestamptz not null default now(),
+  primary key (mail_id, user_id)
+);
+create index if not exists mail_claims_user on public.mail_claims(user_id);
+create table if not exists public.coupons (
+  code       text primary key check (code ~ '^[A-Z0-9]{4,20}$'),
+  rewards    jsonb not null,
+  max_uses   integer check (max_uses is null or max_uses > 0),   -- null: no limit
+  uses       integer not null default 0,
+  starts_at  timestamptz not null default now(),
+  expires_at timestamptz,
+  active     boolean not null default true,
+  note       text,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.coupon_uses (
+  code    text not null references public.coupons(code) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  at      timestamptz not null default now(),
+  primary key (code, user_id)
+);
+create index if not exists coupon_uses_user on public.coupon_uses(user_id);
+create table if not exists public.coupon_fails (   -- wrong codes: 10 in 10 minutes and the next try waits
+  user_id uuid not null references auth.users(id) on delete cascade,
+  at      timestamptz not null default now()
+);
+create index if not exists coupon_fails_user on public.coupon_fails(user_id, at);
+create table if not exists public.room_blocks (    -- a host whose public room an admin closed: no listing until then
+  host   uuid primary key references auth.users(id) on delete cascade,
+  until  timestamptz not null,
+  reason text,
+  by_id  uuid references auth.users(id) on delete set null,
+  at     timestamptz not null default now()
+);
+alter table public.mails        enable row level security;   -- (no policies: through the functions only)
+alter table public.mail_targets enable row level security;
+alter table public.mail_claims  enable row level security;
+alter table public.coupons      enable row level security;
+alter table public.coupon_uses  enable row level security;
+alter table public.coupon_fails enable row level security;
+alter table public.room_blocks  enable row level security;
+revoke all on table public.mails from public, anon, authenticated;
+revoke all on table public.mail_targets from public, anon, authenticated;
+revoke all on table public.mail_claims from public, anon, authenticated;
+revoke all on table public.coupons from public, anon, authenticated;
+revoke all on table public.coupon_uses from public, anon, authenticated;
+revoke all on table public.coupon_fails from public, anon, authenticated;
+revoke all on table public.room_blocks from public, anon, authenticated;
+
+-- the caller when an owner (staff: owner_only)
+create or replace function public.qz_admin_owner() returns uuid
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := public.qz_admin_uid();
+begin
+  if (select a.role from public.admins a where a.user_id = uid) is distinct from 'owner' then raise exception 'owner_only'; end if;
+  return uid;
+end $$;
+-- a player named the way an admin would: an account id, an e-mail, a friend code or a nickname only one player has (else null)
+create or replace function public.qz_admin_find(p_who text) returns uuid
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  w text := btrim(coalesce(p_who, ''));
+  c text := upper(regexp_replace(btrim(coalesce(p_who, '')), '[^A-Za-z0-9]', '', 'g'));
+  r uuid;
+begin
+  if w = '' then return null; end if;
+  if w ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    r := (select t.id from public.profiles t where t.id = w::uuid);
+    if r is not null then return r; end if;
+  end if;
+  if position('@' in w) > 0 then
+    r := (select u.id from auth.users u where lower(u.email) = lower(w));
+    if r is not null then return r; end if;
+  end if;
+  if char_length(c) = 6 then
+    r := (select t.id from public.profiles t where t.fcode = c);
+    if r is not null then return r; end if;
+  end if;
+  if (select count(*) from public.profiles t where lower(t.nickname) = lower(w)) = 1 then
+    r := (select t.id from public.profiles t where lower(t.nickname) = lower(w));
+  end if;
+  return r;
+end $$;
+
+-- a reward bundle as mail and coupons carry it, cleaned: whole amounts in range, the guns ones that exist and that not everyone has
+-- already (at most 10); nothing in it: bad_rewards
+create or replace function public.qz_rewards_clean(rw jsonb) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  r jsonb := '{}'::jsonb;
+  k text;
+  cap bigint;
+  v numeric;
+  g jsonb;
+begin
+  if rw is null or jsonb_typeof(rw) <> 'object' then raise exception 'bad_rewards'; end if;
+  for k, cap in select x.k, x.c from (values ('coins', 10000000::bigint), ('frags', 100000::bigint), ('tfrags', 10000::bigint), ('tickets', 1000::bigint), ('season_tickets', 1000::bigint)) x(k, c) loop
+    if rw ? k and jsonb_typeof(rw -> k) <> 'null' then
+      if jsonb_typeof(rw -> k) <> 'number' then raise exception 'bad_rewards'; end if;
+      v := (rw ->> k)::numeric;
+      if v < 0 or v > cap or v <> floor(v) then raise exception 'bad_rewards'; end if;
+      if v > 0 then r := r || jsonb_build_object(k, v::bigint); end if;
+    end if;
+  end loop;
+  if rw ? 'guns' and jsonb_typeof(rw -> 'guns') not in ('array', 'null') then raise exception 'bad_rewards'; end if;
+  g := coalesce((select jsonb_agg(distinct x.g) from jsonb_array_elements_text(case when jsonb_typeof(rw -> 'guns') = 'array' then rw -> 'guns' else '[]'::jsonb end) x(g)), '[]'::jsonb);
+  if jsonb_array_length(g) > 10 then raise exception 'bad_rewards'; end if;
+  if exists (select 1 from jsonb_array_elements_text(g) x(g) where not exists (select 1 from public.gun_prices p where p.gun_id = x.g and not p.free)) then raise exception 'no_gun'; end if;
+  if jsonb_array_length(g) > 0 then r := r || jsonb_build_object('guns', g); end if;
+  if r = '{}'::jsonb then raise exception 'bad_rewards'; end if;
+  return r;
+end $$;
+-- a cleaned bundle given to a player (the caller holds their profile row): amounts added (capped), guns put on the account — one they
+-- own already is listed in had — and the coins on the coin log
+create or replace function public.qz_give(uid uuid, rw jsonb, why text, det jsonb) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  c bigint := coalesce((rw ->> 'coins')::bigint, 0);
+  f bigint := coalesce((rw ->> 'frags')::bigint, 0);
+  tf bigint := coalesce((rw ->> 'tfrags')::bigint, 0);
+  tk bigint := coalesce((rw ->> 'tickets')::bigint, 0);
+  st bigint := coalesce((rw ->> 'season_tickets')::bigint, 0);
+  g text;
+  got jsonb := '[]'::jsonb;
+  had jsonb := '[]'::jsonb;
+begin
+  update public.profiles set coins = least(coins::bigint + c, 2000000000), fragments = least(fragments::bigint + f, 2000000000),
+    trans_frags = least(trans_frags::bigint + tf, 2000000000), dec_tickets = least(dec_tickets::bigint + tk, 2000000000),
+    season_tickets = least(season_tickets::bigint + st, 2000000000) where id = uid;
+  if c > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, least(c, 2000000000)::integer, why, det); end if;
+  for g in select x.g from jsonb_array_elements_text(coalesce(rw -> 'guns', '[]'::jsonb)) x(g) loop
+    insert into public.owned_guns (user_id, gun_id, price_paid) values (uid, g, 0) on conflict do nothing;
+    if found then got := got || to_jsonb(g); else had := had || to_jsonb(g); end if;
+  end loop;
+  return jsonb_build_object('coins', c, 'frags', f, 'tfrags', tf, 'tickets', tk, 'season_tickets', st, 'guns', got, 'had', had);
+end $$;
+
+-- the mail waiting for a player: active, not expired, not taken yet, sent to everyone (an account made after it only when for_new) or to them
+create or replace function public.qz_mail_open(uid uuid) returns setof public.mails
+language sql stable security definer set search_path = '' as $$
+  select m.* from public.mails m
+  where m.active and (m.expires_at is null or m.expires_at > now())
+    and case when m.to_all then m.for_new or (select p.created_at from public.profiles p where p.id = uid) <= m.created_at
+        else exists (select 1 from public.mail_targets t where t.mail_id = m.id and t.user_id = uid) end
+    and not exists (select 1 from public.mail_claims c where c.mail_id = m.id and c.user_id = uid)
+$$;
+-- my mailbox (newest first)
+create or replace function public.qz_mails() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'title', m.title, 'body', m.body, 'rewards', m.rewards, 'at', m.created_at,
+      'expires_at', m.expires_at) order by m.id desc) from public.qz_mail_open(uid) m), '[]'::jsonb);
+end $$;
+-- take one letter (p_id) or all of them: their rewards on the account, each letter once
+create or replace function public.qz_mail_claim(p_id bigint default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  m public.mails;
+  r jsonb;
+  t jsonb := jsonb_build_object('coins', 0, 'frags', 0, 'tfrags', 0, 'tickets', 0, 'season_tickets', 0, 'guns', '[]'::jsonb, 'had', '[]'::jsonb);
+  ids jsonb := '[]'::jsonb;
+  p public.profiles;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  for m in select x.* from public.qz_mail_open(uid) x where p_id is null or x.id = p_id order by x.id loop
+    insert into public.mail_claims (mail_id, user_id) values (m.id, uid) on conflict do nothing;
+    if not found then continue; end if;
+    r := public.qz_give(uid, m.rewards, 'mail', jsonb_build_object('mail', m.id, 'title', m.title));
+    t := jsonb_build_object('coins', (t ->> 'coins')::bigint + (r ->> 'coins')::bigint, 'frags', (t ->> 'frags')::bigint + (r ->> 'frags')::bigint,
+      'tfrags', (t ->> 'tfrags')::bigint + (r ->> 'tfrags')::bigint, 'tickets', (t ->> 'tickets')::bigint + (r ->> 'tickets')::bigint,
+      'season_tickets', (t ->> 'season_tickets')::bigint + (r ->> 'season_tickets')::bigint, 'guns', (t -> 'guns') || (r -> 'guns'), 'had', (t -> 'had') || (r -> 'had'));
+    ids := ids || to_jsonb(m.id);
+  end loop;
+  if p_id is not null and jsonb_array_length(ids) = 0 then raise exception 'no_mail'; end if;
+  p := (select x from public.profiles x where x.id = uid);
+  return jsonb_build_object('claimed', ids, 'got', t, 'coins', p.coins, 'fragments', p.fragments, 'tfrags', p.trans_frags, 'tickets', p.dec_tickets,
+    'season_tickets', p.season_tickets, 'owned', coalesce((select jsonb_agg(o.gun_id) from public.owned_guns o where o.user_id = uid), '[]'::jsonb),
+    'left', (select count(*) from public.qz_mail_open(uid)));
+end $$;
+-- a coupon code (case, spaces and dashes do not matter). A wrong code counts against the account (10 in 10 minutes: coupon_slow);
+-- the refusals come back as {error} so that count is kept.
+create or replace function public.qz_coupon_redeem(p_code text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  c text := upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'));
+  k public.coupons;
+  r jsonb;
+  p public.profiles;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  if (select count(*) from public.coupon_fails f where f.user_id = uid and f.at > now() - interval '10 minutes') >= 10 then
+    return jsonb_build_object('error', 'coupon_slow');
+  end if;
+  perform 1 from public.coupons where code = c for update;
+  k := (select x from public.coupons x where x.code = c);
+  if k.code is null then
+    insert into public.coupon_fails (user_id) values (uid);
+    delete from public.coupon_fails where user_id = uid and at < now() - interval '1 day';
+    return jsonb_build_object('error', 'coupon_not_found');
+  end if;
+  if not k.active then return jsonb_build_object('error', 'coupon_off'); end if;
+  if k.starts_at > now() then return jsonb_build_object('error', 'coupon_not_started'); end if;
+  if k.expires_at is not null and k.expires_at <= now() then return jsonb_build_object('error', 'coupon_expired'); end if;
+  if exists (select 1 from public.coupon_uses u where u.code = c and u.user_id = uid) then return jsonb_build_object('error', 'coupon_used'); end if;
+  if k.max_uses is not null and k.uses >= k.max_uses then return jsonb_build_object('error', 'coupon_soldout'); end if;
+  insert into public.coupon_uses (code, user_id) values (c, uid);
+  update public.coupons set uses = uses + 1 where code = c;
+  r := public.qz_give(uid, k.rewards, 'coupon', jsonb_build_object('code', c));
+  p := (select x from public.profiles x where x.id = uid);
+  return jsonb_build_object('code', c, 'got', r, 'coins', p.coins, 'fragments', p.fragments, 'tfrags', p.trans_frags, 'tickets', p.dec_tickets,
+    'season_tickets', p.season_tickets, 'owned', coalesce((select jsonb_agg(o.gun_id) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
+end $$;
+
+-- mail (owner): send one (p_row: title, body, rewards, to_all, for_new, expires_at, who = [the players, named as qz_admin_find takes them]),
+-- the ones sent (how many it went to, how many took it), one switched off or on again
+create or replace function public.qz_admin_mail_send(p_row jsonb) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_owner();
+  ti text := left(btrim(regexp_replace(coalesce(p_row ->> 'title', ''), '[[:cntrl:]]', ' ', 'g')), 60);
+  bo text := left(coalesce(p_row ->> 'body', ''), 500);
+  rw jsonb := public.qz_rewards_clean(p_row -> 'rewards');
+  al boolean := coalesce((p_row ->> 'to_all')::boolean, false);
+  fn boolean := coalesce((p_row ->> 'for_new')::boolean, false);
+  ex timestamptz := nullif(p_row ->> 'expires_at', '')::timestamptz;
+  w text;
+  t uuid;
+  ids uuid[] := '{}';
+  bad text[] := '{}';
+  mid bigint;
+begin
+  if char_length(ti) < 1 then raise exception 'bad_title'; end if;
+  if ex is not null and ex <= now() then raise exception 'bad_range'; end if;
+  if not al then
+    if jsonb_typeof(p_row -> 'who') <> 'array' then raise exception 'no_target'; end if;
+    for w in select x.w from jsonb_array_elements_text(p_row -> 'who') x(w) where btrim(x.w) <> '' loop
+      t := public.qz_admin_find(w);
+      if t is null then bad := bad || btrim(w); elsif not (t = any(ids)) then ids := ids || t; end if;
+    end loop;
+    if cardinality(bad) > 0 then raise exception 'who_not_found' using detail = array_to_string(bad, ', '); end if;
+    if cardinality(ids) = 0 then raise exception 'no_target'; end if;
+    if cardinality(ids) > 1000 then raise exception 'too_many_targets'; end if;
+  end if;
+  mid := nextval(pg_get_serial_sequence('public.mails', 'id'));
+  insert into public.mails (id, title, body, rewards, to_all, for_new, expires_at, created_by) overriding system value
+  values (mid, ti, bo, rw, al, al and fn, ex, uid);
+  if not al then insert into public.mail_targets (mail_id, user_id) select mid, x from unnest(ids) x on conflict do nothing; end if;
+  perform public.qz_admin_note(uid, 'mail_send', case when cardinality(ids) = 1 then ids[1] end,
+    jsonb_build_object('id', mid, 'title', ti, 'to_all', al, 'n', case when al then null else cardinality(ids) end, 'rewards', rw), null);
+  return jsonb_build_object('id', mid, 'to_all', al, 'n', cardinality(ids));
+end $$;
+create or replace function public.qz_admin_mails() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := public.qz_admin_owner();
+begin
+  return coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'title', m.title, 'body', m.body, 'rewards', m.rewards, 'to_all', m.to_all, 'for_new', m.for_new,
+      'expires_at', m.expires_at, 'active', m.active, 'at', m.created_at, 'by', (select x.nickname from public.profiles x where x.id = m.created_by),
+      'sent', case when m.to_all then (select count(*) from public.profiles p where m.for_new or p.created_at <= m.created_at)
+              else (select count(*) from public.mail_targets t where t.mail_id = m.id) end,
+      'claimed', (select count(*) from public.mail_claims c where c.mail_id = m.id),
+      'names', case when m.to_all then null else (select jsonb_agg(x.nickname) from (select p.nickname from public.mail_targets t join public.profiles p on p.id = t.user_id
+        where t.mail_id = m.id order by p.nickname limit 5) x) end) order by m.id desc)
+    from (select y.* from public.mails y order by y.id desc limit 100) m), '[]'::jsonb);
+end $$;
+create or replace function public.qz_admin_mail_active(p_id bigint, p_on boolean) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_owner();
+  ti text;
+begin
+  ti := (select m.title from public.mails m where m.id = p_id);
+  if ti is null then raise exception 'no_mail'; end if;
+  update public.mails set active = coalesce(p_on, false) where id = p_id;
+  perform public.qz_admin_note(uid, case when coalesce(p_on, false) then 'mail_on' else 'mail_off' end, null, jsonb_build_object('id', p_id, 'title', ti), null);
+  return public.qz_admin_mails();
+end $$;
+
+-- coupons (owner): the list, one made (p_row.code empty: a random 10-character one) or changed (its rewards only while nobody has used it),
+-- who used one
+create or replace function public.qz_admin_coupons() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := public.qz_admin_owner();
+begin
+  return coalesce((select jsonb_agg(jsonb_build_object('code', k.code, 'rewards', k.rewards, 'max_uses', k.max_uses, 'uses', k.uses, 'starts_at', k.starts_at,
+      'expires_at', k.expires_at, 'active', k.active, 'note', k.note, 'at', k.created_at, 'by', (select x.nickname from public.profiles x where x.id = k.created_by),
+      'live', k.active and k.starts_at <= now() and (k.expires_at is null or k.expires_at > now()) and (k.max_uses is null or k.uses < k.max_uses)) order by k.created_at desc)
+    from (select y.* from public.coupons y order by y.created_at desc limit 200) k), '[]'::jsonb);
+end $$;
+create or replace function public.qz_admin_coupon_save(p_row jsonb) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_owner();
+  isnew boolean := coalesce((p_row ->> 'new')::boolean, false);
+  c text := upper(regexp_replace(coalesce(p_row ->> 'code', ''), '[^A-Za-z0-9]', '', 'g'));
+  o public.coupons;
+  rw jsonb;
+  mx integer := nullif(p_row ->> 'max_uses', '')::integer;
+  st timestamptz := coalesce(nullif(p_row ->> 'starts_at', '')::timestamptz, now());
+  en timestamptz := nullif(p_row ->> 'expires_at', '')::timestamptz;
+  ac boolean := coalesce((p_row ->> 'active')::boolean, true);
+  nt text := nullif(left(btrim(coalesce(p_row ->> 'note', '')), 100), '');
+  abc text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+begin
+  if mx is not null and mx < 1 then raise exception 'bad_value'; end if;
+  if en is not null and en <= st then raise exception 'bad_range'; end if;
+  if isnew then
+    if c = '' then
+      loop
+        c := '';
+        for i in 1..10 loop c := c || substr(abc, 1 + floor(random() * 31)::integer, 1); end loop;
+        exit when not exists (select 1 from public.coupons k where k.code = c);
+      end loop;
+    end if;
+    if c !~ '^[A-Z0-9]{4,20}$' then raise exception 'bad_code'; end if;
+    if exists (select 1 from public.coupons k where k.code = c) then raise exception 'coupon_exists'; end if;
+    rw := public.qz_rewards_clean(p_row -> 'rewards');
+    insert into public.coupons (code, rewards, max_uses, starts_at, expires_at, active, note, created_by) values (c, rw, mx, st, en, ac, nt, uid);
+    perform public.qz_admin_note(uid, 'coupon_add', null, jsonb_build_object('code', c, 'rewards', rw, 'max_uses', mx), null);
+  else
+    o := (select k from public.coupons k where k.code = c);
+    if o.code is null then raise exception 'coupon_not_found'; end if;
+    rw := o.rewards;
+    if p_row ? 'rewards' and o.uses = 0 then rw := public.qz_rewards_clean(p_row -> 'rewards'); end if;
+    update public.coupons set rewards = rw, max_uses = mx, starts_at = st, expires_at = en, active = ac, note = nt where code = c;
+    perform public.qz_admin_note(uid, 'coupon_edit', null, jsonb_build_object('code', c, 'active', ac, 'max_uses', mx), null);
+  end if;
+  return public.qz_admin_coupons();
+end $$;
+create or replace function public.qz_admin_coupon_uses(p_code text) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := public.qz_admin_owner();
+begin
+  return coalesce((select jsonb_agg(jsonb_build_object('id', u.user_id, 'nickname', p.nickname, 'at', u.at) order by u.at desc)
+    from (select y.* from public.coupon_uses y where y.code = upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g')) order by y.at desc limit 300) u
+    join public.profiles p on p.id = u.user_id), '[]'::jsonb);
+end $$;
+
+-- staff (owner): everyone in admins; a player made staff (an owner only in the SQL Editor); staff taken off (an owner stays)
+create or replace function public.qz_admin_staff() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := public.qz_admin_owner();
+begin
+  return coalesce((select jsonb_agg(jsonb_build_object('id', a.user_id, 'role', a.role, 'added_at', a.added_at, 'nickname', p.nickname, 'fcode', p.fcode,
+      'email', (select u.email from auth.users u where u.id = a.user_id), 'last_seen', p.last_seen, 'me', a.user_id = uid,
+      'acts', (select count(*) from public.admin_log l where l.admin_id = a.user_id)) order by a.role desc, a.added_at)
+    from public.admins a left join public.profiles p on p.id = a.user_id), '[]'::jsonb);
+end $$;
+create or replace function public.qz_admin_staff_add(p_who text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_owner();
+  t uuid := public.qz_admin_find(p_who);
+begin
+  if t is null then raise exception 'not_found'; end if;
+  if exists (select 1 from public.admins a where a.user_id = t) then raise exception 'already_admin'; end if;
+  if (select p.banned_until from public.profiles p where p.id = t) > now() then raise exception 'staff_banned'; end if;
+  insert into public.admins (user_id, role) values (t, 'staff');
+  perform public.qz_admin_note(uid, 'staff_add', t, null, null);
+  return public.qz_admin_staff();
+end $$;
+create or replace function public.qz_admin_staff_remove(p_id uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_owner();
+  r text := (select a.role from public.admins a where a.user_id = p_id);
+begin
+  if r is null then raise exception 'not_staff'; end if;
+  if r = 'owner' then raise exception 'owner_fixed'; end if;
+  delete from public.admins where user_id = p_id and role = 'staff';
+  perform public.qz_admin_note(uid, 'staff_remove', p_id, null, null);
+  return public.qz_admin_staff();
+end $$;
+
+-- a public room off the list (staff too): its host cannot list one again for p_minutes (10 .. 7 days; the game keeps the room going
+-- privately and tells the host)
+create or replace function public.qz_admin_room_close(p_code text, p_minutes integer, p_reason text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_uid();
+  rsn text := public.qz_admin_reason(p_reason);
+  r public.rooms;
+  mins integer := least(greatest(coalesce(p_minutes, 30), 10), 10080);
+begin
+  r := (select x from public.rooms x where x.code = upper(left(coalesce(p_code, ''), 8)));
+  if r.code is null then raise exception 'no_room'; end if;
+  insert into public.room_blocks (host, until, reason, by_id) values (r.host, now() + make_interval(mins => mins), rsn, uid)
+  on conflict (host) do update set until = excluded.until, reason = excluded.reason, by_id = excluded.by_id, at = now();
+  delete from public.rooms where code = r.code;
+  perform public.qz_admin_note(uid, 'room_close', r.host, jsonb_build_object('code', r.code, 'host_name', r.host_name, 'minutes', mins), rsn);
+  return jsonb_build_object('ok', true, 'until', now() + make_interval(mins => mins));
+end $$;
+
+-- players worth a look (staff too), by p_kind: cap (days the reward limit was reached, last 14 days), kills (the most kills in one
+-- match), damage (the most damage in one round), rate (coins per hour of play, at least an hour played, last 14 days), refs (players
+-- who brought in many accounts in the last 30 days, and how many of those barely played). 30 at most.
+create or replace function public.qz_admin_suspects(p_kind text) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_uid();
+  t14 timestamptz := now() - interval '14 days';
+  rm integer := coalesce((select c.ref_matches from public.gacha_config c where c.id = 1), 3);
+begin
+  if p_kind = 'cap' then
+    return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', q.user_id, 'nickname', p.nickname, 'fcode', p.fcode, 'banned', coalesce(p.banned_until > now(), false),
+        'days', q.days, 'earned', q.earned, 'best', q.best) order by q.days desc, q.earned desc)
+      from (select d.user_id, count(*) filter (where d.e >= 19500) as days, sum(d.e) as earned, max(d.e) as best
+            from (select c.user_id, (c.at at time zone 'Asia/Seoul')::date as day, sum(c.delta) as e from public.coin_log c
+                  where c.at >= t14 and c.reason in ('match', 'round') group by 1, 2) d
+            group by d.user_id having count(*) filter (where d.e >= 19500) > 0 order by 2 desc, 3 desc limit 30) q
+      join public.profiles p on p.id = q.user_id), '[]'::jsonb));
+  elsif p_kind = 'kills' or p_kind = 'damage' then
+    return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', q.user_id, 'nickname', p.nickname, 'fcode', p.fcode, 'banned', coalesce(p.banned_until > now(), false),
+        'at', q.at, 'mode', q.mode, 'kills', q.kills, 'damage', q.damage, 'rounds', q.rounds, 'coins', q.delta) order by q.v desc)
+      from (select c.user_id, c.at, c.detail ->> 'mode' as mode, (c.detail ->> 'kills')::integer as kills, (c.detail ->> 'damage')::integer as damage,
+              coalesce((c.detail ->> 'rounds')::integer, (c.detail ->> 'round')::integer) as rounds, c.delta,
+              case when p_kind = 'kills' then (c.detail ->> 'kills')::integer else (c.detail ->> 'damage')::integer end as v
+            from public.coin_log c where c.at >= t14 and c.reason = case when p_kind = 'kills' then 'match' else 'round' end and c.detail ? 'kills'
+            order by v desc nulls last limit 30) q
+      join public.profiles p on p.id = q.user_id), '[]'::jsonb),
+      'avg', (select round(avg(case when p_kind = 'kills' then (c.detail ->> 'kills')::numeric else (c.detail ->> 'damage')::numeric end), 1) from public.coin_log c
+        where c.at >= t14 and c.reason = case when p_kind = 'kills' then 'match' else 'round' end and c.detail ? 'kills'),
+      'n', (select count(*) from public.coin_log c where c.at >= t14 and c.reason = case when p_kind = 'kills' then 'match' else 'round' end));
+  elsif p_kind = 'rate' then
+    return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', z.user_id, 'nickname', z.nickname, 'fcode', z.fcode, 'banned', z.banned,
+        'earned', z.earned, 'play', z.play, 'rate', z.rate) order by z.rate desc)
+      from (select q.user_id, p.nickname, p.fcode, coalesce(p.banned_until > now(), false) as banned, q.earned, q.play, round(q.earned / (q.play / 3600.0)) as rate
+            from (select a.user_id, a.play, coalesce((select sum(c.delta) from public.coin_log c where c.user_id = a.user_id and c.at >= t14
+                      and c.reason in ('match', 'round', 'mission')), 0) as earned
+                  from (select d.user_id, sum(d.play_secs) as play from public.daily_activity d where d.day >= ((now() at time zone 'Asia/Seoul')::date - 13)
+                        group by d.user_id having sum(d.play_secs) >= 3600) a) q
+            join public.profiles p on p.id = q.user_id where q.earned > 0 order by 7 desc limit 30) z), '[]'::jsonb));
+  elsif p_kind = 'refs' then
+    return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', q.referrer, 'nickname', p.nickname, 'fcode', p.fcode, 'banned', coalesce(p.banned_until > now(), false),
+        'n', q.n, 'thin', q.thin, 'paid', q.paid) order by q.n desc)
+      from (select r.referrer, count(*) as n, count(*) filter (where p2.matches <= rm) as thin, count(*) filter (where r.rewarded) as paid
+            from public.referrals r join public.profiles p2 on p2.id = r.referee where r.at >= now() - interval '30 days'
+            group by r.referrer order by 2 desc limit 30) q
+      join public.profiles p on p.id = q.referrer), '[]'::jsonb), 'ref_matches', rm);
+  end if;
+  raise exception 'bad_kind';
+end $$;
+
+revoke all on function public.qz_admin_owner() from public, anon, authenticated;
+revoke all on function public.qz_admin_find(text) from public, anon, authenticated;
+revoke all on function public.qz_rewards_clean(jsonb) from public, anon, authenticated;
+revoke all on function public.qz_give(uuid, jsonb, text, jsonb) from public, anon, authenticated;
+revoke all on function public.qz_mail_open(uuid) from public, anon, authenticated;
+revoke all on function public.qz_mails() from public, anon;
+revoke all on function public.qz_mail_claim(bigint) from public, anon;
+revoke all on function public.qz_coupon_redeem(text) from public, anon;
+revoke all on function public.qz_admin_mail_send(jsonb) from public, anon;
+revoke all on function public.qz_admin_mails() from public, anon;
+revoke all on function public.qz_admin_mail_active(bigint, boolean) from public, anon;
+revoke all on function public.qz_admin_coupons() from public, anon;
+revoke all on function public.qz_admin_coupon_save(jsonb) from public, anon;
+revoke all on function public.qz_admin_coupon_uses(text) from public, anon;
+revoke all on function public.qz_admin_staff() from public, anon;
+revoke all on function public.qz_admin_staff_add(text) from public, anon;
+revoke all on function public.qz_admin_staff_remove(uuid) from public, anon;
+revoke all on function public.qz_admin_room_close(text, integer, text) from public, anon;
+revoke all on function public.qz_admin_suspects(text) from public, anon;
+grant execute on function public.qz_mails() to authenticated;
+grant execute on function public.qz_mail_claim(bigint) to authenticated;
+grant execute on function public.qz_coupon_redeem(text) to authenticated;
+grant execute on function public.qz_admin_mail_send(jsonb) to authenticated;
+grant execute on function public.qz_admin_mails() to authenticated;
+grant execute on function public.qz_admin_mail_active(bigint, boolean) to authenticated;
+grant execute on function public.qz_admin_coupons() to authenticated;
+grant execute on function public.qz_admin_coupon_save(jsonb) to authenticated;
+grant execute on function public.qz_admin_coupon_uses(text) to authenticated;
+grant execute on function public.qz_admin_staff() to authenticated;
+grant execute on function public.qz_admin_staff_add(text) to authenticated;
+grant execute on function public.qz_admin_staff_remove(uuid) to authenticated;
+grant execute on function public.qz_admin_room_close(text, integer, text) to authenticated;
+grant execute on function public.qz_admin_suspects(text) to authenticated;

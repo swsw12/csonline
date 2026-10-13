@@ -593,13 +593,16 @@ function netMigDone(msg){const box=netMigBox();box.innerHTML=`<b>${esc(msg)}</b>
 // The host refreshes its row every 10 s (and at once when players, map, mode or lobby/playing change); the server drops a row after 30 s
 // without one. The list is read by anyone (signed in or not) and refreshed every 5 s while the multiplayer menu is open.
 // (a code another account still lists is tried again after 20 s: a new host after a hand-over waits for the old row to lapse)
-const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:false,bad:'',badT:0,pubOn:false,
+const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:false,bad:'',badT:0,pubOn:false,shutT:0,
   srv(){return typeof ACC!=='undefined'&&ACC.on},
-  can(){return NET.on&&NET.host&&NET.kind==='peerjs'&&this.pubOn&&this.srv()&&ACC.signed()&&!(this.bad===NET.code&&Date.now()-this.badT<20000)},
+  can(){return NET.on&&NET.host&&NET.kind==='peerjs'&&this.pubOn&&this.srv()&&ACC.signed()&&!(this.bad===NET.code&&Date.now()-this.badT<20000)&&!(Date.now()<this.shutT)},
   st(){const c=NET.lob.cfg;return {p_code:NET.code,p_name:CFG.mpName||'',p_map:c.map||'',p_mode:c.mode||'mut',p_players:NET.lob.pl.length,p_max:NET_MAXP,p_status:NET.ui==='game'?'playing':'lobby'}},
   async up(){const a=this.st(),s=JSON.stringify(a);this.upBusy=true;this.upT=Date.now();
     try{const r=await ACC.rpc('qz_room_up',a);this.pub=a.p_code;if(!(r&&r.skipped))this.last=s}
-    catch(e){if(/room_taken|bad_code/.test(e&&e.message||'')){this.bad=a.p_code;this.badT=Date.now()}console.warn('rooms: up',e&&e.message)}
+    catch(e){if(/room_taken|bad_code/.test(e&&e.message||'')){this.bad=a.p_code;this.badT=Date.now()}
+      // (v6.43: an admin took the room off the list: it goes on privately; asked again in 5 minutes)
+      if(/room_closed/.test(e&&e.message||'')){const first=!this.shutT;this.shutT=Date.now()+300e3;if(first){const t=ACC.errText(e);if(NET.ui==='game'&&typeof HUD!=='undefined')HUD.note(t,4);else netMigDone(t)}}
+      console.warn('rooms: up',e&&e.message)}
     this.upBusy=false;if(!this.can()||NET.code!==a.p_code)this.down()},
   down(keep){const c=this.pub;this.last='';if(!c)return;this.pub='';if(!this.srv())return;if(keep)ACC.beacon('qz_room_down',{p_code:c});else ACC.rpc('qz_room_down',{p_code:c}).catch(()=>{})},
   tick(){const now=Date.now();

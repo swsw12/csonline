@@ -1403,6 +1403,34 @@ html.touch #touch .tAlt.th{border-color:rgba(190,140,255,.9)!important;backgroun
 .prof .banTag{grid-column:1/-1;justify-self:start;font-size:10px;padding:1px 6px;background:var(--z);color:#fff;border-radius:2px;cursor:pointer;letter-spacing:1px}
 @media (max-height:520px){.srvBan{padding:3px 8px;font-size:11px;gap:6px}.srvBan span,.srvBan small{display:none}.srvBan b{max-width:none}}
 @media (max-height:520px) and (orientation:landscape){.lob.hasBan .mc{height:calc(100vh - 146px)!important}}
+/* ---------- v6.43: the mailbox (mailbox.js) ---------- */
+.accChip .amail{position:relative;padding:6px 9px}.accChip .amail svg{width:15px;height:15px}
+.accChip .amail.has{border-color:#c8901e;color:#ffe2a0;background:linear-gradient(#4a3810,#2a200a)}
+.accChip .amail i.n{position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--z);color:#fff;font:bold 10px/16px var(--font);font-style:normal;text-align:center;box-shadow:0 0 0 2px #17191d}
+#mailWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}
+#mailWin .pwin{width:min(520px,100%);max-height:100%;display:flex;flex-direction:column;background:#23262c;border:1px solid #4a4e58;box-shadow:0 10px 40px #000}
+#mailWin .pwh{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#2c2f36;border-bottom:2px solid #e8a33a;font-size:15px;color:#ffd890}
+#mailWin .pwh svg{width:18px;height:18px}#mailWin .pwh small{color:#8a8f98;font-size:12px}
+#mailWin .pwh button{margin-left:auto;min-width:0;width:32px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer}
+#mailWin .pwb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 14px;display:flex;flex-direction:column;gap:8px;min-height:90px}
+#mailWin .mem{margin:18px 0;text-align:center;color:#8a8f98;font-size:13px}
+#mailWin .ml{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:10px 12px;background:#1b1d22;border:1px solid #3a3e46;border-left:3px solid #e8a33a}
+#mailWin .mlh{display:flex;align-items:baseline;gap:8px;min-width:0}#mailWin .mlh b{color:#fff;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mailWin .mlh time{font-size:11px;color:#8a8f98;white-space:nowrap}
+#mailWin .ml p{grid-column:1;margin:0;font-size:12px;color:#c8ccd2;white-space:pre-wrap;line-height:1.5}
+#mailWin .mrws{grid-column:1;display:flex;flex-wrap:wrap;gap:5px}
+#mailWin .mrw{display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 5px;font-size:12px;background:#2a2d34;border:1px solid #444955;border-radius:3px;color:#e6e2d6}
+#mailWin .mrw{white-space:nowrap;max-width:100%}#mailWin .mrw img{height:16px;max-width:64px;object-fit:contain;image-rendering:pixelated}#mailWin .mrw svg{width:13px;height:13px;color:#ffd890}#mailWin .mrw b{font-weight:normal}
+#mailWin .mrw.g{border-color:#7a6430}
+#mailWin .ml>button{grid-column:2;grid-row:1/4;min-width:72px;padding:8px 12px;font-size:13px;border-color:#c8901e;color:#ffe2a0;background:linear-gradient(#5a4310,#3a2a08)}
+#mailWin .ml>button:hover{background:#e8a33a;color:#111}
+#mailWin .mres{margin:0 14px 8px;padding:8px 10px;font-size:12px;color:#bfe3ff;background:rgba(90,180,255,.08);border:1px solid rgba(90,180,255,.35)}
+#mailWin .mres.bad{color:#ffb3a8;background:rgba(255,75,58,.08);border-color:rgba(255,75,58,.4)}
+#mailWin .pwf{display:flex;gap:6px;padding:10px 14px 12px;border-top:1px solid #353941;flex-wrap:wrap}
+#mailWin .pwf input{flex:1 1 160px;min-width:0;font:inherit;font-size:13px;padding:8px 10px;background:#15171b;border:1px solid #4a4e56;color:#fff;text-transform:uppercase;letter-spacing:1px}
+#mailWin .pwf input::placeholder{text-transform:none;letter-spacing:0}
+#mailWin .pwf button{min-width:0;padding:8px 14px;font-size:13px}#mailWin .pwf button.all{border-color:#c8901e;color:#ffe2a0}
+html.touch #mailWin .pwf button,html.touch #mailWin .ml>button{min-height:44px}
 
 </style>
 </head><body>
@@ -13567,13 +13595,16 @@ function netMigDone(msg){const box=netMigBox();box.innerHTML=`<b>${esc(msg)}</b>
 // The host refreshes its row every 10 s (and at once when players, map, mode or lobby/playing change); the server drops a row after 30 s
 // without one. The list is read by anyone (signed in or not) and refreshed every 5 s while the multiplayer menu is open.
 // (a code another account still lists is tried again after 20 s: a new host after a hand-over waits for the old row to lapse)
-const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:false,bad:'',badT:0,pubOn:false,
+const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:false,bad:'',badT:0,pubOn:false,shutT:0,
   srv(){return typeof ACC!=='undefined'&&ACC.on},
-  can(){return NET.on&&NET.host&&NET.kind==='peerjs'&&this.pubOn&&this.srv()&&ACC.signed()&&!(this.bad===NET.code&&Date.now()-this.badT<20000)},
+  can(){return NET.on&&NET.host&&NET.kind==='peerjs'&&this.pubOn&&this.srv()&&ACC.signed()&&!(this.bad===NET.code&&Date.now()-this.badT<20000)&&!(Date.now()<this.shutT)},
   st(){const c=NET.lob.cfg;return {p_code:NET.code,p_name:CFG.mpName||'',p_map:c.map||'',p_mode:c.mode||'mut',p_players:NET.lob.pl.length,p_max:NET_MAXP,p_status:NET.ui==='game'?'playing':'lobby'}},
   async up(){const a=this.st(),s=JSON.stringify(a);this.upBusy=true;this.upT=Date.now();
     try{const r=await ACC.rpc('qz_room_up',a);this.pub=a.p_code;if(!(r&&r.skipped))this.last=s}
-    catch(e){if(/room_taken|bad_code/.test(e&&e.message||'')){this.bad=a.p_code;this.badT=Date.now()}console.warn('rooms: up',e&&e.message)}
+    catch(e){if(/room_taken|bad_code/.test(e&&e.message||'')){this.bad=a.p_code;this.badT=Date.now()}
+      // (v6.43: an admin took the room off the list: it goes on privately; asked again in 5 minutes)
+      if(/room_closed/.test(e&&e.message||'')){const first=!this.shutT;this.shutT=Date.now()+300e3;if(first){const t=ACC.errText(e);if(NET.ui==='game'&&typeof HUD!=='undefined')HUD.note(t,4);else netMigDone(t)}}
+      console.warn('rooms: up',e&&e.message)}
     this.upBusy=false;if(!this.can()||NET.code!==a.p_code)this.down()},
   down(keep){const c=this.pub;this.last='';if(!c)return;this.pub='';if(!this.srv())return;if(keep)ACC.beacon('qz_room_down',{p_code:c});else ACC.rpc('qz_room_down',{p_code:c}).catch(()=>{})},
   tick(){const now=Date.now();
@@ -14011,6 +14042,10 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.43','2026-10-13',[
+ ['NEW','우편함 — 로비 위 코인 옆 편지 버튼: 운영자가 보낸 보상(코인 · 조각 · 해독기 · 무기)을 받아요 · 새 우편이 오면 우편함이 한 번 열려요','Mailbox — the letter button next to your coins in the lobby: rewards an admin sent (coins, fragments, decoders, guns); a new letter opens the mailbox once'],
+ ['NEW','쿠폰 — 우편함 아래 칸에 쿠폰 코드를 넣으면 보상을 바로 받아요 (계정마다 한 번)','Coupons — type a coupon code at the bottom of the mailbox for its rewards at once (once per account)'],
+ ['UP','신고된 공개 방은 운영자가 목록에서 내릴 수 있어요 · 내려간 방은 비공개로 계속하고, 그 방장은 잠시 공개 방을 열 수 없어요','A reported public room can be taken off the list by an admin: it goes on privately and its host can\'t list a room for a while']]],
 ['v6.42','2026-10-13',[
  ['NEW','운영 공지 — 점검 · 이벤트 공지가 로비 위 띠와 공지사항 목록 맨 위에 바로 떠요 (중요한 공지는 창으로 한 번)','Server notices — maintenance and event notices show as a strip under the lobby\'s top bar and head the notice list (important ones open a window once)'],
  ['UP','이용 정지된 계정은 로그인하면 기간과 사유를 안내해요 · 혼자 하기(봇전 · 사격장)는 계속할 수 있어요','A suspended account is told the period and the reason when it signs in; playing alone (bot matches, the range) still works']]],
@@ -14378,8 +14413,8 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       art:`<img class="a1" src="${portrait('h_'+(HSKINS[1]||skin),140)}"><img class="a3" src="${portrait('h_'+(HSKINS[2]||skin),110)}">`},
     {act:'range',cls:'c3',t:L?'SHOOTING RANGE':'사격장',s:L?'Dummies at 10–50 m, moving targets, free weapons':'10–50 m 더미 · 이동 표적 · 무기 무료',tag:L?'Practice':'연습',
       art:`<img class="gun g1" src="${gunIcon('sr8',40)}"><img class="gun g2" src="${gunIcon('kv47',48)}"><img class="gun g3" src="${gunIcon('d50',34)}">`}];
-  const news=L?[['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
-    :[['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
+  const news=L?[['NEW','Mailbox and coupons — the letter button next to your coins: rewards from the admins, coupon codes'],['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
+    :[['NEW','우편함 · 쿠폰 — 코인 옆 편지 버튼에서 운영자가 보낸 보상과 쿠폰을 받아요'],['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
@@ -14392,7 +14427,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.42 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.43 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -15217,7 +15252,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null};
+      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null,mailN:r.mail_new|0};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
@@ -15299,7 +15334,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   // a database from before v6.42 has qz_ping without arguments (asked that way from then on)
   async ping(play,fresh){if(this.noPing)return null;let r;const a=this.pingOld?{}:{p_play:Math.max(0,play|0),p_fresh:!!fresh};
     try{r=await this.rpc('qz_ping',a)}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){if(!this.pingOld){this.pingOld=true;return this.ping(play,fresh)}this.noPing=true;return null}throw e}
-    const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(ch)this.emit()}return r},
+    const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(r.mail!=null&&(me.mailN|0)!==(r.mail|0)){me.mailN=r.mail|0;ch=true}if(ch)this.emit()}return r},
   async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
   async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
   // a gun from the shop for a friend (the giver's coins): {coins,gun,to}
@@ -15348,6 +15383,15 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/rate limit|over_email_send_rate_limit|too many/i.test(c+m))return T2('요청이 너무 많아요. 잠시 후 다시 해 주세요','Too many tries. Wait a moment and try again');
     if(/signup_disabled|Signups not allowed/i.test(c+m))return T2('지금은 가입을 받지 않아요','Sign-ups are closed right now');
     if(/banned/.test(m))return T2('이용이 정지된 계정이라 할 수 없어요','This account is suspended');
+    if(/coupon_not_found/.test(m))return T2('없는 쿠폰 코드예요','No such coupon code');
+    if(/coupon_used/.test(m))return T2('이미 쓴 쿠폰이에요','You used this coupon already');
+    if(/coupon_expired/.test(m))return T2('기간이 끝난 쿠폰이에요','This coupon has expired');
+    if(/coupon_off/.test(m))return T2('지금은 쓸 수 없는 쿠폰이에요','This coupon is switched off for now');
+    if(/coupon_soldout/.test(m))return T2('사용 가능 횟수가 다 찬 쿠폰이에요','This coupon has run out');
+    if(/coupon_not_started/.test(m))return T2('아직 쓸 수 없는 쿠폰이에요','This coupon is not open yet');
+    if(/coupon_slow/.test(m))return T2('틀린 코드를 너무 많이 넣었어요. 10분 뒤에 다시 해 주세요','Too many wrong codes — try again in 10 minutes');
+    if(/no_mail/.test(m))return T2('이미 받은 우편이에요','That letter was taken already');
+    if(/room_closed/.test(m))return T2('운영자가 공개 목록에서 내린 방이에요 (비공개로는 계속할 수 있어요)','An admin took this room off the public list (it goes on privately)');
     if(/not_admin/.test(m))return T2('관리자 계정이 아니에요','Not an admin account');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
     if(/not_enough_tfrags/.test(m))return T2('초월 조각이 부족해요','Not enough transcendence fragments');
@@ -15381,7 +15425,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/ref_already/.test(m))return T2('이미 초대 코드를 적용한 계정이에요','This account already used an invite');
     if(/ref_old/.test(m))return T2('초대 링크는 가입하고 7일 안에만 쓸 수 있어요','Invite links work for new accounts only (first 7 days)');
     if(/ref_loop/.test(m))return T2('서로를 초대할 수는 없어요','You cannot invite each other');
-    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_invite|qz_ref_|qz_mission|qz_ranking|qz_trans|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_invite|qz_ref_|qz_mission|qz_ranking|qz_trans|qz_mail|qz_coupon|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');
@@ -22814,6 +22858,81 @@ function fmtWhen(t){const d=new Date(t);if(isNaN(d))return '';const p=n=>String(
   // the notices: when the game opens, then every few minutes while in the lobby; the ban window when the account says so
   let was=null;ACC.sub(()=>{try{SRVN.render();const k=ACC.signed()?'in':'out';if(k!==was){was=k;SRVN.load(true)}else if(SRVN.ban())SRVN.popup()}catch(e){console.error(e)}});
   setInterval(()=>{if(G.st==='menu'&&!document.hidden)SRVN.load(false)},60e3);
+})();
+
+// ---- mailbox.js ----
+'use strict';
+// ============ v6.43: the mailbox (rewards an admin sent: qz_mails / qz_mail_claim) and coupons (qz_coupon_redeem) ============
+// A letter button sits in the lobby's account chip while signed in, with the number of letters waiting (ACC.me.mailN: qz_me's mail_new,
+// kept fresh by the heartbeat's mail count). A new letter opens the mailbox by itself once (localStorage qz_mailSeen: the newest id
+// seen). In the mailbox: every letter with its rewards and 받기, 모두 받기, and the coupon box at the bottom.
+const SVG_MAIL='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1 3h14v10H1zm2.2 1.6L8 8.1l4.8-3.5zM2.6 6v5.4h10.8V6L8 9.9z"/></svg>';
+const SVG_TICKET='<svg class="mtk" viewBox="0 0 16 16"><path fill="currentColor" d="M1 4h14v2.4a1.6 1.6 0 000 3.2V12H1V9.6a1.6 1.6 0 000-3.2zm9.5 1.4v1.2h1.2V5.4zm0 2.4v1.2h1.2V7.8zm0 2.4v1.2h1.2v-1.2z"/></svg>';
+const MBOX={list:null,busy:false,off:false,res:'',resBad:false,autoAt:0,
+  n(){const me=ACC.signed()&&ACC.me;return me?(me.mailN|0):0},
+  async load(){if(!ACC.signed()||this.off)return [];
+    try{const r=await ACC.rpc('qz_mails');this.list=Array.isArray(r)?r:[];const me=ACC.me;if(me&&(me.mailN|0)!==this.list.length){me.mailN=this.list.length;ACC.emit()}return this.list}
+    catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||'')))this.off=true;throw e}},
+  // the button in the account chip (shop.js builds the chip again on every lobby build: this goes in after it)
+  btn(){const ch=document.querySelector('#menu .lobTop .accChip');if(!ch)return;let b=ch.querySelector('.amail');const on=ACC.signed()&&!this.off;
+    if(!on){if(b)b.remove();return}const L=LI(),n=this.n();
+    if(!b){b=document.createElement('button');b.className='amail';b.dataset.act='mailbox';const c=ch.querySelector('.acoin');if(c)c.after(b);else ch.prepend(b)}
+    b.title=L?'Mailbox and coupons':'우편함 · 쿠폰';const h=SVG_MAIL+(n?`<i class="n">${n>99?'99+':n}</i>`:'');if(b.innerHTML!==h)b.innerHTML=h;b.classList.toggle('has',n>0)},
+  // what a bundle holds, in words
+  rw(rw){const L=LI(),o=[];if(!rw)return o;
+    if(rw.coins)o.push([COIN,fmtC(rw.coins)+(L?' coins':' 코인'),'c']);if(rw.frags)o.push([FRAG,(L?'Fragments ':'해독 조각 ')+fmtC(rw.frags),'f']);
+    if(rw.tfrags)o.push([TFRAG,(L?'Transcendence fragments ':'초월 조각 ')+fmtC(rw.tfrags),'t']);if(rw.tickets)o.push([SVG_TICKET,(L?'근하신년 decoders ':'근하신년 해독기 ')+fmtC(rw.tickets),'k']);
+    if(rw.season_tickets)o.push([SVG_TICKET,(L?'Season decoders ':'시즌 해독기 ')+fmtC(rw.season_tickets),'s']);
+    for(const g of rw.guns||[]){const W=WPN[g];o.push([W&&W.model?`<img src="${gunIcon(W.model,26)}" alt="">`:'⌖',W?W.n[L]:g,'g'])}return o},
+  chips(rw){return this.rw(rw).map(([i,t,k])=>`<span class="mrw ${k}">${i}<b>${esc(t)}</b></span>`).join('')},
+  open(){if($('mailWin'))return;const o=document.createElement('div');o.id='mailWin';o.innerHTML='<div class="pwin"></div>';
+    o.addEventListener('click',e=>{if(e.target===o){this.close();return}const b=e.target.closest('[data-mb]');if(!b)return;const k=b.dataset.mb;
+      if(k==='x')this.close();else if(k==='get')this.claim(+b.dataset.v,b);else if(k==='all')this.claim(null,b);else if(k==='cp'){const i=o.querySelector('input[name=cp]');this.redeem(i?i.value:'',b)}});
+    o.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.name==='cp'){e.preventDefault();this.redeem(e.target.value,o.querySelector('[data-mb=cp]'))}});
+    document.body.appendChild(o);this.res='';this.render();this.load().then(()=>{this.seen();this.render()}).catch(e=>{this.res=ACC.errText(e);this.resBad=true;this.render()})},
+  close(){const o=$('mailWin');if(o)o.remove();this.seen()},
+  seen(){const L0=this.list||[];if(!L0.length)return;const mx=Math.max(...L0.map(m=>+m.id||0));if(mx>(ACC.ls('qz_mailSeen')|0))ACC.ls('qz_mailSeen',mx)},
+  render(){const o=$('mailWin');if(!o)return;const L=LI(),M=this.list,cpv=(o.querySelector('input[name=cp]')||{}).value||'';
+    const body=M==null?`<p class="mem">${L?'Loading…':'불러오는 중…'}</p>`:!M.length?`<p class="mem">${L?'No letters right now.':'받을 우편이 없어요.'}</p>`
+      :M.map(m=>`<div class="ml"><div class="mlh"><b>${esc(m.title)}</b><time>${esc(fmtWhen(m.at).slice(0,10))}${m.expires_at?` · ${esc(fmtWhen(m.expires_at).slice(5,16))}${L?' last day':'까지'}`:''}</time></div>
+        ${m.body?`<p>${esc(m.body)}</p>`:''}<div class="mrws">${this.chips(m.rewards)}</div><button data-mb="get" data-v="${+m.id}">${L?'Take':'받기'}</button></div>`).join('');
+    o.querySelector('.pwin').innerHTML=`<div class="pwh">${SVG_MAIL}<b>${L?'Mailbox':'우편함'}</b>${M&&M.length?`<small>${M.length}${L?'':'통'}</small>`:''}<button data-mb="x" aria-label="close">×</button></div>
+      <div class="pwb">${body}</div>${this.res?`<div class="mres${this.resBad?' bad':''}">${this.res}</div>`:''}
+      <div class="pwf"><input name="cp" maxlength="30" placeholder="${L?'Coupon code':'쿠폰 코드'}" autocomplete="off" spellcheck="false" value="${esc(cpv)}"><button data-mb="cp">${L?'Use coupon':'쿠폰 받기'}</button>${M&&M.length>1?`<button class="all" data-mb="all">${L?'Take all':'모두 받기'}</button>`:''}</div>`},
+  // what came in, on the account here, and said in the mailbox
+  apply(r){const me=ACC.me;if(!me||!r)return;if(r.coins!=null)me.coins=r.coins|0;if(r.fragments!=null)me.frags=r.fragments|0;if(r.tfrags!=null)me.tfrags=r.tfrags|0;
+    if(r.tickets!=null)me.tickets=r.tickets|0;if(r.season_tickets!=null)me.sTickets=r.season_tickets|0;if(Array.isArray(r.owned))for(const g of r.owned)me.owned.add(g);
+    if(r.left!=null)me.mailN=r.left|0;ACC.saveMe()},
+  gotText(g){const L=LI(),parts=this.rw(g).map(x=>x[1]);const had=(g&&g.had||[]).map(id=>WPN[id]?WPN[id].n[L]:id);
+    return (parts.length?(L?'Received: ':'받았어요: ')+parts.join(', '):(L?'Nothing new':'새로 받은 건 없어요'))+(had.length?(L?` (already owned: ${had.join(', ')})`:` (이미 가진 무기: ${had.join(', ')})`):'')},
+  async claim(id,btn){if(this.busy)return;this.busy=true;if(btn)btn.disabled=true;
+    try{const r=await ACC.rpc('qz_mail_claim',id==null?{}:{p_id:id});this.apply(r);this.res=esc(this.gotText(r.got));this.resBad=false;AU.play('buy',{vol:.5});
+      this.list=(this.list||[]).filter(m=>!(r.claimed||[]).includes(+m.id));await this.load().catch(()=>{})}
+    catch(e){this.res=esc(ACC.errText(e));this.resBad=true}
+    this.busy=false;ACC.emit();this.render()},
+  async redeem(code,btn){const c=String(code||'').trim();if(!c){this.res=esc(LI()?'Type a coupon code':'쿠폰 코드를 적어 주세요');this.resBad=true;this.render();return}
+    if(this.busy)return;this.busy=true;if(btn)btn.disabled=true;
+    try{const r=await ACC.rpc('qz_coupon_redeem',{p_code:c});if(r&&r.error){this.res=esc(ACC.errText(new Error(r.error)));this.resBad=true}
+      else{this.apply(r);this.res=esc((LI()?`Coupon ${r.code} — `:`쿠폰 ${r.code} — `)+this.gotText(r.got));this.resBad=false;AU.play('buy',{vol:.5});const i=$('mailWin')&&$('mailWin').querySelector('input[name=cp]');if(i)i.value=''}}
+    catch(e){this.res=esc(ACC.errText(e));this.resBad=true}
+    this.busy=false;ACC.emit();this.render()},
+  // a new letter opens the mailbox once, in the lobby, when nothing else is open (server notices and the ban window go first: closing
+  // them asks again); qz_mails is asked only when the count says something changed, at most every 20 s
+  busyUI(){return G.st!=='menu'||!!document.querySelector('#mailWin,#srvWin,#giftPop,#gPop,#accWin,#patchWin,#shopWin,#rkWin,#nbWin,#invWin,#frWin')||(typeof SRVN!=='undefined'&&(SRVN.busy||!!SRVN.ban()))},
+  auto(){if(this.off||!this.n()||this.busyUI())return;const L0=this.list,top=L=>Math.max(0,...L.map(m=>+m.id||0));
+    if(L0&&L0.length===this.n()){if(top(L0)>(ACC.ls('qz_mailSeen')|0))this.open();return}// (the list already known: no need to ask)
+    if(Date.now()-this.autoAt<20e3)return;this.autoAt=Date.now();
+    this.load().then(L1=>{if(L1.length&&top(L1)>(ACC.ls('qz_mailSeen')|0)&&!this.busyUI())this.open()}).catch(()=>{})}};
+(function(){
+  const sl=shopLobby;shopLobby=function(){sl();try{MBOX.btn()}catch(e){console.error(e)}};
+  // (the notices loaded and nothing popped up: ask now; a window in the way closed: ask again)
+  if(typeof SRVN!=='undefined'){const p0=SRVN.popup;SRVN.popup=function(){const r=p0.apply(this,arguments);if(!$('srvWin'))setTimeout(()=>MBOX.auto(),300);return r}}
+  const WINS=/^(srvWin|giftPop|gPop|accWin|patchWin|shopWin|rkWin|nbWin|invWin|frWin)$/;let awT=0;
+  new MutationObserver(ms=>{if(G.st!=='menu'||!MBOX.n())return;for(const m of ms)for(const n of m.removedNodes)if(n.id&&WINS.test(n.id)){clearTimeout(awT);awT=setTimeout(()=>MBOX.auto(),450);return}}).observe(document.body,{childList:true});
+  const act0=UI.act;UI.act=function(a,v,el){if(a==='mailbox'){MBOX.open();return}return act0.call(this,a,v,el)};
+  addEventListener('keydown',e=>{if(e.code==='Escape'&&$('mailWin')){MBOX.close();e.stopPropagation()}},true);
+  ACC.sub(()=>{try{MBOX.btn();if(!ACC.signed()){MBOX.list=null;const o=$('mailWin');if(o)o.remove()}else setTimeout(()=>MBOX.auto(),600)}catch(e){console.error(e)}});
+  const sm=startMatch;startMatch=function(cfg){const o=$('mailWin');if(o)o.remove();return sm(cfg)};
 })();
 
 </script>
