@@ -28,6 +28,7 @@
 --     이용 시간: 게임이 켜져 있고 화면에 보이는 동안 1분마다 qz_ping → profiles.online_secs(켜 둔 시간) / play_secs(그중 판 안), 날짜별은 daily_activity.
 --   * 관리자 2차(v6.43): 부운영자(admins.role 'staff': 조회 · 닉네임 · 정지 · 의심 유저 · 방 내리기 · 기록), 우편(mails: 전체 또는 고른 플레이어, 로비 우편함에서 받기),
 --     쿠폰(coupons: 계정마다 한 번, 총 횟수 · 기간), 공개 방 내리기(room_blocks: 그 방장은 정한 시간 동안 다시 못 올림).
+--   * 무기 알림(v6.46): 관리자가 계정에 바로 넣은 무기는 gun_notices에 남고, 게임 로비에서 무기 그림과 함께 창으로 한 번 뜹니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -574,6 +575,7 @@ begin
     -- (v6.42: admin = may open the admin page; ban = {until, forever, reason} while banned)
     'admin', exists (select 1 from public.admins a where a.user_id = uid),
     'mail_new', (select count(*) from public.qz_mail_open(uid)),   -- (v6.43: letters waiting in the mailbox)
+    'gun_new', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen),   -- (v6.46: weapons an admin put on the account, not shown yet)
     'ban', case when p.banned_until > now() then jsonb_build_object('until', p.banned_until, 'forever', p.banned_until = 'infinity'::timestamptz, 'reason', p.ban_reason) end,
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
@@ -2011,7 +2013,8 @@ begin
     play_secs = public.daily_activity.play_secs + excluded.play_secs, last_at = now();
   return jsonb_build_object('dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen),
     'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'),
-    'mail', (select count(*) from public.qz_mail_open(uid)));
+    'mail', (select count(*) from public.qz_mail_open(uid)),
+    'gun', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen));
 end $$;
 
 -- a message to a friend (p_who = their code). Friends only; 1..200 characters; at most 20 a minute and 300 an hour; each pair keeps its newest 100.
@@ -2540,9 +2543,11 @@ begin
   if give then
     insert into public.owned_guns (user_id, gun_id, price_paid) values (p_id, p_gun, 0) on conflict do nothing;
     if not found then raise exception 'already_owned'; end if;
+    insert into public.gun_notices (user_id, gun_id, src) values (p_id, p_gun, 'admin');   -- (v6.46: the player is told in the game)
   else
     delete from public.owned_guns where user_id = p_id and gun_id = p_gun;
     if not found then raise exception 'not_owned'; end if;
+    delete from public.gun_notices where user_id = p_id and gun_id = p_gun and not seen;
   end if;
   perform public.qz_admin_note(uid, case when give then 'gun_give' else 'gun_take' end, p_id, jsonb_build_object('gun', p_gun), rsn);
   return jsonb_build_object('gun', p_gun, 'owned', give);
@@ -3352,3 +3357,43 @@ grant execute on function public.qz_admin_staff_add(text) to authenticated;
 grant execute on function public.qz_admin_staff_remove(uuid) to authenticated;
 grant execute on function public.qz_admin_room_close(text, integer, text) to authenticated;
 grant execute on function public.qz_admin_suspects(text) to authenticated;
+
+-- ---------- v6.46: a weapon an admin put straight on an account is announced in the game ----------
+-- (a letter or a coupon with a gun shows its window right when it is taken; this is for the admin page's 「무기 → 지급」, which skips the mailbox)
+create table if not exists public.gun_notices (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  gun_id  text not null,
+  src     text not null default 'admin',
+  at      timestamptz not null default now(),
+  seen    boolean not null default false
+);
+create index if not exists gun_notices_open on public.gun_notices (user_id) where not seen;
+alter table public.gun_notices enable row level security;
+revoke all on public.gun_notices from anon, authenticated;
+
+-- my weapon notices not shown yet, newest first
+create or replace function public.qz_gun_notices() returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('id', q.id, 'gun', q.gun_id, 'src', q.src, 'at', q.at) order by q.id desc)
+    from (select n.id, n.gun_id, n.src, n.at from public.gun_notices n where n.user_id = uid and not n.seen order by n.id desc limit 20) q), '[]'::jsonb);
+end $$;
+-- shown (p_ids null: every one of mine)
+create or replace function public.qz_gun_seen(p_ids bigint[] default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+  n integer;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  update public.gun_notices set seen = true where user_id = uid and not seen and (p_ids is null or id = any(p_ids));
+  get diagnostics n = row_count;
+  delete from public.gun_notices where user_id = uid and seen and at < now() - interval '30 days';
+  return jsonb_build_object('seen', n);
+end $$;
+revoke all on function public.qz_gun_notices() from public, anon;
+revoke all on function public.qz_gun_seen(bigint[]) from public, anon;
+grant execute on function public.qz_gun_notices() to authenticated;
+grant execute on function public.qz_gun_seen(bigint[]) to authenticated;

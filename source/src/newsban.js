@@ -114,7 +114,7 @@ const NBAN={i:0,timer:null,shown:false,
   close(){const o=$('nbWin');if(o)o.remove();clearInterval(this.timer);this.timer=null},
   // first lobby of this page load: wait for the lobby and for a sign-in window already open to close
   boot(){if(this.shown||this.hidden()||!this.list().length)return;this.shown=true;let n=0;
-    const tryOpen=()=>{if(G.st!=='menu'||UI.open!=='menu'||$('accWin')||$('shopWin')||$('rkWin')||$('invWin')||$('frWin')||$('giftPop')){if(++n<120)setTimeout(tryOpen,800);return}this.open()};setTimeout(tryOpen,1200)}};
+    const tryOpen=()=>{if(G.st!=='menu'||UI.open!=='menu'||$('accWin')||$('shopWin')||$('rkWin')||$('invWin')||$('frWin')||$('giftPop')||$('gunPop')||$('mailWin')){if(++n<120)setTimeout(tryOpen,800);return}this.open()};setTimeout(tryOpen,1200)}};
 (function(){const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{NBAN.boot()}catch(e){console.error(e)}return r};
   const act0=UI.act;UI.act=function(a,v,el){if(a==='nbopen'){NBAN.open();return}return act0.call(this,a,v,el)};
   addEventListener('keydown',e=>{if(e.key==='Escape'&&$('nbWin'))NBAN.close()});

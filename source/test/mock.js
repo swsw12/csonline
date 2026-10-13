@@ -110,6 +110,10 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       P.coins+=g.coins;P.frags=(P.frags|0)+g.frags;P.tfr=(P.tfr|0)+g.tfrags;P.tickets=(P.tickets|0)+g.tickets;P.sTk=(P.sTk|0)+g.season_tickets;if(g.coins)db.log.push([uid,g.coins,why]);
       for(const x of rw.guns||[])if(db.own[uid].includes(x))g.had.push(x);else{db.own[uid].push(x);g.guns.push(x)}return g};
     const WAL=()=>({coins:P.coins,fragments:P.frags|0,tfrags:P.tfr|0,tickets:P.tickets|0,season_tickets:P.sTk|0,owned:db.own[uid]});
+    // v6.46: weapons an admin put on the account: window.__MOCK_GUNNOTES = [{id,gun,src}] (the gun is put on the account when it is listed)
+    const GNS=()=>(window.__MOCK_GUNNOTES||[]).filter(n=>!(db.gseen||(db.gseen={}))[uid+':'+n.id]);
+    if(fn==='qz_gun_notices'){const L=GNS();for(const n of L)if(!db.own[uid].includes(n.gun))db.own[uid].push(n.gun);save(db);return res(200,L.map(n=>({id:n.id,gun:n.gun,src:n.src||'admin',at:new Date().toISOString()})))}
+    if(fn==='qz_gun_seen'){let k=0;for(const n of GNS())if(body.p_ids==null||body.p_ids.includes(n.id)){db.gseen[uid+':'+n.id]=1;k++}save(db);return res(200,{seen:k})}
     if(fn==='qz_mails')return res(200,MAILS());
     if(fn==='qz_mail_claim'){if(window.__MOCK_BAN)return pgerr('banned');const L=MAILS().filter(m=>body.p_id==null||m.id===+body.p_id);if(!L.length)return pgerr('no_mail');
       const got={coins:0,frags:0,tfrags:0,tickets:0,season_tickets:0,guns:[],had:[]};
@@ -118,7 +122,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_coupon_redeem'){if(window.__MOCK_BAN)return pgerr('banned');const c=String(body.p_code||'').toUpperCase().replace(/[^A-Z0-9]/g,''),C=window.__MOCK_COUPONS||{};
       if(!C[c])return res(200,{error:'coupon_not_found'});const U=db.cuse||(db.cuse={});if(U[uid+':'+c])return res(200,{error:'coupon_used'});
       U[uid+':'+c]=1;const got=GIVE(C[c],'coupon');save(db);return res(200,Object.assign({code:c,got},WAL()))}
-    if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length})}
+    if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length,gun:GNS().length})}
     // v6.42: a ban (window.__MOCK_BAN) refuses what qz_guard refuses in schema.sql
     if(window.__MOCK_BAN&&['qz_buy','qz_claim','qz_round_claim','qz_import_rec','qz_ny_add','qz_ny_exchange','qz_mission_claim','qz_decode','qz_bingo_reset','qz_bingo_shuffle',
       'qz_season_decode','qz_season_reset','qz_season_shuffle','qz_side_decode','qz_side_reset','qz_side_shuffle','qz_exchange','qz_trans_exchange','qz_friend_add','qz_friend_answer',
@@ -164,7 +168,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(fn==='qz_gift_inbox'){const L=GFL().filter(g=>g.to===uid&&!g.seen);for(const g of L)g.seen=true;save(db);return res(200,{gifts:L.map(g=>({gun:g.gun,from:db.prof[g.from]?db.prof[g.from].nickname:'?',at:g.at}))})}
     }catch(e){if(typeof e==='string')return pgerr(e);throw e}}
     if(fn==='qz_me'){if(!P)newProfile(db,uid,db.users[uid].email.split('@')[0]);const Q=db.prof[uid];FC(uid);save(db);
-      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,tfrags:Q.tfr|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid),ref:refJ(Q),admin:!!window.__MOCK_ADMIN,ban:window.__MOCK_BAN||null,mail_new:MAILS().length})}
+      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,tfrags:Q.tfr|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid),ref:refJ(Q),admin:!!window.__MOCK_ADMIN,ban:window.__MOCK_BAN||null,mail_new:MAILS().length,gun_new:GNS().length})}
     if(fn==='qz_ny_add'){let q=Math.max(P.nyQ|0,0);const v=[body.p_g,body.p_h,body.p_s,body.p_n].map(x=>Math.min(Math.max(x|0,0),8)),ad=v.map(x=>{const t=Math.min(x,q);q-=t;return t});
       P.ny=(P.ny||[0,0,0,0]).map((x,i)=>x+ad[i]);P.nyQ=0;save(db);return res(200,{added:ad,ny:P.ny})}
     if(fn==='qz_ny_exchange'){const c=body.p_choice;if(c!=='ny'&&c!=='season')return pgerr('bad_choice');const N=P.ny||[0,0,0,0];if(Math.min(...N)<1)return pgerr('no_set');
