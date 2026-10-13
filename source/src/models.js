@@ -63,6 +63,7 @@ const PF={A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'1101011
 let CK=3;
 // gloss: the atlas alpha carries the surface finish (FS_CHAR): 255 matte cloth, 240..254 increasingly wet/shiny, 232 glowing
 const GLOSS={plate:248,rubber:245,boot:243,flesh:252,meat:253,tumor:250,skin:241,zskin:242,hair:243};
+const FACE_GA={gasmask:246,visor:249,man:241,woman:241,balaclava:255,gaiter:255,m50:245};// the gloss a painted face starts with
 const WET={flesh:252,wounds:252,ribs:251,bonep:247,drip:253,bite:252,soak:250,gash:252,blood:251,rot:250,teethrow:247,tear:242,veins:243,stitch:246};
 // materials: {base, style}; decor ops use face-normalised coords (u right, v up, 0..1)
 function fillMat(P,x0,y0,w,h,M,seed,fk,partN){const st=M.style||'cloth',base=M.base;
@@ -83,7 +84,7 @@ function fillMat(P,x0,y0,w,h,M,seed,fk,partN){const st=M.style||'cloth',base=M.b
 function decor(P,x0,y0,w,h,ops,seed,M){
   const X=u=>x0+Math.floor(clamp(u,0,.9999)*w),Y=v=>y0+Math.floor(clamp(1-v,0,.9999)*h);
   const R=(u0,v0,u1,v1,f)=>{const a=X(u0),b=X(u1-1e-4),cy0=Y(v1-1e-4),cy1=Y(v0);for(let y=cy0;y<=cy1;y++)for(let x=a;x<=b;x++)f(x,y,x-a,y-cy0,b-a,cy1-cy0)};
-  for(const op of ops){const k=op[0];const ga0=P.ga;if(WET[k])P.ga=WET[k];else if(k==='face')P.ga=op[1]==='gasmask'?246:op[1]==='visor'?249:op[1]==='man'||op[1]==='woman'?241:243;
+  for(const op of ops){const k=op[0];const ga0=P.ga;if(WET[k])P.ga=WET[k];else if(k==='face')P.ga=FACE_GA[op[1]]||243;
     decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R);P.ga=ga0}}
 function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
     if(k==='rect')R(op[1],op[2],op[3],op[4],(x,y)=>{const t=hash2(x,y,seed+7);P.set(x,y,t<.15?dk(op[5],.15):t>.9?lt(op[5],.08):op[5])});
@@ -104,6 +105,17 @@ function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
     else if(k==='text'){const s=op[1];let cx=X(op[2]),cy=Y(op[3]);for(const ch of s){const g=PF[ch];if(g){for(let j=0;j<5;j++)for(let i=0;i<3;i++)if(g[j*3+i]==='1')for(let b=0;b<CK;b++)for(let a=0;a<CK;a++)P.set(cx+i*CK+a,cy+j*CK+b,a+b===0?lt(op[4],.1):op[4])}cx+=4*CK}}
     else if(k==='zip'){const x=X(op[1]);for(let y=y0;y<y0+h;y++){P.set(x,y,(y&1)?'#8a8a82':'#3a3a36');P.set(x+1,y,(y&1)?'#3a3a36':'#6a6a64')}}
     else if(k==='belt'){R(0,op[1],1,op[2],(x,y,i,j,W,H)=>{let c=op[3];if(j===0)c=lt(c,.15);if(hash2(x,y,seed)<.1)c=dk(c,.2);P.set(x,y,c)});if(op[4])R(.42,op[1],.58,op[2],(x,y,i,j,W,H)=>P.set(x,y,(i===0||i===W||j===0||j===H)?op[4]:dk(op[4],.4)))}
+    // v6.44 (masks): a straight stroke, a round disc (filters, a voicemitter) and a woven check (a shemagh)
+    else if(k==='line'){const ax=X(op[1]),ay=Y(op[2]),bx=X(op[3]),by=Y(op[4]),t=Math.max(1,Math.round((op[5]||1)*CK/2)),L=Math.max(1,Math.hypot(bx-ax,by-ay));
+      for(let q=0;q<=L;q++){const x=Math.round(ax+(bx-ax)*q/L),y=Math.round(ay+(by-ay)*q/L);for(let e=-t;e<t;e++)for(let f=-t;f<t;f++){const px=x+e,py=y+f;if(px>=x0&&px<x0+w&&py>=y0&&py<y0+h)P.set(px,py,op[6])}}}
+    else if(k==='disc'){const cx=x0+op[1]*w,cy=y0+(1-op[2])*h,r=op[3]*Math.min(w,h),rim=op[5]||dk(op[4],.35);
+      for(let y=Math.floor(cy-r);y<=cy+r;y++)for(let x=Math.floor(cx-r);x<=cx+r;x++){if(x<x0||y<y0||x>=x0+w||y>=y0+h)continue;const d=Math.hypot(x+.5-cx,y+.5-cy)/r;if(d>1)continue;
+        let c=d>.8?rim:op[4];if(d>.8&&d<.88)c=lt(c,.18);if(op[6]&&d<.64&&(x-x0)%CK===1&&(y-y0)%CK===1)c=op[6];P.set(x,y,c)}}
+    else if(k==='solid')R(op[1],op[2],op[3],op[4],(x,y)=>P.set(x,y,op[5]));// a clean fill (glass, paint)
+    else if(k==='grad')R(op[1],op[2],op[3],op[4],(x,y,i,j,W,H)=>P.set(x,y,mix(op[5],op[6],H?j/H:0)));// top colour to bottom colour
+    else if(k==='check'){const c=op[1],cell=Math.max(3,Math.round((op[2]||3)*CK)),dot=op[3],h0=Math.floor(cell/2);
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){const a=x%cell,b=y%cell;
+        if(a===0||b===0)P.set(x0+x,y0+y,hash2(x,y,seed+40)<.25?lt(c,.12):c);else if(dot&&Math.abs(a-h0)<=1&&Math.abs(b-h0)<=1&&(a===h0||b===h0))P.set(x0+x,y0+y,dot)}}
     else if(k==='laces'){for(let y=Math.floor(h*.35);y<h*.85;y+=2*CK)for(let x=Math.floor(w*.3);x<w*.7;x++){P.set(x0+x,y0+y,(x&1)?'#7a746a':'#5a544a');P.set(x0+x,y0+y+1,'#3a362e')}}
     // ---- gore ----
     else if(k==='flesh'){const ang=op[5]||0,ca=Math.cos(ang),sa=Math.sin(ang);// exposed muscle: striated fibres, wet dark edge, a rim of yellow fat and torn skin
@@ -163,6 +175,24 @@ function paintFace(P,x0,y0,w,h,kind,seed,o){const K=CK;
     const cy=y0+Math.round(h*.8/K)*K;for(let j=-2*K;j<2*K+K;j++)for(let i=-2*K;i<2*K;i++)sp(cx+i,cy+j,((Math.floor(i/K)+Math.floor(j/K))&1)?'#3a3c3e':'#2a2c2e');for(let i=-2*K;i<2*K;i++)sp(cx+i,cy-2*K,'#4a4c4e')}
   else if(kind==='visor'){for(let y=Math.round(h*.3);y<h*.62;y++)for(let x=K;x<w-K;x++)sp(x0+x,y0+y,y<h*.36?'#3a4a5a':((x+y)%9===0?'#1e2630':'#141a22'));for(let i=0;i<2*K;i++)sp(x0+3*K+i,y0+Math.round(h*.38)+(i>>1),'#8aa8c0');
     const my=y0+Math.round(h*.8/K)*K;for(let i=-2*K;i<2*K;i++){sp(cx+i,my,dk(skin,.4));sp(cx+i,my+1,lt(skin,.05))}}
+  // v6.44 masks: a knit balaclava (its eye slit in deep shadow: a visor goes over it), a neck gaiter pulled up to the goggles,
+  // a CBRN mask with one wide lens inside the suit's hood (M50 style)
+  else if(kind==='balaclava'){for(let y=0;y<h;y++)if(((y/K)|0)%2)for(let x=0;x<w;x++)P.mul(x0+x,y0+y,.9);// knit rows
+    const s0=row-K,s1=row+2*K;for(let y=s0;y<s1;y++)for(let x=x0+2*K;x<x0+w-2*K;x++)sp(x,y,y===s0?'#000000':y===s1-1?dk(skin,.25):'#060607');
+    const my=y0+Math.round(h*.8/K)*K;for(let j=0;j<2*K;j++)for(let i=-2*K;i<2*K;i++)sp(cx+i,my+j,((i+j)&1)?dk(skin,.4):dk(skin,.25))}// the breathing panel
+  else if(kind==='gaiter'){const hem=y0+Math.round(h*(1-(o.hem||.47))/K)*K,base=o.c||skin;
+    for(let y=hem+2;y<y0+h;y++)for(let x=0;x<w;x++){const f=Math.sin((y-hem)/(K*2.4)+Math.sin(x/(w*.32))*.9);if(f>.8)P.mul(x0+x,y,.84);else if(f<-.9)P.mul(x0+x,y,1.07)}
+    for(let x=0;x<w;x++){sp(x0+x,hem,lt(base,.14));sp(x0+x,hem+1,dk(base,.22))}
+    if(o.hair)for(let y=y0;y<hem;y++)for(let x=0;x<w;x++)sp(x0+x,y,hash2(x,(y/K)|0,seed)<.3?dk(o.hair,.3):o.hair)}
+  else if(kind==='m50'){const hood=o.hood||'#c8a42a',ga=P.ga,rim=2*K;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const e=Math.min(x,w-1-x,y);
+      if(e<rim){P.ga=255;sp(x0+x,y0+y,e<K?(hash2(x,y,seed)<.2?dk(hood,.12):hood):dk(hood,.35));continue}
+      P.ga=245;sp(x0+x,y0+y,hash2(x,y,seed+1)<.1?'#2a2c2e':'#1c1e20')}
+    const lx0=Math.round(w*.12),lx1=Math.round(w*.88),ly0=Math.round(h*.24),ly1=Math.round(h*.6);P.ga=254;// the lens, dipping over the nose
+    for(let y=ly0;y<ly1;y++)for(let x=lx0;x<lx1;x++){const u=(x+.5-lx0)/(lx1-lx0)*2-1,v=(y+.5-ly0)/(ly1-ly0);
+      const bot=1-.3*Math.exp(-u*u/.025)-.35*Math.pow(Math.abs(u),5),top=.06*u*u;if(v>bot||v<top)continue;
+      const edge=v>bot-.09||v<top+.07||Math.abs(u)>.95;let c=edge?'#0a0b0c':mix('#86a0ae','#2e4048',clamp(v*1.1,0,1));if(!edge&&Math.abs(u*.8+v*.9-.35)<.05)c='#d0e2ec';else if(!edge&&Math.abs(u*.8+v*.9-.5)<.02)c='#a8c0cc';sp(x0+x,y0+y,c)}
+    P.ga=ga}
   else if(kind==='zombie'||kind==='runner'||kind==='brute'||kind==='scream'){
     const glow=o.eye||'#e8d040';
     // bruised, sunken face: dark rings around the sockets and down the cheeks
@@ -191,7 +221,7 @@ function paintFace(P,x0,y0,w,h,kind,seed,o){const K=CK;
 }
 // pack faces of all parts into one atlas; returns uv rects
 function paintSkin(def){
-  for(let ppm=(def.ppm||100)*CK;ppm>30;ppm*=.9){
+  for(let ppm=(def.ppm||100)*CK;ppm>30;ppm*=.97){// (the densest texture that still fits the atlas, in 3% steps)
     const W=256*CK,H=256*CK,faces=[];
     def.parts.forEach((p,pi)=>{for(const fk of FK){const [fu,fv]=faceDims(p.s,fk);faces.push({pi,fk,w:Math.max(2,Math.round(fu*ppm)),h:Math.max(2,Math.round(fv*ppm))})}});
     const order=faces.slice().sort((a,b)=>b.h-a.h);let x=0,y=0,rowH=0,ok=true;
@@ -256,6 +286,7 @@ function partShape(p){const n=p.n,[sx,sy,sz]=p.s,mn=Math.min(sx,sy,sz),mxz=Math.
   else if(/^(bone)/.test(n))S.r=mn*.16;
   else if(/^(rib|vert|spike|claw)/.test(n))S.r=mn*.3;
   else if(/^(vest|pack|pouch|radio)/.test(n))S.r=Math.min(.024,mn*.22);
+  if(p.fr)S.r=mn*p.fr;// (a part may ask for its own roundness: fr = fillet radius / its thinnest side, up to .5)
   S.r=Math.min(S.r,mn*.5);return S}
 // ambient occlusion baked per vertex in the rest pose: every part is a chain of spheres; a vertex is darkened by the parts of its own bone and the
 // bones next to it in the chain (fingers by the palm, chin by the neck, crotch by the thighs). Arms are left out of the torso's sum, they move too much.

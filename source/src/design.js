@@ -276,7 +276,7 @@ const ARM_DESIGN={
 //     좀비 전용: claw 손톱 길이, fingL 손가락 길이, curl 손가락 굽힘, curlJ 손가락마다 다르게 굽는 씨앗값,
 //                nose:false 코 없음(구멍), ears:[왼,오] 귀 있음 1/없음 0, browH 눈썹뼈 돌출, noseW 코 너비,
 //                eyeY 눈 높이(0 아래~1 위), eyeSep 눈 간격
-//     인간 전용: face:'visor' 헬멧 바이저 / face:'mask' 방독면 머리
+//     인간 전용: face:'visor' 헬멧 바이저 / face:'mask' 얼굴 앞면을 평평하게(방독면·스카프) / 그 밖의 값은 코·눈두덩 입체를 남긴다
 //
 //  ② mats — 부위별 재질 {base: 기본 색, style: 질감, blot: 얼룩 색, camo:[위장 어두운색, 밝은색], gloss: 광택 240~254}
 //     기본 부위: top 몸통  legs 골반·허벅지  sleeve 위팔  fore 아래팔  shin 정강이  skin 목·머리  hand 손  boot 발
@@ -300,7 +300,11 @@ const ARM_DESIGN={
 //       ['wounds',개수,씨앗] 상처 여러 개    ['bite',u,v,크기] 물린 자국      ['stitch',u0,v0,u1,v1] 꿰맨 자국
 //       ['rot',개수] 썩은 부분               ['veins',개수,색,빛남] 혈관(빛남 1 = 어둠에서 빛남)
 //       ['teethrow','top'|'bottom',깊이] 이빨 줄
+//       ['line',u0,v0,u1,v1,굵기,색] 직선(반사광 등)   ['disc',u,v,반지름,색,테두리색,구멍색] 동그라미(필터·음성판)
+//       ['check',색,칸크기,점색] 체크 무늬(시마그)     ['solid',u0,v0,u1,v1,색] 얼룩 없는 단색   ['grad',u0,v0,u1,v1,위색,아래색] 위→아래 그라데이션
 //       ['face',종류,{옵션}] 얼굴 — 종류: 'man' 남자  'woman' 여자  'visor' 바이저  'gasmask' 방독면
+//                                       'balaclava' 발라클라바  'gaiter' 넥게이터(옵션 c 천 색, hair 앞머리 색, hem 끝단 높이)
+//                                       'm50' 후드 속 통렌즈 방독면(옵션 hood 후드 색)
 //                                       'zombie' 'runner' 'brute' 'scream' 좀비 얼굴들
 //            옵션: skin 피부색, eye 눈 색, hair 머리색, stubble 수염, oneEye 한쪽 눈 없음, tears 피눈물,
 //                  cheek 뺨 찢김, lipless 입술 없음, sewn 눈 꿰맴, ey 눈 높이
@@ -310,6 +314,7 @@ const ARM_DESIGN={
 //              7 왼허벅지  8 왼정강이  9 오른허벅지  10 오른정강이  11 턱  12 왼발  13 오른발
 //     좌표: x 오른쪽(+), y 위(+), z 뒤(+) / 앞(-).  발바닥 y=0, 캐릭터는 -z 쪽을 본다.
 //     함수형 extra=H=>[…] 은 H.piv(관절 위치), H.o(체형), H.headC(머리 중심)를 써서 체형에 맞춰 붙인다.
+//     (인간) 덧붙임: rx/ry/rz 기울기(라디안), fr 둥근 정도(0~.5, 클수록 동글), d:'이름' 다른 부품의 decor 그림을 같이 쓴다.
 //
 //  ※ 크기(키)·히트박스·스탯은 game.js 의 ZCLASS(좀비)에 있다. 여기는 보이는 모습만.
 //  ※ 숙주 좀비(host)는 같은 몸에 붉게 빛나는 혈관이 더해지고 눈이 빨개진다 (맨 아래 공통 처리).
@@ -317,58 +322,77 @@ const ARM_DESIGN={
 const SKIN_C={a:'#c89a78',b:'#a8785a',c:'#e0b898',d:'#7a5038'};  // 사람 피부색 4가지: a 보통, b 그을린, c 밝은, d 어두운
 // ── 인간 캐릭터 (로비에서 고르는 스킨) ─────────────────────────────────────────────────────────
 //    k = 'guard' 박재원 | 'medic' 엘레나 | 'soldier' 메이슨 | 'hazmat' 서유나
+//    v6.44: 네 명 모두 맨얼굴 대신 컨셉에 맞는 마스크를 쓴다 (실제 특수부대 · 화생방 장비를 참고해 새로 그린 디자인).
+//    마스크 부품 좌표 기준: 머리 가운데 높이 1.68, 얼굴 앞면 z = -.14 (서유나 -.145), 눈 높이 1.68.
 function defHuman(k){
   const o={};let mats,decor,extra=[];
-  // ▶ 박재원 (guard) — 격리구역 경비대
-  //    남색 제복·바지, 검은 방탄조끼(앞주머니 3개, 노란 띠), 진압 헬멧 + 검은 바이저로 얼굴을 가림.
+  // ▶ 박재원 (guard) — 격리구역 경비대 · 경찰 대테러 특공대 스타일 (독일 GSG 9 · 한국 경찰특공대 참고)
+  //    남색 제복·바지, 검은 방탄조끼(앞주머니 3개, 노란 띠), 검은 방염 발라클라바 + 진압 헬멧 + 이마~턱을 덮는 스모크 방탄 바이저.
   //    등에 'SEC' 글씨, 양 위팔에 노란 완장, 왼쪽 허리 파우치, 가슴 오른쪽 무전기, 검은 고무장갑.
-  if(k==='guard'){// 박재원 — quarantine security: navy uniform, black plate carrier, riot helmet
-    o.face='visor';mats={top:{base:'#2b3346'},legs:{base:'#262d3e'},sleeve:{base:'#2b3346'},fore:{base:'#2b3346'},shin:{base:'#262d3e'},skin:{base:SKIN_C.a,style:'skin'},hand:{base:'#1c1d20',style:'rubber'},boot:{base:'#18171a',style:'boot'},
-      vest:{base:'#1d1f24',style:'plate',gloss:243},helm:{base:'#22262e',style:'plate'},pouch:{base:'#24272c'},visor:{base:'#121820',style:'flat',gloss:254}};
+  if(k==='guard'){// 박재원 — quarantine security: navy uniform, black plate carrier, black balaclava, riot helmet with a full-face ballistic visor
+    o.face='balaclava';mats={top:{base:'#2b3346'},legs:{base:'#262d3e'},sleeve:{base:'#2b3346'},fore:{base:'#2b3346'},shin:{base:'#262d3e'},skin:{base:'#1b1c1f'},hand:{base:'#1c1d20',style:'rubber'},boot:{base:'#18171a',style:'boot'},
+      vest:{base:'#1d1f24',style:'plate',gloss:243},helm:{base:'#22262e',style:'plate'},pouch:{base:'#24272c'},visor:{base:'#111922',style:'flat',gloss:254},hinge:{base:'#2c3038',style:'plate'}};
     decor={torso:{front:[['band',.62,.68,'#c8b02a']],back:[['band',.62,.68,'#c8b02a'],['text','SEC',.3,.5,'#c8c8c0']]},
       vest:{front:[['pocket',.08,.08,.3,.42,'#2a2e34'],['pocket',.36,.08,.62,.42,'#2a2e34'],['pocket',.68,.08,.92,.42,'#2a2e34'],['band',.78,.86,'#c8b02a'],['out',0,0,1,1,'#101114']],back:[['out',0,0,1,1,'#101114'],['band',.7,.78,'#c8b02a']]},
-      head:{front:[['face','visor',{skin:SKIN_C.a}]],side:[['rect',.35,.38,.55,.58,dk(SKIN_C.a,.15)]],back:[['rect',0,.25,1,.6,'#1a1614']]},
-      helm:{front:[['band',.0,.18,'#121418']],side:[['rect',.0,.0,1,.2,'#121418']],all:[['out',0,0,1,1,'#14161a']]},
+      head:{front:[['face','balaclava',{skin:'#1b1c1f'}]]},neck:{all:[['band',.6,.7,'#141517']]},
+      helm:{front:[['band',.0,.16,'#121418']],side:[['rect',.0,.0,1,.18,'#121418']],all:[['out',0,0,1,1,'#14161a']]},
       pelvis:{fb:[['belt',.7,.95,'#141414','#6a6a62']]},footL:{front:[['laces']]},footR:{front:[['laces']]},shL:{front:[['rect',.15,.55,.85,.95,'#16181c']]},shR:{front:[['rect',.15,.55,.85,.95,'#16181c']]},
       uaL:{side:[['rect',.2,.6,.8,.85,'#c8b02a']]},uaR:{side:[['rect',.2,.6,.8,.85,'#c8b02a']]},
-      visor:{front:[['rect',.04,.6,.16,.82,'#3a4c5c'],['rect',.16,.7,.24,.82,'#26323e'],['out',0,0,1,1,'#0a0c10']],all:[['out',0,0,1,1,'#0a0c10']]}};
-    extra=[{n:'vest',b:1,c:[0,1.28,0],s:[.45,.36,.29],m:'vest'},{n:'helm',b:2,c:[0,1.72,0],s:[.27,.14,.29],m:'helm'},{n:'pouchL',b:0,c:[-.19,.93,-.06],s:[.06,.12,.1],m:'pouch'},{n:'radio',b:1,c:[.17,1.36,-.15],s:[.06,.1,.04],m:'pouch'}]}
-  // ▶ 엘레나 (medic) — 야전 의무병
+      visor:{all:[['solid',0,0,1,1,'#0b1016']],front:[['grad',0,0,1,1,'#0e161e','#1e2a36'],['band',.9,1,'#06080b'],['band',0,.05,'#2e3c4a'],['line',.12,.82,.36,.18,2.2,'#283a4e'],['line',.3,.86,.44,.46,1,'#48667e']]},
+      visorW:{all:[['solid',0,0,1,1,'#0b1016']],front:[['grad',0,0,1,1,'#0e161e','#1a2430'],['band',.9,1,'#06080b'],['band',0,.05,'#2e3c4a']]}};
+    extra=[{n:'vest',b:1,c:[0,1.28,0],s:[.45,.36,.29],m:'vest'},{n:'helm',b:2,c:[0,1.745,.01],s:[.28,.16,.3],m:'helm',rx:.1},{n:'visor',b:2,c:[0,1.638,-.177],s:[.162,.15,.012],m:'visor'},{n:'visorL',b:2,c:[-.108,1.638,-.153],s:[.08,.15,.012],m:'visor',d:'visorW',ry:.6},{n:'visorR',b:2,c:[.108,1.638,-.153],s:[.08,.15,.012],m:'visor',d:'visorW',ry:-.6},
+      {n:'hingeL',b:2,c:[-.146,1.7,-.105],s:[.024,.046,.05],m:'hinge',d:'hinge'},{n:'hingeR',b:2,c:[.146,1.7,-.105],s:[.024,.046,.05],m:'hinge',d:'hinge'},
+      {n:'varmL',b:2,c:[-.134,1.684,-.146],s:[.012,.034,.06],m:'hinge',d:'hinge'},{n:'varmR',b:2,c:[.134,1.684,-.146],s:[.012,.034,.06],m:'hinge',d:'hinge'},
+      {n:'pouchL',b:0,c:[-.19,.93,-.06],s:[.06,.12,.1],m:'pouch'},{n:'radio',b:1,c:[.17,1.36,-.15],s:[.06,.1,.04],m:'pouch'}]}
+  // ▶ 엘레나 (medic) — 야전 의무병 · 화생방 의무요원 스타일 (실제 반면형 방독 마스크 + 고글 조합)
   //    회청록 작업복(가운데 지퍼, 가슴 주머니 2개), 흰 헬멧 앞에 초록 십자, 등에 흰 의료 가방(초록 십자),
-  //    왼 위팔에 흰 완장 + 초록 십자, 뒤로 묶은 갈색 머리, 흰 의료 장갑, 여자 얼굴.
-  else if(k==='medic'){// 엘레나 — field medic: grey-teal coveralls, white helmet, medical pack
-    mats={top:{base:'#5e706e'},legs:{base:'#56666a'},sleeve:{base:'#5e706e'},fore:{base:'#5e706e'},shin:{base:'#56666a'},skin:{base:SKIN_C.c,style:'skin'},hand:{base:'#d8dcd4',style:'rubber'},boot:{base:'#2a2622',style:'boot'},
-      pack:{base:'#b8bcb0',style:'plate',gloss:244},helm:{base:'#c8ccc4',style:'plate'},hair:{base:'#3a2418',style:'hair'}};
+  //    왼 위팔에 흰 완장 + 초록 십자, 흰 의료 장갑. 얼굴: 청록 렌즈 고글 + 흰 반면 마스크(양 볼 필터, 가운데 초록 십자 밸브)
+  //    + 눈 밑까지 끌어올린 회청록 넥게이터. 뒤로 묶은 갈색 머리(포니테일)는 그대로 보인다.
+  else if(k==='medic'){// 엘레나 — field medic: grey-teal coveralls, white helmet, medical pack, goggles + half-mask respirator over a neck gaiter
+    mats={top:{base:'#5e706e'},legs:{base:'#56666a'},sleeve:{base:'#5e706e'},fore:{base:'#5e706e'},shin:{base:'#56666a'},skin:{base:'#4a5c5a'},hand:{base:'#d8dcd4',style:'rubber'},boot:{base:'#2a2622',style:'boot'},
+      pack:{base:'#b8bcb0',style:'plate',gloss:244},helm:{base:'#c8ccc4',style:'plate'},hair:{base:'#3a2418',style:'hair'},
+      gog:{base:'#2c3236',style:'rubber'},rsp:{base:'#d2d6ce',style:'rubber'},filt:{base:'#e4e4dc',style:'plate',gloss:244},valve:{base:'#e8e8e0',style:'plate',gloss:244}};
     decor={torso:{front:[['zip',.5],['pocket',.12,.55,.38,.8,'#52625f'],['pocket',.62,.55,.88,.8,'#52625f'],['grime',.4]],back:[['grime',.3]]},
       uaL:{side:[['rect',.15,.45,.85,.8,'#e8e8e0'],['rect',.42,.5,.58,.75,'#2a8a4a'],['rect',.28,.58,.72,.67,'#2a8a4a']]},uaR:{side:[['rect',.15,.45,.85,.8,'#e8e8e0']]},
-      head:{front:[['face','woman',{skin:SKIN_C.c,hair:'#3a2418'}],['band',.88,1,'#3a2418']],side:[['rect',0,.4,.35,1,'#3a2418'],['px',.6,.5,dk(SKIN_C.c,.2)]],back:[['rect',0,.15,1,1,'#3a2418']],top:[['rect',0,0,1,1,'#3a2418']]},
-      helm:{all:[['out',0,0,1,1,'#8a8e86']],front:[['rect',.4,.25,.6,.75,'#2a8a4a']]},
+      head:{front:[['face','gaiter',{c:'#4a5c5a',hair:'#3a2418',hem:.43}]],side:[['rect',0,.45,1,1,'#3a2418'],['band',.47,.53,'#22282b']],back:[['rect',0,.4,1,1,'#3a2418'],['band',.47,.53,'#22282b']],top:[['rect',0,0,1,1,'#3a2418']]},
+      neck:{all:[['grime',.3]]},
+      helm:{all:[['out',0,0,1,1,'#8a8e86']],front:[['rect',.4,.25,.6,.75,'#2a8a4a'],['rect',.3,.4,.7,.6,'#2a8a4a']]},
+      gog:{front:[['grad',.06,.16,.94,.86,'#8cc4c0','#3e7c78'],['line',.14,.78,.3,.4,1.2,'#d4f0ec'],['solid',.44,.16,.56,.38,'#2c3236'],['out',.06,.16,.94,.86,'#1a1e20']]},
+      rsp:{front:[['rect',.1,.15,.9,.25,'#b8bcb4']],all:[['out',0,0,1,1,'#a4a89f']]},rspN:{front:[['out',0,0,1,1,'#a4a89f']]},
+      filt:{front:[['disc',.5,.5,.48,'#e8e8e0','#a8aca4','#c0c4bc']]},valve:{front:[['rect',.38,.18,.62,.82,'#2a8a4a'],['rect',.18,.38,.82,.62,'#2a8a4a']]},
       pack:{back:[['rect',.38,.35,.62,.7,'#2a8a4a'],['rect',.25,.45,.75,.6,'#2a8a4a'],['out',0,0,1,1,'#6a6e66']],all:[['grime',.3]]},
       pelvis:{fb:[['belt',.7,.92,'#2a2a26','#9a9a90']]},footL:{front:[['laces']]},footR:{front:[['laces']]}};
-    extra=[{n:'helm',b:2,c:[0,1.735,.005],s:[.26,.11,.28],m:'helm'},{n:'pack',b:1,c:[0,1.25,.19],s:[.32,.36,.14],m:'pack'},{n:'tail',b:2,c:[0,1.58,.15],s:[.06,.14,.06],m:'hair'}];o.headW=.23;o.noseW=.13;o.browH=.018}
-  // ▶ 메이슨 (soldier) — 용병
-  //    올리브 위장무늬 전투복, 황갈색 방탄조끼(앞주머니 3개), 올리브 헬멧 위에 고글,
-  //    허벅지 주머니, 오른쪽 허리 파우치, 수염 난 남자 얼굴, 갈색 장갑.
-  else if(k==='soldier'){// 메이슨 — mercenary: olive camo, tan plate carrier, goggles on helmet
+    extra=[{n:'helm',b:2,c:[0,1.735,-.004],s:[.255,.16,.3],m:'helm',rx:.04},{n:'pack',b:1,c:[0,1.25,.19],s:[.32,.36,.14],m:'pack'},{n:'tail',b:2,c:[0,1.6,.15],s:[.06,.15,.06],m:'hair'},
+      {n:'gog',b:2,c:[0,1.672,-.148],s:[.205,.052,.04],m:'gog'},{n:'rspN',b:2,c:[0,1.632,-.148],s:[.058,.028,.034],m:'rsp',fr:.45},{n:'rsp',b:2,c:[0,1.594,-.152],s:[.1,.064,.044],m:'rsp',rx:-.15,fr:.4},
+      {n:'filtL',b:2,c:[-.066,1.588,-.166],s:[.044,.044,.03],m:'filt',d:'filt',ry:.45,fr:.5},{n:'filtR',b:2,c:[.066,1.588,-.166],s:[.044,.044,.03],m:'filt',d:'filt',ry:-.45,fr:.5},
+      {n:'valve',b:2,c:[0,1.582,-.176],s:[.03,.028,.012],m:'valve'}];o.headW=.23;o.noseW=.13;o.browH=.018;o.face='gaiter'}
+  // ▶ 메이슨 (soldier) — 용병 · 사막 작전 특수부대 스타일 (SAS · 미군 특수부대의 시마그 + 고글 조합 참고)
+  //    올리브 위장무늬 전투복, 황갈색 방탄조끼(앞주머니 3개), 올리브 헬멧, 허벅지 주머니, 오른쪽 허리 파우치, 갈색 장갑.
+  //    얼굴: 코요테색 시마그(체크 무늬 스카프)로 코·입·목을 감싸고, 헬멧 위에 있던 고글을 눈 위로 내려 쓴다.
+  else if(k==='soldier'){// 메이슨 — mercenary: olive camo, tan plate carrier, a shemagh over the face and goggles pulled down
     mats={top:{base:'#4c5436',camo:['#2e3424','#6a6a48']},legs:{base:'#4a5236',camo:['#2c3222','#686844']},sleeve:{base:'#4c5436',camo:['#2e3424','#6a6a48']},fore:{base:'#4c5436',camo:['#2e3424','#6a6a48']},shin:{base:'#4a5236',camo:['#2c3222','#686844']},
-      skin:{base:SKIN_C.b,style:'skin'},hand:{base:'#5a4a32',style:'rubber'},boot:{base:'#4a3a28',style:'boot'},vest:{base:'#8a7a58',style:'plate',gloss:242},helm:{base:'#5a5e44',style:'plate'},gog:{base:'#2a2a26'}};
+      skin:{base:'#a8916c'},hand:{base:'#5a4a32',style:'rubber'},boot:{base:'#4a3a28',style:'boot'},vest:{base:'#8a7a58',style:'plate',gloss:242},helm:{base:'#5a5e44',style:'plate'},gog:{base:'#1f201c',style:'rubber'},wrap:{base:'#a8916c'}};
     decor={vest:{front:[['pocket',.06,.06,.3,.45,'#7a6a4a'],['pocket',.36,.06,.64,.45,'#7a6a4a'],['pocket',.7,.06,.94,.45,'#7a6a4a'],['rect',.3,.7,.7,.9,'#6a5a3e']],back:[['pocket',.2,.2,.8,.7,'#7a6a4a']],all:[['grime',.4]]},
-      head:{front:[['face','man',{skin:SKIN_C.b,stubble:1,hair:'#1a1410'}]],back:[['rect',0,.3,1,.55,'#1a1410']]},
-      helm:{all:[['out',0,0,1,1,'#3a3e2c']]},gog:{front:[['rect',.05,.2,.45,.8,'#5a7088'],['rect',.55,.2,.95,.8,'#5a7088']]},
+      head:{all:[['check','#8c7654',4]],side:[['band',.44,.52,'#3a3a2a']],back:[['band',.44,.52,'#3a3a2a']]},neck:{all:[['check','#8c7654',4]]},
+      wrap:{all:[['check','#8c7654',4],['grime',.35]],front:[['line',.06,.86,.5,.1,1.4,'#7e6a4c'],['line',.42,.92,.96,.24,1.4,'#7e6a4c'],['band',.88,1,'#c2ac86']],side:[['line',.1,.8,.9,.3,1.4,'#7e6a4c']]},
+      helm:{all:[['out',0,0,1,1,'#3a3e2c']]},gog:{front:[['grad',.05,.14,.95,.88,'#545a5e','#1c1e20'],['line',.12,.8,.3,.4,1.2,'#a8987a'],['solid',.44,.14,.56,.36,'#1f201c'],['out',.05,.14,.95,.88,'#121310']]},
       pelvis:{fb:[['belt',.7,.95,'#3a3424','#8a8a7a']]},thL:{side:[['pocket',.15,.35,.85,.7,'#424a30']]},thR:{side:[['pocket',.15,.35,.85,.7,'#424a30']]},footL:{front:[['laces']]},footR:{front:[['laces']]}};
-    extra=[{n:'vest',b:1,c:[0,1.27,0],s:[.46,.38,.3],m:'vest'},{n:'helm',b:2,c:[0,1.735,0],s:[.28,.13,.3],m:'helm'},{n:'gog',b:2,c:[0,1.775,-.12],s:[.2,.05,.05],m:'gog'},{n:'pouchR',b:0,c:[.2,.92,0],s:[.07,.14,.12],m:'vest'}]}
-  // ▶ 서유나 (hazmat) — 방호복 기술자   (위의 셋이 아니면 전부 이 모습)
-  //    노란 방호복(가운데 지퍼, 가슴에 'HAZ' 검은 패치), 검은 고무 장화·장갑,
-  //    방독면 머리 + 양쪽 필터 두 개, 등에 회색 산소통(빨간 띠).
-  else{// 서유나 — hazmat technician: yellow suit, gas mask with twin filters, black gloves
+    extra=[{n:'vest',b:1,c:[0,1.27,0],s:[.46,.38,.3],m:'vest'},{n:'helm',b:2,c:[0,1.75,.005],s:[.285,.15,.305],m:'helm',rx:.1},{n:'gog',b:2,c:[0,1.672,-.152],s:[.225,.06,.046],m:'gog'},
+      {n:'wrap',b:2,c:[0,1.598,-.004],s:[.252,.098,.276],m:'wrap',fr:.42},{n:'wtail',b:2,c:[.07,1.535,.135],s:[.05,.1,.026],m:'wrap',d:'wrap',rz:-.25,fr:.4},{n:'pouchR',b:0,c:[.2,.92,0],s:[.07,.14,.12],m:'vest'}];o.face='mask'}
+  // ▶ 서유나 (hazmat) — 방호복 기술자 · 화생방 부대 방독면 (미군 M50 참고)   (위의 셋이 아니면 전부 이 모습)
+  //    노란 방호복(가운데 지퍼, 가슴에 'HAZ' 검은 패치), 검은 고무 장화·장갑, 등에 회색 산소통(빨간 띠).
+  //    얼굴: 방호복 후드 안에 검은 방독면 — 넓은 통렌즈 하나, 양 볼에 필터 두 개, 입 앞 음성 전달판.
+  else{// 서유나 — hazmat technician: yellow suit, an M50-style mask (one wide lens, twin cheek filters, a voicemitter) in the hood, black gloves
     mats={top:{base:'#c8a42a'},legs:{base:'#c09e28'},sleeve:{base:'#c8a42a'},fore:{base:'#c8a42a'},shin:{base:'#1c1c1c',style:'rubber'},skin:{base:'#c8a42a'},hand:{base:'#1a1a1a',style:'rubber'},boot:{base:'#141414',style:'boot'},
-      filt:{base:'#2a2c2e',style:'rubber'},tank:{base:'#8a9098',style:'plate'}};
+      filt:{base:'#2a2c2e',style:'rubber'},vm:{base:'#2e3134',style:'rubber'},tank:{base:'#8a9098',style:'plate'}};
     decor={torso:{front:[['zip',.5],['rect',.12,.7,.42,.82,'#1a1a1a'],['text','HAZ',.14,.82,'#c8a42a'],['grime',.5]],back:[['band',.15,.22,'#1a1a1a'],['grime',.4]]},
-      head:{front:[['face','gasmask',{}]],side:[['rect',.1,.1,.9,.75,'#1c1e20']]},
+      head:{front:[['face','m50',{hood:'#c8a42a'}]],side:[['grime',.3]],back:[['vband',.48,.52,'#a8881e'],['grime',.3]]},
+      filt:{front:[['disc',.5,.5,.47,'#3a3d40','#1a1b1c','#22252a']],all:[['out',0,0,1,1,'#18191a']]},vm:{front:[['disc',.5,.5,.48,'#4a4d50','#26282a','#2a2c2e']]},
       pelvis:{fb:[['belt',.75,.95,'#1a1a1a','#5a5a5a']]},thL:{all:[['grime',.4]]},thR:{all:[['grime',.4]]},
       tank:{back:[['band',.8,.9,'#c84020']],all:[['out',0,0,1,1,'#5a6068']]}};
-    extra=[{n:'filtL',b:2,c:[-.07,1.585,-.15],s:[.07,.07,.06],m:'filt'},{n:'filtR',b:2,c:[.07,1.585,-.15],s:[.07,.07,.06],m:'filt'},{n:'tank',b:1,c:[0,1.27,.18],s:[.2,.34,.12],m:'tank'}];o.headW=.25;o.headD=.27;o.face='mask'}
-  const H=humanoid(o);H.parts.push(...extra.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
+    extra=[{n:'filtL',b:2,c:[-.088,1.598,-.12],s:[.068,.068,.056],m:'filt',d:'filt',ry:.55,fr:.5},{n:'filtR',b:2,c:[.088,1.598,-.12],s:[.068,.068,.056],m:'filt',d:'filt',ry:-.55,fr:.5},
+      {n:'vm',b:2,c:[0,1.585,-.148],s:[.05,.046,.016],m:'vm'},{n:'tank',b:1,c:[0,1.27,.18],s:[.2,.34,.12],m:'tank'}];o.headW=.25;o.headD=.27;o.face='mask'}
+  const H=humanoid(o);H.parts.push(...extra.map(e=>Object.assign({f:{}},e)));// (extra parts keep d / rx / ry / rz)
   return Object.assign(H,{key:'h_'+k,mats,decor,ppm:100})}
 
 // ── 좀비 캐릭터 ──────────────────────────────────────────────────────────────────────────────────
