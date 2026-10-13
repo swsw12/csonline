@@ -650,7 +650,7 @@ UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.
       <label>${T('mpSet')}${H?'':' — '+T('mpOnlyHost')}</label>
       <div class="mpset"><span>${T('mode')}</span>${seg('mode',[['mut',T('mut')],['orig',T('orig')]])}<span>${T('map')}</span>${seg('map',MAPLIST().map(id=>[id,MAPDEFS[id].n[L]]))}<span>${T('mpBots')}</span>${seg('bots',[[0,0],[4,4],[8,8],[12,12]])}
       <span>${T('diff')}</span>${seg('diff',[[0,T('d0')],[1,T('d1')],[2,T('d2')],[3,T('d3')]])}<span>${T('rounds')}</span>${seg('rounds',[[5,5],[7,7],[9,9]])}<span>${T('rtime')}</span>${seg('time',[[120,'2'+T('min')],[180,'3'+T('min')],[240,'4'+T('min')]])}</div></div>
-    <div class="col"><label>${T('char')}</label><div class="cards">${HSKINS.map(k=>`<div class="card${CFG.skin===k?' on':''}" data-act="mpme" data-v="skin:${k}"><img src="${portrait('h_'+k,62)}"><span>${HSKIN_N[k][L]}</span></div>`).join('')}</div>
+    <div class="col"><label>${T('char')}</label><div class="cards">${HSKINS.map(k=>`<div class="card${CFG.skin===k?' on':''}" data-act="mpme" data-v="skin:${k}" title="${esc(HSKIN_T[k][L])}"><img src="${portrait('h_'+k,62)}"><span>${HSKIN_N[k][L]}</span></div>`).join('')}</div>
       <label>${T('zcls')}</label><div class="cards">${ZLIST.map(k=>`<div class="card z${CFG.zclass===k?' on':''}" data-act="mpme" data-v="zclass:${k}"><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${ZCLASS[k].n[L]}</span></div>`).join('')}</div>
       <p class="desc">${ZCLASS[CFG.zclass].d[L]}</p></div></div>
     <p class="hint">${NET.kind==='room'?(conn&&conn.kind==='relay'?T('mpRelay'):T('mpDirect'))+' · claude.ai':'PeerJS · '+T('mpDirect')}</p>

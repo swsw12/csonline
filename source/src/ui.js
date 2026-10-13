@@ -209,7 +209,7 @@ const UI={open:null,
       <label>${T('rounds')}</label>${this.seg('rounds',[[5,5],[7,7],[9,9]])}
       <label>${T('rtime')}</label>${this.seg('time',[[120,'2'+T('min')],[180,'3'+T('min')],[240,'4'+T('min')]])}
       </div>
-      <div class="col"><label>${T('char')}</label><div class="cards">${HSKINS.map(k=>`<div class="card${CFG.skin===k?' on':''}" data-act="set" data-v="skin:${k}"><img src="${portrait('h_'+k,62)}"><span>${HSKIN_N[k][L]}</span></div>`).join('')}</div>
+      <div class="col"><label>${T('char')}</label><div class="cards">${HSKINS.map(k=>`<div class="card${CFG.skin===k?' on':''}" data-act="set" data-v="skin:${k}" title="${esc(HSKIN_T[k][L])}"><img src="${portrait('h_'+k,62)}"><span>${HSKIN_N[k][L]}</span></div>`).join('')}</div>
       <label>${T('zcls')}</label><div class="cards">${ZLIST.map(k=>`<div class="card z${CFG.zclass===k?' on':''}" data-act="set" data-v="zclass:${k}"><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${ZCLASS[k].n[L]}</span></div>`).join('')}</div>
       <p class="desc">${ZCLASS[CFG.zclass].d[L]}</p></div></div>
       <div class="mbtns row"><button data-act="back">${T('back')}</button><button data-act="go" class="big">${T('play')}</button></div>`},

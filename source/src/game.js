@@ -2,7 +2,11 @@
 // ============ Game: actors, movement, weapons in hand, infection rules, round flow ============
 const TH=0,TZ=1;
 const HSKINS=['guard','medic','soldier','hazmat'];
-const HSKIN_N={guard:['박재원','Park Jae-won'],medic:['엘레나','Elena'],soldier:['메이슨','Mason'],hazmat:['서유나','Seo Yuna']};
+// v6.45: the survivors go by the special unit each came from (RT-2 is a recovery team drawn from special units around the world)
+const HSKIN_N={guard:['KNP SOU','KNP SOU'],medic:['PJ','PJ'],soldier:['LEGION','LEGION'],hazmat:['CBIRF','CBIRF']};
+const HSKIN_R={guard:['경찰특공대 · 봉쇄선 경비','Police SWAT · cordon guard'],medic:['항공구조대 · 의무병','Pararescue · medic'],soldier:['외인부대 출신 용병','Ex-Legion mercenary'],hazmat:['화생방 대응군 · 방호복','CBRN response · hazmat']};
+const HSKIN_T={guard:['한국 경찰특공대 출신 · 격리구역 봉쇄선 경비','Ex-Korean National Police SOU · quarantine cordon guard'],medic:['미 공군 항공구조대(Pararescue) 출신 · 야전 의무병','Ex-USAF Pararescue · field medic'],
+  soldier:['프랑스 외인부대 출신 · 용병','Ex-French Foreign Legion · mercenary'],hazmat:['미 해병대 화생방 대응군(CBIRF) 출신 · 방호복 기술자','Ex-USMC CBIRF · hazmat technician']};
 const ZCLASS={
   rager:{n:['일반 좀비','Regular Zombie'],sk:['광폭화','Berserk'],d:['기본형 · 스킬 G: 광폭화 (5초간 이동속도 +45%, 대신 받는 피해 +30% / 체력 소모)','Standard · Skill G: Berserk (5s +45% speed, but takes +30% damage / costs HP)'],hp:2900,armor:120,speed:5.6,jump:7.3,kb:1,dmg:55,skill:'frenzy',cd:14,dur:5,hw:.3,h:1.8,eye:1.62},
   runner:{n:['라이트 좀비','Light Zombie'],sk:['투명화','Invisibility'],d:['고속·고점프 · 스킬 G: 투명화 (8초간 거의 보이지 않음, 봇은 가까이서만 발견) · 체력 낮음','Fast, jumps high · Skill G: Invisibility (8s, nearly invisible; bots only spot you up close) · low HP'],hp:2050,armor:60,speed:6.4,jump:8.6,kb:1.3,dmg:40,skill:'invis',cd:16,dur:8,hw:.28,h:1.82,eye:1.66},

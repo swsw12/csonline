@@ -58,7 +58,7 @@ const INV={tab:'ny',busy:false,msg:'',ok:true,
   chars(L){return `<p class="ivd">${L?'The zombie you turn into when infected, and the survivor you play.':'감염됐을 때 변할 좀비와 플레이할 생존자 캐릭터예요.'}</p>
       <div class="ivck"><div class="ivgk">${L?'Zombie':'좀비'}</div><div class="ivcc">${ZLIST.filter(k=>ZCLASS[k]).map(k=>`<button class="ivc${CFG.zclass===k?' on':''}" data-iv="zc" data-v="${k}"><img src="${portrait('z_'+k,86)}" alt=""><b>${esc(ZCLASS[k].n[L])}</b><small>${esc((ZCLASS[k].sk||['',''])[L])}</small></button>`).join('')}</div>
         <p class="ivzd">${esc(ZCLASS[CFG.zclass]?ZCLASS[CFG.zclass].d[L]:'')}</p></div>
-      <div class="ivck"><div class="ivgk">${L?'Survivor':'생존자'}</div><div class="ivcc">${HSKINS.map(k=>`<button class="ivc${CFG.skin===k?' on':''}" data-iv="skin" data-v="${k}"><img src="${portrait('h_'+k,86)}" alt=""><b>${esc(HSKIN_N[k][L])}</b></button>`).join('')}</div></div>`}};
+      <div class="ivck"><div class="ivgk">${L?'Survivor':'생존자'}</div><div class="ivcc">${HSKINS.map(k=>`<button class="ivc${CFG.skin===k?' on':''}" data-iv="skin" data-v="${k}" title="${esc(HSKIN_T[k][L])}"><img src="${portrait('h_'+k,86)}" alt=""><b>${esc(HSKIN_N[k][L])}</b><small>${esc(HSKIN_R[k][L])}</small></button>`).join('')}</div></div>`}};
 // the lobby button (next to the shop), and a fresh count of this match's letters at every start
 const SVG_BAG='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M5.5 4V3a2.5 2.5 0 015 0v1H14l-1 11H3L2 4zm1.4 0h2.2V3a1.1 1.1 0 00-2.2 0z"/></svg>';
 function invLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(!tb||tb.querySelector('.tinv'))return;const L=LI();

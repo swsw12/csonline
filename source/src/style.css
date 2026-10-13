@@ -1072,7 +1072,7 @@ html.touch #hRange .rgK{display:none}
 #invWin .ivnd button.on{color:#1a1408;background:#e2b54a;border-color:#e2b54a}
 #invWin .ivck{margin-bottom:14px}#invWin .ivcc{display:flex;flex-wrap:wrap;gap:8px}
 #invWin button.ivc{width:110px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border:1px solid #2f343c;background:#181b20;color:#dfe4ea;border-radius:4px;cursor:pointer}
-#invWin button.ivc.on{border-color:#e2b54a;background:#2a2414;box-shadow:0 0 0 1px #e2b54a inset}#invWin .ivc img{height:86px}#invWin .ivc b{font-size:12px}#invWin .ivc small{font-size:11px;color:#8b93a0}
+#invWin button.ivc.on{border-color:#e2b54a;background:#2a2414;box-shadow:0 0 0 1px #e2b54a inset}#invWin .ivc img{height:86px}#invWin .ivc b{font-size:12px}#invWin .ivc small{font-size:11px;color:#8b93a0;word-break:keep-all;text-align:center;line-height:1.3}
 #invWin .ivzd{color:#aab2bd;font-size:12px;margin:8px 0 0}
 @media (max-width:760px),(max-height:480px){#invWin .ivsetl{grid-template-columns:1fr}#invWin .ivl{width:70px;height:80px}#invWin .ivl b{font-size:32px}#invWin .ivh{padding:6px 10px}#invWin .ivb{padding:10px}
   #invWin .ivt button{padding:6px 9px;font-size:12px}#invWin .ivc{width:88px}#invWin .ivc img{height:64px}}
