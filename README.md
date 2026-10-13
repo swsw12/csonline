@@ -4,7 +4,7 @@
 
 - `index.html` — 게임 전체가 들어 있는 단일 파일 (three.js·폰트·PeerJS 내장). Vercel은 이 파일을 그대로 정적 페이지로 배포함.
 - `source/` — 소스 코드. `src/*.js`, `style.css`, `body.html`을 `build.py`로 묶어서 `index.html`을 만듦.
-  - 빌드: `cd source && python3 build.py` → `source/dist/standalone/index.html`을 루트 `index.html`로 복사
+  - 빌드: `cd source && python3 build.py` → `source/dist/standalone/index.html`, `admin.html`을 루트로 복사
   - 필요: Python 3, `pip install fonttools brotli` (폰트 서브셋)
   - 구조·변경 기록은 `source/NOTES.md`
 
@@ -13,6 +13,13 @@ Framework Preset: **Other**, Build Command: 비움, Output Directory: 비움(루
 
 ## 멀티플레이
 방 만들기 → 4자리 코드를 친구에게. PeerJS 무료 서버로 P2P 연결(공유기에 따라 직접 연결이 막힐 수 있음).
+
+## 관리자 페이지 (`admin.html`, 배포 주소 `/admin`)
+대시보드 · 플레이어 찾기 · 재화와 무기 지급/회수 · 닉네임 변경 · 이용 정지 · 무기 가격 · 해독기 설정 · 일일 미션 · 서버 공지 · 관리 기록.
+`admins` 테이블에 있는 계정만 들어갈 수 있고, 권한 확인은 전부 DB 함수(`qz_admin_*`)가 함. 관리자 지정은 SQL Editor에서 한 번:
+```sql
+insert into public.admins (user_id) select id from auth.users where email = '관리자 계정 이메일' on conflict do nothing;
+```
 
 ## 운영자 메모 (Supabase)
 SQL Editor에서 실행. 총 id는 `source/src/*.js`의 `WPN` 이름 (듀얼 MP7A1 = `dmp7`, AK-47 60R = `ak60r`).

@@ -117,8 +117,13 @@ function frPoll(force){if(!ACC.signed()||G.st!=='menu'||document.hidden)return;i
   ACC.sub(()=>{try{frDot();GIFTS.check()}catch(e){console.error(e)}});
   setInterval(()=>frPoll(false),15e3);
   setInterval(()=>{if(FR.chat&&$('frWin')&&!document.hidden)FR.chatPull(false)},4e3);
-  // the heartbeat: once at sign-in, then every minute (and when the tab comes back) while the game is open
-  let hb=0,was=false;const beat=()=>{if(!ACC.signed()||document.hidden||Date.now()-hb<25e3)return;hb=Date.now();ACC.ping().catch(()=>{})};
-  setInterval(beat,60e3);document.addEventListener('visibilitychange',beat);
-  ACC.sub(()=>{const s=ACC.signed();if(s&&!was)beat();was=s});
+  // the heartbeat: once at sign-in, then every minute while the game is open and in view (v6.42: it is also the play time — each beat
+  // carries the seconds spent in a match since the last one, counted once a second while the tab is in view; one goes out as the tab
+  // leaves view, so the time up to then counts, and the first one after sign-in or coming back is fresh: the time away does not count)
+  let hb=0,was=false,inG=0;setInterval(()=>{if(!document.hidden&&G.st!=='menu')inG++},1000);
+  const beat=fresh=>{if(!ACC.signed()||document.hidden||Date.now()-hb<(fresh?2e3:25e3))return;hb=Date.now();const p=fresh?0:inG;inG=0;ACC.ping(p,fresh).catch(()=>{})};
+  setInterval(()=>beat(false),60e3);
+  document.addEventListener('visibilitychange',()=>{if(!ACC.signed())return;
+    if(document.hidden){if(Date.now()-hb>3e3){hb=Date.now();ACC.beacon('qz_ping',ACC.pingOld?{}:{p_play:inG,p_fresh:false})}inG=0}else beat(true)});
+  ACC.sub(()=>{const s=ACC.signed();if(s&&!was)beat(true);was=s});
   const sm=startMatch;startMatch=function(cfg){FR.close();const p=$('giftPop');if(p)p.remove();return sm(cfg)}})();

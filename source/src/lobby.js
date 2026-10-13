@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.42','2026-10-13',[
+ ['NEW','운영 공지 — 점검 · 이벤트 공지가 로비 위 띠와 공지사항 목록 맨 위에 바로 떠요 (중요한 공지는 창으로 한 번)','Server notices — maintenance and event notices show as a strip under the lobby\'s top bar and head the notice list (important ones open a window once)'],
+ ['UP','이용 정지된 계정은 로그인하면 기간과 사유를 안내해요 · 혼자 하기(봇전 · 사격장)는 계속할 수 있어요','A suspended account is told the period and the reason when it signs in; playing alone (bot matches, the range) still works']]],
 ['v6.41','2026-10-12',[
  ['NEW','신규 근접 무기 「THANATOS-9」 (상점 15,000 코인) — 좌클릭: 좌우 번갈아 크게 휩쓸기, 리치 3.3m 안이면 앞 · 옆 · 뒤 360도 전부 베기 (200, 8마리까지 · 벽 너머는 안 맞음) · 칼 챈샷 없음','New melee weapon: THANATOS-9 (shop, 15,000 coins) — left click: wide sweeps by turns that cut everything within 3.3 m all round — in front, beside, behind (200, up to eight; not through walls) · no draw cut'],
  ['NEW','THANATOS 변신 — 우클릭: 낫의 칼날이 끝에서부터 6조각으로 떨어져 나와 허브 둘레로 펼쳐지고, 한 바퀴 돈 뒤 앞으로 접혀 칼날 드릴이 돼요 (3초). 이 상태로 계속 들고 다닐 수 있고 무기를 바꿔도 풀리지 않아요 · 우클릭 한 번 더: 낫으로 되돌리기','THANATOS form — right click: the scythe\'s blade comes apart into six plates from the tip down, fans out round the hub, spins a turn and folds forward into a drill of blades (3 s). It can be carried like that, and switching weapons does not undo it · right click again: back to the scythe'],
@@ -386,7 +389,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.41 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.42 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;

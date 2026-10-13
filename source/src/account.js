@@ -1,14 +1,7 @@
 'use strict';
 // ============ Accounts (Supabase): sign-in, coins, the guns you own ============
 // No library: Supabase's auth (GoTrue, /auth/v1) and data (PostgREST, /rest/v1) endpoints are called with fetch.
-// Fill in SB.url and SB.key from the Supabase dashboard: the project's Connect button (or Project Settings → API Keys) shows the
-// Project URL (https://<ref>.supabase.co) and the publishable key (sb_publishable_…; the legacy "anon public" eyJ… key works too).
-// Both are meant to be public: the tables are guarded by row level security and every coin change happens inside the database
-// functions in supabase/schema.sql. Never put the secret / service_role key here. Left empty, accounts are off and every gun
-// stays open as before.
-// SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
-const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
-if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
+// The project's URL and key (SB) live in sb.js since v6.42 (the admin page, admin.html, is built with the same file).
 const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:null,mis:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
@@ -46,7 +39,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||''};
+      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
@@ -124,7 +117,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async friendRemove(code){return this.frGot(await this.rpc('qz_friend_remove',{p_who:code}))},
   // v6.25: 'I am here' (profiles.last_seen; friends read it as online / last seen) and the friend chat. dm_new = unread messages.
   // qz_dm_list → {msgs:[{id,mine,text,at}], seen, dm_new}; asking for a talk marks what the friend wrote as read. Old databases: no ping, no chat.
-  async ping(){if(this.noPing)return null;let r;try{r=await this.rpc('qz_ping')}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noPing=true;return null}throw e}
+  // v6.42: play = seconds of a match since the last beat, fresh = the game just came into view (a new stretch of play time starts);
+  // a database from before v6.42 has qz_ping without arguments (asked that way from then on)
+  async ping(play,fresh){if(this.noPing)return null;let r;const a=this.pingOld?{}:{p_play:Math.max(0,play|0),p_fresh:!!fresh};
+    try{r=await this.rpc('qz_ping',a)}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){if(!this.pingOld){this.pingOld=true;return this.ping(play,fresh)}this.noPing=true;return null}throw e}
     const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(ch)this.emit()}return r},
   async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
   async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
@@ -173,6 +169,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/validation_failed|invalid format|Unable to validate email/i.test(c+m))return T2('이메일 형식이 올바르지 않아요','That is not a valid e-mail address');
     if(/rate limit|over_email_send_rate_limit|too many/i.test(c+m))return T2('요청이 너무 많아요. 잠시 후 다시 해 주세요','Too many tries. Wait a moment and try again');
     if(/signup_disabled|Signups not allowed/i.test(c+m))return T2('지금은 가입을 받지 않아요','Sign-ups are closed right now');
+    if(/banned/.test(m))return T2('이용이 정지된 계정이라 할 수 없어요','This account is suspended');
+    if(/not_admin/.test(m))return T2('관리자 계정이 아니에요','Not an admin account');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
     if(/not_enough_tfrags/.test(m))return T2('초월 조각이 부족해요','Not enough transcendence fragments');
     if(/not_enough_frags/.test(m))return T2('해독 조각이 부족해요','Not enough fragments');

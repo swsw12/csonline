@@ -1375,6 +1375,34 @@ html.touch #touch .tAlt.th{border-color:rgba(190,140,255,.9)!important;backgroun
 #shopWin .trbar span{position:relative;display:block;text-align:center;font-size:11px;line-height:14px;color:#fff;text-shadow:0 1px 2px #000}
 .bi.lk .c small.gb.gt,.mbi.lk .c small.gb.gt{color:#ffb070}
 #gPop .hist b.tX{color:#ff9a6a}
+/* ---------- v6.42: server notices (srvnote.js), the ban window, the admin button ---------- */
+.srvBan{display:flex;align-items:center;gap:10px;min-width:0;padding:7px 12px;font-size:12px;color:#e8e4d8;cursor:pointer;
+  background:linear-gradient(90deg,rgba(232,163,58,.2),rgba(23,25,29,.88) 60%);border:1px solid #5a4a28;border-left:3px solid #e8a33a;border-radius:4px}
+.srvBan:hover{border-color:#e8a33a}
+.srvBan.lv-warn{background:linear-gradient(90deg,rgba(255,75,58,.24),rgba(23,25,29,.88) 60%);border-color:#6a2e28;border-left-color:var(--z)}
+.srvBan.lv-event{background:linear-gradient(90deg,rgba(90,180,255,.2),rgba(23,25,29,.88) 60%);border-color:#2a4a66;border-left-color:var(--h)}
+.srvBan em,.news em.s,#srvWin em.lv{font-style:normal;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:2px;background:#e8a33a;color:#1a1408;flex:none}
+.srvBan.lv-warn em,.news li.lv-warn em.s,#srvWin.lv-warn em.lv{background:var(--z);color:#fff}
+.srvBan.lv-event em,.news li.lv-event em.s,#srvWin.lv-event em.lv{background:var(--h);color:#06121e}
+.srvBan b{color:#fff;white-space:nowrap;flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+.srvBan span{color:#b8b4a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.srvBan small{color:#8a8f98;flex:none}.srvBan i{font-style:normal;margin-left:auto;color:#e8a33a;font-size:16px;line-height:1;flex:none}
+.news li.srvn{cursor:pointer;color:#fff}.news li.srvn:hover{color:#ffd890}.news em.s{margin-right:6px}.news li.srvHid{display:none}
+#srvWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}
+#srvWin .pwin{width:min(480px,100%);max-height:100%;display:flex;flex-direction:column;background:#23262c;border:1px solid #4a4e58;box-shadow:0 10px 40px #000}
+#srvWin .pwh{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#2c2f36;border-bottom:2px solid #e8a33a;font-size:15px;color:#ffd890}
+#srvWin .pwh b{display:flex;align-items:center;gap:8px;min-width:0}
+#srvWin .pwh button{margin-left:auto;min-width:0;width:32px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer}
+#srvWin.lv-warn .pwh,#srvWin.ban .pwh{border-bottom-color:var(--z)}#srvWin.ban .pwh{color:#ff9a8a}#srvWin.lv-event .pwh{border-bottom-color:var(--h)}
+#srvWin .pwb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;font-size:13px;color:#c8ccd2;line-height:1.6}
+#srvWin .ntb{white-space:pre-wrap;color:#dfe2e8}#srvWin time{display:block;margin-top:10px;font-size:11px;color:#8a8f98}
+#srvWin .pwf{display:flex;justify-content:flex-end;padding:8px 14px 12px}#srvWin .pwf button{min-width:96px}
+#srvWin .bnr{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:2px 0 12px;padding:10px 12px;background:rgba(255,75,58,.08);border:1px solid #5a2a26}
+#srvWin .bnr span{color:#8a8f98}#srvWin .bnr b{color:#fff;font-weight:normal}#srvWin p{margin:0}
+.tbtns .tadm{border-color:#7a6430!important;color:#ffd890!important}
+.prof .banTag{grid-column:1/-1;justify-self:start;font-size:10px;padding:1px 6px;background:var(--z);color:#fff;border-radius:2px;cursor:pointer;letter-spacing:1px}
+@media (max-height:520px){.srvBan{padding:3px 8px;font-size:11px;gap:6px}.srvBan span,.srvBan small{display:none}.srvBan b{max-width:none}}
+@media (max-height:520px) and (orientation:landscape){.lob.hasBan .mc{height:calc(100vh - 146px)!important}}
 
 </style>
 </head><body>
@@ -13983,6 +14011,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.42','2026-10-13',[
+ ['NEW','운영 공지 — 점검 · 이벤트 공지가 로비 위 띠와 공지사항 목록 맨 위에 바로 떠요 (중요한 공지는 창으로 한 번)','Server notices — maintenance and event notices show as a strip under the lobby\'s top bar and head the notice list (important ones open a window once)'],
+ ['UP','이용 정지된 계정은 로그인하면 기간과 사유를 안내해요 · 혼자 하기(봇전 · 사격장)는 계속할 수 있어요','A suspended account is told the period and the reason when it signs in; playing alone (bot matches, the range) still works']]],
 ['v6.41','2026-10-12',[
  ['NEW','신규 근접 무기 「THANATOS-9」 (상점 15,000 코인) — 좌클릭: 좌우 번갈아 크게 휩쓸기, 리치 3.3m 안이면 앞 · 옆 · 뒤 360도 전부 베기 (200, 8마리까지 · 벽 너머는 안 맞음) · 칼 챈샷 없음','New melee weapon: THANATOS-9 (shop, 15,000 coins) — left click: wide sweeps by turns that cut everything within 3.3 m all round — in front, beside, behind (200, up to eight; not through walls) · no draw cut'],
  ['NEW','THANATOS 변신 — 우클릭: 낫의 칼날이 끝에서부터 6조각으로 떨어져 나와 허브 둘레로 펼쳐지고, 한 바퀴 돈 뒤 앞으로 접혀 칼날 드릴이 돼요 (3초). 이 상태로 계속 들고 다닐 수 있고 무기를 바꿔도 풀리지 않아요 · 우클릭 한 번 더: 낫으로 되돌리기','THANATOS form — right click: the scythe\'s blade comes apart into six plates from the tip down, fans out round the hub, spins a turn and folds forward into a drill of blades (3 s). It can be carried like that, and switching weapons does not undo it · right click again: back to the scythe'],
@@ -14361,7 +14392,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.41 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.42 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -15132,10 +15163,9 @@ Main.startRange=async function(){AU.init();if(MAP.id!=='range'){await loadMapUI(
   startMatch({mode:'range',bots:0,diff:0,rounds:1,time:0,skin:CFG.skin,zclass:CFG.zclass,money:999999,name:T('you')});
   HUD.show(true);this.paused=false;this.overlay=null;this.lock();window.onbeforeunload=null};
 
-// ---- account.js ----
+// ---- sb.js ----
 'use strict';
-// ============ Accounts (Supabase): sign-in, coins, the guns you own ============
-// No library: Supabase's auth (GoTrue, /auth/v1) and data (PostgREST, /rest/v1) endpoints are called with fetch.
+// ============ Supabase: the project (accounts, coins, the shop: account.js; the admin page: admin/admin.js) ============
 // Fill in SB.url and SB.key from the Supabase dashboard: the project's Connect button (or Project Settings → API Keys) shows the
 // Project URL (https://<ref>.supabase.co) and the publishable key (sb_publishable_…; the legacy "anon public" eyJ… key works too).
 // Both are meant to be public: the tables are guarded by row level security and every coin change happens inside the database
@@ -15144,6 +15174,12 @@ Main.startRange=async function(){AU.init();if(MAP.id!=='range'){await loadMapUI(
 // SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
 const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
 if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
+
+// ---- account.js ----
+'use strict';
+// ============ Accounts (Supabase): sign-in, coins, the guns you own ============
+// No library: Supabase's auth (GoTrue, /auth/v1) and data (PostgREST, /rest/v1) endpoints are called with fetch.
+// The project's URL and key (SB) live in sb.js since v6.42 (the admin page, admin.html, is built with the same file).
 const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:null,mis:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
@@ -15181,7 +15217,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||''};
+      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)
@@ -15259,7 +15295,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async friendRemove(code){return this.frGot(await this.rpc('qz_friend_remove',{p_who:code}))},
   // v6.25: 'I am here' (profiles.last_seen; friends read it as online / last seen) and the friend chat. dm_new = unread messages.
   // qz_dm_list → {msgs:[{id,mine,text,at}], seen, dm_new}; asking for a talk marks what the friend wrote as read. Old databases: no ping, no chat.
-  async ping(){if(this.noPing)return null;let r;try{r=await this.rpc('qz_ping')}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noPing=true;return null}throw e}
+  // v6.42: play = seconds of a match since the last beat, fresh = the game just came into view (a new stretch of play time starts);
+  // a database from before v6.42 has qz_ping without arguments (asked that way from then on)
+  async ping(play,fresh){if(this.noPing)return null;let r;const a=this.pingOld?{}:{p_play:Math.max(0,play|0),p_fresh:!!fresh};
+    try{r=await this.rpc('qz_ping',a)}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){if(!this.pingOld){this.pingOld=true;return this.ping(play,fresh)}this.noPing=true;return null}throw e}
     const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(ch)this.emit()}return r},
   async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
   async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
@@ -15308,6 +15347,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/validation_failed|invalid format|Unable to validate email/i.test(c+m))return T2('이메일 형식이 올바르지 않아요','That is not a valid e-mail address');
     if(/rate limit|over_email_send_rate_limit|too many/i.test(c+m))return T2('요청이 너무 많아요. 잠시 후 다시 해 주세요','Too many tries. Wait a moment and try again');
     if(/signup_disabled|Signups not allowed/i.test(c+m))return T2('지금은 가입을 받지 않아요','Sign-ups are closed right now');
+    if(/banned/.test(m))return T2('이용이 정지된 계정이라 할 수 없어요','This account is suspended');
+    if(/not_admin/.test(m))return T2('관리자 계정이 아니에요','Not an admin account');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
     if(/not_enough_tfrags/.test(m))return T2('초월 조각이 부족해요','Not enough transcendence fragments');
     if(/not_enough_frags/.test(m))return T2('해독 조각이 부족해요','Not enough fragments');
@@ -16545,10 +16586,15 @@ function frPoll(force){if(!ACC.signed()||G.st!=='menu'||document.hidden)return;i
   ACC.sub(()=>{try{frDot();GIFTS.check()}catch(e){console.error(e)}});
   setInterval(()=>frPoll(false),15e3);
   setInterval(()=>{if(FR.chat&&$('frWin')&&!document.hidden)FR.chatPull(false)},4e3);
-  // the heartbeat: once at sign-in, then every minute (and when the tab comes back) while the game is open
-  let hb=0,was=false;const beat=()=>{if(!ACC.signed()||document.hidden||Date.now()-hb<25e3)return;hb=Date.now();ACC.ping().catch(()=>{})};
-  setInterval(beat,60e3);document.addEventListener('visibilitychange',beat);
-  ACC.sub(()=>{const s=ACC.signed();if(s&&!was)beat();was=s});
+  // the heartbeat: once at sign-in, then every minute while the game is open and in view (v6.42: it is also the play time — each beat
+  // carries the seconds spent in a match since the last one, counted once a second while the tab is in view; one goes out as the tab
+  // leaves view, so the time up to then counts, and the first one after sign-in or coming back is fresh: the time away does not count)
+  let hb=0,was=false,inG=0;setInterval(()=>{if(!document.hidden&&G.st!=='menu')inG++},1000);
+  const beat=fresh=>{if(!ACC.signed()||document.hidden||Date.now()-hb<(fresh?2e3:25e3))return;hb=Date.now();const p=fresh?0:inG;inG=0;ACC.ping(p,fresh).catch(()=>{})};
+  setInterval(()=>beat(false),60e3);
+  document.addEventListener('visibilitychange',()=>{if(!ACC.signed())return;
+    if(document.hidden){if(Date.now()-hb>3e3){hb=Date.now();ACC.beacon('qz_ping',ACC.pingOld?{}:{p_play:inG,p_fresh:false})}inG=0}else beat(true)});
+  ACC.sub(()=>{const s=ACC.signed();if(s&&!was)beat(true);was=s});
   const sm=startMatch;startMatch=function(cfg){FR.close();const p=$('giftPop');if(p)p.remove();return sm(cfg)}})();
 
 // ---- touch.js ----
@@ -22704,6 +22750,71 @@ Object.assign(SFX,{
   dkoff:{n:1,dur:.8,ch:2,peak:.8,gain:.55,rev:.1,fn:B=>{const o=B.comp(-12,4,.002,.15,B.g(.9));{const e=B.env(0,.04,.3,.25,o);B.osc('sine',1600,500,0,.3,e)}
     for(const t of [.12,.17]){B.grain(t,rr(2200,3000),3,.012,.55,o);B.ring(t,rr(900,1100),[1,2.4],[.1,.05],[.12,.06],o)}}}});
 SFX_ORDER.push('dkfire','dkfireb','dkon','dkoff');
+
+// ---- srvnote.js ----
+'use strict';
+// ============ v6.42: server notices, the ban notice and the admin page's button (the lobby) ============
+// Server notices come from qz_notices (anyone may read it; they are written on the admin page). The first one shows as a strip under
+// the lobby's top bar (every screen size: on a phone the notice list is hidden), all of them head the lobby's notice list, and one
+// marked popup opens a window once per browser (qz_ntc). A ban (ACC.me.ban, from qz_me) opens a window once per sign-in and tags the
+// profile. Admins (ACC.me.admin) get a 관리자 button on the top bar: the admin page (admin.html, a page of its own) in a new tab.
+const SRVN={list:[],at:0,busy:false,off:false,banSeen:'',
+  async load(force){if(!ACC.on||this.busy||this.off)return;if(!force&&Date.now()-this.at<5*60e3)return;this.busy=true;
+    try{const r=await ACC.req('POST','/rest/v1/rpc/qz_notices',{},false);this.list=Array.isArray(r)?r.filter(n=>n&&n.id!=null&&n.title):[];this.at=Date.now();
+      this.render();this.popup()}
+    catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||'')))this.off=true;this.at=Date.now()-4*60e3}// (an older database: no notices; offline: again in a minute)
+    finally{this.busy=false}},
+  tag(lv){const L=LI();return lv==='warn'?(L?'NOTICE':'점검'):lv==='event'?(L?'EVENT':'이벤트'):(L?'INFO':'공지')},
+  // the strip, the lines in the notice list, the admin button, the ban tag (after every lobby build and every account change)
+  render(){const lob=document.querySelector('#menu .lob');if(!lob)return;const N=this.list;
+    let ban=lob.querySelector('.srvBan');
+    if(N.length){const n=N[0];if(!ban){ban=document.createElement('div');const top=lob.querySelector('.lobTop');if(top)top.after(ban);else lob.prepend(ban)}
+      ban.className='srvBan lv-'+n.level;ban.dataset.act='srvnote';ban.dataset.v=String(n.id);
+      const first=String(n.body||'').split('\n').find(s=>s.trim())||'';
+      ban.innerHTML=`<em>${this.tag(n.level)}</em><b>${esc(n.title)}</b>${first?`<span>${esc(first)}</span>`:''}${N.length>1?`<small>+${N.length-1}</small>`:''}<i>›</i>`;lob.classList.add('hasBan')}
+    else if(ban){ban.remove();lob.classList.remove('hasBan')}
+    const ul=lob.querySelector('.news');
+    if(ul){ul.querySelectorAll('li.srvn').forEach(x=>x.remove());ul.querySelectorAll('li.srvHid').forEach(x=>x.classList.remove('srvHid'));
+      for(const n of N.slice().reverse()){const li=document.createElement('li');li.className='srvn lv-'+n.level;li.dataset.act='srvnote';li.dataset.v=String(n.id);
+        li.innerHTML=`<em class="s">${this.tag(n.level)}</em>${esc(n.title)}`;ul.prepend(li)}
+      [...ul.children].forEach((x,i)=>{if(i>=5)x.classList.add('srvHid')})}// (the list keeps five lines)
+    this.adminBtn();this.banTag()},
+  adminBtn(){const tb=document.querySelector('#menu .lobTop .tbtns');if(!tb)return;const on=!!(ACC.signed()&&ACC.me&&ACC.me.admin);let b=tb.querySelector('.tadm');
+    if(on&&!b){b=document.createElement('button');b.className='tadm';b.dataset.act='admin';b.title=LI()?'Open the admin page (new tab)':'관리자 페이지 열기 (새 탭)';
+      b.innerHTML='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 1l6 2.2v4.3c0 3.6-2.5 6.3-6 7.5-3.5-1.2-6-3.9-6-7.5V3.2zm0 2.1L4 4.6v2.9c0 2.5 1.6 4.5 4 5.5 2.4-1 4-3 4-5.5V4.6zm-.8 2.4h1.6v2.7h-1.6zm0 3.7h1.6v1.5h-1.6z"/></svg>'+`<span>${LI()?'Admin':'관리자'}</span>`;
+      tb.prepend(b)}
+    else if(!on&&b)b.remove()},
+  ban(){const me=ACC.signed()&&ACC.me;return me&&me.ban&&me.ban.until?me.ban:null},
+  banTag(){const pf=document.querySelector('#menu .lobTop .prof div');if(!pf)return;const B=this.ban();let t=pf.querySelector('.banTag');
+    if(B&&!t){t=document.createElement('span');t.className='banTag';t.dataset.act='banwin';pf.appendChild(t)}else if(!B&&t)t.remove();
+    if(t)t.textContent=LI()?'SUSPENDED':'정지'},
+  // a window (a notice, or the ban)
+  win(head,html,cls,onClose){let o=$('srvWin');if(o)o.remove();o=document.createElement('div');o.id='srvWin';o.className=cls||'';
+    o.innerHTML=`<div class="pwin"><div class="pwh"><b>${head}</b><button data-sw="x" aria-label="close">×</button></div><div class="pwb">${html}</div><div class="pwf"><button data-sw="x">${LI()?'OK':'확인'}</button></div></div>`;
+    o.addEventListener('click',e=>{if(e.target===o||e.target.dataset.sw==='x'){o.remove();if(onClose)onClose()}});document.body.appendChild(o)},
+  open(id){const n=this.list.find(x=>String(x.id)===String(id));if(!n)return;const L=LI();
+    const per=n.ends_at?`${fmtWhen(n.starts_at)} ~ ${fmtWhen(n.ends_at)}`:fmtWhen(n.starts_at)+(L?' ~':' 부터');
+    this.win(`<em class="lv">${this.tag(n.level)}</em>${esc(n.title)}`,`<div class="ntb">${esc(n.body||'')}</div><time>${per}</time>`,'lv-'+n.level,()=>this.seen(n.id))},
+  seenList(){const v=ACC.ls('qz_ntc');return Array.isArray(v)?v:[]},
+  seen(id){const L=this.seenList();if(!L.includes(id)){L.push(id);ACC.ls('qz_ntc',L.slice(-60))}},
+  // a notice marked popup opens once per browser, in the lobby (not over a window already open)
+  popup(){if(G.st!=='menu'||$('srvWin')||$('patchWin'))return;if(this.banWin(false))return;const S=this.seenList(),n=this.list.find(x=>x.popup&&!S.includes(x.id));if(n)this.open(n.id)},
+  // (the ban comes first: the notice popup waits until it is closed)
+  banWin(force){const B=this.ban();if(!B||G.st!=='menu')return false;const key=String(B.until)+'|'+(ACC.me&&ACC.me.nickname);if(!force&&this.banSeen===key)return false;if(!force&&$('srvWin'))return false;this.banSeen=key;
+    const L=LI(),till=B.forever?(L?'Permanently':'영구 정지'):(L?'Until ':'')+fmtWhen(B.until)+(L?'':' 까지');
+    this.win(L?'Account suspended':'계정 이용 정지',`<div class="bnr"><span>${L?'Period':'기간'}</span><b>${till}</b><span>${L?'Reason':'사유'}</span><b>${esc(B.reason||'-')}</b></div>
+      <p>${L?'While suspended, rewards, the shop, decoders, public rooms, friends and messages are closed to this account. Playing alone (bot matches, the range) still works.':'정지 중에는 보상 · 상점 · 해독기 · 공개 방 · 친구 · 메시지를 쓸 수 없어요. 혼자 하기(봇전 · 사격장)는 계속할 수 있어요.'}</p>`,'ban',()=>setTimeout(()=>this.popup(),250));return true}};
+// a date and time in the player's own time zone: 2026-10-14 02:00
+function fmtWhen(t){const d=new Date(t);if(isNaN(d))return '';const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`}
+(function(){
+  const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{SRVN.render()}catch(e){console.error(e)}return r};
+  const act0=UI.act;UI.act=function(a,v,el){if(a==='srvnote'){SRVN.open(v);return}if(a==='banwin'){SRVN.banWin(true);return}
+    if(a==='admin'){try{window.open('admin.html','_blank','noopener')}catch(e){location.href='admin.html'}return}return act0.call(this,a,v,el)};
+  addEventListener('keydown',e=>{if(e.code==='Escape'&&$('srvWin')){const x=$('srvWin').querySelector('[data-sw="x"]');if(x)x.click();else $('srvWin').remove();e.stopPropagation()}},true);// (closing marks a popup seen)
+  // the notices: when the game opens, then every few minutes while in the lobby; the ban window when the account says so
+  let was=null;ACC.sub(()=>{try{SRVN.render();const k=ACC.signed()?'in':'out';if(k!==was){was=k;SRVN.load(true)}else if(SRVN.ban())SRVN.popup()}catch(e){console.error(e)}});
+  setInterval(()=>{if(G.st==='menu'&&!document.hidden)SRVN.load(false)},60e3);
+})();
 
 </script>
 </body></html>

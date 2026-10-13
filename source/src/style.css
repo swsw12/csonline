@@ -1369,3 +1369,31 @@ html.touch #touch .tAlt.th{border-color:rgba(190,140,255,.9)!important;backgroun
 #shopWin .trbar span{position:relative;display:block;text-align:center;font-size:11px;line-height:14px;color:#fff;text-shadow:0 1px 2px #000}
 .bi.lk .c small.gb.gt,.mbi.lk .c small.gb.gt{color:#ffb070}
 #gPop .hist b.tX{color:#ff9a6a}
+/* ---------- v6.42: server notices (srvnote.js), the ban window, the admin button ---------- */
+.srvBan{display:flex;align-items:center;gap:10px;min-width:0;padding:7px 12px;font-size:12px;color:#e8e4d8;cursor:pointer;
+  background:linear-gradient(90deg,rgba(232,163,58,.2),rgba(23,25,29,.88) 60%);border:1px solid #5a4a28;border-left:3px solid #e8a33a;border-radius:4px}
+.srvBan:hover{border-color:#e8a33a}
+.srvBan.lv-warn{background:linear-gradient(90deg,rgba(255,75,58,.24),rgba(23,25,29,.88) 60%);border-color:#6a2e28;border-left-color:var(--z)}
+.srvBan.lv-event{background:linear-gradient(90deg,rgba(90,180,255,.2),rgba(23,25,29,.88) 60%);border-color:#2a4a66;border-left-color:var(--h)}
+.srvBan em,.news em.s,#srvWin em.lv{font-style:normal;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:2px;background:#e8a33a;color:#1a1408;flex:none}
+.srvBan.lv-warn em,.news li.lv-warn em.s,#srvWin.lv-warn em.lv{background:var(--z);color:#fff}
+.srvBan.lv-event em,.news li.lv-event em.s,#srvWin.lv-event em.lv{background:var(--h);color:#06121e}
+.srvBan b{color:#fff;white-space:nowrap;flex:none;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+.srvBan span{color:#b8b4a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.srvBan small{color:#8a8f98;flex:none}.srvBan i{font-style:normal;margin-left:auto;color:#e8a33a;font-size:16px;line-height:1;flex:none}
+.news li.srvn{cursor:pointer;color:#fff}.news li.srvn:hover{color:#ffd890}.news em.s{margin-right:6px}.news li.srvHid{display:none}
+#srvWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}
+#srvWin .pwin{width:min(480px,100%);max-height:100%;display:flex;flex-direction:column;background:#23262c;border:1px solid #4a4e58;box-shadow:0 10px 40px #000}
+#srvWin .pwh{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#2c2f36;border-bottom:2px solid #e8a33a;font-size:15px;color:#ffd890}
+#srvWin .pwh b{display:flex;align-items:center;gap:8px;min-width:0}
+#srvWin .pwh button{margin-left:auto;min-width:0;width:32px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer}
+#srvWin.lv-warn .pwh,#srvWin.ban .pwh{border-bottom-color:var(--z)}#srvWin.ban .pwh{color:#ff9a8a}#srvWin.lv-event .pwh{border-bottom-color:var(--h)}
+#srvWin .pwb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;font-size:13px;color:#c8ccd2;line-height:1.6}
+#srvWin .ntb{white-space:pre-wrap;color:#dfe2e8}#srvWin time{display:block;margin-top:10px;font-size:11px;color:#8a8f98}
+#srvWin .pwf{display:flex;justify-content:flex-end;padding:8px 14px 12px}#srvWin .pwf button{min-width:96px}
+#srvWin .bnr{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:2px 0 12px;padding:10px 12px;background:rgba(255,75,58,.08);border:1px solid #5a2a26}
+#srvWin .bnr span{color:#8a8f98}#srvWin .bnr b{color:#fff;font-weight:normal}#srvWin p{margin:0}
+.tbtns .tadm{border-color:#7a6430!important;color:#ffd890!important}
+.prof .banTag{grid-column:1/-1;justify-self:start;font-size:10px;padding:1px 6px;background:var(--z);color:#fff;border-radius:2px;cursor:pointer;letter-spacing:1px}
+@media (max-height:520px){.srvBan{padding:3px 8px;font-size:11px;gap:6px}.srvBan span,.srvBan small{display:none}.srvBan b{max-width:none}}
+@media (max-height:520px) and (orientation:landscape){.lob.hasBan .mc{height:calc(100vh - 146px)!important}}
