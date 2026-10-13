@@ -31,7 +31,7 @@ function paintThAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getC
 // ON / OFF the transformation and back (s), BAR the barrage (s), BI between its strikes; A* the sweep (damage, reach, most it cuts,
 // push, slow s), B* a strike of the barrage (damage, reach, cone cosine, most it hits, push, slow s); SLOWK the slow; zL / zLB the left
 // fist's place on the haft (scythe / drill), zH the hub, PL a plate's length
-const THN={ON:3,OFF:2.4,BAR:5,BI:.1,AD:200,AR:3.3,AN:8,AKB:1,AS:.45,BD:150,BR:3.5,BCOS:.74,BN:3,BKB:0,BS:.22,SCEN:1.6,SLOWK:.72,
+const THN={ON:3,OFF:2.4,BAR:3,BI:.1,AD:200,AR:3.3,AN:8,AKB:1,AS:.45,BD:150,BR:3.5,BCOS:.74,BN:3,BKB:0,BS:.22,SCEN:1.6,SLOWK:.72,
   zL:.34,zLB:.2,zH:-.66,PL:.24};
 THN.NMAX=Math.round(THN.BAR/THN.BI);
 
@@ -239,7 +239,7 @@ function thSet(a,st,own){const was=a.thS|0;a.thS=st;
 // what it looks and sounds like (every page)
 function thFx(a,st,was){const L=LI();
   if(st===1){thStop(a);a.thV1=thAt(a,'thon',.9);if(a.isPlayer)HUD.note(L?'THANATOS — transforming…':'THANATOS — 변신 중…',1.4)}
-  else if(st===2){if(a.isPlayer){HUD.note(L?'Drill form — left click: the barrage (5 s, cannot be stopped)':'드릴 모드 — 좌클릭: 연속 찌르기 5초 (시작하면 취소 · 교체 불가)',2.4);FX.shake=Math.max(FX.shake,.25)}}
+  else if(st===2){if(a.isPlayer){HUD.note(L?`Drill form — left click: the barrage (${THN.BAR} s, cannot be stopped)`:`드릴 모드 — 좌클릭: 연속 찌르기 ${THN.BAR}초 (시작하면 취소 · 교체 불가)`,2.4);FX.shake=Math.max(FX.shake,.25)}}
   else if(st===3){thStop(a);a.thV2=thAt(a,'thbar',.85,1,55);if(a.isPlayer){FX.shake=Math.max(FX.shake,.3);VM.sp.pz.v-=.5}
     // (in first person the flash goes off a little way out in front and smaller, not on the lens)
     let mz=muzzleWorld(a),s=1;if(a.isPlayer&&!G.spec){const e=actorEye(a);aimDir(a.yaw,a.pitch,_dv);mz={x:e.x+_dv.x*1.4,y:e.y+_dv.y*1.4-.12,z:e.z+_dv.z*1.4};s=.4}thBurst(mz.x,mz.y,mz.z,s)}
@@ -340,7 +340,7 @@ function thTag(P){const st=P.thS|0,L=LI();return st===1?(L?' · transforming':' 
   // the sweep's motion trail in violet
   const vu=VM.update;VM.update=function(dt,a,cam){vu.call(this,dt,a,cam);if(this.id==='thanatos9'&&this.trail){this.trail.mat.uniforms.uCol.value.set('#c49cff');this.trail.mat.uniforms.uOp.value=.55}};
   const ct=cmbTag;cmbTag=function(P,W){return ct(P,W)+(W&&W.thn&&P&&P.team===TH?thTag(P):'')};
-  const wt=UI.wTags;UI.wTags=function(W,id){if(W&&W.thn)return LI()?'360° sweep (3.3 m) · RMB: drill form → a 5 s barrage that cannot be stopped · weak stagger':'360° 휩쓸기 (3.3m) · 우클릭 드릴 변신 → 5초 연속 찌르기 (취소 불가) · 경직 약함';return wt.call(this,W,id)};
+  const wt=UI.wTags;UI.wTags=function(W,id){if(W&&W.thn)return LI()?`360° sweep (3.3 m) · RMB: drill form → a ${THN.BAR} s barrage that cannot be stopped · weak stagger`:`360° 휩쓸기 (3.3m) · 우클릭 드릴 변신 → ${THN.BAR}초 연속 찌르기 (취소 불가) · 경직 약함`;return wt.call(this,W,id)};
   // bots: in reach they sweep (it reaches further than other blades); with nothing about they get the drill ready, and they drive it
   // into the first zombie that comes close — through the barrage they walk into it instead of backing off
   const au=AI.update.bind(AI);AI.update=function(a,dt){au(a,dt);if(a.team!==TH||a.cur!=='thanatos9'||!a.bot||!a.alive)return;const cmd=a.cmd,st=a.thS|0;cmd.alt=false;
@@ -380,12 +380,12 @@ Object.assign(SFX,{
     {const t0=.2,e=B.env(t0,.2,.28,.6,o,.6);const f=B.f('bandpass',1500,2.5,e);B.sweep(f,1500,280,t0,1.2);B.nz('pink',t0,1.3,f)}
     for(let k=0;k<6;k++){const t=1.25+k*.13;B.grain(t,rr(2400,3400),3,.011,.5,B.pan(rr(-.5,.5),o));B.ring(t,rr(1100,1400),[1,2.3],[.12,.06],[.1,.05],o)}
     {const t=2.15;B.grain(t,2200,2,.02,.7,o);B.ring(t,rr(800,900),[1,2.5,3.9],[.3,.15,.08],[.22,.1,.05],o);const e=B.env(t,.002,.7,.25,o);B.nz('brown',t,.28,B.f('lowpass',500,.7,e))}}},
-  // the barrage (5 s): a grinding, stuttering drone under a fast mechanical chatter, and a violet scream over it
-  thbar:{n:1,dur:5.3,ch:2,peak:.9,gain:.7,rev:.12,fn:B=>{const o=B.comp(-14,5,.003,.15,B.g(.95));
-    {const e=B.g(1,B.env(0,.08,.5,.3,o,4.6));const f=B.f('bandpass',420,1.6,e);B.nz('pink',0,5.2,f);B.am(e,0,5,30,.55)}
-    {const e=B.env(0,.08,.2,.3,o,4.6);B.osc('sawtooth',72,78,0,5,B.f('lowpass',700,.9,e))}
-    for(let i=0;i<50;i++){const t=.05+i*.1;B.grain(t,rr(2200,3600),2.5,.01,.3,B.pan(i%2?.3:-.3,o));const e=B.env(t,.002,.25,.05,o);B.nz('brown',t,.06,B.f('lowpass',700,.7,e))}
-    for(const s of [-1,1]){const e=B.env(.05,.4,.06,.4,B.pan(s*.6,o),4.2);B.osc('sine',1800+s*30,2400+s*40,.05,5,e)}}},
+  // the barrage (THN.BAR s): a grinding, stuttering drone under a fast mechanical chatter, and a violet scream over it
+  thbar:{n:1,dur:THN.BAR+.3,ch:2,peak:.9,gain:.7,rev:.12,fn:B=>{const o=B.comp(-14,5,.003,.15,B.g(.95)),D=THN.BAR;
+    {const e=B.g(1,B.env(0,.08,.5,.3,o,D-.4));const f=B.f('bandpass',420,1.6,e);B.nz('pink',0,D+.2,f);B.am(e,0,D,30,.55)}
+    {const e=B.env(0,.08,.2,.3,o,D-.4);B.osc('sawtooth',72,78,0,D,B.f('lowpass',700,.9,e))}
+    for(let i=0;i<THN.NMAX;i++){const t=.05+i*THN.BI;B.grain(t,rr(2200,3600),2.5,.01,.3,B.pan(i%2?.3:-.3,o));const e=B.env(t,.002,.25,.05,o);B.nz('brown',t,.06,B.f('lowpass',700,.7,e))}
+    for(const s of [-1,1]){const e=B.env(.05,.4,.06,.4,B.pan(s*.6,o),D-.8);B.osc('sine',1800+s*30,2400+s*40,.05,D,e)}}},
   // a strike landing: short, wet, a tick of steel
   thstab:{n:4,dur:.3,peak:.85,gain:.6,poly:6,pj:.06,fn:B=>{const e=B.env(0,.002,.8,.06);B.nz('pink',0,.08,B.sweep(B.f('bandpass',1800,2,e),1800,600,0,.07));
     const k=B.env(0,.002,.6,.07);B.nz('brown',0,.08,B.f('lowpass',380,.8,k));B.grain(.002,rr(3800,5200),2,.006,.35)}},
