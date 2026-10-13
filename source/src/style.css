@@ -1440,3 +1440,19 @@ html.touch #mailWin .pwf button,html.touch #mailWin .ml>button{min-height:44px}
 @media (max-width:480px){#gunPop .gni{width:110px;flex-basis:110px}#gunPop .gni img{max-width:110px}}
 html.touch #gunPop button{min-height:44px}
 
+/* ---- v6.48 대인전 (pvp.js): teammate markers, hit direction, spawn protection / buy window, the scoreboard by side ---- */
+#hud.pvp #hHsk,#hud.pvp #hHskD,#hud.pvp #hHskE,#hud.pvp #hMorale{display:none!important}
+#hRound b.h{color:var(--h)}#hRound b.z{color:var(--z)}
+#pvMarks,#pvHit{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pvmk{position:absolute;left:0;top:0;display:none;will-change:transform}
+.pvmk i{position:absolute;left:-6px;top:-9px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid var(--pvc,#5ab4ff);filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 2px rgba(0,0,0,.6))}
+.pvmk span{position:absolute;left:0;top:-25px;transform:translateX(-50%);font-size:11px;white-space:nowrap;color:var(--pvc,#5ab4ff);text-shadow:1px 1px 0 #000,0 0 3px #000}
+.pvhd{position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;border:5px solid transparent;border-top-color:rgba(255,48,32,.9);opacity:0;
+  -webkit-mask:radial-gradient(circle,transparent 62%,#000 63%);mask:radial-gradient(circle,transparent 62%,#000 63%);filter:drop-shadow(0 0 3px rgba(255,40,20,.6))}
+#pvTag{position:absolute;left:50%;top:calc(50% + 44px);transform:translateX(-50%);text-align:center;font-size:12px;line-height:1.55;color:#e8e2cf;text-shadow:1px 1px 0 #000,0 0 3px #000;pointer-events:none;white-space:nowrap}
+#pvTag .pr{color:#a8e4ff}#pvTag .by{color:#ffd24a}
+#aimInfo .bar.t i{background:var(--h)}
+#buy h3 .pvbuy{margin-left:10px;font-size:12px;font-weight:normal;color:#ffd24a}
+.pvSide{margin:8px 0 2px;font-weight:bold;font-size:14px;text-align:left}.pvSide.h{color:var(--h)}.pvSide.z{color:var(--z)}
+#board .pvt,#results .pvt{margin:0 auto}
+html.touch #pvTag{top:calc(50% + 36px)}

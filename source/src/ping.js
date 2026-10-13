@@ -10,11 +10,11 @@ const PING={list:[],seq:0,lastT:-1e9,lay:null,pool:[],LIFE:6,
     const e=actorEye(P),d=aimDir(P.yaw,P.pitch,new THREE.Vector3()),h=rayCast(e.x,e.y,e.z,d.x,d.y,d.z,90,SHOT_FILTER),t=h?Math.max(.4,h.t-.12):40;
     const x=e.x+d.x*t,y=e.y+d.y*t,z=e.z+d.z*t;
     if(NET.on&&NET.cli){netToHost({t:'png',x:r2(x),y:r2(y),z:r2(z)});return}
-    this.relay({n:P.name,tc:P.team,x,y,z,by:P.id})},
+    this.relay({n:P.name,tc:pingTc(P),x,y,z,by:P.id})},
   // the host (or alone): here, and to everyone on that side
-  relay(o){if(NET.on&&NET.host)for(const [k,Lk] of NET.links){if(Lk.dead)continue;if(NET.ui==='game'){const a=actorOfKey(k);if(a&&a.team!==o.tc)continue}
+  relay(o){if(NET.on&&NET.host)for(const [k,Lk] of NET.links){if(Lk.dead)continue;if(NET.ui==='game'){const a=actorOfKey(k);if(a&&pingTc(a)!==o.tc)continue}
       netSend(k,{t:'pngs',n:String(o.n||'?').slice(0,16),tc:o.tc,x:r2(o.x),y:r2(o.y),z:r2(o.z),by:o.by==null?-1:o.by})}
-    const P=G.player;if(!P||P.team===o.tc)this.add(o)},
+    const P=G.player;if(!P||pingTc(P)===o.tc)this.add(o)},
   add(o){const p={id:++this.seq,n:String(o.n||'?').slice(0,16),tc:o.tc,x:o.x,y:o.y,z:o.z,by:o.by==null?-1:o.by,t:0};
     for(let i=this.list.length-1;i>=0;i--)if(this.list[i].by===p.by&&p.by>=0)this.list.splice(i,1);// one live ping per player
     this.list.push(p);if(this.list.length>8)this.list.shift();AU.play('ui',{vol:.5,rate:2.6});return p},
@@ -32,12 +32,14 @@ const PING={list:[],seq:0,lastT:-1e9,lay:null,pool:[],LIFE:6,
       const cl='ping'+(p.tc===TZ?' z':'')+(edge?' e':'')+(p.t<.6?' new':'');if(d.className!==cl)d.className=cl;d.style.display='block';d.style.left=sx.toFixed(1)+'px';d.style.top=sy.toFixed(1)+'px';
       d.style.opacity=p.t>this.LIFE-1?(this.LIFE-p.t).toFixed(2):'1'}},
   // the minimap (minimap.js): a diamond, pinned to the rim when far away
-  mini(x,tg,cs,sn,s,c,R0,d){for(const p of this.list){if(p.tc!==tg.team)continue;const dx=p.x-tg.c.x,dz=p.z-tg.c.z;let sx=(dx*cs-dz*sn)*s,sy=(dx*sn+dz*cs)*s;const l=Math.hypot(sx,sy),lim=R0-5*d;if(l>lim){sx*=lim/l;sy*=lim/l}
+  mini(x,tg,cs,sn,s,c,R0,d){for(const p of this.list){if(p.tc!==pingTc(tg))continue;const dx=p.x-tg.c.x,dz=p.z-tg.c.z;let sx=(dx*cs-dz*sn)*s,sy=(dx*sn+dz*cs)*s;const l=Math.hypot(sx,sy),lim=R0-5*d;if(l>lim){sx*=lim/l;sy*=lim/l}
       sx+=c;sy+=c;const k=(Math.sin(p.t*9)>-.2?1:.6),r=4*d;x.fillStyle=`rgba(255,${Math.round(214*k)},74,1)`;x.strokeStyle='rgba(0,0,0,.75)';x.lineWidth=d;
       x.beginPath();x.moveTo(sx,sy-r);x.lineTo(sx+r,sy);x.lineTo(sx,sy+r);x.lineTo(sx-r,sy);x.closePath();x.fill();x.stroke()}}};
 const _pgv=new THREE.Vector3();
+// whose pings someone sees: his team; in 대인전 his side (in 개인전 only his own)
+function pingTc(a){return G.pvp?'s'+a.side:a.team}
 HOSTH.png=function(L,m){const a=actorOfKey(L.key);if(!a||!a.alive)return;const now=performance.now();if(now-(L.pingT||0)<800)return;L.pingT=now;
-  PING.relay({n:a.name,tc:a.team,x:+m.x/100,y:+m.y/100,z:+m.z/100,by:a.id})};
+  PING.relay({n:a.name,tc:pingTc(a),x:+m.x/100,y:+m.y/100,z:+m.z/100,by:a.id})};
 CLIH.pngs=function(L,m){PING.add({n:m.n,tc:m.tc,x:m.x/100,y:m.y/100,z:m.z/100,by:m.by})};
 (function(){
   // Z / the middle button

@@ -73,7 +73,7 @@ const AI={
     equip(a,bestWeapon(a))},
   // ---------- per-frame ----------
   update(a,dt){const B=a.bot,cmd=a.cmd;cmd.fire=cmd.alt=cmd.jump=cmd.reload=cmd.skill=false;cmd.f=cmd.s=0;cmd.walk=false;
-    B.think-=dt;if(a.team===TH)this.human(a,dt);else this.zombie(a,dt);
+    B.think-=dt;if(a.team===TH){if(G.pvp)this.pvp(a,dt);else this.human(a,dt)}else this.zombie(a,dt);// (대인전 bots: pvp.js)
     // stuck detection while trying to move
     if(cmd.f||cmd.s){const mv=Math.hypot(a.c.x-B.lx,a.c.z-B.lz);if(mv<dt*.8)B.stuckT+=dt;else B.stuckT=Math.max(0,B.stuckT-dt*2)}else B.stuckT=0;
     B.lx=a.c.x;B.lz=a.c.z;

@@ -38,7 +38,7 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
   // a line typed here: to the host (a client), to everyone (the host), or just here (alone)
   send(){const m=this.clean(this.inp.value);this.inp.value='';if(!m){if(this.where()==='game')this.closeIn();return}const L=LI();
     const now=Date.now();this.mine=this.mine.filter(t=>now-t<5000);if(this.mine.length>=6){this.add({sys:1,m:L?'Slow down a little':'채팅이 너무 빨라요. 잠시 후에 보내 주세요'});return}this.mine.push(now);
-    const tm=this.team&&this.where()==='game',P=G.player,tc=P&&G.st!=='menu'?P.team:null;
+    const tm=this.team&&this.where()==='game',P=G.player,tc=P&&G.st!=='menu'?pingTc(P):null;
     if(NET.on&&NET.cli)netToHost({t:'chat',m,tm:tm?1:0});
     else if(NET.on&&NET.host)this.relay({n:this.myName(),m,tm,tc,k:NET.me||'host',...HOF.hello()});
     else this.add({n:this.myName(),m,tm,tc,me:1});
@@ -47,8 +47,8 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
   clean(t){return String(t||'').replace(/[\u0000-\u001f\u007f]/g,'').replace(/\s+/g,' ').trim().slice(0,this.MAXLEN)},
   // the host: shows a line here and sends it on (a team line only to that side)
   relay(o){const out={t:'chat',n:String(o.n||'?').slice(0,16),m:o.m,tm:o.tm?1:0,tc:o.tc==null?-1:o.tc};if(HOF.valid(o.f)&&o.an){out.f=+o.f;out.an=String(o.an).slice(0,16)}
-    for(const [k,Lk] of NET.links){if(Lk.dead)continue;if(out.tm&&NET.ui==='game'){const a=actorOfKey(k);if(!a||a.team!==o.tc)continue}netSend(k,k===o.k?{...out,me:1}:out)}
-    const P=G.player;if(!out.tm||!P||P.team===o.tc)this.add({n:out.n,m:out.m,tm:out.tm,tc:o.tc,me:o.k===(NET.me||'host'),f:out.f,an:out.an})},
+    for(const [k,Lk] of NET.links){if(Lk.dead)continue;if(out.tm&&NET.ui==='game'){const a=actorOfKey(k);if(!a||pingTc(a)!==o.tc)continue}netSend(k,k===o.k?{...out,me:1}:out)}
+    const P=G.player;if(!out.tm||!P||pingTc(P)===o.tc)this.add({n:out.n,m:out.m,tm:out.tm,tc:o.tc,me:o.k===(NET.me||'host'),f:out.f,an:out.an})},
   // a grey line for everyone (joins, leaves)
   sys(m){if(NET.on&&NET.host)netAll({t:'chat',s:1,m});this.add({sys:1,m})},
   add(o){this.lines.push({n:o.n||'',m:o.m||'',tm:!!o.tm,tc:o.tc==null||o.tc<0?null:o.tc,sys:!!o.sys,me:!!o.me,f:o.f|0,an:o.an||'',at:Date.now()});
@@ -62,7 +62,7 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
     const now=Date.now(),open=this.on||room,list=this.lines.slice(-(room?40:open?14:this.SHOW)).filter(l=>open||now-l.at<this.FADE);
     const h=list.map(l=>{const fade=open?1:Math.min(1,(this.FADE-(now-l.at))/1200);
       if(l.sys)return `<div class="cl sys" style="opacity:${fade.toFixed(2)}">${esc(l.m)}</div>`;
-      const side=l.tc===TH?'h':l.tc===TZ?'z':'n';
+      const side=l.tc===TH||l.tc==='s0'?'h':l.tc===TZ||l.tc==='s1'?'z':'n';// (대인전: the sides, ping.js pingTc)
       const hc=HOF.line(l);
       return `<div class="cl ${side}${l.me?' me':''}" style="opacity:${fade.toFixed(2)}">${l.tm?`<i>${L?'[Team]':'[우리 편]'}</i> `:''}<b${hc?` class="hof" title="${esc(HOF.full(hc,L))}"`:''}>${hc?SVG_CROWN:''}${esc(l.n)}</b><span>: ${esc(l.m)}</span></div>`}).join('');
     // rebuilt only when something changed; in the room the log scrolls and follows the newest line unless it was scrolled up
@@ -70,7 +70,7 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
 // network: a client's line comes to the host, the host's lines come to everyone
 HOSTH.chat=function(L,m){const now=Date.now();L.chatT=(L.chatT||[]).filter(t=>now-t<5000);if(L.chatT.length>=6)return;L.chatT.push(now);
   const txt=CHAT.clean(m.m);if(!txt)return;const a=NET.ui==='game'?actorOfKey(L.key):null,p=NET.lob&&NET.lob.pl.find(x=>x.k===L.key);
-  CHAT.relay({n:(a&&a.name)||L.name||'?',m:txt,tm:!!m.tm&&!!a,tc:a?a.team:null,k:L.key,f:a?a.hofC:p&&p.f,an:a?a.hofN:p&&p.an})};
+  CHAT.relay({n:(a&&a.name)||L.name||'?',m:txt,tm:!!m.tm&&!!a,tc:a?pingTc(a):null,k:L.key,f:a?a.hofC:p&&p.f,an:a?a.hofN:p&&p.an})};
 CLIH.chat=function(L,m){if(m.s){CHAT.add({sys:1,m:CHAT.clean(m.m)});return}CHAT.add({n:String(m.n||'?').slice(0,16),m:CHAT.clean(m.m),tm:!!m.tm,tc:m.tc,me:!!m.me,f:HOF.valid(m.f)?+m.f:0,an:String(m.an||'').slice(0,16)})};
 (function(){
   // Enter / Y / U open the box (before the game's own key handling, which ignores keys typed into an input)

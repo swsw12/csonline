@@ -1,6 +1,9 @@
 'use strict';
 // ============ Game: actors, movement, weapons in hand, infection rules, round flow ============
 const TH=0,TZ=1;
+// v6.48: who may hurt whom. Infection and the scenario: the other team. 대인전 (G.pvp: 팀 데스매치 · 개인전, pvp.js): everyone is a
+// human, so the other side decides — two sides in 팀 데스매치, a side each in 개인전.
+function foe(a,b){return G.pvp?a.side!==b.side:a.team!==b.team}
 const HSKINS=['guard','medic','soldier','hazmat'];
 // v6.45: the survivors go by the special unit each came from (RT-2 is a recovery team drawn from special units around the world)
 const HSKIN_N={guard:['KNP SOU','KNP SOU'],medic:['PJ','PJ'],soldier:['LEGION','LEGION'],hazmat:['CBIRF','CBIRF']};
@@ -57,7 +60,7 @@ Object.assign(ZCLASS,{
   centi:{n:['새끼 지네','Little Centipede'],sk:['독니','Venom bite'],d:['5챕터 · 끊어진 티아마트의 마디 — 낮고 빠르다','Chapter 5 · a severed piece of TIAMAT — low and fast'],hp:900,armor:0,speed:7.2,jump:6,kb:.6,dmg:24,skill:'none',cd:99,dur:0,hw:.42,h:.9,eye:.6}});
 const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
-const G={st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
+const G={pvp:false,st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};
 let ACTOR_ID=0;
 function mkActor(name,isPlayer,skin){const a={id:ACTOR_ID++,name,isPlayer,skin,zpick:rpick(ZLIST),team:TH,alive:false,
@@ -383,7 +386,7 @@ function zombiesAlive(){let n=0;for(const a of G.actors)if(a.team===TZ&&(a.alive
 function kbCap(t,src,kb){const sh=t.kbSh||(t.kbSh={});sh[src?src.id:-1]=G.t;let n=0;for(const k in sh)if(G.t-sh[k]<.6)n++;
   const cp=Math.max(kb,ZBAL.kbCap[t.host?1:0]*(1+.35*(n-1))),v=Math.hypot(t.kvx,t.kvz);if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}
 function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==='end'||G.st==='over'?0:netClaimHit(t,dmg,src,o);if(!t.alive||G.st==='end'||G.st==='over')return;
-  if(t.team===TH){return}
+  if(t.team===TH){return G.pvp?PVP.hurt(t,dmg,src,o):undefined}// (대인전: one human shooting another, pvp.js)
   if(t.reviving>0)return;
   if(src&&src.team===TH&&!o.flat)dmg*=1+.1*G.moraleLvl;if(src&&src.wup&&o.w&&src.wup[o.w])dmg*=1+.1*src.wup[o.w];// flat: the Plasma Gun's orbs (csoguns.js) ignore morale
   if(t.skillT>0&&t.zc==='brute')dmg*=.4;if(t.skillT>0&&t.zc==='rager')dmg*=1.3;// berserk: faster, but it takes 30 % more
@@ -537,6 +540,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
   G.t+=dt;
   if(G.mode==='scen')SCEN.update(dt);// the scenario runs its own stage / wave flow
   else if(G.mode==='range'){if(typeof RANGE!=='undefined')RANGE.update(dt)}// the shooting range: no rounds at all (range.js)
+  else if(G.pvp)PVP.update(dt);// 대인전: one long fight with respawns (pvp.js)
   else if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=10){const rec=AU.fromFile.countdown;if(s===10&&rec)AU.play('countdown',{vol:1,rev:0});if(!rec)AU.play(s<=3?'beep2':'beep',{vol:.5});HUD.countdown(s)}}
     if(G.time<=0){if(NET.cli)G.time=0;else{selectHosts();G.st='fight';G.time=G.roundTime}}}
   else if(G.st==='fight'){G.time-=dt;const h=humansAlive();BO.update(dt);SUP.update(dt);

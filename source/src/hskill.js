@@ -19,6 +19,7 @@ const HSK={SP:10,EX:5,DS:5,SPM:1.45,EXM:.4,BIT:256,fovAdd:0,fovK:0,botT:-9,pant:
   clear(a){if(a.hsk)a.hsk=null;if(a===G.player)this.stopPant()},
   // a key / button / bot asked for skill k on this page
   use(a,k){if(!a||!a.alive||a.team!==TH||(k!=='sp'&&k!=='ds'))return false;if(G.st!=='prep'&&G.st!=='fight')return false;const h=this.of(a),me=a===G.player;
+    if(G.pvp){if(me){HUD.note(LI()?'Skills are off in PvP':'대인전에서는 스킬을 쓸 수 없어요',1.4);AU.play('dry',{vol:.45})}return false}
     if(k==='sp'?h.uS:h.uD){if(me){const sc=G.mode==='scen';HUD.note(LI()?'Already used — it comes back next '+(sc?'stage':'round'):'이미 사용했어요 — 다음 '+(sc?'스테이지':'라운드')+'에 다시 쓸 수 있어요',1.4);AU.play('dry',{vol:.45})}return false}
     if(NET.cli){if(!me||h.pend>G.t)return false;h.pend=G.t+1.2;netToHost({t:'hsk',k});return true}
     this.start(a,k);if(NET.host)netEv('hsk',{i:a.id,k});return true},

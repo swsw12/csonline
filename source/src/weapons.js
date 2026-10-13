@@ -75,7 +75,7 @@ function rayArms(t,ox,oy,oz,dx,dy,dz,tmax,grow){if(!t.arms||!(t.armT>G.t-.25))re
   return best}
 // nearest enemy hit along a ray before tmax: {a, t, part}
 function rayActors(src,ox,oy,oz,dx,dy,dz,tmax,teamMask){let best=null,bt=tmax,part=null;
-  for(const t of G.actors){if(!t.alive||t===src||t.team===src.team)continue;const c=t.c;
+  for(const t of G.actors){if(!t.alive||t===src||!foe(src,t))continue;const c=t.c;
     // a body with its own hit volumes (3챕터's beetle and its scrap ball: khepri.js) answers for itself: {t, part}
     if(t.epRay&&t.epRayZc===t.zc){const r=t.epRay(ox,oy,oz,dx,dy,dz,bt);if(r&&r.t<bt){bt=r.t;best=t;part=r.part}continue}
     // quick reject by distance to the ray
@@ -97,7 +97,7 @@ function airBlast(a,W,eye,dir){const C=W.air;const mz=muzzleWorld(a);const ox=mz
   FX.spawn({x:ox+dir.x*.4,y:oy+dir.y*.4,z:oz+dir.z*.4,vx:dir.x*9,vy:dir.y*9,vz:dir.z*9,life:.28,s0:.25,s1:1.6,r:.85,g:.92,b:1,a:.35,f:14,drag:3});
   for(let i=0;i<(a.isPlayer?7:4);i++){spreadDir(dir,C.a*.7,_d);const sp=C.r*rr(1.2,2.2);FX.spawn({x:ox,y:oy,z:oz,vx:_d.x*sp,vy:_d.y*sp,vz:_d.z*sp,life:rr(.25,.45),s0:rr(.1,.2),s1:rr(.6,1.2),r:.82,g:.88,b:.95,a:.22,f:5,drag:3.2})}
   const cosA=Math.cos(C.a);let n=0;const hop=a.shots%4===0;
-  for(const t of G.actors){if(!t.alive||t.team===a.team)continue;const tx=t.c.x,ty=t.c.y+t.c.h*.55,tz=t.c.z;const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z,d=Math.hypot(dx,dy,dz);if(d>C.r+t.c.hw)continue;
+  for(const t of G.actors){if(!t.alive||t===a||!foe(a,t))continue;const tx=t.c.x,ty=t.c.y+t.c.h*.55,tz=t.c.z;const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z,d=Math.hypot(dx,dy,dz);if(d>C.r+t.c.hw)continue;
     const cs=(dx*dir.x+dy*dir.y+dz*dir.z)/(d||1);if(cs<cosA&&d>1.2)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;n++;
     const f=clamp(1-d/(C.r*1.25),.3,1),hd=Math.hypot(dx,dz)||1;
     damageActor(t,W.dmg*f,a,{w:a.cur,dir:[dx/hd,.15,dz/hd],kb:C.kb*(.6+.4*f),stag:W.stag,x:tx,y:ty,z:tz,up:hop&&t.c.onGround?C.up*f:0});
@@ -162,7 +162,7 @@ function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
 function nf(n){return n[0]>.5?'px':n[0]<-.5?'nx':n[1]>.5?'py':n[1]<-.5?'ny':n[2]>.5?'pz':'nz'}
 // melee (knife or claws): short sweep in a cone in front of the attacker
 function meleeHit(a,range,cone){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_dv);let best=null,bd=range+1;
-  for(const t of G.actors){if(!t.alive||t===a||t.team===a.team)continue;const c=t.c;const tx=c.x,ty=clamp(eye.y,c.y+.2,t.head.y),tz=c.z;
+  for(const t of G.actors){if(!t.alive||t===a||!foe(a,t))continue;const c=t.c;const tx=c.x,ty=clamp(eye.y,c.y+.2,t.head.y),tz=c.z;
     const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z;const d=Math.hypot(dx,dy,dz)-c.hw;if(d>range)continue;const dot=(dx*_dv.x+dy*_dv.y+dz*_dv.z)/Math.max(.01,Math.hypot(dx,dy,dz));
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;if(d<bd){bd=d;best=t}}
   if(best)return {t:best,d:bd};
@@ -174,7 +174,7 @@ function meleeSwing(a,heavy){const W=meleeW(a);NET.on&&netFxPush(['m',a.id,heavy
   if(a.isPlayer){AU.play('kswing',{vol:.7,rate:(heavy?.8:1)*(W.sw||1)});VM.melee(heavy)}else AU.at('kswing',a.c.x,a.c.y+1.4,a.c.z,{vol:.5,rate:W.sw||1})}
 // every enemy in reach in front, nearest first (the hammer's overhead smash catches several)
 function meleeHits(a,range,cone,n){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_dv);const out=[];
-  for(const t of G.actors){if(!t.alive||t===a||t.team===a.team)continue;const c=t.c;const tx=c.x,ty=clamp(eye.y,c.y+.2,t.head.y),tz=c.z;
+  for(const t of G.actors){if(!t.alive||t===a||!foe(a,t))continue;const c=t.c;const tx=c.x,ty=clamp(eye.y,c.y+.2,t.head.y),tz=c.z;
     const dx=tx-eye.x,dy=ty-eye.y,dz=tz-eye.z;const d=Math.hypot(dx,dy,dz)-c.hw;if(d>range)continue;const dot=(dx*_dv.x+dy*_dv.y+dz*_dv.z)/Math.max(.01,Math.hypot(dx,dy,dz));
     if(dot<cone&&d>.35)continue;if(!losClear(eye.x,eye.y,eye.z,tx,ty,tz))continue;out.push({t,d})}
   out.sort((p,q)=>p.d-q.d);return out.slice(0,n).map(o=>o.t)}
@@ -237,6 +237,7 @@ function detonate(n){const k=n.kind;
       const f=1-d/R0;damageActor(t,D*(.35+.65*f),n.owner,{w:n.jw||'gl40',dir:[dx/(d||1),.3,dz/(d||1)],kb:KB*f,stag:ST,x:t.c.x,y:t.c.y+1,z:t.c.z,up:UP*f,he:n.he?1:0});hit++}
     n.hitN=hit;return}
   if(k==='he'){FX.explode(n.x,n.y,n.z,'he');AU.at('explode',n.x,n.y,n.z,{vol:1,range:90,occ:false});const pd=G.player?dist3(G.player.c,n):99;if(pd<14){FX.shake=Math.max(FX.shake,1-pd/14);AU.shock(1-pd/14)}
+    if(G.pvp){if(n.owner)PVP.heBlast(n);return}// (대인전: pvp.js)
     for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;const dx=t.c.x-n.x,dy=t.c.y+1-n.y,dz=t.c.z-n.z;const d=Math.hypot(dx,dy,dz);if(d>7)continue;if(!losClear(n.x,n.y+.3,n.z,t.c.x,t.c.y+1,t.c.z))continue;
       const f=1-d/7;damageActor(t,700*f+100,n.owner,{w:'he',dir:[dx/(d||1),.3,dz/(d||1)],kb:14*f,stag:.8,x:t.c.x,y:t.c.y+1,z:t.c.z,he:1,up:6*f})}}
   else if(k==='frost'){FX.explode(n.x,n.y,n.z,'frost');AU.at('frostx',n.x,n.y,n.z,{vol:1,range:60});

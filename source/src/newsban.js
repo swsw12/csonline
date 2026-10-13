@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'⚔',tag:['신규 모드 · 대인전','New mode · PvP'],t:['팀 데스매치 · 개인전','Team Deathmatch · Free-for-all'],
+    d:['드디어 사람끼리 붙어요. 팀 데스매치는 블루 대 레드, 개인전은 모두가 적. 쓰러져도 3초 뒤 부활하고, 목표 킬을 먼저 채우면 승리. 기본 무기만 쓰고 헤드샷은 4배 — 소총 한 방도 가능해요. 방 만들기와 멀티플레이 대기실의 모드에서 골라요.','People against people at last: Team Deathmatch is BLUE vs RED, Free-for-all is everyone for himself. The fallen are back 3 s later, and the first to the kill goal wins. Plain weapons only, headshots ×4 — a rifle can one-tap. Pick it as the mode in Create Room or in the multiplayer waiting room.']},
   {kind:'weapon',ref:'thanatos9',tag:['신규 출시 · 상점 15,000 코인','Out now · Shop · 15,000 coins'],t:['THANATOS-9','THANATOS-9'],
     d:['사신의 거대한 낫. 좌클릭은 크게 휩쓸어 리치 안의 앞 · 옆 · 뒤 좀비를 360도로 전부 베어요. 우클릭하면 칼날이 6조각으로 펼쳐져 돌다가 칼날 드릴로 변신 — 좌클릭 한 번이면 3초 동안 무시무시한 연속 찌르기! 대신 시작하면 멈출 수도, 무기를 바꿀 수도 없고 경직이 약해서 좀비가 밀고 들어와요.','A reaper\'s giant scythe. Left click sweeps everything within reach — in front, beside and behind, all the way round. Right click: the blade comes apart into six plates that fan out, spin and fold into a drill of blades — one left click and it stabs relentlessly for 3 s. Once it starts it cannot be stopped or put away, and its weak stagger lets zombies push in.']},
   {kind:'weapon',ref:'m4dk',tag:['초월 무기 · 초월 조각 888개','Transcendence · 888 transcendence fragments'],t:['M4A1 다크나이트','M4A1 Dark Knight'],

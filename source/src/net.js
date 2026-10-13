@@ -253,7 +253,7 @@ function netSafe(f){try{f()}catch(e){console.error(e)}}
 
 // ---------- the host's tick ----------
 function netHostTick(){NET.k++;const o={k:NET.k,ts:Math.round(netNow()),g:[ST_L.indexOf(G.st),Math.round(G.time*10),G.round,G.score[0],G.score[1],G.moraleLvl,G.hostN],A:(G.mode==='scen'?SCEN.H:G.actors).map(netEncA),f:NET.fx};
-  if(NET.k%10===0)o.S=(G.mode==='scen'?SCEN.H:G.actors).map(a=>[a.id,a.kills,a.infects,a.deaths,Math.round(a.score),Math.round(a.dmgDealt),Math.round(a.dmgRound||0),a.net&&NET.links.get(a.net)?Math.round(NET.links.get(a.net).rtt):-1]);
+  if(NET.k%10===0)o.S=(G.mode==='scen'?SCEN.H:G.actors).map(a=>[a.id,a.kills,a.infects,a.deaths,Math.round(a.score),Math.round(a.dmgDealt),Math.round(a.dmgRound||0),a.net&&NET.links.get(a.net)?Math.round(NET.links.get(a.net).rtt):-1,a.assists|0]);
   if(G.mode==='scen'&&SCEN.on){o.Z=SCEN.encZ(NET.k);o.sc=SCEN.encState()}
   const s=JSON.stringify(o);NET.fx=[];for(const L of NET.links.values())if(L.ok&&L.inGame)L.send(s,false);if(NET.kind==='room')RSIG.flush()}
 function netCliTick(){NET.k++;const P=G.player;const o={k:NET.k,ts:Math.round(netNow()),f:NET.fx};if(NET.hostTs)o.e=[NET.hostTs,Math.round(netNow()-NET.hostRx)];if(P)o.s=netEncSelf(P);NET.fx=[];
@@ -268,7 +268,7 @@ function netOnState(L,m){if(m.t)return;if(!(m.k>L.lastK))return;L.lastK=m.k;cons
     if(f[0]==='n'&&a.inv&&a.inv[f[2]]>0)a.inv[f[2]]--}}
 // the host's snapshot on a client
 function netOnSnap(L,m){if(m.t||L.key!==NET.hostKey||!(m.k>NET.lastK))return;NET.lastK=m.k;const now=netNow();NET.hostTs=m.ts;NET.hostRx=now;netClock('h',m.ts,now);
-  if(NET.ui!=='game')return;const g=m.g;if(g){G.time=g[1]/10;if(g[5]>G.moraleLvl&&G.mode==='mut'){HUD.announce(T('moraleUp',g[5]*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}G.moraleLvl=g[5];G.hostN=g[6]}
+  if(NET.ui!=='game')return;const g=m.g;if(g){G.time=g[1]/10;if(G.pvp){G.score[0]=g[3]|0;G.score[1]=g[4]|0}if(g[5]>G.moraleLvl&&G.mode==='mut'){HUD.announce(T('moraleUp',g[5]*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}G.moraleLvl=g[5];G.hostN=g[6]}
   const P=G.player;
   for(const e of m.A||[]){const a=byId(e[0]);if(!a)continue;const F=e[8];const same=((F&2)?TZ:TH)===a.team&&!!(F&1)===a.alive;
     if(a===P){if(!same)continue;const hp0=P.hp,ar0=P.armor;P.hp=e[10];P.armor=e[11];P.maxHp=e[12];P.lvl=e[13];P.money=e[18];P.skillT=e[15]/10;P.skillCD=e[19]/10;P.host=!!(F&16);
@@ -280,7 +280,7 @@ function netOnSnap(L,m){if(m.t||L.key!==NET.hostKey||!(m.k>NET.lastK))return;NET
     a.permaDead=!!(F&2048);a.burnT=F&8192?Math.max(a.burnT||0,.3):0;
     if(a.team===TZ){const zc=ZALL[e[14]]||a.zc;if(zc!==a.zc){a.zc=zc;setHull(a);ensureRig(a)}}}
   if(G.mode==='scen'){if(m.Z)SCEN.decZ(m.Z,m.ts);if(m.sc)SCEN.decState(m.sc)}
-  if(m.S)for(const s of m.S){const a=byId(s[0]);if(!a)continue;a.kills=s[1];a.infects=s[2];a.deaths=s[3];a.score=s[4];a.dmgDealt=s[5];a.dmgRound=s[6];a.ping=s[7]}
+  if(m.S)for(const s of m.S){const a=byId(s[0]);if(!a)continue;a.kills=s[1];a.infects=s[2];a.deaths=s[3];a.score=s[4];a.dmgDealt=s[5];a.dmgRound=s[6];a.ping=s[7];a.assists=s[8]|0}
   for(const f of netFxList(L,m)){if(!Array.isArray(f))continue;const a=byId(f[1]);if(a&&a!==P)netQueueFx(a,f)}}
 function netFxList(L,m){if(Array.isArray(m.f))return m.f;if(!Array.isArray(m.fw))return [];const out=[];let hi=L.fxK||0;
   for(const w of m.fw){if(!Array.isArray(w)||!(w[0]>(L.fxK||0))||!Array.isArray(w[1]))continue;hi=Math.max(hi,w[0]);for(const f of w[1])out.push(f)}L.fxK=hi;return out}
@@ -355,14 +355,14 @@ function netApplyEff(a,e,src){if(!a||!a.alive)return;
   if(e.bt&&src&&a.team===TZ){a.burnT=Math.max(a.burnT||0,e.bt/10);a.burnSrc=src;a.burnW=WL[e.bw]||'bdc'}
   if(a.isPlayer&&e.dz)FX.shake=Math.max(FX.shake,.5)}
 // a hit this page saw on someone it does not own: shown at once, judged by the host
-function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||t.team===TH)return 0;
+function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||(G.pvp?!foe(src,t)||!PVP.canHit(t):t.team===TH))return 0;// (대인전: an enemy, not under spawn protection)
   // a hit on the firefighter's oxygen tank (as this page saw it) is claimed as one: the host does not judge it again
   const tk=typeof FM!=='undefined'&&FM.tankHit(t,o);
   NET.hits.push([t.id,Math.round(dmg),WI[o.w]??-1,(o.hs?1:0)|(o.knife?2:0)|(o.heavy?4:0)|(o.he?8:0)|(o.blunt?16:0)|(tk?32:0),o.dir?r2(o.dir[0]):0,o.dir?r2(o.dir[1]):0,o.dir?r2(o.dir[2]):0,r1(o.kb),r2(o.stag),r2(o.x),r2(o.y),r2(o.z),r1(o.up)]);
   if(tk&&!o.he){t.fmFl=.12;return 0}// (the tank flashes, not the body)
-  const d=dmg*(1+.1*G.moraleLvl)*(src.wup&&src.wup[o.w]?1+.1*src.wup[o.w]:1),ab=Math.min(Math.max(0,t.armor),d*.5),dealt=Math.max(0,Math.min(d-ab,Math.max(0,t.hp))+ab);
+  const d=G.pvp?PVP.scale(t,dmg,o):dmg*(1+.1*G.moraleLvl)*(src.wup&&src.wup[o.w]?1+.1*src.wup[o.w]:1),ab=Math.min(Math.max(0,t.armor),d*(G.pvp?1-PVP.ap(o):.5)),dealt=Math.max(0,Math.min(d-ab,Math.max(0,t.hp))+ab);
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
-  HUD.dmgNum(t,dealt,!!o.hs,false);if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
+  HUD.dmgNum(t,dealt,!!o.hs,false);if(!AU.throttle('zp'+t.id,350))AU.at(G.pvp?'hurt':'zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
 
 // ---------- host: handlers for what clients send ----------
 const HOSTH={
@@ -374,7 +374,7 @@ const HOSTH={
   ping(L){},
   pong(L,m){if(m.h&&!(L.srtt&&NET.ui==='game'))L.rtt=lerp(L.rtt||0,Math.max(0,netNow()-m.h),L.rtt?.3:1)},
   bye(L){netLinkDown(L,'bye')},
-  h(L,m){const src=actorOfKey(L.key);if(!src||!Array.isArray(m.L))return;for(const h of m.L){const t=byId(h[0]);if(!t||!t.alive||t.team!==TZ)continue;const f=h[3];
+  h(L,m){const src=actorOfKey(L.key);if(!src||!Array.isArray(m.L))return;for(const h of m.L){const t=byId(h[0]);if(!t||!t.alive||(G.pvp?!foe(src,t)||!PVP.claimOk(src,t,h):t.team!==TZ))continue;const f=h[3];// (대인전: the host checks a claim against the gun: pvp.js)
     damageActor(t,clamp(+h[1]||0,0,5000),src,{w:WL[h[2]]||'',hs:!!(f&1),knife:!!(f&2),heavy:!!(f&4),he:!!(f&8),blunt:!!(f&16),tank:f&32?1:0,dir:[h[4]/100,h[5]/100,h[6]/100],kb:h[7]/10,stag:h[8]/100,x:h[9]/100,y:h[10]/100,z:h[11]/100,up:h[12]/10})}},
   claw(L,m){const a=actorOfKey(L.key),t=byId(m.i);if(!a||!t||!a.alive||a.team!==TZ||!t.alive||t.team!==TH)return;clawApply(a,t,!!m.h)},
   fall(){},// (fall damage was removed in v6.26; an older client may still send this)
@@ -560,7 +560,7 @@ function netMigRestart(){if(G.st==='over'){netMigResults();return 'over'}
       if(D.k==='boss'){EP.stageStart(EP.st,'phase');return 'phase'}
       EP.stageStart(EP.st,'retry');return 'zone'}
     if(SCEN.ph==='over')return 'over';SCEN.best=Math.max(SCEN.best|0,SCEN.stage-1);SCEN.stageStart('retry');return 'stage'}
-  if(G.st==='end')return 'go';
+  if(G.st==='end'||G.pvp)return 'go';// (대인전 carries on: the scores and the respawn clocks are on every page)
   G.round=Math.max(0,G.round-1);startRound();return 'round'}
 // the results card on a new host: the button that takes everyone back to the waiting room
 function netMigResults(){const w=document.querySelector('#results .mbtns .mpwait');if(w)w.outerHTML=`<button data-act="mplobby" class="big">${T('mpToLobby')}</button>`}
@@ -619,7 +619,7 @@ const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:fals
     if(!this.list.length)return `<p class="rempty">${L?'No public rooms right now — make one!':'지금 열린 공개 방이 없어요 — 방을 만들어 보세요'}</p>`;
     return this.list.map(r=>{const pl=r.status==='playing',n=r.players|0,mx=r.max_players|0;
       return `<div class="rrow${pl?' play':''}${n>=mx?' full':''}" data-act="mproom" data-v="${esc(String(r.code||''))}"><div class="rh"><b>${esc(r.host_name||'?')}</b><i>${esc(String(r.code||''))}</i></div>
-        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(r.mode==='scen'?'scen':r.mode==='orig'?'orig':'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
+        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(['scen','orig','tdm','ffa'].includes(r.mode)?r.mode:'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
   render(){const el=$('mpRooms');if(el)el.innerHTML=this.html();const b=document.querySelector('[data-act="mprooms"]');if(b)b.classList.toggle('busy',this.busy)}};
 setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
 
