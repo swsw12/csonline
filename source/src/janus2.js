@@ -1,5 +1,6 @@
 'use strict';
 // ============ v6.55: JANUS-2 — a holy sawed-off grenade pistol, a relic restored ============
+// (v6.55.1: shown as 「이태훈 딕건」 / Lee Tae-hoon Dick Gun at the owner's word; the ids, the decoder line and the price row stay janus2)
 // Built to the design sheet the player sent: its parts, points, colours, numbers, motions and sounds as written there. Small changes:
 // the figure of Christ and its lit eyes stand out of the back of the sight (in the sheet they sat inside it, face flush with its back),
 // a short bridge joins the sight to the barrel (in the sheet it floated over the frame), the golden inner barrel is a millimetre longer
@@ -97,7 +98,7 @@ function j2Rig(m){const T=m.tags,mg=T.mag;if(!mg)return;
 
 // ---------- stats ----------
 const J2N={DMG:80,R:4.4,SCEN:2.5,KB:.5,STAG:.35,UP:.8,SP:.5,SPD:40,BSPD:46};
-WPN.janus2={slot:2,kind:'pistol',n:['JANUS-2','JANUS-2'],cost:6000,mag:5,res:0,supOnly:1,jn:'janus2',dmg:J2N.DMG,rpm:214,semi:1,proj:'j2',alt:'janus',
+WPN.janus2={slot:2,kind:'pistol',n:['이태훈 딕건','Lee Tae-hoon Dick Gun'],cost:6000,mag:5,res:0,supOnly:1,jn:'janus2',dmg:J2N.DMG,rpm:214,semi:1,proj:'j2',alt:'janus',
   spread:[.015,.06,.12],rec:[.15,.04],kb:J2N.KB,stag:J2N.STAG,hs:1,reload:1,brk:1,draw:.9,speed:.94,snd:'j2fire',drawS:'j2draw',model:'janus2',hold:'pistol',
   kickX:[1.05,2.9,.6],bd:['적중 시 게이지 충전 · 폭발 유탄 · 5발','Explosive rounds · Charge on hit · 5 Ammo']};
 // the JANUS form fires these (unlimited, a lighter kick)
