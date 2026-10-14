@@ -67,7 +67,7 @@ const RANGE={on:false,move:true,st:null,el:null,uiT:0,
     HUD.announce(LI()?'SHOOTING RANGE':'사격장','w',2.4);HUD.note(LI()?'B: any weapon, free · K: reset the record · J: moving targets on/off':'B: 무기 무료 · K: 기록 초기화 · J: 이동 표적 켜기/끄기',6)},
   // (re)stand a dummy at its place, whole, facing the line
   raise(a,first){const d=a.rg.d;a.team=TZ;a.zc=a.zpick=d.zc;a.host=false;a.lvl=1;a.bombs=0;a.money=0;a.name=(LI()?'Dummy ':'더미 ')+Math.round(-d.z)+'m'+(d.mv?(LI()?' (moving)':' (이동)'):'');
-    if(first){a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.alive=true;placeAt(a,d.x,0,d.z,Math.PI)}
+    if(first){a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.alive=true;placeAt(a,d.x,0,d.z,Math.PI)}
     else{reviveZombie(a,[d.x,0,d.z]);a.yaw=Math.PI}
     a.permaDead=false;a.maxHp=a.hp=1000;a.armor=0;a.reviving=0;a.turning=0;a.rg.resp=0;a.rg.first=0;a.rg.dir=1;a.lastHurt=-9},
   update(dt){const P=G.player;G.time+=dt;

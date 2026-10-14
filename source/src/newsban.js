@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'💨',tag:['신규 장비 · 모든 모드','New gear · every mode'],t:['연막탄','Smoke Grenade'],
+    d:['구매 메뉴(B) 장비 칸의 연막탄. 던지면 멈춘 자리에서 터져 18초 동안 커다란 연막이 퍼져요 — 벽과 문은 막고 난간 너머로는 흘러내려요. 연막 속과 너머는 사람도 봇도 좀비도 못 봐요. 폭파미션에서는 봇들도 사이트를 연막으로 가리고 들어오고, 설치된 폭탄을 연막 속에서 해체해요.','The smoke grenade in the Equipment row of the buy menu (B). It pops where it lands and fills a big cloud for 18 s — walls and doors stop it, it spills over ledges. Nobody sees into it or through it: players, bots and zombies alike. In Bomb Defusal the bots smoke off sites on their way in and defuse inside a cloud.']},
   {kind:'feature',ico:'🏁',tag:['신규 모드 · 대인전','New mode · PvP'],t:['무기 레이스','Arms Race'],
     d:['모두가 적. 처치할 때마다 손에 든 총이 다음 무기로 바뀌어요 — 소총에서 시작해 기관총 · 기관단총 · 산탄총 · 저격총 · 권총을 지나 마지막은 칼 한 자루. 칼 단계에서 칼로 처치하면 우승! 칼에 당하면 한 단계 내려가요. 방 만들기 · 대기실의 모드에서 골라요.','Everyone is an enemy. Every kill swaps the gun in your hands for the next one — from rifles through the machine gun, SMGs, shotguns, snipers and pistols to the last step, a knife. A knife kill on the knife step wins! A knife kill on you sets you back a step. Pick it as the mode in Create Room or the waiting room.']},
   {kind:'feature',ico:'💣',tag:['신규 모드 · 대인전','New mode · PvP'],t:['폭파미션','Bomb Defusal'],

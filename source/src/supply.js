@@ -180,7 +180,7 @@ const SUP={list:[],seq:1,next:1e9,MAXN:2,
   give(a,k,w,x,y,z){const L=LI();AU.at('pickup',x,y+.5,z,{vol:.9});FX.spawn({x,y:y+.5,z,life:.5,s0:.4,s1:2.5,r:1,g:.8,b:.4,a:.6,f:14,add:1});
     if(k==='w'){const W=WPN[w];if(!W)return;a.inv[1]=w;a.ammo[w]={mag:W.mag,res:W.res};gunFresh(a,w);equip(a,w);
       if(a.isPlayer){HUD.announce(W.n[L],'h',2.5);AU.play('lvlup',{vol:.6});HUD.note(L?'From the supply crate':'보급상자에서 획득',2)}else if(G.player)HUD.note((L?`${a.name} opened a supply crate`:`${a.name}이(가) 보급상자를 열었다`),1.6)}
-    else{for(const id in a.ammo){const W=WPN[id];if(W&&W.mag)a.ammo[id]={mag:W.mag,res:W.res}}a.armor=100;a.inv.he=1;a.inv.frost=1;a.inv.flare=1;
+    else{for(const id in a.ammo){const W=WPN[id];if(W&&W.mag)a.ammo[id]={mag:W.mag,res:W.res}}a.armor=100;a.inv.he=1;a.inv.frost=1;a.inv.flare=1;a.inv.smoke=1;
       if(a.isPlayer){HUD.announce(L?'Supplies':'보급품','h',2);HUD.note(L?'Full ammo, armour, a grenade of each kind':'탄약 가득 · 방탄복 · 수류탄 종류별로 하나씩',2.5);AU.play('armor',{vol:.6})}}}};
 Object.assign(CLIH,{
   sb(L,m){if(SUP.list.some(b=>b.id===m.d))return;SUP.spawn(m.d,m.x/100,m.y/100,m.z/100)},

@@ -140,8 +140,8 @@ const ESMK={list:[],
       const n=S.t<1.2?8:2.4;for(let j=0;j<n;j++)if(Math.random()<dt*14*k){const a=Math.random()*TAU,d=Math.sqrt(Math.random())*S.r*(S.t<1?S.t:1);
         FX.spawn({x:S.x+Math.cos(a)*d,y:S.y+rr(.2,2.4),z:S.z+Math.sin(a)*d,vx:rr(-.2,.2),vy:rr(0,.25),vz:rr(-.2,.2),life:rr(3,4.5),s0:rr(1.4,2),s1:rr(3,4.2),r:S.c?S.c[0]:.62,g:S.c?S.c[1]:.64,b:S.c?S.c[2]:.62,a:.55,f:2,drag:.6,lit:1})}}},
   // inside a cloud (or the line between two points crosses one)
-  at(x,z,pad){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;if(Math.hypot(x-S.x,z-S.z)<S.r*.85+(pad||0))return S}return null},
-  blocks(ax,az,bx,bz){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz||1,t=clamp(((S.x-ax)*dx+(S.z-az)*dz)/l,0,1),cx=ax+dx*t-S.x,cz=az+dz*t-S.z;if(cx*cx+cz*cz<S.r*S.r*.6)return true}return false},
+  at(x,z,pad){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;if(Math.hypot(x-S.x,z-S.z)<S.r*.85+(pad||0))return S}return SMK.atXZ(x,z)},// (and the smoke grenades' clouds, smoke.js)
+  blocks(ax,az,bx,bz){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz||1,t=clamp(((S.x-ax)*dx+(S.z-az)*dz)/l,0,1),cx=ax+dx*t-S.x,cz=az+dz*t-S.z;if(cx*cx+cz*cz<S.r*S.r*.6)return true}return SMK.blocks2(ax,az,bx,bz)},
   clear(){this.list=[]}};
 
 // ---------- ammo boxes: dropped by the infected RT-1 squad; walking over one tops the guns up ----------

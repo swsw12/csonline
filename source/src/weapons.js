@@ -45,6 +45,8 @@ const WPN={
   he:{slot:4,kind:'nade',n:['HE 수류탄','HE Grenade'],cost:300,model:'he',hold:'nade',draw:.5,speed:1},
   frost:{slot:4,kind:'nade',n:['냉동 수류탄','Frost Grenade'],cost:250,model:'frost',hold:'nade',draw:.5,speed:1},
   flare:{slot:4,kind:'nade',n:['조명탄','Flare'],cost:150,model:'flare',hold:'nade',draw:.5,speed:1},
+  // v6.52: pops where it comes to rest (3 s at most) into a cloud nothing sees through (smoke.js)
+  smoke:{slot:4,kind:'nade',n:['연막탄','Smoke Grenade'],cost:300,model:'smkg',hold:'nade',draw:.5,speed:1},
   claw:{slot:3,kind:'claw',n:['손톱','Claws'],speed:1,draw:.4},
   zbomb:{slot:4,kind:'nade',n:['좀비 수류탄','Zombie Grenade'],model:'zbomb',hold:'nade',draw:.4,speed:1},
 };
@@ -56,8 +58,10 @@ const BUY_MENU=[
   {k:'sniper',n:['저격총','Snipers'],items:['sr8','r700','dm14']},
   {k:'mg',n:['기관총','Machine Guns'],items:['mg6','hmg','gx6']},
   {k:'special',n:['특수 · 근접','Special · Melee'],items:['airb','gl40','axe','hammer']},
-  {k:'equip',n:['장비','Equipment'],items:['armor','he','frost','flare','ammo']},
+  {k:'equip',n:['장비','Equipment'],items:['armor','he','frost','flare','smoke','ammo']},
 ];
+// the human grenades in slot-4 order (the 4 key, the wheel, the weapon bar, the HUD, the loadouts)
+const H_NADES=['he','frost','flare','smoke'];
 const EQUIP={armor:{n:['방탄복 + 헬멧','Kevlar + Helmet'],cost:1000},ammo:{n:['탄약 보충','Refill Ammo'],cost:200}};
 const HOLDS={rifle:{off:[-.13,-.1,-.16]},pistol:{off:[-.21,-.05,-.36]},dual:{off:[-.06,-.05,-.36]},knife:{off:[-.06,-.24,-.22]},axe:{off:[-.05,-.26,-.2],rx:1.05,rz:Math.PI},hammer:{off:[-.02,-.3,-.16],rx:1.15,rz:Math.PI,ham:1},nade:{off:[-.04,-.16,-.2]}};
 function holdFor(id){const W=WPN[id];if(!W||!W.model)return null;const Gd=GUNS[W.model];const H=HOLDS[W.hold]||HOLDS.rifle;
@@ -194,7 +198,7 @@ function knifeAttack(a,heavy){meleeSwing(a,heavy);meleeStrike(a,heavy)}
 // ---------- grenades ----------
 const NADES=[];
 function throwNade(a,kind,X){if(!WPN[kind])return;const eye=actorEye(a);const soft=kind==='zbomb'&&a.bSoft;aimDir(a.yaw,a.pitch+(soft?.05:.12),_dv);const sp=soft?5.5:kind==='zbomb'?15:14.5;
-  const n={kind,owner:a,x:eye.x+_dv.x*.4,y:eye.y+_dv.y*.4-.1,z:eye.z+_dv.z*.4,vx:_dv.x*sp+a.c.vx*.6,vy:_dv.y*sp+(soft?1:2)+Math.max(0,a.c.vy)*.5,vz:_dv.z*sp+a.c.vz*.6,t:0,fuse:kind==='flare'?1.2:kind==='zbomb'?1.3:1.6,rest:false,mesh:null,spin:rr(-12,12),ghost:NET.ghost>0};
+  const n={kind,owner:a,x:eye.x+_dv.x*.4,y:eye.y+_dv.y*.4-.1,z:eye.z+_dv.z*.4,vx:_dv.x*sp+a.c.vx*.6,vy:_dv.y*sp+(soft?1:2)+Math.max(0,a.c.vy)*.5,vz:_dv.z*sp+a.c.vz*.6,t:0,fuse:kind==='flare'?1.2:kind==='zbomb'?1.3:kind==='smoke'?3:1.6,rest:false,mesh:null,spin:rr(-12,12),ghost:NET.ghost>0};
   if(X){n.x=X.x;n.y=X.y;n.z=X.z;n.vx=X.vx;n.vy=X.vy;n.vz=X.vz}
   const m=new THREE.Mesh(gunGeo(kind==='zbomb'?'zbombT':WPN[kind].model),matGun());m.position.set(n.x,n.y,n.z);R.scene.add(m);n.mesh=m;NADES.push(n);
   if(a.isPlayer){AU.play('throw',{vol:.7})}else AU.at('throw',eye.x,eye.y,eye.z,{vol:.5});
@@ -226,9 +230,11 @@ function updNade(n,i,dt){{n.t+=dt;if(n.upd){if(n.upd(n,dt))removeNade(i);return}
     if(n.kind==='flare'&&n.lit){n.light.x=n.x;n.light.y=n.y+.3;n.light.z=n.z;if(Math.random()<.5)FX.spawn({x:n.x,y:n.y+.1,z:n.z,vx:rr(-1,1),vy:rr(1,3),vz:rr(-1,1),life:rr(.2,.5),s0:.05,s1:.02,r:1,g:.4,b:.3,f:0,grav:6,add:1});
       if(Math.random()<.25)FX.spawn({x:n.x,y:n.y+.2,z:n.z,vx:rr(-.2,.2),vy:rr(.5,1.2),vz:rr(-.2,.2),life:rr(1.5,2.5),s0:.2,s1:.9,r:.55,g:.3,b:.3,a:.35,f:2,drag:1});
       if(n.t>n.fuse+25){n.light.dead=true;removeNade(i)}return}
+    // a smoke grenade: its cloud once it lies still (or at the fuse); the canister stays until the cloud is gone
+    if(n.kind==='smoke'){if(n.sm){if(SMK.done(n.sm))removeNade(i);else SMK.hiss(n)}else if(n.rest&&n.t>.35||n.t>=n.fuse){n.sm=SMK.pop(n);if(!n.sm)removeNade(i)}return}
     if(n.t>=n.fuse){detonate(n);if(n.kind==='flare'){n.lit=true;n.light=DL.add(n.x,n.y+.3,n.z,'#ff5038',15,1.8,0,{flick:.25});AU.at('flare',n.x,n.y,n.z,{vol:.8});return}removeNade(i)}}}
 function removeNade(i){const n=NADES[i];if(n.mesh){R.scene.remove(n.mesh);n.mesh.material.dispose()}NADES.splice(i,1)}
-function clearNades(){for(let i=NADES.length-1;i>=0;i--){if(NADES[i].light)NADES[i].light.dead=true;removeNade(i)}}
+function clearNades(){for(let i=NADES.length-1;i>=0;i--){if(NADES[i].light)NADES[i].light.dead=true;removeNade(i)}SMK.clear()}
 function detonate(n){const k=n.kind;
   // (a round may carry its own numbers: n.R radius, n.dmg, n.kb, n.stag, n.up, n.jw the weapon it counts for, n.he a blast flag, n.vol / n.rate
   // its sound — JANUS-1's grenades, janus.js; n.hitN = how many zombies the blast caught)

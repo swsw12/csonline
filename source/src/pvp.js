@@ -22,9 +22,9 @@ const _pvV=new THREE.Vector3();
 const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   GOALS:{tdm:[40,60,100],ffa:[15,25,40],race:[10,15,20]},TIMES:[300,480,600],BOTS:[3,5,7,9,11],MPBOTS:[0,2,4,6,8,10,12],
   SIDES:[{n:['블루','BLUE'],c:'#5ab4ff',t:[.16,.4,1]},{n:['레드','RED'],c:'#ff4b3a',t:[1,.2,.12]}],
-  // what 대인전 lets in: the plain guns, the three melee weapons, HE, flares, armour and ammo (no frost, no specials, no crate guns)
+  // what 대인전 lets in: the plain guns, the three melee weapons, HE, flares, smoke, armour and ammo (no frost, no specials, no crate guns)
   GUNS:['knife','axe','hammer','p9','f7','tw9','d50','r6','sg8','db2','m14','as12','k5','k9','um45','pd50','g35','kv47','br3','ar7','ar5c','hr17',
-    'sr8','r700','dm14','hmg','mg6','he','flare','armor','ammo'],
+    'sr8','r700','dm14','hmg','mg6','he','flare','smoke','armor','ammo'],
   MEL:{knife:.85,axe:.8,hammer:.6},AP:{sniper:.97,rifle:.78,mg:.8,smg:.62,pistol:.65,shotgun:.72},
   mid:0,mode:'tdm',goal:50,time:480,assigned:false,bases:null,played:0,intel:[[],[]],recent:[],hits:[],bm0:null,bi0:null,_D:null,aiS:'',aiT:0,
   isMode(m){return m==='tdm'||m==='ffa'||m==='bomb'||m==='race'},
@@ -61,7 +61,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   // the loadout of this life: the one noted (ldSnap) or given, cleaned of anything 대인전 does not allow; armour always
   kit(a){if(G.mode==='race')return RACE.kit(a);ldRestore(a);this.sanitize(a);a.armor=100;if(a.kit)a.kit.armor=1;a.cur=bestWeapon(a)},
   sanitize(a){for(const s of [1,2,3]){const id=a.inv[s];if(id&&!this.ok(id)){if(a.ammo[id])delete a.ammo[id];a.inv[s]=s===2?'p9':s===3?'knife':null;if(a.inv[s])fillAmmo(a,a.inv[s])}}
-    a.inv.frost=0;const o=a.ldo;if(o){for(const s of [1,2,3])if(o[s]&&!this.ok(o[s]))o[s]=s===2?'p9':s===3?'knife':null;o.frost=0}if(a.cur&&!this.ok(a.cur)&&a.cur!=='he'&&a.cur!=='flare')a.cur=bestWeapon(a)},
+    a.inv.frost=0;const o=a.ldo;if(o){for(const s of [1,2,3])if(o[s]&&!this.ok(o[s]))o[s]=s===2?'p9':s===3?'knife':null;o.frost=0}if(a.cur&&!this.ok(a.cur))a.cur=bestWeapon(a)},
   begin(plan){if(G.mode==='bomb')return BOMB.begin(plan);if(NET.cli&&!plan)return;if(!this.assigned)this.assign();AU.stopAll('countdown');dropsClear();G.round=1;G.st='prep';G.time=this.WARM;FX.clearLimbs();
     G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.killer=null;G.winner=-1;G.beepAt=this.WARM+1;G.hostN=0;G.score=[0,0];G.pvpKC=null;
     clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
@@ -208,7 +208,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
 
   // ---------- my loadout at the start: set 1 (what 대인전 allows and the account owns), a plain rifle if it has no primary ----------
   autoSet(){const P=G.player;if(!P||!P.alive)return;const s=ldSets()[0]||{},ids=[];
-    for(const id of [s[3],s.he&&'he',s.flare&&'flare',s[2],s[1]]){if(!id||!this.ok(id)||ldLocked(P,id,true))continue;if(!buyCheck(P,id))ids.push(id)}
+    for(const id of [s[3],s.he&&'he',s.flare&&'flare',s.smoke&&'smoke',s[2],s[1]]){if(!id||!this.ok(id)||ldLocked(P,id,true))continue;if(!buyCheck(P,id))ids.push(id)}
     if(!ids.some(id=>WPN[id]&&WPN[id].slot===1)){const fb=['kv47','ar7','g35','k5','sg8'].find(id=>!ldLocked(P,id,true)&&!buyCheck(P,id));if(fb)ids.push(fb)}
     if(!ids.length)return;const S={n:ids.length,got:0,gun:false,fail:[]};
     if(NET.cli){for(const id of ids)ldAsk(P,id,S);return}
@@ -220,12 +220,12 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
       ['db2',.02],['r700',.06],['sr8',.04],['dm14',.03],['hmg',.03],['mg6',.02]].filter(p=>WPN[p[0]]);
     let t=0;for(const p of prim)t+=p[1];let r=Math.random()*t,p1=prim[0][0];for(const p of prim){r-=p[1];if(r<=0){p1=p[0];break}}
     const pr=Math.random(),p2=pr<.6?'p9':pr<.75?'d50':pr<.85?'f7':pr<.93?'tw9':'r6';
-    return {1:p1,2:p2,3:'knife',he:Math.random()<.5?1:0,frost:0,flare:0,armor:1}},
+    return {1:p1,2:p2,3:'knife',he:Math.random()<.5?1:0,frost:0,flare:0,smoke:Math.random()<(G.mode==='bomb'?.75:.3)?1:0,armor:1}},
   diff(){const d=DIFF[G.diff|0]||DIFF[1];if(this._D&&this._D.k===d)return this._D;return this._D={k:d,react:d.react*1.7+.08,err:d.err*1.6,turn:d.turn*.8,hsP:d.hsP*.55,tol:d.tol}},
   botInit(a){const B=a.bot;Object.assign(B,{pm:this.mid,tg:null,lkp:null,rg:null,rgT:0,path:null,pg:null,repath:0,hurtBy:null,hurtT:-9,seenT:-9,react:0,aimX:0,aimY:0,aimOX:0,aimOY:0,aimRT:0,
-    aimT0:0,hs:false,hsT:0,strafe:0,strafeT:0,crouchT:0,nadeCD:rr(6,14),scanY:null,fireHold:false,burstT:0,lof:false});a.flash=false},
-  botSpawn(a){const B=a.bot;B.tg=null;B.lkp=null;B.rg=null;B.path=null;B.pg=null;B.hurtBy=null;B.scanY=null;B.react=0;B.crouchT=0;a.flash=false},
-  botDie(a){const B=a.bot;B.tg=null;B.path=null},
+    aimT0:0,hs:false,hsT:0,strafe:0,strafeT:0,crouchT:0,nadeCD:rr(6,14),scanY:null,fireHold:false,burstT:0,lof:false,smk:null,retT:0,smkR:0,smkF:0});a.flash=false},
+  botSpawn(a){const B=a.bot;B.tg=null;B.lkp=null;B.rg=null;B.path=null;B.pg=null;B.hurtBy=null;B.scanY=null;B.react=0;B.crouchT=0;B.smk=null;B.retT=0;a.flash=false},
+  botDie(a){const B=a.bot;B.tg=null;B.path=null;B.smk=null;B.retT=0},
   botHurt(t,src){const B=t.bot;if(!B||!src)return;B.hurtBy=src;B.hurtT=G.t;if(!B.tg||B.tg===src||Math.random()<.5)B.lkp={x:src.c.x,y:src.c.y,z:src.c.z,t:G.t}},
   botHeard(a,t){const B=a.bot;if(B.tg)return;if(!B.lkp||G.t-B.lkp.t>1.5||Math.random()<.3)B.lkp={x:t.c.x+rr(-3,3),y:t.c.y,z:t.c.z+rr(-3,3),t:G.t,h:1}},
   // sight at ~8 Hz: the closest enemy in view (about 140°) with a clear line, one that just hurt it even behind; shots heard give a rough place
@@ -233,12 +233,12 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     for(const t of G.actors){if(t===a||!t.alive||!foe(a,t))continue;const dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz);if(d>this.SIGHT)continue;
       const known=B.tg===t&&G.t-B.seenT<1,ang=Math.abs(wrapA(Math.atan2(-dx,-dz)-a.yaw)),Wt=WPN[t.cur],heard=G.t-(t.lastFire||-9)<1.2&&d<40&&!(Wt&&Wt.quiet);
       if(ang>1.22&&d>4&&!known&&t!==hb){if(heard)this.botHeard(a,t);continue}
-      if(!losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z)&&!losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z)){if(heard||t===hb)this.botHeard(a,t);continue}
+      if(!losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z)&&!losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z)||SMK.n&&SMK.hides(a,t)){if(heard||t===hb)this.botHeard(a,t);continue}
       const sc=d*(known?.7:1)*(t===hb?.5:1)*(this.prot(t)?2.5:1);if(sc<bd){bd=sc;best=t}}
     if(best){if(B.tg!==best){B.tg=best;B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<5?.5:1);B.aimT0=G.t;B.hsT=0}B.seenT=G.t;B.lkp={x:best.c.x,y:best.c.y,z:best.c.z,t:G.t};
       if(this.teams()){const I=this.intel[a.side===1?1:0];I.push({x:best.c.x,y:best.c.y,z:best.c.z,t:G.t});if(I.length>10)I.shift()}}
     else if(B.tg&&(!B.tg.alive||G.t-B.seenT>.6))B.tg=null;
-    const t=B.tg;B.lof=!!t&&losClear(e.x,e.y,e.z,t.c.x,B.hs?t.head.y:t.c.y+t.c.h*.6,t.c.z)},
+    const t=B.tg;B.lof=!!t&&losClear(e.x,e.y,e.z,t.c.x,B.hs?t.head.y:t.c.y+t.c.h*.6,t.c.z)&&!(SMK.n&&SMK.hides(a,t))},
   range(W){const k=W&&W.kind;return k==='shotgun'?[3,9]:k==='smg'?[5,16]:k==='sniper'?[14,60]:k==='pistol'?[5,18]:k==='melee'?[0,1.6]:[8,30]},
   canStep(a,dx,dz){const c=a.c;return charFits(c,c.x+dx*.6,c.y+.3,c.z+dz*.6)&&floorBelow(c.x+dx*.9,c.y+.4,c.z+dz*.9,.2)>c.y-.6},
   botWalk(a,g,dt){const B=a.bot,c=a.c;if(Math.hypot(g.x-c.x,g.z-c.z)<1.2&&Math.abs(g.y-c.y)<1.2)return false;
@@ -296,11 +296,13 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(G.st==='prep'){if(B.scanY==null)B.scanY=a.yaw;AI.turnTo(a,B.scanY+Math.sin(G.t*.6+a.id)*.8,-.03,dt,2);return}
     if(G.st!=='fight')return;
     const D=this.diff();if(B.think<=0){B.think=.11+Math.random()*.06;this.botSee(a,D);
-      if(B.tg&&a.inv.he>0&&WPN[a.cur]&&WPN[a.cur].kind!=='nade'){B.nadeCD-=.14;if(B.nadeCD<=0){B.nadeCD=rr(6,12);const d=dist3(B.tg.c,c);if(d>7&&d<18&&B.lof&&Math.random()<.5)equip(a,'he')}}}
+      if(B.tg&&a.inv.he>0&&WPN[a.cur]&&WPN[a.cur].kind!=='nade'&&!B.smk){B.nadeCD-=.14;if(B.nadeCD<=0){B.nadeCD=rr(6,12);const d=dist3(B.tg.c,c);if(d>7&&d<18&&B.lof&&Math.random()<.5)equip(a,'he')}}
+      SMK.botThink(a)}
+    if(SMK.botThrow(a,dt))return;// (a smoke grenade on its way out: smoke.js)
     const tg=B.tg&&B.tg.alive&&foe(a,B.tg)?B.tg:null,W=WPN[a.cur]||{},bm=G.mode==='bomb';
     if(bm&&BOMB.botAct(a,dt,tg))return;
-    this.botGun(a,tg,W);let moving=false;
-    if(tg)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=bm?BOMB.botGoal(a):this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
+    this.botGun(a,tg,W);let moving=false;const ret=B.retT>G.t&&B.rg;// (backing off behind its own smoke)
+    if(tg&&!ret)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=ret?B.rg:bm?BOMB.botGoal(a):this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
     if(tg)this.botAim(a,tg,dt,D,WPN[a.cur]||W);
     else if(moving){const v=Math.hypot(c.vx,c.vz);if(v>.5)AI.turnTo(a,Math.atan2(-c.vx,-c.vz),0,dt,6)}
     else if(bm&&B.holdY!=null)AI.turnTo(a,B.holdY+Math.sin(G.t*.45+a.id*1.7)*.42,-.03,dt,2.6);// (holding an angle in 폭파미션)
@@ -343,6 +345,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     // who is under the crosshair: the name in its colour; a teammate's health
     this.aiT-=dt;if(this.aiT<=0){this.aiT=.08;let ai='';if(P.alive&&!G.spec){const ey=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const hw=rayCast(ey.x,ey.y,ey.z,_dv.x,_dv.y,_dv.z,60);let best=null,bt=hw?hw.t:60;
         for(const t of G.actors){if(!t.alive||t===P)continue;const c=t.c,th=rayAABB(ey.x,ey.y,ey.z,_dv.x,_dv.y,_dv.z,c.x-c.hw,c.y,c.z-c.hw,c.x+c.hw,t.head.y+.15,c.z+c.hw,bt);if(th>=0&&th<bt){bt=th;best=t}}
+        if(best&&SMK.n&&SMK.blocks(ey.x,ey.y,ey.z,ey.x+_dv.x*bt,ey.y+_dv.y*bt,ey.z+_dv.z*bt))best=null;
         if(best)ai=`<span class="${this.cls(best)}">${esc(best.name)}</span>`+(!foe(P,best)?`<span class="bar t"><i style="width:${Math.round(clamp(best.hp/100,0,1)*100)}%"></i></span>`:'')}this.aiS=ai}
     set(e.aimInfo,this.aiS,1);
     // spawn protection and the buy window

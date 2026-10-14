@@ -66,7 +66,7 @@ let ACTOR_ID=0;
 function mkActor(name,isPlayer,skin){const a={id:ACTOR_ID++,name,isPlayer,skin,zpick:rpick(ZLIST),team:TH,alive:false,
   c:{x:0,y:0,z:0,vx:0,vy:0,vz:0,hw:.3,h:1.8,onGround:false,stepH:.5,jumped:false},yaw:0,pitch:0,duck:false,
   hp:100,maxHp:100,armor:0,money:0,kills:0,hsKills:0,infects:0,deaths:0,score:0,dmgDealt:0,
-  inv:{1:null,2:'p9',3:'knife',he:0,frost:0,flare:0},ammo:{},cur:'p9',prev:'knife',nextFire:0,reloadT:0,relKind:null,shellT:0,drawT:0,shots:0,recoilSpread:0,punchP:0,punchY:0,kick:0,zoom:0,zoomWas:0,boltT:0,pumpT:0,throwT:0,throwKind:null,
+  inv:{1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,smoke:0},ammo:{},cur:'p9',prev:'knife',nextFire:0,reloadT:0,relKind:null,shellT:0,drawT:0,shots:0,recoilSpread:0,punchP:0,punchY:0,kick:0,zoom:0,zoomWas:0,boltT:0,pumpT:0,throwT:0,throwKind:null,
   zc:'rager',lvl:1,infR:0,host:false,skillCD:0,skillT:0,bombs:0,frozen:0,staggerT:0,dizzy:0,shriekT:0,lastHurt:-99,
   deadT:0,permaDead:false,reviveT:0,respawnT:0,deadDir:1,reviving:0,mvx:0,mvz:0,kvx:0,kvz:0,
   cmd:{f:0,s:0,jump:false,duck:false,walk:false,fire:false,alt:false,reload:false,skill:false,slot:0,nv:false},pc:{},
@@ -75,7 +75,7 @@ function mkActor(name,isPlayer,skin){const a={id:ACTOR_ID++,name,isPlayer,skin,z
   return a}
 // ---------- inventory ----------
 function fillAmmo(a,id){const W=WPN[id];if(!W||!W.mag)return;a.ammo[id]={mag:W.mag,res:W.res}}
-function giveDefault(a){a.inv={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0};a.ammo={};fillAmmo(a,'p9');a.cur='p9';a.prev='knife';gunFresh(a,'p9')}
+function giveDefault(a){a.inv={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,smoke:0};a.ammo={};fillAmmo(a,'p9');a.cur='p9';a.prev='knife';gunFresh(a,'p9')}
 // a gun that just came into someone's hands: its first draw plays the gun's own ready action (GUN_DESIGN, vmdraw.js)
 function gunFresh(a,id){const W=WPN[id];if(W&&W.fd&&W.fd.act)(a.fresh||(a.fresh={}))[id]=1}
 function hasWeapon(a,id){const W=WPN[id];if(!W)return false;if(W.kind==='nade')return id==='zbomb'?a.bombs>0:a.inv[id]>0;return a.inv[W.slot]===id}
@@ -102,7 +102,7 @@ function meleePendTick(a,dt){const p=a.pendingMelee;if(!p)return false;if(!a.ali
 // third-person swing length (seconds) for a melee weapon
 function meleeAtkD(W,heavy){return W&&W.anD?W.anD[heavy?1:0]:heavy?.68:.44}
 function slotPick(a,slot){if(a.team===TZ){if(slot===4&&a.bombs>0)equip(a,'zbomb');else if(slot!==4)equip(a,'claw');return}
-  if(slot===4){const order=['he','frost','flare'].filter(k=>a.inv[k]>0);if(!order.length)return;const i=order.indexOf(a.cur);equip(a,order[(i+1)%order.length]);return}
+  if(slot===4){const order=H_NADES.filter(k=>a.inv[k]>0);if(!order.length)return;const i=order.indexOf(a.cur);equip(a,order[(i+1)%order.length]);return}
   const id=slot===3?(a.inv[3]||'knife'):a.inv[slot];if(id)equip(a,id)}
 function bestWeapon(a){return a.inv[1]||a.inv[2]||a.inv[3]||'knife'}
 // buying (free: buy / buyCheck), the loadout carried between rounds and the saved sets: loadout.js
@@ -292,7 +292,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(a.team===TZ){zombieAttack(a,dt);return}
   if(a.grabT>0&&!(a.lyPin>0&&W.kind==='melee')){cmd.fire=cmd.alt=cmd.reload=false}// pinned by a straitjacket zombie: no shooting until a teammate frees you (pinned by 4챕터's LYREBIRD: a knife still works)
   // grenades
-  if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){throwNade(a,a.cur);a.inv[a.cur]=Math.max(0,a.inv[a.cur]-1);const nx=['he','frost','flare'].find(k=>a.inv[k]>0);equip(a,nx||bestWeapon(a))}return}
+  if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){const k=a.cur;throwNade(a,k);a.inv[k]=Math.max(0,a.inv[k]-1);const nx=k==='smoke'&&!a.isPlayer?null:H_NADES.find(q=>a.inv[q]>0);equip(a,nx||bestWeapon(a))}return}// (a bot puts its gun back up after a smoke)
     // the player's grenade: press pulls the pin and holds it back; it flies when the button is let go (v6.26). Bots throw at once
     if(a.nHold){a.nT+=dt;if(!cmd.fire&&a.nT>=.2){a.nHold=0;a.throwT=.08;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;VM.hold=false}return}
     if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){if(a.isPlayer){a.nHold=1;a.nT=0;VM.throwNade();VM.hold=true;AU.play('pin',{vol:.5})}else{a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false}}return}
@@ -461,7 +461,7 @@ function zBaseHp(a){return ZCLASS[a.zc].hp}
 function becomeZombie(a,host){if(a.team===TH){ldSnap(a);dropDeath(a)}const nh=G.actors.filter(x=>x.team===TH&&x!==a).length;
   a.team=TZ;a.host=host;a.zc=a.zpick||'rager';const Z=ZCLASS[a.zc];a.lvl=host?2:1;a.infR=0;
   const om=G.mode==='orig';a.maxHp=host?Math.round(Z.hp*1.05+160*Math.max(1,nh)/Math.max(1,G.hostN)):Math.round(Z.hp*(om?ZBAL.origHp:1));if(a.bot)a.maxHp=Math.round(a.maxHp*DIFF_Z.hp[G.diff||0]);a.hp=a.maxHp;a.armor=host?300:Math.round(Z.armor*(om?ZBAL.origArmor:1));
-  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomb
+  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomb
   a.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
   a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.an.skill=1;a.permaDead=false;a.alive=true;a.turning=host?2:1.4;
   a.clawLock=host?0:G.t+CLAW_LOCK;// a freshly infected zombie can't claw at once: no chain infections through a crowd
@@ -565,7 +565,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){const cb=zComeback();a.reviveT-=dt*(cb?ZBAL.cbRevive:1);if(a.reviveT<=0){reviveZombie(a,cb?zPackSpawn(a):zRandomSpawn(),true);if(cb){a.hp=a.maxHp;a.armor=Math.max(a.armor,Math.round(ZCLASS[a.zc].armor*.75))}}}else{a.respawnT-=dt;if(a.respawnT<=0)reviveZombie(a,zRandomSpawn())}}}
     // dead bodies still settle under gravity
     if(!a.alive&&a.deadT<3){a.c.vy-=GRAV*dt;a.c.vx*=.9;a.c.vz*=.9;a.c.vx+=a.kvx*.3;a.c.vz+=a.kvz*.3;a.kvx*=.8;a.kvz*=.8;moveChar(a.c,dt)}}
-  separate(dt);updateNades(dt);nyUpdate(dt);salUpdate(dt);dropsUpdate(dt);
+  separate(dt);updateNades(dt);SMK.tick(dt);nyUpdate(dt);salUpdate(dt);dropsUpdate(dt);
   for(const a of G.actors)updateVisual(a,dt)}
 
 // zombie grenade: the free hand comes up, hooks two fingers into the mouth, yanks the bone pin out and drops away; armed, the bomb trembles in the fist

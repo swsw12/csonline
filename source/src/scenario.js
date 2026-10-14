@@ -17,7 +17,7 @@ SCEN.later=(t,f)=>SCEN.tq.push({t,f});
 // every page runs this with the same roster: the pool waits dead and out of sight
 SCEN.initPool=function(){SCEN.H=G.actors.filter(a=>!a.scen);SCEN.Z=G.actors.filter(a=>a.scen);SCEN.on=true;SCEN.stage=1;SCEN.wave=0;SCEN.lives=3;SCEN.ph='prep';SCEN.t=20;SCEN.acid.length=0;SCEN.tq=[];SCEN.bossId=-1;SCEN.remain=0;
   for(const a of SCEN.Z){a.team=TZ;a.zc=a.zpick=a.boss?'boss':'rager';a.alive=false;a.permaDead=true;a.hp=0;a.maxHp=1;a.deadT=99;a.an.dead=0;a.host=false;a.lvl=1;a.bombs=0;a.money=0;
-    a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.cur='claw';a.name=ZCLASS[a.zc].n[LI()];a.c.x=0;a.c.y=-60;a.c.z=0;setHull(a)}
+    a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};a.cur='claw';a.name=ZCLASS[a.zc].n[LI()];a.c.x=0;a.c.y=-60;a.c.z=0;setHull(a)}
   // paint every zombie skin now rather than when the first one of a kind walks in mid-wave
   for(const k of ZALL)charAsset('z_'+k)};
 SCEN.begin=function(){SCEN.on=true;SCEN.stage=1;SCEN.lives=3;SCEN.best=0;SCEN.win=false;SCEN.tq=[];G.recDone=false;for(const a of G.actors)a.wup={};SCEN.stageStart('fresh')};
@@ -152,7 +152,7 @@ SCEN.blast=function(x,y,z,r,dmg,src,fxOnly){FX.explode(x,y,z,'he');FX.spore(x,y,
     if(!fxOnly&&!NET.cli)hurtHuman(t,(dmg*f+8)*SCEN.dmgMul()/.18,src,{})}};
 // ---------- spitter: keeps its distance and lobs acid ----------
 SCEN.spitAI=function(a,dt){const B=a.bot;const t=B&&B.target;if(!t||!t.alive)return;const dx=t.c.x-a.c.x,dz=t.c.z-a.c.z,d=Math.hypot(dx,dz);
-  const e=actorEye(a);const see=d<18&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.4,t.c.z);if(!see)return;
+  const e=actorEye(a);const see=d<18&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.4,t.c.z)&&!(SMK.n&&SMK.blocks(e.x,e.y,e.z,t.c.x,t.c.y+1.4,t.c.z));if(!see)return;
   // stop and face the target when in range; back off when it gets close
   if(d<15){a.cmd.f=d<6?-1:0;a.cmd.s=Math.sin(G.t*1.3+a.id)>.6?1:0;a.cmd.fire=a.cmd.alt=false;AI.turnTo(a,Math.atan2(-dx,-dz),0,dt,6)}
   a.spitT-=dt;if(a.spitT<=0&&d>3&&d<17){a.spitT=rr(2.8,4);SCEN.spit(a,t)}};
@@ -186,7 +186,7 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
     else if(S.mode==='slamW'){a.an.skill=Math.max(a.an.skill,.3);if(S.mt<=0){S.mode='';S.pt=rr(3.5,5.5);SCEN.slam(a)}}
     return}
   S.pt-=dt;const t=a.bot&&a.bot.target;if(S.pt>0||!t||!t.alive)return;const dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz)||1;if(d>22)return;
-  const hy=c.y+4.2,see=losClear(c.x,hy,c.z,t.c.x,t.c.y+1.4,t.c.z);
+  const hy=c.y+4.2,see=losClear(c.x,hy,c.z,t.c.x,t.c.y+1.4,t.c.z)&&!(SMK.n&&SMK.blocks(c.x,hy,c.z,t.c.x,t.c.y+1.4,t.c.z));
   // out of reach (up on something, or the way round is blocked): one huge leap onto it
   if(see&&c.onGround&&(S.far>5&&t.c.y>c.y+1.1||S.far>9)&&d<20&&losClear(c.x,hy,c.z,t.c.x,Math.max(hy,t.c.y+3),t.c.z)){S.mode='leapW';S.mt=.75;a.an.skill=1;a.yaw=Math.atan2(-dx,-dz);AU.at('zgrowl',c.x,c.y+3,c.z,{vol:1,range:70,rate:.5});if(NET.host)netEv('scbo',{k:1,i:a.id});return}
   if(!see){S.pt=.5;return}
@@ -212,7 +212,7 @@ SCEN.REW={ammo:{n:['탄약 가득','Full ammo'],d:['모든 무기 탄약 최대 
 SCEN.offerFor=()=>shuffle(Object.keys(SCEN.REW)).slice(0,3);
 SCEN.GUNS=['hmg','mg6','gx6','ar7','kv47','g35','br3','ar5c','hr17','as12','m14','sg8','volc','xbow','gaebolg','mdrill','xdz'];
 SCEN.applyReward=function(a,k,host){if(!a||!a.alive)return;
-  if(k==='ammo'){for(const id in a.ammo){const W=WPN[id];if(W)a.ammo[id]={mag:W.mag,res:W.res}}for(const g of ['he','frost'])a.inv[g]=Math.max(a.inv[g]||0,1)}
+  if(k==='ammo'){for(const id in a.ammo){const W=WPN[id];if(W)a.ammo[id]={mag:W.mag,res:W.res}}for(const g of ['he','frost','smoke'])a.inv[g]=Math.max(a.inv[g]||0,1)}
   else if(k==='weapon'){const pool=SCEN.GUNS.filter(id=>WPN[id]&&WPN[id].slot===1&&id!==a.inv[1]);if(!pool.length)return;const id=rpick(pool);a.inv[1]=id;fillAmmo(a,id);equip(a,id);if(a.isPlayer)HUD.note((LI()?'Got: ':'획득: ')+WPN[id].n[LI()],2.5)}
   if(k==='heal'||k==='armor'){if(NET.cli&&!host){netToHost({t:'scrw',k});return}if(k==='heal'){a.hp=100;a.armor=Math.max(a.armor,50)}else a.armor=100}};
 // weapon upgrade: +10% damage per level on the gun in hand (the primary otherwise), up to 5 levels

@@ -108,7 +108,7 @@ const AI={
     // teammate and the one it is already on count as closer), whether the line to the aim point is clear, and the zombies close enough
     // to back away from
     if(B.think<=0){B.think=.12+Math.random()*.05;const e=actorEye(a);let best=null,bd=1e9;
-      for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>(spread?HBOT.sight:48))continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;if((z.epHide||!EP.on&&ESMK.list.length)&&epHid(a,z,d))continue;const pz=B.panicT>0&&B.panicZ===z;
+      for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>(spread?HBOT.sight:48))continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;if((z.epHide||!EP.on&&ESMK.list.length)&&epHid(a,z,d)||SMK.n&&d>2.5&&SMK.blocks(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z))continue;const pz=B.panicT>0&&B.panicZ===z;
         const ang=Math.abs(wrapA(Math.atan2(-(z.c.x-c.x),-(z.c.z-c.z))-a.yaw));if(ang>1.5&&d>6&&!(B.seen&&B.seen.a===z)&&!pz)continue;
         {const P=z.epAimP;if(P?!losClear(e.x,e.y,e.z,P.x,P.y,P.z):!losClear(e.x,e.y,e.z,z.c.x,z.c.y+(z.epAimY||(ZBIG[z.zc]?2.8:1.2)),z.c.z))continue}const sc=d*(z.epPri||1)*(ang>1.5?1.5:1)*(pz?.3:1)*(B.seen&&B.seen.a===z?.75:1)*(spread&&d>4&&hNear(z.c.x,z.c.y,z.c.z,3.5,a)?.6:1);if(sc<bd){bd=sc;best=z}}
       if(best){if(!B.seen||B.seen.a!==best){B.seen={a:best,t:G.t};B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<4?.35:1);B.aimT0=G.t;B.hsT=0}B.seen.ls=G.t}
@@ -199,7 +199,7 @@ const AI={
   // the sum of the away directions (nearer ones count more) plus a little room from teammates, so a group backing off fans out.
   kiteScan(a,r,e){const B=a.bot,c=a.c;let ax=0,az=0,dm=99;
     for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const dy=z.c.y-c.y;if(dy<-2.4||dy>2.4)continue;const dx=c.x-z.c.x,dz=c.z-z.c.z;if(Math.abs(dx)>r||Math.abs(dz)>r)continue;const d=Math.hypot(dx,dz);if(d>r)continue;
-      if(d>5.5&&(z.c.vx*dx+z.c.vz*dz)/(d||1)<1)continue;if(d>3&&!losClear(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z))continue;const w=1/Math.max(1,d*d);ax+=dx/(d||1)*w;az+=dz/(d||1)*w;dm=Math.min(dm,d)}
+      if(d>5.5&&(z.c.vx*dx+z.c.vz*dz)/(d||1)<1)continue;if(d>3&&(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)||SMK.n&&SMK.blocks(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)))continue;const w=1/Math.max(1,d*d);ax+=dx/(d||1)*w;az+=dz/(d||1)*w;dm=Math.min(dm,d)}
     let l=Math.hypot(ax,az);if(dm>=99||l<1e-9){B.kd=99;return}ax/=l;az/=l;
     for(const h of G.actors){if(h===a||!h.alive||h.team!==TH)continue;const dx=c.x-h.c.x,dz=c.z-h.c.z;if(Math.abs(dx)>2.5||Math.abs(dz)>2.5||Math.abs(h.c.y-c.y)>1.5)continue;const d=Math.hypot(dx,dz);if(d>2.5||d<.01)continue;ax+=dx/d*(1-d/2.5)*.5;az+=dz/d*(1-d/2.5)*.5}
     l=Math.hypot(ax,az)||1;B.kx=ax/l;B.kz=az/l;B.kd=dm},
@@ -237,7 +237,7 @@ const AI={
     const e=actorEye(a);const dx=t.c.x-c.x,dz=t.c.z-c.z,dh=Math.hypot(dx,dz),dy=t.c.y-c.y;
     // ~7 Hz: line of sight, and whether the straight line to the target can actually be walked —
     // no wall, crate, railing, gap or ledge in between (seeing someone is not the same as being able to run at them)
-    if(B.think<=0){B.think=.15;B.los=dh<22&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z);
+    if(B.think<=0){B.think=.15;B.los=dh<22&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z)&&!(SMK.n&&dh>2.5&&SMK.blocks(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z));
       B.straight=B.los&&Math.abs(dy)<.6&&dh<14&&navStraight(c.x,c.y,c.z,t.c.x,t.c.z,Math.min(.3,c.hw*.9))}
     const see=dh<22&&B.los;
     let moving=false;

@@ -25,7 +25,7 @@ const RACE={
   okWep(a,w){if(w==='knife')return true;const L=this.ladder(),i=this.lv(a);return w===L[i]||i>0&&w===L[i-1]},
   name(id){const W=WPN[id];return W&&W.n?W.n[LI()]:id},
   // the kit of a life: the gun of this step (a full magazine and its spare), the knife, armour
-  kit(a){const id=this.wep(a);a.inv={1:null,2:null,3:'knife',he:0,frost:0,flare:0};a.ammo={};ldKitReset(a);
+  kit(a){const id=this.wep(a);a.inv={1:null,2:null,3:'knife',he:0,frost:0,flare:0,smoke:0};a.ammo={};ldKitReset(a);
     if(id!=='knife'){const W=WPN[id];a.inv[W.slot]=id;fillAmmo(a,id)}a.armor=100;a.kit.armor=1;a.cur=id;a.prev='knife'},
   // a level-up while alive: the old gun goes, the next one comes out
   give(a){const id=this.wep(a);for(const s of [1,2])if(a.inv[s]&&a.inv[s]!==id){delete a.ammo[a.inv[s]];a.inv[s]=null}

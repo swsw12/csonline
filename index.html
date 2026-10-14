@@ -10017,6 +10017,8 @@ const WPN={
   he:{slot:4,kind:'nade',n:['HE 수류탄','HE Grenade'],cost:300,model:'he',hold:'nade',draw:.5,speed:1},
   frost:{slot:4,kind:'nade',n:['냉동 수류탄','Frost Grenade'],cost:250,model:'frost',hold:'nade',draw:.5,speed:1},
   flare:{slot:4,kind:'nade',n:['조명탄','Flare'],cost:150,model:'flare',hold:'nade',draw:.5,speed:1},
+  // v6.52: pops where it comes to rest (3 s at most) into a cloud nothing sees through (smoke.js)
+  smoke:{slot:4,kind:'nade',n:['연막탄','Smoke Grenade'],cost:300,model:'smkg',hold:'nade',draw:.5,speed:1},
   claw:{slot:3,kind:'claw',n:['손톱','Claws'],speed:1,draw:.4},
   zbomb:{slot:4,kind:'nade',n:['좀비 수류탄','Zombie Grenade'],model:'zbomb',hold:'nade',draw:.4,speed:1},
 };
@@ -10028,8 +10030,10 @@ const BUY_MENU=[
   {k:'sniper',n:['저격총','Snipers'],items:['sr8','r700','dm14']},
   {k:'mg',n:['기관총','Machine Guns'],items:['mg6','hmg','gx6']},
   {k:'special',n:['특수 · 근접','Special · Melee'],items:['airb','gl40','axe','hammer']},
-  {k:'equip',n:['장비','Equipment'],items:['armor','he','frost','flare','ammo']},
+  {k:'equip',n:['장비','Equipment'],items:['armor','he','frost','flare','smoke','ammo']},
 ];
+// the human grenades in slot-4 order (the 4 key, the wheel, the weapon bar, the HUD, the loadouts)
+const H_NADES=['he','frost','flare','smoke'];
 const EQUIP={armor:{n:['방탄복 + 헬멧','Kevlar + Helmet'],cost:1000},ammo:{n:['탄약 보충','Refill Ammo'],cost:200}};
 const HOLDS={rifle:{off:[-.13,-.1,-.16]},pistol:{off:[-.21,-.05,-.36]},dual:{off:[-.06,-.05,-.36]},knife:{off:[-.06,-.24,-.22]},axe:{off:[-.05,-.26,-.2],rx:1.05,rz:Math.PI},hammer:{off:[-.02,-.3,-.16],rx:1.15,rz:Math.PI,ham:1},nade:{off:[-.04,-.16,-.2]}};
 function holdFor(id){const W=WPN[id];if(!W||!W.model)return null;const Gd=GUNS[W.model];const H=HOLDS[W.hold]||HOLDS.rifle;
@@ -10166,7 +10170,7 @@ function knifeAttack(a,heavy){meleeSwing(a,heavy);meleeStrike(a,heavy)}
 // ---------- grenades ----------
 const NADES=[];
 function throwNade(a,kind,X){if(!WPN[kind])return;const eye=actorEye(a);const soft=kind==='zbomb'&&a.bSoft;aimDir(a.yaw,a.pitch+(soft?.05:.12),_dv);const sp=soft?5.5:kind==='zbomb'?15:14.5;
-  const n={kind,owner:a,x:eye.x+_dv.x*.4,y:eye.y+_dv.y*.4-.1,z:eye.z+_dv.z*.4,vx:_dv.x*sp+a.c.vx*.6,vy:_dv.y*sp+(soft?1:2)+Math.max(0,a.c.vy)*.5,vz:_dv.z*sp+a.c.vz*.6,t:0,fuse:kind==='flare'?1.2:kind==='zbomb'?1.3:1.6,rest:false,mesh:null,spin:rr(-12,12),ghost:NET.ghost>0};
+  const n={kind,owner:a,x:eye.x+_dv.x*.4,y:eye.y+_dv.y*.4-.1,z:eye.z+_dv.z*.4,vx:_dv.x*sp+a.c.vx*.6,vy:_dv.y*sp+(soft?1:2)+Math.max(0,a.c.vy)*.5,vz:_dv.z*sp+a.c.vz*.6,t:0,fuse:kind==='flare'?1.2:kind==='zbomb'?1.3:kind==='smoke'?3:1.6,rest:false,mesh:null,spin:rr(-12,12),ghost:NET.ghost>0};
   if(X){n.x=X.x;n.y=X.y;n.z=X.z;n.vx=X.vx;n.vy=X.vy;n.vz=X.vz}
   const m=new THREE.Mesh(gunGeo(kind==='zbomb'?'zbombT':WPN[kind].model),matGun());m.position.set(n.x,n.y,n.z);R.scene.add(m);n.mesh=m;NADES.push(n);
   if(a.isPlayer){AU.play('throw',{vol:.7})}else AU.at('throw',eye.x,eye.y,eye.z,{vol:.5});
@@ -10198,9 +10202,11 @@ function updNade(n,i,dt){{n.t+=dt;if(n.upd){if(n.upd(n,dt))removeNade(i);return}
     if(n.kind==='flare'&&n.lit){n.light.x=n.x;n.light.y=n.y+.3;n.light.z=n.z;if(Math.random()<.5)FX.spawn({x:n.x,y:n.y+.1,z:n.z,vx:rr(-1,1),vy:rr(1,3),vz:rr(-1,1),life:rr(.2,.5),s0:.05,s1:.02,r:1,g:.4,b:.3,f:0,grav:6,add:1});
       if(Math.random()<.25)FX.spawn({x:n.x,y:n.y+.2,z:n.z,vx:rr(-.2,.2),vy:rr(.5,1.2),vz:rr(-.2,.2),life:rr(1.5,2.5),s0:.2,s1:.9,r:.55,g:.3,b:.3,a:.35,f:2,drag:1});
       if(n.t>n.fuse+25){n.light.dead=true;removeNade(i)}return}
+    // a smoke grenade: its cloud once it lies still (or at the fuse); the canister stays until the cloud is gone
+    if(n.kind==='smoke'){if(n.sm){if(SMK.done(n.sm))removeNade(i);else SMK.hiss(n)}else if(n.rest&&n.t>.35||n.t>=n.fuse){n.sm=SMK.pop(n);if(!n.sm)removeNade(i)}return}
     if(n.t>=n.fuse){detonate(n);if(n.kind==='flare'){n.lit=true;n.light=DL.add(n.x,n.y+.3,n.z,'#ff5038',15,1.8,0,{flick:.25});AU.at('flare',n.x,n.y,n.z,{vol:.8});return}removeNade(i)}}}
 function removeNade(i){const n=NADES[i];if(n.mesh){R.scene.remove(n.mesh);n.mesh.material.dispose()}NADES.splice(i,1)}
-function clearNades(){for(let i=NADES.length-1;i>=0;i--){if(NADES[i].light)NADES[i].light.dead=true;removeNade(i)}}
+function clearNades(){for(let i=NADES.length-1;i>=0;i--){if(NADES[i].light)NADES[i].light.dead=true;removeNade(i)}SMK.clear()}
 function detonate(n){const k=n.kind;
   // (a round may carry its own numbers: n.R radius, n.dmg, n.kb, n.stag, n.up, n.jw the weapon it counts for, n.he a blast flag, n.vol / n.rate
   // its sound — JANUS-1's grenades, janus.js; n.hitN = how many zombies the blast caught)
@@ -11779,7 +11785,7 @@ let ACTOR_ID=0;
 function mkActor(name,isPlayer,skin){const a={id:ACTOR_ID++,name,isPlayer,skin,zpick:rpick(ZLIST),team:TH,alive:false,
   c:{x:0,y:0,z:0,vx:0,vy:0,vz:0,hw:.3,h:1.8,onGround:false,stepH:.5,jumped:false},yaw:0,pitch:0,duck:false,
   hp:100,maxHp:100,armor:0,money:0,kills:0,hsKills:0,infects:0,deaths:0,score:0,dmgDealt:0,
-  inv:{1:null,2:'p9',3:'knife',he:0,frost:0,flare:0},ammo:{},cur:'p9',prev:'knife',nextFire:0,reloadT:0,relKind:null,shellT:0,drawT:0,shots:0,recoilSpread:0,punchP:0,punchY:0,kick:0,zoom:0,zoomWas:0,boltT:0,pumpT:0,throwT:0,throwKind:null,
+  inv:{1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,smoke:0},ammo:{},cur:'p9',prev:'knife',nextFire:0,reloadT:0,relKind:null,shellT:0,drawT:0,shots:0,recoilSpread:0,punchP:0,punchY:0,kick:0,zoom:0,zoomWas:0,boltT:0,pumpT:0,throwT:0,throwKind:null,
   zc:'rager',lvl:1,infR:0,host:false,skillCD:0,skillT:0,bombs:0,frozen:0,staggerT:0,dizzy:0,shriekT:0,lastHurt:-99,
   deadT:0,permaDead:false,reviveT:0,respawnT:0,deadDir:1,reviving:0,mvx:0,mvz:0,kvx:0,kvz:0,
   cmd:{f:0,s:0,jump:false,duck:false,walk:false,fire:false,alt:false,reload:false,skill:false,slot:0,nv:false},pc:{},
@@ -11788,7 +11794,7 @@ function mkActor(name,isPlayer,skin){const a={id:ACTOR_ID++,name,isPlayer,skin,z
   return a}
 // ---------- inventory ----------
 function fillAmmo(a,id){const W=WPN[id];if(!W||!W.mag)return;a.ammo[id]={mag:W.mag,res:W.res}}
-function giveDefault(a){a.inv={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0};a.ammo={};fillAmmo(a,'p9');a.cur='p9';a.prev='knife';gunFresh(a,'p9')}
+function giveDefault(a){a.inv={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,smoke:0};a.ammo={};fillAmmo(a,'p9');a.cur='p9';a.prev='knife';gunFresh(a,'p9')}
 // a gun that just came into someone's hands: its first draw plays the gun's own ready action (GUN_DESIGN, vmdraw.js)
 function gunFresh(a,id){const W=WPN[id];if(W&&W.fd&&W.fd.act)(a.fresh||(a.fresh={}))[id]=1}
 function hasWeapon(a,id){const W=WPN[id];if(!W)return false;if(W.kind==='nade')return id==='zbomb'?a.bombs>0:a.inv[id]>0;return a.inv[W.slot]===id}
@@ -11815,7 +11821,7 @@ function meleePendTick(a,dt){const p=a.pendingMelee;if(!p)return false;if(!a.ali
 // third-person swing length (seconds) for a melee weapon
 function meleeAtkD(W,heavy){return W&&W.anD?W.anD[heavy?1:0]:heavy?.68:.44}
 function slotPick(a,slot){if(a.team===TZ){if(slot===4&&a.bombs>0)equip(a,'zbomb');else if(slot!==4)equip(a,'claw');return}
-  if(slot===4){const order=['he','frost','flare'].filter(k=>a.inv[k]>0);if(!order.length)return;const i=order.indexOf(a.cur);equip(a,order[(i+1)%order.length]);return}
+  if(slot===4){const order=H_NADES.filter(k=>a.inv[k]>0);if(!order.length)return;const i=order.indexOf(a.cur);equip(a,order[(i+1)%order.length]);return}
   const id=slot===3?(a.inv[3]||'knife'):a.inv[slot];if(id)equip(a,id)}
 function bestWeapon(a){return a.inv[1]||a.inv[2]||a.inv[3]||'knife'}
 // buying (free: buy / buyCheck), the loadout carried between rounds and the saved sets: loadout.js
@@ -12005,7 +12011,7 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(a.team===TZ){zombieAttack(a,dt);return}
   if(a.grabT>0&&!(a.lyPin>0&&W.kind==='melee')){cmd.fire=cmd.alt=cmd.reload=false}// pinned by a straitjacket zombie: no shooting until a teammate frees you (pinned by 4챕터's LYREBIRD: a knife still works)
   // grenades
-  if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){throwNade(a,a.cur);a.inv[a.cur]=Math.max(0,a.inv[a.cur]-1);const nx=['he','frost','flare'].find(k=>a.inv[k]>0);equip(a,nx||bestWeapon(a))}return}
+  if(W.kind==='nade'){if(a.throwT>0){a.throwT-=dt;if(a.throwT<=0){const k=a.cur;throwNade(a,k);a.inv[k]=Math.max(0,a.inv[k]-1);const nx=k==='smoke'&&!a.isPlayer?null:H_NADES.find(q=>a.inv[q]>0);equip(a,nx||bestWeapon(a))}return}// (a bot puts its gun back up after a smoke)
     // the player's grenade: press pulls the pin and holds it back; it flies when the button is let go (v6.26). Bots throw at once
     if(a.nHold){a.nT+=dt;if(!cmd.fire&&a.nT>=.2){a.nHold=0;a.throwT=.08;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false;VM.hold=false}return}
     if(cmd.fire&&(!pc.fire||!a.isPlayer)&&a.drawT<=0){if(a.isPlayer){a.nHold=1;a.nT=0;VM.throwNade();VM.hold=true;AU.play('pin',{vol:.5})}else{a.throwT=.28;a.an.atk=1;a.an.atkD=.55;a.an.heavy=false}}return}
@@ -12174,7 +12180,7 @@ function zBaseHp(a){return ZCLASS[a.zc].hp}
 function becomeZombie(a,host){if(a.team===TH){ldSnap(a);dropDeath(a)}const nh=G.actors.filter(x=>x.team===TH&&x!==a).length;
   a.team=TZ;a.host=host;a.zc=a.zpick||'rager';const Z=ZCLASS[a.zc];a.lvl=host?2:1;a.infR=0;
   const om=G.mode==='orig';a.maxHp=host?Math.round(Z.hp*1.05+160*Math.max(1,nh)/Math.max(1,G.hostN)):Math.round(Z.hp*(om?ZBAL.origHp:1));if(a.bot)a.maxHp=Math.round(a.maxHp*DIFF_Z.hp[G.diff||0]);a.hp=a.maxHp;a.armor=host?300:Math.round(Z.armor*(om?ZBAL.origArmor:1));
-  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomb
+  a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};a.bombs=G.mode==='scen'?0:1;a.skillCD=host?3:4;// every zombie of the infection modes carries a spore bomb
   a.skillT=0;a.frozen=0;a.zoom=0;a.reloadT=0;a.relKind=null;a.flash=false;a.shriekT=0;a.dizzy=0;
   a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.an.skill=1;a.permaDead=false;a.alive=true;a.turning=host?2:1.4;
   a.clawLock=host?0:G.t+CLAW_LOCK;// a freshly infected zombie can't claw at once: no chain infections through a crowd
@@ -12278,7 +12284,7 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       if(a.team===TZ&&!a.permaDead&&G.st==='fight'&&!NET.cli){if(G.mode==='mut'){const cb=zComeback();a.reviveT-=dt*(cb?ZBAL.cbRevive:1);if(a.reviveT<=0){reviveZombie(a,cb?zPackSpawn(a):zRandomSpawn(),true);if(cb){a.hp=a.maxHp;a.armor=Math.max(a.armor,Math.round(ZCLASS[a.zc].armor*.75))}}}else{a.respawnT-=dt;if(a.respawnT<=0)reviveZombie(a,zRandomSpawn())}}}
     // dead bodies still settle under gravity
     if(!a.alive&&a.deadT<3){a.c.vy-=GRAV*dt;a.c.vx*=.9;a.c.vz*=.9;a.c.vx+=a.kvx*.3;a.c.vz+=a.kvz*.3;a.kvx*=.8;a.kvz*=.8;moveChar(a.c,dt)}}
-  separate(dt);updateNades(dt);nyUpdate(dt);salUpdate(dt);dropsUpdate(dt);
+  separate(dt);updateNades(dt);SMK.tick(dt);nyUpdate(dt);salUpdate(dt);dropsUpdate(dt);
   for(const a of G.actors)updateVisual(a,dt)}
 
 // zombie grenade: the free hand comes up, hooks two fingers into the mouth, yanks the bone pin out and drops away; armed, the bomb trembles in the fist
@@ -12414,7 +12420,7 @@ const AI={
     // teammate and the one it is already on count as closer), whether the line to the aim point is clear, and the zombies close enough
     // to back away from
     if(B.think<=0){B.think=.12+Math.random()*.05;const e=actorEye(a);let best=null,bd=1e9;
-      for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>(spread?HBOT.sight:48))continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;if((z.epHide||!EP.on&&ESMK.list.length)&&epHid(a,z,d))continue;const pz=B.panicT>0&&B.panicZ===z;
+      for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const d=dist3(z.c,c);if(d>(spread?HBOT.sight:48))continue;if(z.zc==='runner'&&z.skillT>0&&d>3.5)continue;if((z.epHide||!EP.on&&ESMK.list.length)&&epHid(a,z,d)||SMK.n&&d>2.5&&SMK.blocks(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z))continue;const pz=B.panicT>0&&B.panicZ===z;
         const ang=Math.abs(wrapA(Math.atan2(-(z.c.x-c.x),-(z.c.z-c.z))-a.yaw));if(ang>1.5&&d>6&&!(B.seen&&B.seen.a===z)&&!pz)continue;
         {const P=z.epAimP;if(P?!losClear(e.x,e.y,e.z,P.x,P.y,P.z):!losClear(e.x,e.y,e.z,z.c.x,z.c.y+(z.epAimY||(ZBIG[z.zc]?2.8:1.2)),z.c.z))continue}const sc=d*(z.epPri||1)*(ang>1.5?1.5:1)*(pz?.3:1)*(B.seen&&B.seen.a===z?.75:1)*(spread&&d>4&&hNear(z.c.x,z.c.y,z.c.z,3.5,a)?.6:1);if(sc<bd){bd=sc;best=z}}
       if(best){if(!B.seen||B.seen.a!==best){B.seen={a:best,t:G.t};B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<4?.35:1);B.aimT0=G.t;B.hsT=0}B.seen.ls=G.t}
@@ -12505,7 +12511,7 @@ const AI={
   // the sum of the away directions (nearer ones count more) plus a little room from teammates, so a group backing off fans out.
   kiteScan(a,r,e){const B=a.bot,c=a.c;let ax=0,az=0,dm=99;
     for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const dy=z.c.y-c.y;if(dy<-2.4||dy>2.4)continue;const dx=c.x-z.c.x,dz=c.z-z.c.z;if(Math.abs(dx)>r||Math.abs(dz)>r)continue;const d=Math.hypot(dx,dz);if(d>r)continue;
-      if(d>5.5&&(z.c.vx*dx+z.c.vz*dz)/(d||1)<1)continue;if(d>3&&!losClear(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z))continue;const w=1/Math.max(1,d*d);ax+=dx/(d||1)*w;az+=dz/(d||1)*w;dm=Math.min(dm,d)}
+      if(d>5.5&&(z.c.vx*dx+z.c.vz*dz)/(d||1)<1)continue;if(d>3&&(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)||SMK.n&&SMK.blocks(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)))continue;const w=1/Math.max(1,d*d);ax+=dx/(d||1)*w;az+=dz/(d||1)*w;dm=Math.min(dm,d)}
     let l=Math.hypot(ax,az);if(dm>=99||l<1e-9){B.kd=99;return}ax/=l;az/=l;
     for(const h of G.actors){if(h===a||!h.alive||h.team!==TH)continue;const dx=c.x-h.c.x,dz=c.z-h.c.z;if(Math.abs(dx)>2.5||Math.abs(dz)>2.5||Math.abs(h.c.y-c.y)>1.5)continue;const d=Math.hypot(dx,dz);if(d>2.5||d<.01)continue;ax+=dx/d*(1-d/2.5)*.5;az+=dz/d*(1-d/2.5)*.5}
     l=Math.hypot(ax,az)||1;B.kx=ax/l;B.kz=az/l;B.kd=dm},
@@ -12543,7 +12549,7 @@ const AI={
     const e=actorEye(a);const dx=t.c.x-c.x,dz=t.c.z-c.z,dh=Math.hypot(dx,dz),dy=t.c.y-c.y;
     // ~7 Hz: line of sight, and whether the straight line to the target can actually be walked —
     // no wall, crate, railing, gap or ledge in between (seeing someone is not the same as being able to run at them)
-    if(B.think<=0){B.think=.15;B.los=dh<22&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z);
+    if(B.think<=0){B.think=.15;B.los=dh<22&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z)&&!(SMK.n&&dh>2.5&&SMK.blocks(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z));
       B.straight=B.los&&Math.abs(dy)<.6&&dh<14&&navStraight(c.x,c.y,c.z,t.c.x,t.c.z,Math.min(.3,c.hw*.9))}
     const see=dh<22&&B.los;
     let moving=false;
@@ -12859,6 +12865,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     // who is under the crosshair
     let ai='';if(P.alive&&!G.spec){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const hw=rayCast(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,60);let best=null,bt=hw?hw.t:60;
       for(const t of G.actors){if(!t.alive||t===P)continue;const c=t.c;const th=rayAABB(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,c.x-c.hw,c.y,c.z-c.hw,c.x+c.hw,t.head.y+.15,c.z+c.hw,bt);if(th>=0&&th<bt){bt=th;best=t}}
+      if(best&&SMK.n&&SMK.blocks(e.x,e.y,e.z,e.x+_dv.x*bt,e.y+_dv.y*bt,e.z+_dv.z*bt))best=null;// (not through smoke)
       // (something wearing a teammate's shape — 4챕터's mirages, LYREBIRD in disguise — reads as that teammate: epAsH, epName)
       if(best){const asH=!!best.epAsH;ai=`<span class="${best.team===TZ&&!asH?'z':'h'}">${esc(asH&&best.epName||best.name)}</span>`+(best.team===TZ&&!asH&&P.team===TH?`<span class="bar"><i style="width:${Math.round(clamp(best.hp/best.maxHp,0,1)*100)}%"></i></span>`:'')}}
     if(e.aimInfo.innerHTML!==ai)e.aimInfo.innerHTML=ai;
@@ -12884,7 +12891,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
       e.hSkill.style.display='block';e.hSkill.innerHTML=`<span class="k">G</span> ${Z.sk?Z.sk[LI()]:T('skill')}: ${P.skillCD>0?Math.ceil(P.skillCD)+'s':`<b>${T('ready')}</b>`}${P.skillT>0?' ▲':''}<br><span class="k">4</span> ${T('bomb')} ×${P.bombs}  <span class="k">N</span> ${T('nv')} ${P.nv?'ON':'OFF'}`;e.hNades.textContent=''}
     else{e.hSkill.style.display='none';const am=P.ammo[P.cur];const Wn=WPN[P.cur];e.hWName.textContent=Wn?Wn.n[LI()]+(Wn.dual&&P.dualB?(Wn.bRpm?(LI()?' · spray':' · 난사'):(LI()?' · full auto':' · 연사')):'')+(Wn.stance?(P.hamB?(LI()?' · B knock-away':' · B 날리기'):(LI()?' · A pound':' · A 떡찧기')):'')+spTag(P,Wn)+cmbTag(P,Wn):'';
       if(am){e.hAmmo.style.display='flex';e.hMag.textContent=am.mag;e.hRes.textContent='/ '+am.res;e.hMag.className=am.mag<=Math.ceil(Wn.mag*.2)?'low':''}else e.hAmmo.style.display='none';
-      e.hNades.textContent=['he','frost','flare'].filter(k=>P.inv[k]>0).map(k=>({he:'HE',frost:'FROST',flare:'FLARE'})[k]).join(' · ')+(P.flash?'  ☀':'')+nyHud(P)}
+      e.hNades.textContent=H_NADES.filter(k=>P.inv[k]>0).map(k=>({he:'HE',frost:'FROST',flare:'FLARE',smoke:'SMOKE'})[k]).join(' · ')+(P.flash?'  ☀':'')+nyHud(P)}
     {const M=P.nyM||[0,0,0,0];const s=P.team===TH?NY_CH.map((c,i)=>`<b class="${M[i]?'on':''}">${c}${M[i]>1?`<sub>${M[i]}</sub>`:''}</b>`).join('')+(P.nyFree>0?`<small>${T('nyFree')} ×${P.nyFree}</small>`:''):'';if(this.nyS!==s){this.nyS=s;$('hNY').innerHTML=s}}
     // spectate / revive info
     let sp='';if(!P.alive){if(P.team===TZ&&!P.permaDead&&G.st==='fight'){sp=G.mode==='mut'?T('reviveIn',Math.max(1,Math.ceil(P.reviveT))):T('respawnIn',Math.max(1,Math.ceil(P.respawnT)))}else if(G.st==='fight'||G.st==='end')sp=T('permaDead')
@@ -12979,7 +12986,7 @@ const UI={open:null,
     const n=(W.pellets||W.fan||W.slugs||1)*(W.cone?W.cone.ticks*1.5:1);return this.bars([[L?'PWR':'위력',Math.sqrt(W.dmg*n/400)],[L?'ROF':'연사',(W.rpm||0)/1500],[L?'KB':'넉백',W.kb*n*(W.rpm||60)/60/50+(W.proj?.35:0)],[L?'MOB':'기동',(W.speed-.7)/.32]])},
   bars(list){return `<span class="sbs">${list.map(([n,v])=>`<span class="sb"><em>${n}</em><i><u style="width:${Math.round(clamp(v,.05,1)*100)}%"></u></i></span>`).join('')}</span>`},
   wTags(W,id){const L=LI();if(W&&W.ny)return nyTags(W,L);if(W&&W.flame)return L?`Flame stream · sets zombies alight · reach ${Math.round(W.flame.r)} m · Fuel ${W.mag}`:`화염 방사 · 화상 · 사거리 ${Math.round(W.flame.r)}m · 연료 ${W.mag}`;const t=[];if(EQUIP[id]){return ({armor:L?'Absorbs claw hits':'할퀴기를 막아 감염을 늦춤',ammo:L?'Refill reserve ammo':'예비 탄약 가득',})[id]}
-    if(id==='he')return L?'Blast + knockback':'폭발 피해 + 넉백';if(id==='frost')return L?'Freezes zombies 3s':'좀비를 3초간 얼림';if(id==='flare')return L?'Lights the area 25s':'주변을 25초간 밝힘';
+    if(id==='he')return L?'Blast + knockback':'폭발 피해 + 넉백';if(id==='frost')return L?'Freezes zombies 3s':'좀비를 3초간 얼림';if(id==='flare')return L?'Lights the area 25s':'주변을 25초간 밝힘';if(id==='smoke')return L?'Smoke screen 18s — nobody sees through':'18초간 연막 — 아무도 꿰뚫어 보지 못함';
     if(W.crate)t.push(L?'Crates only':'보급 전용');if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.burst)t.push(L?'3-round burst':'3점사');if(W.dual)t.push(W.slot===1?(L?'Akimbo · RMB spray':'양손 · 우클릭 난사'):(L?'Akimbo':'쌍권총'));if(W.zoom)t.push(L?'Scope':'조준경');
     if(W.spin)t.push(L?'Spin-up':'예열 회전');if(W.proj)t.push(L?'Explosive':'폭발 유탄');if(W.bolt)t.push(L?'Bolt-action':'볼트액션');if(W.kind==='melee')t.push(L?'Melee · RMB chop':'근접 · 우클릭 강타');
     if(W.mag)t.push((L?'Mag ':'탄창 ')+W.mag+(W.semi&&!W.burst&&!W.bolt?(L?' · semi':' · 반자동'):!W.semi&&!W.burst?(L?' · auto':' · 자동'):''));return t.join(' · ')},
@@ -13429,7 +13436,7 @@ const RADAR={cv:null,ctx:null,px:170,t:0,band:0,seen:new Map(),rr:0,
   look(P){const L=G.actors;if(!L.length)return;const e=actorEye(P);
     for(let k=0;k<4;k++){this.rr=(this.rr+1)%L.length;const a=L[this.rr];if(!a||!a.alive||a===P||!foe(P,a))continue;
       if(a.zc==='runner'&&a.skillT>0&&a.team===TZ)continue;// an invisible light zombie stays off the radar
-      if(Math.hypot(a.c.x-P.c.x,a.c.z-P.c.z)<45&&losClear(e.x,e.y,e.z,a.c.x,a.c.y+1.2,a.c.z))this.seen.set(a,G.t)}},
+      if(Math.hypot(a.c.x-P.c.x,a.c.z-P.c.z)<45&&losClear(e.x,e.y,e.z,a.c.x,a.c.y+1.2,a.c.z)&&!(SMK.n&&SMK.blocks(e.x,e.y,e.z,a.c.x,a.c.y+1.2,a.c.z)))this.seen.set(a,G.t)}},
   update(dt){const cv=this.cv,P=G.player;if(!cv)return;const on=CFG.minimap!==false&&!!P&&!!MAP.mini&&G.st!=='menu';cv.style.display=on?'block':'none';if(!on)return;
     this.look(P);this.t+=dt;if(this.t<1/30)return;this.t=0;
     const tg=(!P.alive&&G.spec&&G.spec.alive)?G.spec:P,x=this.ctx,d=this.dpr,W=cv.width,c=W/2,R0=c-2*d,s=3.4*d,L=MAP.mini;
@@ -13442,6 +13449,7 @@ const RADAR={cv:null,ctx:null,px:170,t:0,band:0,seen:new Map(),rr:0,
     // supply crates: a yellow box, pinned to the rim when far away
     if(typeof SUP!=='undefined')for(const q of SUP.list){const dx=q.x-tg.c.x,dz=q.z-tg.c.z;let sx=(dx*cs-dz*sn)*s,sy=(dx*sn+dz*cs)*s;const l=Math.hypot(sx,sy),lim=R0-5*d;if(l>lim){sx*=lim/l;sy*=lim/l}
       sx+=c;sy+=c;x.fillStyle=Math.sin(G.t*6)>-.3?'#ffd04a':'#a07a20';x.fillRect(sx-3*d,sy-3*d,6*d,6*d);x.strokeStyle='rgba(0,0,0,.7)';x.lineWidth=d;x.strokeRect(sx-3*d,sy-3*d,6*d,6*d);x.fillStyle='#b01810';x.fillRect(sx-.7*d,sy-2*d,1.4*d,4*d);x.fillRect(sx-2*d,sy-.7*d,4*d,1.4*d)}
+    SMK.mini(x,tg,cs,sn,s,c,R0,d);// (smoke clouds: grey patches)
     if(typeof PING!=='undefined')PING.mini(x,tg,cs,sn,s,c,R0,d);
     // (a hallucination or a disguise never shows: the teammate it copies is somewhere else on the map)
     for(const a of G.actors){if(a===tg||!a.alive||a.reviving>0)continue;const mate=!foe(a,tg);if(!mate&&(a.epAsH||!this.aware(tg,a,dt)))continue;
@@ -14480,7 +14488,7 @@ const SUP={list:[],seq:1,next:1e9,MAXN:2,
   give(a,k,w,x,y,z){const L=LI();AU.at('pickup',x,y+.5,z,{vol:.9});FX.spawn({x,y:y+.5,z,life:.5,s0:.4,s1:2.5,r:1,g:.8,b:.4,a:.6,f:14,add:1});
     if(k==='w'){const W=WPN[w];if(!W)return;a.inv[1]=w;a.ammo[w]={mag:W.mag,res:W.res};gunFresh(a,w);equip(a,w);
       if(a.isPlayer){HUD.announce(W.n[L],'h',2.5);AU.play('lvlup',{vol:.6});HUD.note(L?'From the supply crate':'보급상자에서 획득',2)}else if(G.player)HUD.note((L?`${a.name} opened a supply crate`:`${a.name}이(가) 보급상자를 열었다`),1.6)}
-    else{for(const id in a.ammo){const W=WPN[id];if(W&&W.mag)a.ammo[id]={mag:W.mag,res:W.res}}a.armor=100;a.inv.he=1;a.inv.frost=1;a.inv.flare=1;
+    else{for(const id in a.ammo){const W=WPN[id];if(W&&W.mag)a.ammo[id]={mag:W.mag,res:W.res}}a.armor=100;a.inv.he=1;a.inv.frost=1;a.inv.flare=1;a.inv.smoke=1;
       if(a.isPlayer){HUD.announce(L?'Supplies':'보급품','h',2);HUD.note(L?'Full ammo, armour, a grenade of each kind':'탄약 가득 · 방탄복 · 수류탄 종류별로 하나씩',2.5);AU.play('armor',{vol:.6})}}}};
 Object.assign(CLIH,{
   sb(L,m){if(SUP.list.some(b=>b.id===m.d))return;SUP.spawn(m.d,m.x/100,m.y/100,m.z/100)},
@@ -14501,6 +14509,11 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.52','2026-10-14',[
+ ['NEW','연막탄 — 모든 모드 구매 메뉴(B)의 장비 칸에서 받아요 (라운드당 1개 · 4번 슬롯). 던지면 멈춘 자리에서 펑 터지며 18초 동안 지름 10m가 넘는 연막이 퍼져요 — 벽 · 문 · 컨테이너는 막고, 난간 너머로 흘러내리고 낮은 턱은 넘어가요. 연막 속과 연막 너머는 아무도 못 봐요','Smoke Grenade — in the Equipment row of every mode\'s buy menu (B), one a round, slot 4. It pops where it comes to rest and fills more than 10 m across for 18 s — walls, doors and containers stop it, it spills over ledges and climbs low steps. Nobody sees into it or through it'],
+ ['NEW','봇도 연막을 못 꿰뚫어 봐요 — 대인전 · 좀비 모드의 봇, 곧장 달려드는 좀비, 시나리오의 보스 · 침 뱉는 좀비까지. 연막은 레이더에 회색으로 보이고, 연막 너머 적은 레이더와 조준 이름표에 뜨지 않아요. 연막 안에 들어가면 화면이 뿌옇게 가려져요','Bots do not see through it either — PvP and zombie-mode bots, zombies running straight at someone, the scenario\'s bosses and spitters. Clouds show grey on the radar, and an enemy behind one does not show on the radar or under the crosshair. Inside a cloud the screen goes grey'],
+ ['NEW','대인전 봇이 연막을 써요 — 폭파미션 공격팀은 사이트로 들어가며 수비 쪽 시야를 가리고, 수비팀은 설치된 폭탄에 연막을 던진 뒤 해체하러 가요. 총싸움에서 체력이 낮으면 연막을 깔고 물러나요','PvP bots use it — Bomb Defusal attackers smoke off the defenders\' side on their way into a site, defenders smoke the planted bomb before going to defuse it, and a hurt bot in a gunfight smokes the gap and backs off'],
+ ['UP','보급상자와 시나리오 「탄약 가득」 보상에 연막탄도 들어 있어요 · 장비 세트에 연막탄 저장','Supply crates and the scenario\'s Full-ammo reward include a smoke grenade · loadout sets keep it']]],
 ['v6.51','2026-10-14',[
  ['NEW','무기 레이스 — 모두가 적인 개인전에서 처치할 때마다 다음 무기로 바뀌어요 (소총 → 기관총 → 기관단총 → 산탄총 → 저격총 → 권총 → 칼). 마지막 칼 단계에서 칼로 처치하면 우승, 칼에 당하면 한 단계 내려가요. 단계 수 10 / 15 / 20 · 제한 시간 5 / 8 / 10분 (끝나면 가장 높은 단계가 우승) · 모든 맵에서 해요','Arms Race — everyone for himself, and every kill moves you to the next gun (rifles → machine gun → SMGs → shotguns → snipers → pistols → the knife). A knife kill on the last step, the knife, wins; a knife kill on you sets you back a step. 10 / 15 / 20 steps, 5 / 8 / 10 min (when time is up the highest step wins), on every map'],
  ['NEW','무기 레이스 화면 — 상단에 내 단계 · 1위 단계 · 순위, 그 아래 지금 무기 ▶ 다음 무기와 단계 막대. 점수판 · 결과에 단계 칸. 무기는 고를 수 없고 (구매 · 장비 세트 · 버리기 꺼짐) 부활하면 그 단계 무기로 시작','Arms Race on screen — my step, the leader\'s and my place up top, my gun ▶ the next one and a bar of steps under it; a step column on the scoreboard and the results. No picking weapons (buying, saved sets and dropping are off); you come back with the gun of your step']]],
@@ -14900,8 +14913,8 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       art:`<img class="a1" src="${portrait('h_'+(HSKINS[1]||skin),140)}"><img class="a3" src="${portrait('h_'+(HSKINS[2]||skin),110)}">`},
     {act:'range',cls:'c3',t:L?'SHOOTING RANGE':'사격장',s:L?'Dummies at 10–50 m, moving targets, free weapons':'10–50 m 더미 · 이동 표적 · 무기 무료',tag:L?'Practice':'연습',
       art:`<img class="gun g1" src="${gunIcon('sr8',40)}"><img class="gun g2" src="${gunIcon('kv47',48)}"><img class="gun g3" src="${gunIcon('d50',34)}">`}];
-  const news=L?[['NEW','Arms Race — every kill brings the next gun, a knife kill on the last step wins'],['NEW','Bomb Defusal — plant on A or B, defuse with E (Harbor Terminal)'],['NEW','New PvP map: Harbor Terminal — a container port, three ways across'],['NEW','PvP — Team Deathmatch (BLUE vs RED) · Free-for-all'],['UP','THANATOS-9: the barrage lasts 3 s (was 5 s)'],['NEW','New weapons you receive (admin grant, letter, coupon) show in a window'],['UP','Survivors named for their units — KNP SOU · PJ · LEGION · CBIRF'],['UP','Survivors in masks — a ballistic visor, a half-mask, a shemagh and a CBRN mask'],['NEW','Mailbox and coupons — the letter button next to your coins: rewards from the admins, coupon codes'],['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
-    :[['NEW','무기 레이스 — 처치할 때마다 다음 무기 · 마지막 칼 단계에서 칼로 처치하면 우승'],['NEW','폭파미션 — A·B 사이트에 폭탄 설치 · E로 해체 (항만 터미널)'],['NEW','대인전 전용맵 「항만 터미널」 — 컨테이너 부두 · 세 갈래 길'],['NEW','대인전 — 팀 데스매치 (블루 대 레드) · 개인전'],['UP','THANATOS-9 연속 찌르기 5초 → 3초'],['NEW','무기 지급 알림 — 운영자 지급 · 우편 · 쿠폰으로 받은 무기가 창으로 떠요'],['UP','생존자 이름 변경 — KNP SOU · PJ · LEGION · CBIRF (출신 특수부대)'],['UP','생존자 4명 마스크 착용 — 방탄 바이저 · 반면 마스크 · 시마그 · 방독면'],['NEW','우편함 · 쿠폰 — 코인 옆 편지 버튼에서 운영자가 보낸 보상과 쿠폰을 받아요'],['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
+  const news=L?[['NEW','Smoke grenade in every mode — 18 s of cover nobody sees through, bots included'],['NEW','Arms Race — every kill brings the next gun, a knife kill on the last step wins'],['NEW','Bomb Defusal — plant on A or B, defuse with E (Harbor Terminal)'],['NEW','New PvP map: Harbor Terminal — a container port, three ways across'],['NEW','PvP — Team Deathmatch (BLUE vs RED) · Free-for-all'],['UP','THANATOS-9: the barrage lasts 3 s (was 5 s)'],['NEW','New weapons you receive (admin grant, letter, coupon) show in a window'],['UP','Survivors named for their units — KNP SOU · PJ · LEGION · CBIRF'],['UP','Survivors in masks — a ballistic visor, a half-mask, a shemagh and a CBRN mask'],['NEW','Mailbox and coupons — the letter button next to your coins: rewards from the admins, coupon codes'],['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
+    :[['NEW','연막탄 추가 — 모든 모드 · 18초 동안 시야 차단 (봇도 못 봐요)'],['NEW','무기 레이스 — 처치할 때마다 다음 무기 · 마지막 칼 단계에서 칼로 처치하면 우승'],['NEW','폭파미션 — A·B 사이트에 폭탄 설치 · E로 해체 (항만 터미널)'],['NEW','대인전 전용맵 「항만 터미널」 — 컨테이너 부두 · 세 갈래 길'],['NEW','대인전 — 팀 데스매치 (블루 대 레드) · 개인전'],['UP','THANATOS-9 연속 찌르기 5초 → 3초'],['NEW','무기 지급 알림 — 운영자 지급 · 우편 · 쿠폰으로 받은 무기가 창으로 떠요'],['UP','생존자 이름 변경 — KNP SOU · PJ · LEGION · CBIRF (출신 특수부대)'],['UP','생존자 4명 마스크 착용 — 방탄 바이저 · 반면 마스크 · 시마그 · 방독면'],['NEW','우편함 · 쿠폰 — 코인 옆 편지 버튼에서 운영자가 보낸 보상과 쿠폰을 받아요'],['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
@@ -14914,7 +14927,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.51 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.52 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
@@ -15101,7 +15114,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(performance.now()-(this.lockAt||0)<150||Math.abs(e.movementX)>500||Math.abs(e.movementY)>500)return;
       const Wz=WPN[P.cur];const z=P.zoom>0&&Wz&&Wz.zoom?Wz.zoom[P.zoom-1]/CFG.fov:1;const k=CFG.sens*.0022*z;
       P.yaw=wrapA(P.yaw-e.movementX*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*e.movementY*k,-1.53,1.53)});
-    addEventListener('wheel',e=>{const P=G.player;if(!P||!P.alive||this.paused||this.overlay||G.st==='menu')return;const order=P.team===TZ?['claw','zbomb']:[P.inv[1],P.inv[2],P.inv[3]||'knife',...['he','frost','flare'].filter(k=>P.inv[k]>0)].filter(Boolean);
+    addEventListener('wheel',e=>{const P=G.player;if(!P||!P.alive||this.paused||this.overlay||G.st==='menu')return;const order=P.team===TZ?['claw','zbomb']:[P.inv[1],P.inv[2],P.inv[3]||'knife',...H_NADES.filter(k=>P.inv[k]>0)].filter(Boolean);
       if(P.team===TZ&&P.bombs<=0)return;const i=order.indexOf(P.cur);const n=order[(i+(e.deltaY>0?1:-1)+order.length)%order.length];equip(P,n)},{passive:true});
     addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;const k=e.code;
       if(e.altKey&&(k==='Enter'||k==='NumpadEnter')){e.preventDefault();if(!e.repeat)FS.toggle();return}if(['Tab','Space','ArrowUp','ArrowDown','Backquote'].includes(k)||(e.ctrlKey&&k!=='KeyR'))e.preventDefault();AU.init();
@@ -15208,7 +15221,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(!draw){FX.update(dt);return}
       this.camera(dt);this.look(dt);
       if(G.player&&G.st!=='menu'){const P=G.player;if(P.alive&&P.team===TH&&P.cur)VM.set(P.cur,P.skin);VM.vis=P.alive&&!G.spec;VM.update(dt,P,R.cam)}
-      if(!this.paused||NET.on){this.fires(dt);FX.update(dt);DL.update(dt,R.cam)}
+      if(!this.paused||NET.on){this.fires(dt);FX.update(dt);SMK.draw(dt);DL.update(dt,R.cam)}
       if(AU.spin)AU.spin(G.player&&G.player.alive&&!this.paused&&G.st!=='menu'?G.player.spinV||0:0,G.player&&G.player.cmd.fire);
       if(AU.saw&&!(G.player&&G.player.alive&&G.player.cur==='ripper'&&!this.paused&&G.st!=='menu'))AU.saw(0);
       if(AU.flame)AU.flame(G.player&&G.player.alive&&G.player.salOn&&!this.paused&&G.st!=='menu'?1:0);
@@ -15239,7 +15252,7 @@ SCEN.later=(t,f)=>SCEN.tq.push({t,f});
 // every page runs this with the same roster: the pool waits dead and out of sight
 SCEN.initPool=function(){SCEN.H=G.actors.filter(a=>!a.scen);SCEN.Z=G.actors.filter(a=>a.scen);SCEN.on=true;SCEN.stage=1;SCEN.wave=0;SCEN.lives=3;SCEN.ph='prep';SCEN.t=20;SCEN.acid.length=0;SCEN.tq=[];SCEN.bossId=-1;SCEN.remain=0;
   for(const a of SCEN.Z){a.team=TZ;a.zc=a.zpick=a.boss?'boss':'rager';a.alive=false;a.permaDead=true;a.hp=0;a.maxHp=1;a.deadT=99;a.an.dead=0;a.host=false;a.lvl=1;a.bombs=0;a.money=0;
-    a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.cur='claw';a.name=ZCLASS[a.zc].n[LI()];a.c.x=0;a.c.y=-60;a.c.z=0;setHull(a)}
+    a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};a.cur='claw';a.name=ZCLASS[a.zc].n[LI()];a.c.x=0;a.c.y=-60;a.c.z=0;setHull(a)}
   // paint every zombie skin now rather than when the first one of a kind walks in mid-wave
   for(const k of ZALL)charAsset('z_'+k)};
 SCEN.begin=function(){SCEN.on=true;SCEN.stage=1;SCEN.lives=3;SCEN.best=0;SCEN.win=false;SCEN.tq=[];G.recDone=false;for(const a of G.actors)a.wup={};SCEN.stageStart('fresh')};
@@ -15374,7 +15387,7 @@ SCEN.blast=function(x,y,z,r,dmg,src,fxOnly){FX.explode(x,y,z,'he');FX.spore(x,y,
     if(!fxOnly&&!NET.cli)hurtHuman(t,(dmg*f+8)*SCEN.dmgMul()/.18,src,{})}};
 // ---------- spitter: keeps its distance and lobs acid ----------
 SCEN.spitAI=function(a,dt){const B=a.bot;const t=B&&B.target;if(!t||!t.alive)return;const dx=t.c.x-a.c.x,dz=t.c.z-a.c.z,d=Math.hypot(dx,dz);
-  const e=actorEye(a);const see=d<18&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.4,t.c.z);if(!see)return;
+  const e=actorEye(a);const see=d<18&&losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.4,t.c.z)&&!(SMK.n&&SMK.blocks(e.x,e.y,e.z,t.c.x,t.c.y+1.4,t.c.z));if(!see)return;
   // stop and face the target when in range; back off when it gets close
   if(d<15){a.cmd.f=d<6?-1:0;a.cmd.s=Math.sin(G.t*1.3+a.id)>.6?1:0;a.cmd.fire=a.cmd.alt=false;AI.turnTo(a,Math.atan2(-dx,-dz),0,dt,6)}
   a.spitT-=dt;if(a.spitT<=0&&d>3&&d<17){a.spitT=rr(2.8,4);SCEN.spit(a,t)}};
@@ -15408,7 +15421,7 @@ SCEN.bossTick=function(a,dt){const S=a.sb;if(!S)return;const c=a.c;a.staggerT=0;
     else if(S.mode==='slamW'){a.an.skill=Math.max(a.an.skill,.3);if(S.mt<=0){S.mode='';S.pt=rr(3.5,5.5);SCEN.slam(a)}}
     return}
   S.pt-=dt;const t=a.bot&&a.bot.target;if(S.pt>0||!t||!t.alive)return;const dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz)||1;if(d>22)return;
-  const hy=c.y+4.2,see=losClear(c.x,hy,c.z,t.c.x,t.c.y+1.4,t.c.z);
+  const hy=c.y+4.2,see=losClear(c.x,hy,c.z,t.c.x,t.c.y+1.4,t.c.z)&&!(SMK.n&&SMK.blocks(c.x,hy,c.z,t.c.x,t.c.y+1.4,t.c.z));
   // out of reach (up on something, or the way round is blocked): one huge leap onto it
   if(see&&c.onGround&&(S.far>5&&t.c.y>c.y+1.1||S.far>9)&&d<20&&losClear(c.x,hy,c.z,t.c.x,Math.max(hy,t.c.y+3),t.c.z)){S.mode='leapW';S.mt=.75;a.an.skill=1;a.yaw=Math.atan2(-dx,-dz);AU.at('zgrowl',c.x,c.y+3,c.z,{vol:1,range:70,rate:.5});if(NET.host)netEv('scbo',{k:1,i:a.id});return}
   if(!see){S.pt=.5;return}
@@ -15434,7 +15447,7 @@ SCEN.REW={ammo:{n:['탄약 가득','Full ammo'],d:['모든 무기 탄약 최대 
 SCEN.offerFor=()=>shuffle(Object.keys(SCEN.REW)).slice(0,3);
 SCEN.GUNS=['hmg','mg6','gx6','ar7','kv47','g35','br3','ar5c','hr17','as12','m14','sg8','volc','xbow','gaebolg','mdrill','xdz'];
 SCEN.applyReward=function(a,k,host){if(!a||!a.alive)return;
-  if(k==='ammo'){for(const id in a.ammo){const W=WPN[id];if(W)a.ammo[id]={mag:W.mag,res:W.res}}for(const g of ['he','frost'])a.inv[g]=Math.max(a.inv[g]||0,1)}
+  if(k==='ammo'){for(const id in a.ammo){const W=WPN[id];if(W)a.ammo[id]={mag:W.mag,res:W.res}}for(const g of ['he','frost','smoke'])a.inv[g]=Math.max(a.inv[g]||0,1)}
   else if(k==='weapon'){const pool=SCEN.GUNS.filter(id=>WPN[id]&&WPN[id].slot===1&&id!==a.inv[1]);if(!pool.length)return;const id=rpick(pool);a.inv[1]=id;fillAmmo(a,id);equip(a,id);if(a.isPlayer)HUD.note((LI()?'Got: ':'획득: ')+WPN[id].n[LI()],2.5)}
   if(k==='heal'||k==='armor'){if(NET.cli&&!host){netToHost({t:'scrw',k});return}if(k==='heal'){a.hp=100;a.armor=Math.max(a.armor,50)}else a.armor=100}};
 // weapon upgrade: +10% damage per level on the gun in hand (the primary otherwise), up to 5 levels
@@ -15620,7 +15633,7 @@ const RANGE={on:false,move:true,st:null,el:null,uiT:0,
     HUD.announce(LI()?'SHOOTING RANGE':'사격장','w',2.4);HUD.note(LI()?'B: any weapon, free · K: reset the record · J: moving targets on/off':'B: 무기 무료 · K: 기록 초기화 · J: 이동 표적 켜기/끄기',6)},
   // (re)stand a dummy at its place, whole, facing the line
   raise(a,first){const d=a.rg.d;a.team=TZ;a.zc=a.zpick=d.zc;a.host=false;a.lvl=1;a.bombs=0;a.money=0;a.name=(LI()?'Dummy ':'더미 ')+Math.round(-d.z)+'m'+(d.mv?(LI()?' (moving)':' (이동)'):'');
-    if(first){a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.alive=true;placeAt(a,d.x,0,d.z,Math.PI)}
+    if(first){a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};a.cur=null;setHull(a);ensureRig(a);equip(a,'claw',true);a.alive=true;placeAt(a,d.x,0,d.z,Math.PI)}
     else{reviveZombie(a,[d.x,0,d.z]);a.yaw=Math.PI}
     a.permaDead=false;a.maxHp=a.hp=1000;a.armor=0;a.reviving=0;a.turning=0;a.rg.resp=0;a.rg.first=0;a.rg.dir=1;a.lastHurt=-9},
   update(dt){const P=G.player;G.time+=dt;
@@ -16685,6 +16698,8 @@ function rankLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'💨',tag:['신규 장비 · 모든 모드','New gear · every mode'],t:['연막탄','Smoke Grenade'],
+    d:['구매 메뉴(B) 장비 칸의 연막탄. 던지면 멈춘 자리에서 터져 18초 동안 커다란 연막이 퍼져요 — 벽과 문은 막고 난간 너머로는 흘러내려요. 연막 속과 너머는 사람도 봇도 좀비도 못 봐요. 폭파미션에서는 봇들도 사이트를 연막으로 가리고 들어오고, 설치된 폭탄을 연막 속에서 해체해요.','The smoke grenade in the Equipment row of the buy menu (B). It pops where it lands and fills a big cloud for 18 s — walls and doors stop it, it spills over ledges. Nobody sees into it or through it: players, bots and zombies alike. In Bomb Defusal the bots smoke off sites on their way in and defuse inside a cloud.']},
   {kind:'feature',ico:'🏁',tag:['신규 모드 · 대인전','New mode · PvP'],t:['무기 레이스','Arms Race'],
     d:['모두가 적. 처치할 때마다 손에 든 총이 다음 무기로 바뀌어요 — 소총에서 시작해 기관총 · 기관단총 · 산탄총 · 저격총 · 권총을 지나 마지막은 칼 한 자루. 칼 단계에서 칼로 처치하면 우승! 칼에 당하면 한 단계 내려가요. 방 만들기 · 대기실의 모드에서 골라요.','Everyone is an enemy. Every kill swaps the gun in your hands for the next one — from rifles through the machine gun, SMGs, shotguns, snipers and pistols to the last step, a knife. A knife kill on the knife step wins! A knife kill on you sets you back a step. Pick it as the mode in Create Room or the waiting room.']},
   {kind:'feature',ico:'💣',tag:['신규 모드 · 대인전','New mode · PvP'],t:['폭파미션','Bomb Defusal'],
@@ -16813,14 +16828,14 @@ const NBAN={i:0,timer:null,shown:false,
 // ============ Loadouts: free buying, the gear that carries over between rounds, three saved sets ============
 // In a match guns, ammo and gear cost nothing (the account locks of shop.js still apply; money is only the scenario's upgrade budget).
 // Grenades and armour come once per round each, the round-start refill included; the Event Horizon is for the accounts that own it:
-// once a round, 3 shots. A human's loadout {1,2,3,he,frost,flare,armor} is noted when he goes down or turns (and at the end of the round
+// once a round, 3 shots. A human's loadout {1,2,3,he,frost,flare,smoke,armor} is noted when he goes down or turns (and at the end of the round
 // for the living) and handed back at the start of the next round. The player keeps three sets of his own in CFG.sets.
 Object.assign(STR.ko,{ldSet:'세트',ldEq:'장착',ldSave:'현재 장비 저장',ldFree:'무료',ldOnce:'라운드 1회',ldUsed:'사용함',ldFull:'가득',ldNyPick:'무료 픽',ldEh:'1회 · 3발',
   ldEhOwn:'보유자 전용',ldCrate:'보급상자 전용',boSet:'정전 이벤트'});
 Object.assign(STR.en,{ldSet:'Set',ldEq:'Equip',ldSave:'Save current',ldFree:'FREE',ldOnce:'1 / round',ldUsed:'used',ldFull:'full',ldNyPick:'free pick',ldEh:'1× · 3 rds',
   ldEhOwn:'owners only',ldCrate:'crates only',boSet:'Blackouts'});
-const LD_NADES=['he','frost','flare'];
-const LD_DEF={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,armor:0};
+const LD_NADES=H_NADES;
+const LD_DEF={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,smoke:0,armor:0};
 // the starting sets: the free guns everyone has
 const LD_SETS0=[{1:'g35',2:'p9',3:'knife',he:1,frost:0,flare:0,armor:1},{1:'sg8',2:'p9',3:'knife',he:0,frost:1,flare:0,armor:1},{1:'k5',2:'p9',3:'knife',he:1,frost:1,flare:1,armor:1}];
 function ldSets(){if(!Array.isArray(CFG.sets))CFG.sets=[];for(let i=0;i<3;i++)if(!CFG.sets[i]||typeof CFG.sets[i]!=='object')CFG.sets[i]=Object.assign({},LD_SETS0[i]);return CFG.sets}
@@ -16837,7 +16852,7 @@ function ehOK(a){if(a.isPlayer)return !!(ACC.on&&ACC.owns('bhole'));return !!(a.
 // player's page has checked before asking; bots never (they only get one out of a crate)
 function crateOK(a,id){if(G.mode==='range')return true;if(a.isPlayer)return !!(ACC.on&&ACC.owns(id));return !!(a.net&&!a.bot)}
 function ldLocked(a,id,set){const W=WPN[id];if(!W)return false;if(id==='bhole')return !ehOK(a);if(W.crate)return !!(a.isPlayer&&!crateOK(a,id));if(set&&W.ny&&!ldOwns(a,id))return true;return !!(a.isPlayer&&typeof shopLocked==='function'&&shopLocked(a,id))}
-function ldKitReset(a){a.kit={he:0,frost:0,flare:0,armor:0,bhole:0}}
+function ldKitReset(a){a.kit={he:0,frost:0,flare:0,smoke:0,armor:0,bhole:0}}
 // why a buy cannot happen, '' when it can: zombie · end · na (not on the menu) · lock · crate · own (has it, ammo full) · full · lim (once a round)
 function buyCheck(a,id){if(!a||a.team!==TH||!a.alive)return 'zombie';if(G.st==='end'||G.st==='over')return 'end';if(!ldBuyable(id))return 'na';const K=a.kit||{},lim=ldLimited();
   if(id==='armor')return a.armor>=100?'own':lim&&K.armor?'lim':'';
@@ -16877,7 +16892,7 @@ function ldCur(a){const o=a.ldo||LD_DEF,K=a.kit||{},inv=a.inv||{},n={};
 // noted on every page as a human goes down or turns (before his primary drops) and for the living at the round's end
 function ldSnap(a){if(a&&a.team===TH)a.ldo=ldCur(a)}
 // the start of a round: the noted loadout, fresh ammo, armour if he had it (the refill uses up this round's grenades and armour)
-function ldRestore(a){const L=a.ldo||LD_DEF;a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};ldKitReset(a);
+function ldRestore(a){const L=a.ldo||LD_DEF;a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};ldKitReset(a);
   for(const s of [1,2,3]){let id=L[s];const W=WPN[id];if(!W||W.slot!==s||!ldKeep(a,id))id=s===2?'p9':s===3?'knife':null;if(!id)continue;
     a.inv[s]=id;fillAmmo(a,id);gunFresh(a,id);if(id==='bhole'){a.ammo.bhole.res=0;a.kit.bhole=1}}
   for(const k of LD_NADES)if(L[k]){a.inv[k]=1;a.kit[k]=1}
@@ -16908,7 +16923,7 @@ function ldSetsHTML(P,mob){const L=LI();
 // Locked guns are skipped with a note. A client asks the host for each piece (the usual 'buy'); the answers go in quietly.
 function ldEquipSet(i){const P=G.player,s=ldSets()[i],L=LI();if(!P||!s)return;if(P.team!==TH||!P.alive){HUD.note(T('zOnly'),1.5);return}if(G.st==='end'||G.st==='over'){ldWhy('end');return}
   const ids=[],skip=[];
-  for(const id of [s[3],s.he&&'he',s.frost&&'frost',s.flare&&'flare',s.armor&&'armor',s[2],s[1]]){if(!id||!WPN[id]&&!EQUIP[id])continue;
+  for(const id of [s[3],s.he&&'he',s.frost&&'frost',s.flare&&'flare',s.smoke&&'smoke',s.armor&&'armor',s[2],s[1]]){if(!id||!WPN[id]&&!EQUIP[id])continue;
     if(ldLocked(P,id,true)){skip.push(id);continue}const why=buyCheck(P,id);if(!why)ids.push(id);else if(why!=='own'&&why!=='lim'&&why!=='full')skip.push(id)}
   const nm=id=>(WPN[id]||EQUIP[id]).n[L];
   HUD.note(`${T('ldSet')} ${i+1}${L?' equipped':' 장착'}${skip.length?(L?' · skipped: ':' · 건너뜀: ')+skip.map(nm).join(', '):''}`,skip.length?2.6:1.6);
@@ -17262,7 +17277,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     this.fr++;this.autoF=((W.semi&&!(W.dual&&P.dualB))||W.burst)&&!melee?(this.fr%3!==0):true},
   // ---------- weapon bar ----------
   slots(P){if(P.team===TZ){const s=[['claw',null]];if(P.bombs>0)s.push(['zbomb',null]);return s}
-    const s=[];for(const id of [P.inv[1],P.inv[2],P.inv[3]||'knife'])if(id)s.push([id,null]);for(const k of ['he','frost','flare'])if(P.inv[k]>0)s.push([k,P.inv[k]]);return s},
+    const s=[];for(const id of [P.inv[1],P.inv[2],P.inv[3]||'knife'])if(id)s.push([id,null]);for(const k of H_NADES)if(P.inv[k]>0)s.push([k,P.inv[k]]);return s},
   drawBar(P){const S=this.slots(P);const key=P.team+'|'+P.cur+'|'+S.map(s=>s[0]+(s[1]||'')).join(',')+'|'+(P.bombs||0);
     if(key!==this.wKey){this.wKey=key;const L=LI();
       this.bar.innerHTML=S.map(([id,n])=>{const W=WPN[id];const ic=id==='claw'?miniIcon('claw'):W&&W.model?gunIcon(W.model,id==='zbomb'||W.kind==='nade'?22:20):'';
@@ -17759,8 +17774,8 @@ const ESMK={list:[],
       const n=S.t<1.2?8:2.4;for(let j=0;j<n;j++)if(Math.random()<dt*14*k){const a=Math.random()*TAU,d=Math.sqrt(Math.random())*S.r*(S.t<1?S.t:1);
         FX.spawn({x:S.x+Math.cos(a)*d,y:S.y+rr(.2,2.4),z:S.z+Math.sin(a)*d,vx:rr(-.2,.2),vy:rr(0,.25),vz:rr(-.2,.2),life:rr(3,4.5),s0:rr(1.4,2),s1:rr(3,4.2),r:S.c?S.c[0]:.62,g:S.c?S.c[1]:.64,b:S.c?S.c[2]:.62,a:.55,f:2,drag:.6,lit:1})}}},
   // inside a cloud (or the line between two points crosses one)
-  at(x,z,pad){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;if(Math.hypot(x-S.x,z-S.z)<S.r*.85+(pad||0))return S}return null},
-  blocks(ax,az,bx,bz){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz||1,t=clamp(((S.x-ax)*dx+(S.z-az)*dz)/l,0,1),cx=ax+dx*t-S.x,cz=az+dz*t-S.z;if(cx*cx+cz*cz<S.r*S.r*.6)return true}return false},
+  at(x,z,pad){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;if(Math.hypot(x-S.x,z-S.z)<S.r*.85+(pad||0))return S}return SMK.atXZ(x,z)},// (and the smoke grenades' clouds, smoke.js)
+  blocks(ax,az,bx,bz){for(const S of this.list){if(S.t<.6||S.t>S.life+1)continue;const dx=bx-ax,dz=bz-az,l=dx*dx+dz*dz||1,t=clamp(((S.x-ax)*dx+(S.z-az)*dz)/l,0,1),cx=ax+dx*t-S.x,cz=az+dz*t-S.z;if(cx*cx+cz*cz<S.r*S.r*.6)return true}return SMK.blocks2(ax,az,bx,bz)},
   clear(){this.list=[]}};
 
 // ---------- ammo boxes: dropped by the infected RT-1 squad; walking over one tops the guns up ----------
@@ -23503,9 +23518,9 @@ const _pvV=new THREE.Vector3();
 const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   GOALS:{tdm:[40,60,100],ffa:[15,25,40],race:[10,15,20]},TIMES:[300,480,600],BOTS:[3,5,7,9,11],MPBOTS:[0,2,4,6,8,10,12],
   SIDES:[{n:['블루','BLUE'],c:'#5ab4ff',t:[.16,.4,1]},{n:['레드','RED'],c:'#ff4b3a',t:[1,.2,.12]}],
-  // what 대인전 lets in: the plain guns, the three melee weapons, HE, flares, armour and ammo (no frost, no specials, no crate guns)
+  // what 대인전 lets in: the plain guns, the three melee weapons, HE, flares, smoke, armour and ammo (no frost, no specials, no crate guns)
   GUNS:['knife','axe','hammer','p9','f7','tw9','d50','r6','sg8','db2','m14','as12','k5','k9','um45','pd50','g35','kv47','br3','ar7','ar5c','hr17',
-    'sr8','r700','dm14','hmg','mg6','he','flare','armor','ammo'],
+    'sr8','r700','dm14','hmg','mg6','he','flare','smoke','armor','ammo'],
   MEL:{knife:.85,axe:.8,hammer:.6},AP:{sniper:.97,rifle:.78,mg:.8,smg:.62,pistol:.65,shotgun:.72},
   mid:0,mode:'tdm',goal:50,time:480,assigned:false,bases:null,played:0,intel:[[],[]],recent:[],hits:[],bm0:null,bi0:null,_D:null,aiS:'',aiT:0,
   isMode(m){return m==='tdm'||m==='ffa'||m==='bomb'||m==='race'},
@@ -23542,7 +23557,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   // the loadout of this life: the one noted (ldSnap) or given, cleaned of anything 대인전 does not allow; armour always
   kit(a){if(G.mode==='race')return RACE.kit(a);ldRestore(a);this.sanitize(a);a.armor=100;if(a.kit)a.kit.armor=1;a.cur=bestWeapon(a)},
   sanitize(a){for(const s of [1,2,3]){const id=a.inv[s];if(id&&!this.ok(id)){if(a.ammo[id])delete a.ammo[id];a.inv[s]=s===2?'p9':s===3?'knife':null;if(a.inv[s])fillAmmo(a,a.inv[s])}}
-    a.inv.frost=0;const o=a.ldo;if(o){for(const s of [1,2,3])if(o[s]&&!this.ok(o[s]))o[s]=s===2?'p9':s===3?'knife':null;o.frost=0}if(a.cur&&!this.ok(a.cur)&&a.cur!=='he'&&a.cur!=='flare')a.cur=bestWeapon(a)},
+    a.inv.frost=0;const o=a.ldo;if(o){for(const s of [1,2,3])if(o[s]&&!this.ok(o[s]))o[s]=s===2?'p9':s===3?'knife':null;o.frost=0}if(a.cur&&!this.ok(a.cur))a.cur=bestWeapon(a)},
   begin(plan){if(G.mode==='bomb')return BOMB.begin(plan);if(NET.cli&&!plan)return;if(!this.assigned)this.assign();AU.stopAll('countdown');dropsClear();G.round=1;G.st='prep';G.time=this.WARM;FX.clearLimbs();
     G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.killer=null;G.winner=-1;G.beepAt=this.WARM+1;G.hostN=0;G.score=[0,0];G.pvpKC=null;
     clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
@@ -23689,7 +23704,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
 
   // ---------- my loadout at the start: set 1 (what 대인전 allows and the account owns), a plain rifle if it has no primary ----------
   autoSet(){const P=G.player;if(!P||!P.alive)return;const s=ldSets()[0]||{},ids=[];
-    for(const id of [s[3],s.he&&'he',s.flare&&'flare',s[2],s[1]]){if(!id||!this.ok(id)||ldLocked(P,id,true))continue;if(!buyCheck(P,id))ids.push(id)}
+    for(const id of [s[3],s.he&&'he',s.flare&&'flare',s.smoke&&'smoke',s[2],s[1]]){if(!id||!this.ok(id)||ldLocked(P,id,true))continue;if(!buyCheck(P,id))ids.push(id)}
     if(!ids.some(id=>WPN[id]&&WPN[id].slot===1)){const fb=['kv47','ar7','g35','k5','sg8'].find(id=>!ldLocked(P,id,true)&&!buyCheck(P,id));if(fb)ids.push(fb)}
     if(!ids.length)return;const S={n:ids.length,got:0,gun:false,fail:[]};
     if(NET.cli){for(const id of ids)ldAsk(P,id,S);return}
@@ -23701,12 +23716,12 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
       ['db2',.02],['r700',.06],['sr8',.04],['dm14',.03],['hmg',.03],['mg6',.02]].filter(p=>WPN[p[0]]);
     let t=0;for(const p of prim)t+=p[1];let r=Math.random()*t,p1=prim[0][0];for(const p of prim){r-=p[1];if(r<=0){p1=p[0];break}}
     const pr=Math.random(),p2=pr<.6?'p9':pr<.75?'d50':pr<.85?'f7':pr<.93?'tw9':'r6';
-    return {1:p1,2:p2,3:'knife',he:Math.random()<.5?1:0,frost:0,flare:0,armor:1}},
+    return {1:p1,2:p2,3:'knife',he:Math.random()<.5?1:0,frost:0,flare:0,smoke:Math.random()<(G.mode==='bomb'?.75:.3)?1:0,armor:1}},
   diff(){const d=DIFF[G.diff|0]||DIFF[1];if(this._D&&this._D.k===d)return this._D;return this._D={k:d,react:d.react*1.7+.08,err:d.err*1.6,turn:d.turn*.8,hsP:d.hsP*.55,tol:d.tol}},
   botInit(a){const B=a.bot;Object.assign(B,{pm:this.mid,tg:null,lkp:null,rg:null,rgT:0,path:null,pg:null,repath:0,hurtBy:null,hurtT:-9,seenT:-9,react:0,aimX:0,aimY:0,aimOX:0,aimOY:0,aimRT:0,
-    aimT0:0,hs:false,hsT:0,strafe:0,strafeT:0,crouchT:0,nadeCD:rr(6,14),scanY:null,fireHold:false,burstT:0,lof:false});a.flash=false},
-  botSpawn(a){const B=a.bot;B.tg=null;B.lkp=null;B.rg=null;B.path=null;B.pg=null;B.hurtBy=null;B.scanY=null;B.react=0;B.crouchT=0;a.flash=false},
-  botDie(a){const B=a.bot;B.tg=null;B.path=null},
+    aimT0:0,hs:false,hsT:0,strafe:0,strafeT:0,crouchT:0,nadeCD:rr(6,14),scanY:null,fireHold:false,burstT:0,lof:false,smk:null,retT:0,smkR:0,smkF:0});a.flash=false},
+  botSpawn(a){const B=a.bot;B.tg=null;B.lkp=null;B.rg=null;B.path=null;B.pg=null;B.hurtBy=null;B.scanY=null;B.react=0;B.crouchT=0;B.smk=null;B.retT=0;a.flash=false},
+  botDie(a){const B=a.bot;B.tg=null;B.path=null;B.smk=null;B.retT=0},
   botHurt(t,src){const B=t.bot;if(!B||!src)return;B.hurtBy=src;B.hurtT=G.t;if(!B.tg||B.tg===src||Math.random()<.5)B.lkp={x:src.c.x,y:src.c.y,z:src.c.z,t:G.t}},
   botHeard(a,t){const B=a.bot;if(B.tg)return;if(!B.lkp||G.t-B.lkp.t>1.5||Math.random()<.3)B.lkp={x:t.c.x+rr(-3,3),y:t.c.y,z:t.c.z+rr(-3,3),t:G.t,h:1}},
   // sight at ~8 Hz: the closest enemy in view (about 140°) with a clear line, one that just hurt it even behind; shots heard give a rough place
@@ -23714,12 +23729,12 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     for(const t of G.actors){if(t===a||!t.alive||!foe(a,t))continue;const dx=t.c.x-c.x,dz=t.c.z-c.z,d=Math.hypot(dx,dz);if(d>this.SIGHT)continue;
       const known=B.tg===t&&G.t-B.seenT<1,ang=Math.abs(wrapA(Math.atan2(-dx,-dz)-a.yaw)),Wt=WPN[t.cur],heard=G.t-(t.lastFire||-9)<1.2&&d<40&&!(Wt&&Wt.quiet);
       if(ang>1.22&&d>4&&!known&&t!==hb){if(heard)this.botHeard(a,t);continue}
-      if(!losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z)&&!losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z)){if(heard||t===hb)this.botHeard(a,t);continue}
+      if(!losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z)&&!losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z)||SMK.n&&SMK.hides(a,t)){if(heard||t===hb)this.botHeard(a,t);continue}
       const sc=d*(known?.7:1)*(t===hb?.5:1)*(this.prot(t)?2.5:1);if(sc<bd){bd=sc;best=t}}
     if(best){if(B.tg!==best){B.tg=best;B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<5?.5:1);B.aimT0=G.t;B.hsT=0}B.seenT=G.t;B.lkp={x:best.c.x,y:best.c.y,z:best.c.z,t:G.t};
       if(this.teams()){const I=this.intel[a.side===1?1:0];I.push({x:best.c.x,y:best.c.y,z:best.c.z,t:G.t});if(I.length>10)I.shift()}}
     else if(B.tg&&(!B.tg.alive||G.t-B.seenT>.6))B.tg=null;
-    const t=B.tg;B.lof=!!t&&losClear(e.x,e.y,e.z,t.c.x,B.hs?t.head.y:t.c.y+t.c.h*.6,t.c.z)},
+    const t=B.tg;B.lof=!!t&&losClear(e.x,e.y,e.z,t.c.x,B.hs?t.head.y:t.c.y+t.c.h*.6,t.c.z)&&!(SMK.n&&SMK.hides(a,t))},
   range(W){const k=W&&W.kind;return k==='shotgun'?[3,9]:k==='smg'?[5,16]:k==='sniper'?[14,60]:k==='pistol'?[5,18]:k==='melee'?[0,1.6]:[8,30]},
   canStep(a,dx,dz){const c=a.c;return charFits(c,c.x+dx*.6,c.y+.3,c.z+dz*.6)&&floorBelow(c.x+dx*.9,c.y+.4,c.z+dz*.9,.2)>c.y-.6},
   botWalk(a,g,dt){const B=a.bot,c=a.c;if(Math.hypot(g.x-c.x,g.z-c.z)<1.2&&Math.abs(g.y-c.y)<1.2)return false;
@@ -23777,11 +23792,13 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(G.st==='prep'){if(B.scanY==null)B.scanY=a.yaw;AI.turnTo(a,B.scanY+Math.sin(G.t*.6+a.id)*.8,-.03,dt,2);return}
     if(G.st!=='fight')return;
     const D=this.diff();if(B.think<=0){B.think=.11+Math.random()*.06;this.botSee(a,D);
-      if(B.tg&&a.inv.he>0&&WPN[a.cur]&&WPN[a.cur].kind!=='nade'){B.nadeCD-=.14;if(B.nadeCD<=0){B.nadeCD=rr(6,12);const d=dist3(B.tg.c,c);if(d>7&&d<18&&B.lof&&Math.random()<.5)equip(a,'he')}}}
+      if(B.tg&&a.inv.he>0&&WPN[a.cur]&&WPN[a.cur].kind!=='nade'&&!B.smk){B.nadeCD-=.14;if(B.nadeCD<=0){B.nadeCD=rr(6,12);const d=dist3(B.tg.c,c);if(d>7&&d<18&&B.lof&&Math.random()<.5)equip(a,'he')}}
+      SMK.botThink(a)}
+    if(SMK.botThrow(a,dt))return;// (a smoke grenade on its way out: smoke.js)
     const tg=B.tg&&B.tg.alive&&foe(a,B.tg)?B.tg:null,W=WPN[a.cur]||{},bm=G.mode==='bomb';
     if(bm&&BOMB.botAct(a,dt,tg))return;
-    this.botGun(a,tg,W);let moving=false;
-    if(tg)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=bm?BOMB.botGoal(a):this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
+    this.botGun(a,tg,W);let moving=false;const ret=B.retT>G.t&&B.rg;// (backing off behind its own smoke)
+    if(tg&&!ret)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=ret?B.rg:bm?BOMB.botGoal(a):this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
     if(tg)this.botAim(a,tg,dt,D,WPN[a.cur]||W);
     else if(moving){const v=Math.hypot(c.vx,c.vz);if(v>.5)AI.turnTo(a,Math.atan2(-c.vx,-c.vz),0,dt,6)}
     else if(bm&&B.holdY!=null)AI.turnTo(a,B.holdY+Math.sin(G.t*.45+a.id*1.7)*.42,-.03,dt,2.6);// (holding an angle in 폭파미션)
@@ -23824,6 +23841,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     // who is under the crosshair: the name in its colour; a teammate's health
     this.aiT-=dt;if(this.aiT<=0){this.aiT=.08;let ai='';if(P.alive&&!G.spec){const ey=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const hw=rayCast(ey.x,ey.y,ey.z,_dv.x,_dv.y,_dv.z,60);let best=null,bt=hw?hw.t:60;
         for(const t of G.actors){if(!t.alive||t===P)continue;const c=t.c,th=rayAABB(ey.x,ey.y,ey.z,_dv.x,_dv.y,_dv.z,c.x-c.hw,c.y,c.z-c.hw,c.x+c.hw,t.head.y+.15,c.z+c.hw,bt);if(th>=0&&th<bt){bt=th;best=t}}
+        if(best&&SMK.n&&SMK.blocks(ey.x,ey.y,ey.z,ey.x+_dv.x*bt,ey.y+_dv.y*bt,ey.z+_dv.z*bt))best=null;
         if(best)ai=`<span class="${this.cls(best)}">${esc(best.name)}</span>`+(!foe(P,best)?`<span class="bar t"><i style="width:${Math.round(clamp(best.hp/100,0,1)*100)}%"></i></span>`:'')}this.aiS=ai}
     set(e.aimInfo,this.aiS,1);
     // spawn protection and the buy window
@@ -24212,7 +24230,7 @@ const RACE={
   okWep(a,w){if(w==='knife')return true;const L=this.ladder(),i=this.lv(a);return w===L[i]||i>0&&w===L[i-1]},
   name(id){const W=WPN[id];return W&&W.n?W.n[LI()]:id},
   // the kit of a life: the gun of this step (a full magazine and its spare), the knife, armour
-  kit(a){const id=this.wep(a);a.inv={1:null,2:null,3:'knife',he:0,frost:0,flare:0};a.ammo={};ldKitReset(a);
+  kit(a){const id=this.wep(a);a.inv={1:null,2:null,3:'knife',he:0,frost:0,flare:0,smoke:0};a.ammo={};ldKitReset(a);
     if(id!=='knife'){const W=WPN[id];a.inv[W.slot]=id;fillAmmo(a,id)}a.armor=100;a.kit.armor=1;a.cur=id;a.prev='knife'},
   // a level-up while alive: the old gun goes, the next one comes out
   give(a){const id=this.wep(a);for(const s of [1,2])if(a.inv[s]&&a.inv[s]!==id){delete a.ammo[a.inv[s]];a.inv[s]=null}
@@ -24239,6 +24257,213 @@ const RACE={
     if(this.bar.style.display!=='flex')this.bar.style.display='flex'},
   off(){if(this.bar)this.bar.style.display='none';this.barK=''},
 };
+
+// ---- smoke.js ----
+'use strict';
+// ============ 연막탄 (v6.52): a smoke grenade in every mode ============
+// Bought and thrown like the others (slot 4, once a round). It pops where it comes to rest (3 s at the most) and fills the space round it
+// for SMK.LIFE s: a flood over a grid of C-metre columns from the canister, through openings only (walls, crates and shut doors stop it;
+// fences and railings do not; it spills over drops and climbs low steps), out to R metres along the way it can spread, up to a dome TOP m
+// high (under any ceiling). The cloud grows over GROW s and thins out over FADE s at the end.
+// Nothing sees through it: a line of sight is cut once it runs through THR metres' worth of smoke (thin at the rim, thick inside) — bots
+// in every mode, zombies running straight at someone, the bosses (ESMK.at, epbase.js), the radar, the name under the crosshair.
+// Drawn with camera-facing puffs of its own (lit by the light probes, sorted, faded near the eye, kept small next to walls so none shows
+// through one), and a grey veil over the picture while the eye is inside a cloud (the first-person gun stays clear).
+// Network: every page grows a cloud from its own copy of the grenade; the host's says where it really popped (smk) and the others move
+// theirs there (or make it, when the host's comes first).
+// Bots (대인전): attackers in 폭파미션 smoke the defenders' side of the site on their way in, defenders smoke a planted bomb before going
+// to defuse it, and a hurt bot in a gunfight smokes the gap and backs off.
+Object.assign(GUNS,{smkg:{parts:[Pt(0,.004,-.03,.05,.1,.05,'gunmetal',{r:.012}),Pt(0,.028,-.03,.052,.022,.052,'white'),Pt(0,-.042,-.03,.046,.008,.046,'white'),
+  Pt(0,.061,-.03,.03,.016,.03,'steel'),Pt(.021,.03,-.03,.007,.07,.014,'steel'),Pt(-.02,.064,-.03,.014,.014,.004,'bright')],grip:[0,0,0],muzzle:[0,0,-.03]}});
+// the pop and the long hiss
+Object.assign(SFX,{smoke:{n:2,dur:3.4,peak:.78,gain:.62,rev:.22,fn:B=>{
+  B.osc('sine',150,52,0,.22,B.env(0,.004,.9,.2));B.nz('brown',0,.3,B.f('lowpass',420,.7,B.env(0,.003,.8,.16)));B.grain(0,1800,1.2,.05,.5);
+  const o=B.g(1);B.am(o,.05,3.2,18,.3);B.nz('white',.04,3.2,B.f('bandpass',3300,.55,B.envT(.04,.3,.6,1.15,o)));B.nz('pink',.04,3.2,B.f('highpass',1100,.6,B.envT(.04,.35,.45,.95,o)))}}});
+SFX_ORDER.push('smoke');
+const _smC=new THREE.Color(),_smV=new THREE.Vector3();
+// the smoke's colour where it is: light grey in daylight, darker indoors and at night, a hint of the light's own colour
+function smkLit(x,y,z,k,out){sampleProbe(x,y,z,_smC);const s=_smC.r+_smC.g+_smC.b,l=clamp(.2+.4*s,.24,.86)*k,m=s/3||1;out[0]=l*(.8+.2*_smC.r/m);out[1]=l*(.8+.2*_smC.g/m);out[2]=l*(.8+.2*_smC.b/m)*1.02;return out}
+const _smL=[0,0,0];
+const SMK={R:5.2,C:.8,TOP:3.8,LIFE:18,GROW:2.4,FADE:3.2,EDGE:1.5,THR:1.6,RB:7.4,MAX:8,NP:104,MAXP:860,
+  list:[],n:0,id:0,P:[],mesh:null,geo:null,veil:null,vk:0,aimT:0,
+  // ---------- the cloud ----------
+  // the space it fills (S.cells, N×N columns round the canister): each column's ground g, ceiling, top, how far the smoke travelled
+  // to get there (d) and how far it is from a wall (wd). False when there is no room at all
+  build(S){const C=this.C,R=this.R+this.EDGE*.5,M=Math.ceil(R/C)+1,N=2*M+1,X0=S.x-(M+.5)*C,Z0=S.z-(M+.5)*C,by=S.y,k0=M*N+M,info=new Array(N*N);
+    S.N=N;S.x0=X0;S.z0=Z0;S.cells=new Array(N*N).fill(null);
+    // a column: its ground (over a drop or nothing: hanging 1.7 m below the canister), its ceiling; null inside something solid or on top
+    // of something tall
+    const col=k=>{if(info[k]!==undefined)return info[k];const i=k%N,j=(k/N)|0,x=X0+(i+.5)*C,z=Z0+(j+.5)*C;let g=k===k0?by:floorBelow(x,by+1.7,z,.05),r=null;const drop=g<by-1.7;if(drop)g=by-1.7;
+      if(g<=by+1.45&&(k===k0||(drop?!insideSolid(x,by+.4,z)&&!insideSolid(x,by+1.4,z):!insideSolid(x,g+.35,z)))){const h=rayCast(x,g+.3,z,0,1,0,this.TOP+1.5,LOS_F),ceil=h?g+.3+h.t:1e9;
+        if(ceil-g>.75)r={i,j,x,z,g,ceil,top:0,d:1e9,wd:1e9,blk:0,done:0,inq:0,pa:null,ch:null}}
+      info[k]=r;return r};
+    // can it get from one column to the next: an open line at knee or head height (a step up of more than 1.2 m stops it)
+    const pass=(a,b)=>{if(b.g-a.g>1.2)return false;const hi=Math.max(a.g,b.g),y0=hi+.45,y1=Math.min(hi+1.5,Math.min(a.ceil,b.ceil)-.1);
+      return losClear(a.x,y0,a.z,b.x,y0,b.z)||y1>y0+.3&&losClear(a.x,y1,a.z,b.x,y1,b.z)};
+    const c0=col(k0);if(!c0)return false;c0.d=0;c0.inq=1;const open=[c0],D2=C*Math.SQRT2,DIR=[[1,0,C],[-1,0,C],[0,1,C],[0,-1,C],[1,1,D2],[1,-1,D2],[-1,1,D2],[-1,-1,D2]],L=[];
+    while(open.length){let bi=0;for(let q=1;q<open.length;q++)if(open[q].d<open[bi].d)bi=q;const a=open[bi];open[bi]=open[open.length-1];open.pop();a.done=1;L.push(a);
+      for(let di=0;di<8;di++){const e=DIR[di],i=a.i+e[0],j=a.j+e[1];if(i<0||j<0||i>=N||j>=N)continue;const nd=a.d+e[2];if(nd>R)continue;const b=col(j*N+i);
+        if(!b){if(di<4)a.blk|=1<<di;continue}if(b.done||nd>=b.d)continue;
+        let ok=pass(a,b);if(ok&&di>=4){const p=col(a.j*N+i),q=col(j*N+a.i);ok=!!(p&&q)&&pass(a,p)&&pass(a,q)&&pass(p,b)&&pass(q,b)}
+        if(!ok){if(di<4)a.blk|=1<<di;continue}b.d=nd;b.pa=a;if(!b.inq){b.inq=1;open.push(b)}}}
+    // the distance to the nearest wall (a column with a blocked side is half a cell from one)
+    const q=[];for(const c of L)if(c.blk){c.wd=C*.5;q.push(c)}
+    for(let h=0;h<q.length;h++){const a=q[h];for(let di=0;di<4;di++){const e=DIR[di],i=a.i+e[0],j=a.j+e[1];if(i<0||j<0||i>=N||j>=N)continue;const b=info[j*N+i];if(b&&b.done&&b.wd>a.wd+C){b.wd=a.wd+C;q.push(b)}}}
+    S.list=[];for(const c of L){c.top=Math.min(by+this.TOP*(1-.35*Math.pow(Math.min(1,c.d/R),2)),c.ceil-.05);if(c.top<c.g+.5)continue;S.cells[c.j*N+c.i]=c;S.list.push(c)}
+    S.np=clamp(Math.round(S.list.length*.7),18,this.NP);return S.list.length>0},
+  // a cloud: o the thrower's id, conf once the host has said where it is
+  add(o,x,y,z,conf){const S={id:++this.id,o,x,y,z,t:0,t0:G.t,life:this.LIFE,conf:!!conf,mine:0,k:0,Re:0,pc:0,dead:0};if(!this.build(S))return null;
+    this.list.push(S);while(this.list.length>this.MAX){const s=this.list.shift();s.dead=1}this.n=this.list.length;
+    AU.at('smoke',x,y+.3,z,{vol:1,range:55});for(let i=0;i<10;i++){const a=Math.random()*TAU,s=rr(1.5,4);FX.spawn({x,y:y+.15,z,vx:Math.cos(a)*s,vy:rr(.3,1.4),vz:Math.sin(a)*s,life:rr(.5,.9),s0:.3,s1:1.1,r:.7,g:.71,b:.72,a:.5,f:2,drag:3,lit:1})}
+    return S},
+  // a grenade lies still: its cloud (null when it fell out of the world). The host's says where it is for everyone
+  pop(n){const own=n.owner&&n.owner.id!=null?n.owner.id:-1,x=n.x,z=n.z,f=floorBelow(x,n.y+.25,z,.05),y=f>n.y-2.5?f:n.y-.3;if(y<-30)return null;
+    // the host's came in first: this grenade is that cloud
+    if(NET.cli)for(const S of this.list)if(S.o===own&&S.conf&&!S.mine&&G.t-S.t0<4&&Math.hypot(S.x-x,S.z-z)<8){S.mine=1;return S}
+    const S=this.add(own,x,y,z,!NET.cli);if(!S)return null;S.mine=1;if(NET.host)netEv('smk',{o:own,p:[r2(x),r2(y),r2(z)]});return S},
+  // the host's word on a cloud: move ours there, or make it
+  fromHost(o,x,y,z){for(const S of this.list)if(S.o===o&&!S.conf&&G.t-S.t0<5&&Math.hypot(S.x-x,S.z-z)<8){S.conf=true;this.move(S,x,y,z);return S}return this.add(o,x,y,z,true)},
+  move(S,x,y,z){const dx=x-S.x,dy=y-S.y,dz=z-S.z;if(Math.hypot(dx,dy,dz)<.2)return;S.x=x;S.y=y;S.z=z;if(!this.build(S)){S.dead=1;return}
+    for(const p of this.P)if(p.S===S)p.S=null;S.pc=0},// (its puffs go: the columns are new)
+  done(S){return !S||S.dead},
+  clear(){for(const S of this.list)S.dead=1;this.list=[];this.n=0;this.P.length=0;this.vk=0;if(this.veil)this.veil.visible=false},
+  // the clock: growing (Re, the reach so far), thick (k), thinning out
+  tick(dt){if(!this.list.length)return;const RR=this.R+this.EDGE*.5;
+    for(let i=this.list.length-1;i>=0;i--){const S=this.list[i];if(S.dead){this.list.splice(i,1);continue}S.t+=dt;const u=Math.min(1,S.t/this.GROW);S.Re=RR*(.12+.88*(1-Math.pow(1-u,2.2)));
+      S.k=S.t<.5?smooth(S.t/.5):S.t<S.life?1:Math.max(0,1-(S.t-S.life)/this.FADE);if(S.t>S.life+this.FADE){S.dead=1;this.list.splice(i,1)}}
+    this.n=this.list.length},
+  // ---------- seeing through it ----------
+  // how thick it is at a point (0..1)
+  dens(S,x,y,z){const C=this.C,i=Math.floor((x-S.x0)/C),j=Math.floor((z-S.z0)/C);if(i<0||j<0||i>=S.N||j>=S.N)return 0;const c=S.cells[j*S.N+i];if(!c)return 0;
+    const fh=(S.Re-c.d)/this.EDGE;if(fh<=0)return 0;const fv=Math.min(1,(c.top-y)/.9,(y-c.g+.3)/.35);if(fv<=0)return 0;return Math.min(1,fh)*fv*S.k},
+  at(x,y,z){let v=0;for(const S of this.list)v+=this.dens(S,x,y,z);return Math.min(1,v)},
+  // the smoke along a line, summed over the clouds it crosses (metres of thick smoke)
+  line(S,ax,ay,az,ux,uy,uz,L,lim){const cx=S.x-ax,cy=S.y+.8-ay,cz=S.z-az,tc=cx*ux+cy*uy+cz*uz,e2=cx*cx+cy*cy+cz*cz-tc*tc,rb=this.RB;if(e2>rb*rb)return 0;
+    const h=Math.sqrt(rb*rb-e2),t0=Math.max(0,tc-h),t1=Math.min(L,tc+h);let s=0;for(let t=t0+.17;t<t1;t+=.34){s+=this.dens(S,ax+ux*t,ay+uy*t,az+uz*t)*.34;if(s>=lim)break}return s},
+  // is the line between two points cut by smoke? (thr: metres of thick smoke that hide, THR by default)
+  blocks(ax,ay,az,bx,by,bz,thr){if(!this.n)return false;const dx=bx-ax,dy=by-ay,dz=bz-az,L=Math.hypot(dx,dy,dz);if(L<.1)return false;const T=thr||this.THR;let s=0;
+    for(const S of this.list){if(S.k<.03)continue;s+=this.line(S,ax,ay,az,dx/L,dy/L,dz/L,L,T-s);if(s>=T)return true}return false},
+  // the chapters' flat checks (ESMK, epbase.js): standing in a cloud, a line across one at its own middle height
+  atXZ(x,z){for(const S of this.list)if(this.dens(S,x,S.y+1.2,z)>.45)return S;return null},
+  blocks2(ax,az,bx,bz){if(!this.n)return false;const dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz);if(L<.1)return false;let s=0;
+    for(const S of this.list){if(S.k<.03)continue;s+=this.line(S,ax,S.y+1.2,az,dx/L,0,dz/L,L,this.THR-s);if(s>=this.THR)return true}return false},
+  // an actor's view of another (eye to chest, or eye to head): both cut by smoke? (and not right next to each other)
+  hides(a,t){if(!this.n)return false;const e=actorEye(a),d=Math.hypot(t.c.x-e.x,t.c.z-e.z);if(d<1.4)return false;
+    return this.blocks(e.x,e.y,e.z,t.c.x,t.c.y+1.2,t.c.z)&&this.blocks(e.x,e.y,e.z,t.c.x,t.head?t.head.y:t.c.y+1.6,t.c.z)},
+
+  // ---------- the look ----------
+  // four soft puff shapes, 64 px each
+  texP(){return paint(128,128,P=>{const D=P.D;for(let i=0;i<D.length;i+=4){D[i]=D[i+1]=D[i+2]=255;D[i+3]=0}
+    for(let f=0;f<4;f++){const ox=(f%2)*64,oy=(f>>1)*64;for(let y=0;y<64;y++)for(let x=0;x<64;x++){const u=(x-31.5)/30,v=(y-31.5)/30,r=Math.hypot(u,v);if(r>=1)continue;
+      const n1=fbm(x/11+f*7.3,y/11+f*3.1,71+f,3,0),n2=vnoise(x/4,y/4,90+f,0),d=r+(n1-.5)*.6+(n2-.5)*.14;if(d>=.98)continue;
+      const a=smooth(clamp((.98-d)/.6,0,1))*clamp((1-r)/.18,0,1)*(.82+.18*n2),l=228+26*(n1-.5)+14*(n2-.5),i=((oy+y)*128+ox+x)*4;D[i]=D[i+1]=D[i+2]=clamp(l,0,255)|0;D[i+3]=clamp(a*255,0,255)|0}}})},
+  init(){if(this.mesh)return;const n=this.MAXP,g=new THREE.BufferGeometry(),pos=new Float32Array(n*12),q=new Float32Array(n*8),sz=new Float32Array(n*4),ro=new Float32Array(n*4),co=new Float32Array(n*16),fr=new Float32Array(n*4),idx=new Uint16Array(n*6);
+    for(let i=0;i<n;i++){q.set([-1,-1,1,-1,1,1,-1,1],i*8);const b=i*4;idx.set([b,b+1,b+2,b,b+2,b+3],i*6)}
+    const A=(k,arr,w,dyn)=>{const at=new THREE.BufferAttribute(arr,w);if(dyn)at.setUsage(THREE.DynamicDrawUsage);g.setAttribute(k,at);return at};
+    A('position',pos,3,1);A('aQ',q,2);A('aS',sz,1,1);A('aR',ro,1,1);A('aC',co,4,1);A('aF',fr,1,1);g.setIndex(new THREE.BufferAttribute(idx,1));g.setDrawRange(0,0);
+    const t=new THREE.CanvasTexture(this.texP());t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;
+    const m=new THREE.ShaderMaterial({uniforms:{map:{value:t},uFogC:LU.uFogC,uFogD:LU.uFogD},transparent:true,depthWrite:false,depthTest:true,
+      vertexShader:'attribute vec2 aQ;attribute float aS;attribute float aR;attribute vec4 aC;attribute float aF;uniform float uFogD;varying vec2 vUv;varying vec4 vC;varying float vFog;'+
+        'void main(){vec4 mv=modelViewMatrix*vec4(position,1.);float d=-mv.z,c=cos(aR),s=sin(aR);mv.xy+=vec2(c*aQ.x-s*aQ.y,s*aQ.x+c*aQ.y)*aS;'+
+        'vUv=(aQ*.5+.5+vec2(mod(aF,2.),floor(aF/2.)))*.5;vC=aC;vC.a*=smoothstep(.2,1.4,d);vFog=1.-exp(-uFogD*uFogD*d*d);gl_Position=projectionMatrix*mv;}',
+      fragmentShader:'uniform sampler2D map;uniform vec3 uFogC;varying vec2 vUv;varying vec4 vC;varying float vFog;'+
+        'void main(){vec4 t=texture2D(map,vUv);float a=t.a*vC.a;if(a<.004)discard;gl_FragColor=vec4(mix(vC.rgb*t.rgb,uFogC,vFog),a);}'});
+    const mesh=new THREE.Mesh(g,m);mesh.frustumCulled=false;mesh.renderOrder=6.5;R.scene.add(mesh);this.mesh=mesh;this.geo=g;
+    // the veil while the eye is inside: drawn last in the world (over muzzle flashes and tracers too), under the first-person gun
+    const vm=new THREE.ShaderMaterial({uniforms:{uK:{value:0},uC:{value:new THREE.Color(.6,.61,.62)},uT:LU.uTime,uO:{value:new THREE.Vector2()}},transparent:true,depthWrite:false,depthTest:false,
+      vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+      fragmentShader:'uniform float uK;uniform vec3 uC;uniform float uT;uniform vec2 uO;varying vec2 vUv;float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
+        'float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}'+
+        'void main(){vec2 p=vUv*vec2(3.4,1.9)+uO;float v=n(p+vec2(uT*.06,uT*.025))*.62+n(p*2.4-vec2(uT*.045,uT*.02))*.38;gl_FragColor=vec4(uC*(.9+.2*v),clamp(uK*(.86+.2*v),0.,1.));}'});
+    const vq=new THREE.Mesh(new THREE.PlaneGeometry(2,2),vm);vq.frustumCulled=false;vq.renderOrder=6.6;vq.visible=false;R.scene.add(vq);this.veil=vq},
+  // a new puff for a cloud: while it grows each one rides out from the canister along the flood to a column of the whole cloud; later
+  // they come up in place, fewer at the rim
+  puff(S){const L=S.list,grow=S.t<this.GROW;let c=null;for(let k=0;k<7;k++){const q=L[(Math.random()*L.length)|0];if(!grow&&(q.d>S.Re-.2||q.d>S.Re-this.EDGE&&Math.random()<.45))continue;c=q;break}if(!c)return false;
+    const C=this.C,jx=rr(-C*.5,C*.5),jz=rr(-C*.5,C*.5),y=c.g+(Math.random()<.25?rr(.3,.8):rr(.4,Math.max(.5,c.top-c.g-.2)));
+    let r=rr(1.4,2.1);r=Math.max(.45,Math.min(r,c.wd+.3,y-c.g+.6,c.ceil<1e8?c.ceil-y+.2:9));
+    if(!c.ch){const ch=[];for(let q=c;q;q=q.pa)ch.unshift(q);c.ch=ch}
+    const sh=.88+.18*clamp((y-c.g)/Math.max(.5,c.top-c.g),0,1);smkLit(c.x,y,c.z,sh,_smL);
+    this.P.push({S,c,jx,jz,ty:y,sy:S.y+.3,tr:grow,x:grow?S.x:c.x+jx,y:grow?S.y+.3:y,z:grow?S.z:c.z+jz,vx:rr(-.07,.07),vy:rr(.005,.05),vz:rr(-.07,.07),t:0,life:grow?rr(5.5,8.5):rr(4.5,7),r0:r*(grow?.5:.8),r1:r,
+      rot:Math.random()*TAU,vr:rr(-.14,.14),a:rr(.7,.88),f:(Math.random()*4)|0,cr:_smL[0],cg:_smL[1],cb:_smL[2]});S.pc++;return true},
+  // where a riding puff is: on its way out as far as the cloud's front (S.Re) has come
+  ride(p,S){const c=p.c,F=S.Re-.35;if(F>=c.d){p.tr=false;p.x=c.x+p.jx;p.y=p.ty;p.z=c.z+p.jz;return}const s=Math.max(0,F),ch=c.ch;let k=0;while(k<ch.length-1&&ch[k+1].d<=s)k++;
+    const a=ch[k],b=ch[Math.min(k+1,ch.length-1)],u=b===a?0:clamp((s-a.d)/(b.d-a.d),0,1),f=c.d>0?s/c.d:1;p.x=lerp(a.x,b.x,u)+p.jx*f;p.z=lerp(a.z,b.z,u)+p.jz*f;p.y=lerp(p.sy,p.ty,f)},
+  // every drawn frame: new puffs, the old ones drifting and fading, the depth order, the veil
+  draw(dt){const P=this.P;if(!this.list.length&&!P.length){if(this.mesh&&this.geo.drawRange.count)this.geo.setDrawRange(0,0);this.veilK(dt,0);return}this.init();
+    for(const S of this.list){if(S.t>S.life-1.5)continue;let k=0;while(S.pc<S.np&&k<(S.t<.4?24:5)){if(!this.puff(S))break;k++}}
+    const cam=R.cam.position;_smV.set(0,0,-1).applyQuaternion(R.cam.quaternion);let w=0;
+    for(let i=0;i<P.length;i++){const p=P[i],S=p.S;p.t+=dt;if(!S||p.t>=p.life||S.dead){if(S)S.pc--;continue}
+      if(p.tr)this.ride(p,S);else{p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt}
+      p.rot+=p.vr*dt;p.dz=(p.x-cam.x)*_smV.x+(p.y-cam.y)*_smV.y+(p.z-cam.z)*_smV.z;P[w++]=p}
+    P.length=w;P.sort((a,b)=>b.dz-a.dz);
+    // (puffs right at the eye are faded out anyway; inside a cloud the veil hides the near ones: neither is drawn)
+    const g=this.geo,n=Math.min(P.length,this.MAXP),pos=g.attributes.position.array,sz=g.attributes.aS.array,ro=g.attributes.aR.array,co=g.attributes.aC.array,fr=g.attributes.aF.array,near=this.vk>.5?2:.25;let m=0;
+    for(let i=0;i<n;i++){const p=P[i];if(p.dz<near)continue;const S=p.S,e=p.tr?.8:clamp((S.Re-p.c.d)/this.EDGE,.35,1),a=p.a*e*S.k*smooth(clamp(p.t/(p.tr?.35:.9),0,1))*(1-smooth(clamp((p.t-p.life+1.6)/1.6,0,1))),r=lerp(p.r0,p.r1,Math.min(1,p.t/p.life*1.6));
+      for(let v=0;v<4;v++){const j=m*4+v;pos[j*3]=p.x;pos[j*3+1]=p.y;pos[j*3+2]=p.z;sz[j]=r;ro[j]=p.rot;co[j*4]=p.cr;co[j*4+1]=p.cg;co[j*4+2]=p.cb;co[j*4+3]=a;fr[j]=p.f}m++}
+    for(const k of ['position','aS','aR','aC','aF'])g.attributes[k].needsUpdate=true;g.setDrawRange(0,m*6);
+    // the eye inside a cloud: a grey veil as thick as the smoke there, lit like it
+    let d=0;for(const S of this.list)d+=this.dens(S,cam.x,cam.y,cam.z);this.veilK(dt,Math.min(1,d))},
+  veilK(dt,t){this.vk=approach(this.vk,t*.88,dt*(t*.88>this.vk?2.6:1.8));const V=this.veil;if(!V)return;V.visible=this.vk>.004;if(!V.visible)return;const U=V.material.uniforms,cam=R.cam.position;
+    U.uK.value=this.vk;smkLit(cam.x,cam.y,cam.z,.92,_smL);U.uC.value.setRGB(_smL[0],_smL[1],_smL[2]);
+    const P=G.player,s=G.spec&&P&&!P.alive?G.spec:P;if(s)U.uO.value.set(s.yaw*1.1,(s.pitch||0)*1.1)},
+  // the canister on the ground: a thin jet while the cloud is young
+  hiss(n){const S=n.sm;if(!S||S.t>6||Math.random()>.35)return;FX.spawn({x:n.x,y:n.y+.12,z:n.z,vx:rr(-.5,.5),vy:rr(1,2.4),vz:rr(-.5,.5),life:rr(.5,1),s0:.12,s1:.7,r:.75,g:.76,b:.77,a:.4,f:2,drag:2,lit:1})},
+  // the radar: a grey patch where each cloud is
+  mini(x,tg,cs,sn,s,c,R0,d){if(!this.list.length)return;x.save();x.beginPath();x.arc(c,c,R0,0,TAU);x.clip();
+    for(const S of this.list){if(S.k<.05)continue;const dx=S.x-tg.c.x,dz=S.z-tg.c.z,sx=c+(dx*cs-dz*sn)*s,sy=c+(dx*sn+dz*cs)*s,r=Math.max(2,(S.Re-.6)*s);if(Math.hypot(sx-c,sy-c)>R0+r)continue;
+      x.fillStyle=`rgba(196,202,210,${(.34*S.k).toFixed(3)})`;x.beginPath();x.arc(sx,sy,r,0,TAU);x.fill()}x.restore()},
+
+  // ---------- bots ----------
+  // where a grenade let go here, this fast, comes to rest (updNade's flight and bounces in short steps), or null
+  // (lim: given up once it is that far out from where it started and still flying — it will not come back)
+  sim(x,y,z,vx,vy,vz,lim){const h=1/120,x0=x,z0=z,L2=lim?lim*lim:1e9;for(let t=0;t<3;t+=h){vy-=GRAV*.8*h;const sp=Math.hypot(vx,vy,vz),d=sp*h;if(d<1e-5)continue;const r=rayCast(x,y,z,vx/sp,vy/sp,vz/sp,d+.06);
+      if(r&&r.t<d+.06){const vn=vx*r.nx+vy*r.ny+vz*r.nz,ny=r.ny;vx=(vx-1.6*vn*r.nx)*.6;vy=(vy-1.6*vn*r.ny)*.6;vz=(vz-1.6*vn*r.nz)*.6;if(ny>.7&&Math.hypot(vx,vy,vz)<1.2)return [x,y,z]}
+      else{x+=vx*h;y+=vy*h;z+=vz*h;if((x-x0)*(x-x0)+(z-z0)*(z-z0)>L2)return [x,y,z]}if(y<-5)return null}return [x,y,z]},
+  // the aim (yaw, pitch) that lands a smoke grenade from where this bot stands closest to a point, if one lands near enough
+  // (a coarse sweep of the pitch, then a finer one round the best; a little to either side when straight at it does not do)
+  aim(a,tx,ty,tz){const e=actorEye(a),dx=tx-e.x,dz=tz-e.z,D=Math.hypot(dx,dz);if(D<3||D>36)return null;const y0=Math.atan2(-dx,-dz);let best=null;
+    const tr=(yaw,p)=>{aimDir(yaw,p+.12,_smV);const r=this.sim(e.x+_smV.x*.4,e.y+_smV.y*.4-.1,e.z+_smV.z*.4,_smV.x*14.5,_smV.y*14.5+2,_smV.z*14.5,D+9);if(!r)return;
+      const err=Math.hypot(r[0]-tx,r[2]-tz)+Math.abs(r[1]-ty)*1.5;if(!best||err<best.err)best={yaw,pitch:p,err,x:r[0],y:r[1],z:r[2]}};
+    for(const off of [0,-.07,.07,-.14,.14]){const yaw=y0+off,b0=best;for(let p=-.3;p<=1.15;p+=.12)tr(yaw,p);
+      if(best&&best!==b0&&best.yaw===yaw){const pc=best.pitch;for(let p=pc-.09;p<=pc+.091;p+=.03)if(Math.abs(p-pc)>.01)tr(yaw,p)}
+      if(best&&best.err<1.5)break}
+    return best&&best.err<3.2?best:null},
+  // is there smoke there already (or one on its way)?
+  smoked(x,y,z){for(const S of this.list)if(S.t<S.life-4&&Math.hypot(S.x-x,S.z-z)<3.5&&Math.abs(S.y-y)<2.5)return true;
+    for(const a of G.actors){const Q=a.bot&&a.bot.smk;if(Q&&Math.hypot(Q.x-x,Q.z-z)<3.5)return true}
+    for(const n of NADES)if(n.kind==='smoke'&&!n.sm&&n.owner&&n.owner.bot&&n.tx!=null&&Math.hypot(n.tx-x,n.tz-z)<3.5)return true;return false},
+  // a plan to smoke a point: the aim worked out now (one bot a frame at most); force: even with an enemy in sight; then(a): after the throw
+  plan(a,x,y,z,force,then){if(G.t<this.aimT)return false;this.aimT=G.t+.12;const A=this.aim(a,x,y,z);if(!A){a.bot.smkF=G.t+1.5;return false}
+    a.bot.smk={st:'eq',yaw:A.yaw,pitch:A.pitch,x,y,z,t0:G.t,force:!!force,then:then||null,n:0};return true},
+  // carrying it out: the grenade in hand, the aim, the throw (standing still); true while busy
+  botThrow(a,dt){const B=a.bot,Q=B&&B.smk;if(!Q)return false;const cmd=a.cmd,tg=B.tg&&B.tg.alive?B.tg:null;
+    if(!a.alive||Q.st!=='go'&&(!(a.inv.smoke>0)||G.t>Q.t0+3||!Q.force&&tg&&dist3(tg.c,a.c)<32)){B.smk=null;if(a.alive&&a.cur==='smoke'&&a.throwT<=0)equip(a,bestWeapon(a));return false}
+    cmd.f=cmd.s=0;cmd.jump=cmd.duck=cmd.fire=cmd.alt=false;B.path=null;
+    if(Q.st==='eq'){if(a.cur!=='smoke')equip(a,'smoke');else if(a.drawT<=0)Q.st='aim';AI.turnTo(a,Q.yaw,Q.pitch,dt,10);return true}
+    if(Q.st==='aim'){AI.turnTo(a,Q.yaw,Q.pitch,dt,10);if(Math.abs(wrapA(Q.yaw-a.yaw))<.03&&Math.abs(Q.pitch-a.pitch)<.03){a.yaw=Q.yaw;a.pitch=Q.pitch;cmd.fire=true;Q.st='go';Q.n=a.inv.smoke;Q.tg=G.t}return true}
+    a.yaw=Q.yaw;a.pitch=Q.pitch;if(a.throwT>0||a.cur==='smoke'&&a.inv.smoke>=Q.n&&G.t<Q.tg+1)return true;
+    // let go: the grenade remembers where it was meant to go (the others do not smoke the same spot meanwhile)
+    for(let i=NADES.length-1;i>=0;i--){const n=NADES[i];if(n.owner===a&&n.kind==='smoke'&&n.tx==null){n.tx=Q.x;n.tz=Q.z;break}}
+    B.smk=null;if(a.cur==='smoke'&&!(a.inv.smoke>0))equip(a,bestWeapon(a));if(Q.then)Q.then(a);return false},
+  // the smoke spots of a bomb site: the map's own (bomb.smk), or the side of it the defenders come from
+  spots(k){const D=BOMB.D(),S=D&&D[k];if(!S)return [];if(D.smk&&D.smk[k])return D.smk[k];const C=BOMB.ctCen(),dx=C.x-S.x,dz=C.z-S.z,l=Math.hypot(dx,dz)||1,n=navSnap(S.x+dx/l*(S.r+2.5),0,S.z+dz/l*(S.r+2.5),4);return n?[[n.x,n.z,n.y]]:[]},
+  // a 대인전 bot thinking (pvp.js, a few times a second): a smoke now?
+  botThink(a){const B=a.bot;if(!B||B.smk||!(a.inv.smoke>0)||a.bAct||G.st!=='fight'||a.throwT>0||a.reloadT>0||G.t<(B.smkF||0))return;const c=a.c;
+    if(G.mode==='bomb'&&this.bombThink(a))return;
+    // hurt in a gunfight: smoke the gap, then back off out of sight
+    const t=B.tg;if(t&&t.alive&&a.hp<50&&!(B.smkR>G.t)){B.smkR=G.t+5;const d=dist3(t.c,c);if(d<12||d>30||Math.random()>.5)return;
+      const f=Math.min(.45,5/d),n=navSnap(lerp(c.x,t.c.x,f),lerp(c.y,t.c.y,f),lerp(c.z,t.c.z,f),2.5);if(!n||this.smoked(n.x,n.y,n.z))return;
+      this.plan(a,n.x,n.y,n.z,true,b=>{const B2=b.bot,tx=t.c.x,tz=t.c.z;let best=null,bs=-1e9;for(let i=0;i<10;i++){const m=navAround(b.c.x,b.c.z,7,16);if(!m||Math.abs(m.y-b.c.y)>2.5)continue;const s=Math.hypot(m.x-tx,m.z-tz)-Math.hypot(m.x-b.c.x,m.z-b.c.z)*.35;if(s>bs){bs=s;best=m}}
+        if(best){B2.rg={x:best.x,y:best.y,z:best.z};B2.rgT=G.t+6;B2.retT=G.t+4;B2.lkp=null}})}},
+  bombThink(a){const b=BOMB.b,D=BOMB.D(),B=a.bot,c=a.c;if(!D)return false;if(BOMB.smkR!==G.round){BOMB.smkR=G.round;BOMB.smkN={};BOMB.smkT=0}
+    if(BOMB.isAtt(a)){// on the way in (past the waypoint, the site still ahead): the defenders' side of it, two at most a round
+      if(b.st!=='carried'&&b.st!=='dropped'||!a.bmWayOk||B.tg)return false;const k=BOMB.site,S=D[k];if(!S)return false;const d=Math.hypot(S.x-c.x,S.z-c.z);if(d<S.r+2||d>32||(BOMB.smkN[k]|0)>=2)return false;
+      for(const p of this.spots(k)){const y=p[2]||0;if(this.smoked(p[0],y,p[1]))continue;if(this.plan(a,p[0],y,p[1])){BOMB.smkN[k]=(BOMB.smkN[k]|0)+1;return true}}return false}
+    // defenders: the bomb is down — smoke it first, then go and defuse inside the cloud
+    if(b.st==='planted'){const d=Math.hypot(b.x-c.x,b.z-c.z);if(d<6||d>26||G.t<BOMB.smkT||this.smoked(b.x,b.y,b.z))return false;if(this.plan(a,b.x,b.y,b.z)){BOMB.smkT=G.t+10;return true}}
+    return false},
+};
+Object.assign(CLIH,{smk(L,m){const p=m.p;if(!Array.isArray(p)||NET.host)return;SMK.fromHost(m.o,p[0]/100,p[1]/100,p[2]/100)}});
 
 </script>
 </body></html>

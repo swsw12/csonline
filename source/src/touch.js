@@ -117,7 +117,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     this.fr++;this.autoF=((W.semi&&!(W.dual&&P.dualB))||W.burst)&&!melee?(this.fr%3!==0):true},
   // ---------- weapon bar ----------
   slots(P){if(P.team===TZ){const s=[['claw',null]];if(P.bombs>0)s.push(['zbomb',null]);return s}
-    const s=[];for(const id of [P.inv[1],P.inv[2],P.inv[3]||'knife'])if(id)s.push([id,null]);for(const k of ['he','frost','flare'])if(P.inv[k]>0)s.push([k,P.inv[k]]);return s},
+    const s=[];for(const id of [P.inv[1],P.inv[2],P.inv[3]||'knife'])if(id)s.push([id,null]);for(const k of H_NADES)if(P.inv[k]>0)s.push([k,P.inv[k]]);return s},
   drawBar(P){const S=this.slots(P);const key=P.team+'|'+P.cur+'|'+S.map(s=>s[0]+(s[1]||'')).join(',')+'|'+(P.bombs||0);
     if(key!==this.wKey){this.wKey=key;const L=LI();
       this.bar.innerHTML=S.map(([id,n])=>{const W=WPN[id];const ic=id==='claw'?miniIcon('claw'):W&&W.model?gunIcon(W.model,id==='zbomb'||W.kind==='nade'?22:20):'';

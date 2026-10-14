@@ -68,7 +68,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(performance.now()-(this.lockAt||0)<150||Math.abs(e.movementX)>500||Math.abs(e.movementY)>500)return;
       const Wz=WPN[P.cur];const z=P.zoom>0&&Wz&&Wz.zoom?Wz.zoom[P.zoom-1]/CFG.fov:1;const k=CFG.sens*.0022*z;
       P.yaw=wrapA(P.yaw-e.movementX*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*e.movementY*k,-1.53,1.53)});
-    addEventListener('wheel',e=>{const P=G.player;if(!P||!P.alive||this.paused||this.overlay||G.st==='menu')return;const order=P.team===TZ?['claw','zbomb']:[P.inv[1],P.inv[2],P.inv[3]||'knife',...['he','frost','flare'].filter(k=>P.inv[k]>0)].filter(Boolean);
+    addEventListener('wheel',e=>{const P=G.player;if(!P||!P.alive||this.paused||this.overlay||G.st==='menu')return;const order=P.team===TZ?['claw','zbomb']:[P.inv[1],P.inv[2],P.inv[3]||'knife',...H_NADES.filter(k=>P.inv[k]>0)].filter(Boolean);
       if(P.team===TZ&&P.bombs<=0)return;const i=order.indexOf(P.cur);const n=order[(i+(e.deltaY>0?1:-1)+order.length)%order.length];equip(P,n)},{passive:true});
     addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;const k=e.code;
       if(e.altKey&&(k==='Enter'||k==='NumpadEnter')){e.preventDefault();if(!e.repeat)FS.toggle();return}if(['Tab','Space','ArrowUp','ArrowDown','Backquote'].includes(k)||(e.ctrlKey&&k!=='KeyR'))e.preventDefault();AU.init();
@@ -175,7 +175,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(!draw){FX.update(dt);return}
       this.camera(dt);this.look(dt);
       if(G.player&&G.st!=='menu'){const P=G.player;if(P.alive&&P.team===TH&&P.cur)VM.set(P.cur,P.skin);VM.vis=P.alive&&!G.spec;VM.update(dt,P,R.cam)}
-      if(!this.paused||NET.on){this.fires(dt);FX.update(dt);DL.update(dt,R.cam)}
+      if(!this.paused||NET.on){this.fires(dt);FX.update(dt);SMK.draw(dt);DL.update(dt,R.cam)}
       if(AU.spin)AU.spin(G.player&&G.player.alive&&!this.paused&&G.st!=='menu'?G.player.spinV||0:0,G.player&&G.player.cmd.fire);
       if(AU.saw&&!(G.player&&G.player.alive&&G.player.cur==='ripper'&&!this.paused&&G.st!=='menu'))AU.saw(0);
       if(AU.flame)AU.flame(G.player&&G.player.alive&&G.player.salOn&&!this.paused&&G.st!=='menu'?1:0);

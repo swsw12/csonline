@@ -2,14 +2,14 @@
 // ============ Loadouts: free buying, the gear that carries over between rounds, three saved sets ============
 // In a match guns, ammo and gear cost nothing (the account locks of shop.js still apply; money is only the scenario's upgrade budget).
 // Grenades and armour come once per round each, the round-start refill included; the Event Horizon is for the accounts that own it:
-// once a round, 3 shots. A human's loadout {1,2,3,he,frost,flare,armor} is noted when he goes down or turns (and at the end of the round
+// once a round, 3 shots. A human's loadout {1,2,3,he,frost,flare,smoke,armor} is noted when he goes down or turns (and at the end of the round
 // for the living) and handed back at the start of the next round. The player keeps three sets of his own in CFG.sets.
 Object.assign(STR.ko,{ldSet:'세트',ldEq:'장착',ldSave:'현재 장비 저장',ldFree:'무료',ldOnce:'라운드 1회',ldUsed:'사용함',ldFull:'가득',ldNyPick:'무료 픽',ldEh:'1회 · 3발',
   ldEhOwn:'보유자 전용',ldCrate:'보급상자 전용',boSet:'정전 이벤트'});
 Object.assign(STR.en,{ldSet:'Set',ldEq:'Equip',ldSave:'Save current',ldFree:'FREE',ldOnce:'1 / round',ldUsed:'used',ldFull:'full',ldNyPick:'free pick',ldEh:'1× · 3 rds',
   ldEhOwn:'owners only',ldCrate:'crates only',boSet:'Blackouts'});
-const LD_NADES=['he','frost','flare'];
-const LD_DEF={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,armor:0};
+const LD_NADES=H_NADES;
+const LD_DEF={1:null,2:'p9',3:'knife',he:0,frost:0,flare:0,smoke:0,armor:0};
 // the starting sets: the free guns everyone has
 const LD_SETS0=[{1:'g35',2:'p9',3:'knife',he:1,frost:0,flare:0,armor:1},{1:'sg8',2:'p9',3:'knife',he:0,frost:1,flare:0,armor:1},{1:'k5',2:'p9',3:'knife',he:1,frost:1,flare:1,armor:1}];
 function ldSets(){if(!Array.isArray(CFG.sets))CFG.sets=[];for(let i=0;i<3;i++)if(!CFG.sets[i]||typeof CFG.sets[i]!=='object')CFG.sets[i]=Object.assign({},LD_SETS0[i]);return CFG.sets}
@@ -26,7 +26,7 @@ function ehOK(a){if(a.isPlayer)return !!(ACC.on&&ACC.owns('bhole'));return !!(a.
 // player's page has checked before asking; bots never (they only get one out of a crate)
 function crateOK(a,id){if(G.mode==='range')return true;if(a.isPlayer)return !!(ACC.on&&ACC.owns(id));return !!(a.net&&!a.bot)}
 function ldLocked(a,id,set){const W=WPN[id];if(!W)return false;if(id==='bhole')return !ehOK(a);if(W.crate)return !!(a.isPlayer&&!crateOK(a,id));if(set&&W.ny&&!ldOwns(a,id))return true;return !!(a.isPlayer&&typeof shopLocked==='function'&&shopLocked(a,id))}
-function ldKitReset(a){a.kit={he:0,frost:0,flare:0,armor:0,bhole:0}}
+function ldKitReset(a){a.kit={he:0,frost:0,flare:0,smoke:0,armor:0,bhole:0}}
 // why a buy cannot happen, '' when it can: zombie · end · na (not on the menu) · lock · crate · own (has it, ammo full) · full · lim (once a round)
 function buyCheck(a,id){if(!a||a.team!==TH||!a.alive)return 'zombie';if(G.st==='end'||G.st==='over')return 'end';if(!ldBuyable(id))return 'na';const K=a.kit||{},lim=ldLimited();
   if(id==='armor')return a.armor>=100?'own':lim&&K.armor?'lim':'';
@@ -66,7 +66,7 @@ function ldCur(a){const o=a.ldo||LD_DEF,K=a.kit||{},inv=a.inv||{},n={};
 // noted on every page as a human goes down or turns (before his primary drops) and for the living at the round's end
 function ldSnap(a){if(a&&a.team===TH)a.ldo=ldCur(a)}
 // the start of a round: the noted loadout, fresh ammo, armour if he had it (the refill uses up this round's grenades and armour)
-function ldRestore(a){const L=a.ldo||LD_DEF;a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0};a.ammo={};ldKitReset(a);
+function ldRestore(a){const L=a.ldo||LD_DEF;a.inv={1:null,2:null,3:null,he:0,frost:0,flare:0,smoke:0};a.ammo={};ldKitReset(a);
   for(const s of [1,2,3]){let id=L[s];const W=WPN[id];if(!W||W.slot!==s||!ldKeep(a,id))id=s===2?'p9':s===3?'knife':null;if(!id)continue;
     a.inv[s]=id;fillAmmo(a,id);gunFresh(a,id);if(id==='bhole'){a.ammo.bhole.res=0;a.kit.bhole=1}}
   for(const k of LD_NADES)if(L[k]){a.inv[k]=1;a.kit[k]=1}
@@ -97,7 +97,7 @@ function ldSetsHTML(P,mob){const L=LI();
 // Locked guns are skipped with a note. A client asks the host for each piece (the usual 'buy'); the answers go in quietly.
 function ldEquipSet(i){const P=G.player,s=ldSets()[i],L=LI();if(!P||!s)return;if(P.team!==TH||!P.alive){HUD.note(T('zOnly'),1.5);return}if(G.st==='end'||G.st==='over'){ldWhy('end');return}
   const ids=[],skip=[];
-  for(const id of [s[3],s.he&&'he',s.frost&&'frost',s.flare&&'flare',s.armor&&'armor',s[2],s[1]]){if(!id||!WPN[id]&&!EQUIP[id])continue;
+  for(const id of [s[3],s.he&&'he',s.frost&&'frost',s.flare&&'flare',s.smoke&&'smoke',s.armor&&'armor',s[2],s[1]]){if(!id||!WPN[id]&&!EQUIP[id])continue;
     if(ldLocked(P,id,true)){skip.push(id);continue}const why=buyCheck(P,id);if(!why)ids.push(id);else if(why!=='own'&&why!=='lim'&&why!=='full')skip.push(id)}
   const nm=id=>(WPN[id]||EQUIP[id]).n[L];
   HUD.note(`${T('ldSet')} ${i+1}${L?' equipped':' 장착'}${skip.length?(L?' · skipped: ':' · 건너뜀: ')+skip.map(nm).join(', '):''}`,skip.length?2.6:1.6);

@@ -123,6 +123,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     // who is under the crosshair
     let ai='';if(P.alive&&!G.spec){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const hw=rayCast(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,60);let best=null,bt=hw?hw.t:60;
       for(const t of G.actors){if(!t.alive||t===P)continue;const c=t.c;const th=rayAABB(e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,c.x-c.hw,c.y,c.z-c.hw,c.x+c.hw,t.head.y+.15,c.z+c.hw,bt);if(th>=0&&th<bt){bt=th;best=t}}
+      if(best&&SMK.n&&SMK.blocks(e.x,e.y,e.z,e.x+_dv.x*bt,e.y+_dv.y*bt,e.z+_dv.z*bt))best=null;// (not through smoke)
       // (something wearing a teammate's shape — 4챕터's mirages, LYREBIRD in disguise — reads as that teammate: epAsH, epName)
       if(best){const asH=!!best.epAsH;ai=`<span class="${best.team===TZ&&!asH?'z':'h'}">${esc(asH&&best.epName||best.name)}</span>`+(best.team===TZ&&!asH&&P.team===TH?`<span class="bar"><i style="width:${Math.round(clamp(best.hp/best.maxHp,0,1)*100)}%"></i></span>`:'')}}
     if(e.aimInfo.innerHTML!==ai)e.aimInfo.innerHTML=ai;
@@ -148,7 +149,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
       e.hSkill.style.display='block';e.hSkill.innerHTML=`<span class="k">G</span> ${Z.sk?Z.sk[LI()]:T('skill')}: ${P.skillCD>0?Math.ceil(P.skillCD)+'s':`<b>${T('ready')}</b>`}${P.skillT>0?' ▲':''}<br><span class="k">4</span> ${T('bomb')} ×${P.bombs}  <span class="k">N</span> ${T('nv')} ${P.nv?'ON':'OFF'}`;e.hNades.textContent=''}
     else{e.hSkill.style.display='none';const am=P.ammo[P.cur];const Wn=WPN[P.cur];e.hWName.textContent=Wn?Wn.n[LI()]+(Wn.dual&&P.dualB?(Wn.bRpm?(LI()?' · spray':' · 난사'):(LI()?' · full auto':' · 연사')):'')+(Wn.stance?(P.hamB?(LI()?' · B knock-away':' · B 날리기'):(LI()?' · A pound':' · A 떡찧기')):'')+spTag(P,Wn)+cmbTag(P,Wn):'';
       if(am){e.hAmmo.style.display='flex';e.hMag.textContent=am.mag;e.hRes.textContent='/ '+am.res;e.hMag.className=am.mag<=Math.ceil(Wn.mag*.2)?'low':''}else e.hAmmo.style.display='none';
-      e.hNades.textContent=['he','frost','flare'].filter(k=>P.inv[k]>0).map(k=>({he:'HE',frost:'FROST',flare:'FLARE'})[k]).join(' · ')+(P.flash?'  ☀':'')+nyHud(P)}
+      e.hNades.textContent=H_NADES.filter(k=>P.inv[k]>0).map(k=>({he:'HE',frost:'FROST',flare:'FLARE',smoke:'SMOKE'})[k]).join(' · ')+(P.flash?'  ☀':'')+nyHud(P)}
     {const M=P.nyM||[0,0,0,0];const s=P.team===TH?NY_CH.map((c,i)=>`<b class="${M[i]?'on':''}">${c}${M[i]>1?`<sub>${M[i]}</sub>`:''}</b>`).join('')+(P.nyFree>0?`<small>${T('nyFree')} ×${P.nyFree}</small>`:''):'';if(this.nyS!==s){this.nyS=s;$('hNY').innerHTML=s}}
     // spectate / revive info
     let sp='';if(!P.alive){if(P.team===TZ&&!P.permaDead&&G.st==='fight'){sp=G.mode==='mut'?T('reviveIn',Math.max(1,Math.ceil(P.reviveT))):T('respawnIn',Math.max(1,Math.ceil(P.respawnT)))}else if(G.st==='fight'||G.st==='end')sp=T('permaDead')
@@ -243,7 +244,7 @@ const UI={open:null,
     const n=(W.pellets||W.fan||W.slugs||1)*(W.cone?W.cone.ticks*1.5:1);return this.bars([[L?'PWR':'위력',Math.sqrt(W.dmg*n/400)],[L?'ROF':'연사',(W.rpm||0)/1500],[L?'KB':'넉백',W.kb*n*(W.rpm||60)/60/50+(W.proj?.35:0)],[L?'MOB':'기동',(W.speed-.7)/.32]])},
   bars(list){return `<span class="sbs">${list.map(([n,v])=>`<span class="sb"><em>${n}</em><i><u style="width:${Math.round(clamp(v,.05,1)*100)}%"></u></i></span>`).join('')}</span>`},
   wTags(W,id){const L=LI();if(W&&W.ny)return nyTags(W,L);if(W&&W.flame)return L?`Flame stream · sets zombies alight · reach ${Math.round(W.flame.r)} m · Fuel ${W.mag}`:`화염 방사 · 화상 · 사거리 ${Math.round(W.flame.r)}m · 연료 ${W.mag}`;const t=[];if(EQUIP[id]){return ({armor:L?'Absorbs claw hits':'할퀴기를 막아 감염을 늦춤',ammo:L?'Refill reserve ammo':'예비 탄약 가득',})[id]}
-    if(id==='he')return L?'Blast + knockback':'폭발 피해 + 넉백';if(id==='frost')return L?'Freezes zombies 3s':'좀비를 3초간 얼림';if(id==='flare')return L?'Lights the area 25s':'주변을 25초간 밝힘';
+    if(id==='he')return L?'Blast + knockback':'폭발 피해 + 넉백';if(id==='frost')return L?'Freezes zombies 3s':'좀비를 3초간 얼림';if(id==='flare')return L?'Lights the area 25s':'주변을 25초간 밝힘';if(id==='smoke')return L?'Smoke screen 18s — nobody sees through':'18초간 연막 — 아무도 꿰뚫어 보지 못함';
     if(W.crate)t.push(L?'Crates only':'보급 전용');if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.burst)t.push(L?'3-round burst':'3점사');if(W.dual)t.push(W.slot===1?(L?'Akimbo · RMB spray':'양손 · 우클릭 난사'):(L?'Akimbo':'쌍권총'));if(W.zoom)t.push(L?'Scope':'조준경');
     if(W.spin)t.push(L?'Spin-up':'예열 회전');if(W.proj)t.push(L?'Explosive':'폭발 유탄');if(W.bolt)t.push(L?'Bolt-action':'볼트액션');if(W.kind==='melee')t.push(L?'Melee · RMB chop':'근접 · 우클릭 강타');
     if(W.mag)t.push((L?'Mag ':'탄창 ')+W.mag+(W.semi&&!W.burst&&!W.bolt?(L?' · semi':' · 반자동'):!W.semi&&!W.burst?(L?' · auto':' · 자동'):''));return t.join(' · ')},
