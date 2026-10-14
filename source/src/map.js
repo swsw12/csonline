@@ -315,8 +315,10 @@ function buildMapMeshes(scene){
     // a slightly smaller lid sits inside the rim
     const lid=new THREE.CylinderGeometry(d.r*.86,d.r*.86,.012,18,1,false);lid.translate(d.x,d.y+d.h+.004,d.z);(dg[d.mat]=dg[d.mat]||[]).push(g.toNonIndexed(),lid.toNonIndexed())}
   for(const k in dg){const parts=dg[k];let n=0;for(const g of parts)n+=g.attributes.position.count;const pos=new Float32Array(n*3),nrm=new Float32Array(n*3),uv=new Float32Array(n*2),col=new Float32Array(n*3);let o=0;
-    for(const g of parts){const P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv;for(let i=0;i<P.count;i++){const x=P.getX(i),y=P.getY(i),z=P.getZ(i),nx=N.getX(i),ny=N.getY(i),nz=N.getZ(i);
-        pos.set([x,y,z],(o+i)*3);nrm.set([nx,ny,nz],(o+i)*3);uv.set([U.getX(i)*2,U.getY(i)],(o+i)*2);const c=lightAt(x+nx*.02,y+ny*.02,z+nz*.02,nx,ny,nz);col.set(c,(o+i)*3)}o+=P.count;g.dispose()}
+    // (the cylinders are not indexed: a corner is shared by up to six triangles, so its light is worked out once)
+    const lc=new Map();for(const g of parts){const P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv;for(let i=0;i<P.count;i++){const x=P.getX(i),y=P.getY(i),z=P.getZ(i),nx=N.getX(i),ny=N.getY(i),nz=N.getZ(i);
+        pos.set([x,y,z],(o+i)*3);nrm.set([nx,ny,nz],(o+i)*3);uv.set([U.getX(i)*2,U.getY(i)],(o+i)*2);const key=Math.round(x*200)+','+Math.round(y*200)+','+Math.round(z*200)+','+Math.round(nx*100)+','+Math.round(ny*100)+','+Math.round(nz*100);
+        let c=lc.get(key);if(!c){c=lightAt(x+nx*.02,y+ny*.02,z+nz*.02,nx,ny,nz);lc.set(key,c)}col.set(c,(o+i)*3)}o+=P.count;g.dispose()}
     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nrm,3));geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
     const mesh=new THREE.Mesh(geo,matWorld(TEX[k],{emis:(MATS[k]&&MATS[k].emis)||0}));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh)}
   gateMeshes(scene);return nb}

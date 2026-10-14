@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'map',ref:'hospital',tag:['신규 맵 · 좀비모드','New map · zombie modes'],t:['새벽 종합병원','Saebyeok General Hospital'],
+    d:['동트기 직전의 대형 종합병원. 3층까지 뚫린 유리 아트리움 로비, 2층 영상의학과와 중환자실, 3층 수술실과 병동, 헬기가 내려앉은 옥상 헬기장 — 계단실 두 곳과 에스컬레이터로 오르내려요. 구름다리로 이어진 주차타워, 응급의료센터와 그 옥상, 격리 검문소가 선 정문과 치유의 정원까지, 지금까지 가장 큰 맵이에요.','A big general hospital just before dawn: a three-storey glass atrium lobby, radiology and the ICU on 2F, the operating suite and the ward on 3F, a helipad with a helicopter on the roof — two stairwells and the escalators link them. A parking tower joined by a skybridge, the emergency wing and its roof, the quarantine checkpoint at the gate and the healing garden: the largest map yet.']},
   {kind:'map',ref:'bazaar',tag:['신규 맵 · 대인전 전용','New map · PvP only'],t:['사막 바자르','Desert Bazaar'],
     d:['해 질 녘, 성벽에 둘러싸인 사막 교역 도시. 대상 숙소의 안뜰 A에는 회랑 위 테라스가, 지붕 덮인 시장 B에는 노점과 중2층이 있어요. 가운데 우물 광장에서는 찻집 옥상이 골목을 내려다보고 — 서문 · 정문 · 무너진 동문, 세 성문에서 시작하는 세 갈래 길에서 맞붙어요. 폭파미션을 비롯한 대인전 모드에서 골라요.','A walled desert trading town late in the afternoon. The caravanserai\'s courtyard (A) has a terrace over its gallery, the covered bazaar (B) its stalls and a mezzanine; in the middle the tea house\'s roof looks over the well square and the alleys. Three gates — west, main and the broken east one — and three ways in. Pick it in Bomb Defusal and the other PvP modes.']},
   {kind:'feature',ico:'💨',tag:['신규 장비 · 모든 모드','New gear · every mode'],t:['연막탄','Smoke Grenade'],
