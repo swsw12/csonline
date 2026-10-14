@@ -155,18 +155,20 @@ const SMK={R:5.2,C:.8,TOP:3.8,LIFE:18,GROW:2.4,FADE:3.2,EDGE:1.5,THR:1.6,RB:7.4,
   // ---------- bots ----------
   // where a grenade let go here, this fast, comes to rest (updNade's flight and bounces in short steps), or null
   // (lim: given up once it is that far out from where it started and still flying — it will not come back)
-  sim(x,y,z,vx,vy,vz,lim){const h=1/120,x0=x,z0=z,L2=lim?lim*lim:1e9;for(let t=0;t<3;t+=h){vy-=GRAV*.8*h;const sp=Math.hypot(vx,vy,vz),d=sp*h;if(d<1e-5)continue;const r=rayCast(x,y,z,vx/sp,vy/sp,vz/sp,d+.06);
+  sim(x,y,z,vx,vy,vz,lim){const h=1/180,x0=x,z0=z,L2=lim?lim*lim:1e9;for(let t=0;t<3;t+=h){vy-=GRAV*.8*h;const sp=Math.hypot(vx,vy,vz),d=sp*h;if(d<1e-5)continue;const r=rayCast(x,y,z,vx/sp,vy/sp,vz/sp,d+.06);
       if(r&&r.t<d+.06){const vn=vx*r.nx+vy*r.ny+vz*r.nz,ny=r.ny;vx=(vx-1.6*vn*r.nx)*.6;vy=(vy-1.6*vn*r.ny)*.6;vz=(vz-1.6*vn*r.nz)*.6;if(ny>.7&&Math.hypot(vx,vy,vz)<1.2)return [x,y,z]}
       else{x+=vx*h;y+=vy*h;z+=vz*h;if((x-x0)*(x-x0)+(z-z0)*(z-z0)>L2)return [x,y,z]}if(y<-5)return null}return [x,y,z]},
   // the aim (yaw, pitch) that lands a smoke grenade from where this bot stands closest to a point, if one lands near enough
   // (a coarse sweep of the pitch, then a finer one round the best; a little to either side when straight at it does not do)
   aim(a,tx,ty,tz){const e=actorEye(a),dx=tx-e.x,dz=tz-e.z,D=Math.hypot(dx,dz);if(D<3||D>36)return null;const y0=Math.atan2(-dx,-dz);let best=null;
-    const tr=(yaw,p)=>{aimDir(yaw,p+.12,_smV);const r=this.sim(e.x+_smV.x*.4,e.y+_smV.y*.4-.1,e.z+_smV.z*.4,_smV.x*14.5,_smV.y*14.5+2,_smV.z*14.5,D+9);if(!r)return;
-      const err=Math.hypot(r[0]-tx,r[2]-tz)+Math.abs(r[1]-ty)*1.5;if(!best||err<best.err)best={yaw,pitch:p,err,x:r[0],y:r[1],z:r[2]}};
+    const C=[],land=(yaw,p)=>{aimDir(yaw,p+.12,_smV);const r=this.sim(e.x+_smV.x*.4,e.y+_smV.y*.4-.1,e.z+_smV.z*.4,_smV.x*14.5,_smV.y*14.5+2,_smV.z*14.5,D+9);return r?Math.hypot(r[0]-tx,r[2]-tz)+Math.abs(r[1]-ty)*1.5:99},
+      tr=(yaw,p)=>{const err=land(yaw,p);if(err<99)C.push({yaw,pitch:p,err});if(!best||err<best.err)best={yaw,pitch:p,err}};
     for(const off of [0,-.07,.07,-.14,.14]){const yaw=y0+off,b0=best;for(let p=-.3;p<=1.15;p+=.12)tr(yaw,p);
       if(best&&best!==b0&&best.yaw===yaw){const pc=best.pitch;for(let p=pc-.09;p<=pc+.091;p+=.03)if(Math.abs(p-pc)>.01)tr(yaw,p)}
       if(best&&best.err<1.5)break}
-    return best&&best.err<3.2?best:null},
+    // a landing that a hair's difference in the throw would send somewhere else (a bounce off an edge) is not taken
+    C.sort((a,b)=>a.err-b.err);for(let i=0;i<Math.min(3,C.length);i++){const c=C[i];if(c.err>=3.2)break;if(Math.max(land(c.yaw,c.pitch+.015),land(c.yaw,c.pitch-.015))<5)return c}
+    return null},
   // is there smoke there already (or one on its way)?
   smoked(x,y,z){for(const S of this.list)if(S.t<S.life-4&&Math.hypot(S.x-x,S.z-z)<3.5&&Math.abs(S.y-y)<2.5)return true;
     for(const a of G.actors){const Q=a.bot&&a.bot.smk;if(Q&&Math.hypot(Q.x-x,Q.z-z)<3.5)return true}

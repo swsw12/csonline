@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'map',ref:'bazaar',tag:['신규 맵 · 대인전 전용','New map · PvP only'],t:['사막 바자르','Desert Bazaar'],
+    d:['해 질 녘, 성벽에 둘러싸인 사막 교역 도시. 대상 숙소의 안뜰 A에는 회랑 위 테라스가, 지붕 덮인 시장 B에는 노점과 중2층이 있어요. 가운데 우물 광장에서는 찻집 옥상이 골목을 내려다보고 — 서문 · 정문 · 무너진 동문, 세 성문에서 시작하는 세 갈래 길에서 맞붙어요. 폭파미션을 비롯한 대인전 모드에서 골라요.','A walled desert trading town late in the afternoon. The caravanserai\'s courtyard (A) has a terrace over its gallery, the covered bazaar (B) its stalls and a mezzanine; in the middle the tea house\'s roof looks over the well square and the alleys. Three gates — west, main and the broken east one — and three ways in. Pick it in Bomb Defusal and the other PvP modes.']},
   {kind:'feature',ico:'💨',tag:['신규 장비 · 모든 모드','New gear · every mode'],t:['연막탄','Smoke Grenade'],
     d:['구매 메뉴(B) 장비 칸의 연막탄. 던지면 멈춘 자리에서 터져 18초 동안 커다란 연막이 퍼져요 — 벽과 문은 막고 난간 너머로는 흘러내려요. 연막 속과 너머는 사람도 봇도 좀비도 못 봐요. 폭파미션에서는 봇들도 사이트를 연막으로 가리고 들어오고, 설치된 폭탄을 연막 속에서 해체해요.','The smoke grenade in the Equipment row of the buy menu (B). It pops where it lands and fills a big cloud for 18 s — walls and doors stop it, it spills over ledges. Nobody sees into it or through it: players, bots and zombies alike. In Bomb Defusal the bots smoke off sites on their way in and defuse inside a cloud.']},
   {kind:'feature',ico:'🏁',tag:['신규 모드 · 대인전','New mode · PvP'],t:['무기 레이스','Arms Race'],
