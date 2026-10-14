@@ -18,7 +18,7 @@ function miniIcon(k){if(MINI[k])return MINI[k];const [cv,x]=mkCanvas(k==='claw'?
   else if(k==='bio'){for(let a=0;a<3;a++){const an=a/3*TAU-Math.PI/2;x.beginPath();x.arc(8+Math.cos(an)*4,8+Math.sin(an)*4,3.2,0,TAU);x.fill()}x.fillStyle='#000';x.beginPath();x.arc(8,8,2,0,TAU);x.fill()}
   else if(k==='lock'){x.fillRect(3,7,10,8);x.fillRect(5,2,2,6);x.fillRect(9,2,2,6);x.fillRect(5,2,6,2)}
   return MINI[k]=cv.toDataURL()}
-function weaponIcon(w,h){if(w==='claw')return miniIcon('claw');if(w==='fall')return miniIcon('fall');const W=WPN[w];if(W&&W.model)return gunIcon(W.model,h||16);return miniIcon('skull')}
+function weaponIcon(w,h){if(w==='claw')return miniIcon('claw');if(w==='c4'&&GUNS.c4)return gunIcon('c4',h||16);if(w==='fall')return miniIcon('fall');const W=WPN[w];if(W&&W.model)return gunIcon(W.model,h||16);return miniIcon('skull')}
 const _dn=new THREE.Vector3();
 // ---------- fullscreen (lobby/pause/options buttons, Alt+Enter) ----------
 const FS={

@@ -1456,3 +1456,20 @@ html.touch #gunPop button{min-height:44px}
 .pvSide{margin:8px 0 2px;font-weight:bold;font-size:14px;text-align:left}.pvSide.h{color:var(--h)}.pvSide.z{color:var(--z)}
 #board .pvt,#results .pvt{margin:0 auto}
 html.touch #pvTag{top:calc(50% + 36px)}
+/* ---- v6.50 폭파미션 (bomb.js): the site letters and the bomb on screen, the plant / defuse bar, the bomb's clock ---- */
+#bmMarks{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.bmk{position:absolute;left:0;top:0;display:none;will-change:transform}
+.bmk.s{width:26px;height:26px;margin:-13px 0 0 -13px;box-sizing:border-box;border-radius:50%;background:rgba(10,12,16,.55);border:2px solid #ffb43a;color:#ffb43a;font:bold 15px/22px sans-serif;text-align:center;text-shadow:0 0 3px #000}
+.bmk.c4 i{position:absolute;left:-9px;top:-7px;width:18px;height:12px;background:#ffd04a;border:1px solid #000;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.7)}
+.bmk.c4.on i{background:#ff3a2a;animation:bmBlink .5s steps(2) infinite}
+.bmk.c4 span{position:absolute;left:0;top:8px;transform:translateX(-50%);font-size:11px;color:#ffe2a0;text-shadow:1px 1px 0 #000;white-space:nowrap}
+@keyframes bmBlink{50%{opacity:.35}}
+#bmBar{position:absolute;left:50%;top:calc(50% + 40px);transform:translateX(-50%);width:240px;display:none;text-align:center;pointer-events:none}
+#bmBar b{display:block;font-size:13px;color:#ffe08a;text-shadow:1px 1px 0 #000;margin-bottom:4px}
+#bmBar span{display:block;height:8px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.35);border-radius:4px;overflow:hidden}
+#bmBar span i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb43a,#ffe08a)}
+#bmBar.defuse span i{background:linear-gradient(90deg,#3a9cff,#9ad4ff)}#bmBar.late span i{background:#ff4a3a}#bmBar.late b{color:#ff8a7a}
+#pvTag .bm{color:#ffb43a}
+#hTime.bomb{color:#ff4a3a;animation:bmBlink 1s steps(2) infinite}
+.bmc{color:#ffb43a;font-size:11px}
+html.touch #bmBar{top:calc(50% + 34px)}

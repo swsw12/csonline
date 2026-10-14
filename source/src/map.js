@@ -360,7 +360,7 @@ const MAPDEFS={
 };
 const MAPLIST=()=>Object.keys(MAPDEFS).filter(k=>!MAPDEFS[k].practice&&!MAPDEFS[k].ep);// (the shooting range and the episode maps are not match maps)
 // (v6.49) the maps a mode can be played on: a 대인전 전용맵 (D.pvp) only in the PvP modes
-function mapOk(mode,id){const D=MAPDEFS[id];if(!D||D.practice||D.ep)return false;return !D.pvp||PVP.isMode(mode)}
+function mapOk(mode,id){const D=MAPDEFS[id];if(!D||D.practice||D.ep)return false;if(mode==='bomb')return !!D.bomb;return !D.pvp||PVP.isMode(mode)}// (v6.50: 폭파미션 only where there are bomb sites)
 function mapsFor(mode){return MAPLIST().filter(id=>mapOk(mode,id))}
 function buildMapData(id){const D=MAPDEFS[id];
   Object.assign(MAP,{id,gates:{},ez:null,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fires:[],smoke:[],spray:[],dyn:[],moon:null,probe:null,probeY:D.probeY||null,env:D.env,cam:null,spawnYaw:null,

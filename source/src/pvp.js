@@ -27,19 +27,21 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     'sr8','r700','dm14','hmg','mg6','he','flare','armor','ammo'],
   MEL:{knife:.85,axe:.8,hammer:.6},AP:{sniper:.97,rifle:.78,mg:.8,smg:.62,pistol:.65,shotgun:.72},
   mid:0,mode:'tdm',goal:50,time:480,assigned:false,bases:null,played:0,intel:[[],[]],recent:[],hits:[],bm0:null,bi0:null,_D:null,aiS:'',aiT:0,
-  isMode(m){return m==='tdm'||m==='ffa'},
+  isMode(m){return m==='tdm'||m==='ffa'||m==='bomb'},
+  // the modes with two sides (BLUE / RED): 팀 데스매치, 폭파미션 (v6.50)
+  teams(){return G.mode!=='ffa'},
   ok(id){return (this.SET||(this.SET=new Set(this.GUNS))).has(id)},
   goalOpts(m){const L=LI();return (this.GOALS[m]||this.GOALS.tdm).map((g,i)=>[i,g+(L?' kills':'킬')])},
   timeOpts(){return this.TIMES.map(s=>[s,s/60+T('min')])},
   byId(id){return (NET.ids&&NET.ids.get(id))||G.actors.find(a=>a.id===id)||null},
   // a name's colour class: the side's in 팀 데스매치; in 개인전 me blue, everyone else red
-  cls(a){if(!a)return 'h';return G.mode==='tdm'?(a.side===1?'z':'h'):(a===G.player?'h':'z')},
-  col(a,me){return G.mode==='tdm'?this.SIDES[a.side===1?1:0].c:'#ff4b3a'},
+  cls(a){if(!a)return 'h';return this.teams()?(a.side===1?'z':'h'):(a===G.player?'h':'z')},
+  col(a,me){return this.teams()?this.SIDES[a.side===1?1:0].c:'#ff4b3a'},
   prot(t){return !!t&&t.pvpProt>G.t},
   canHit(t){return G.st==='fight'&&!!t&&t.alive&&!this.prot(t)},
 
   // ---------- the match ----------
-  setup(cfg){this.mid++;this.mode=cfg.mode;const g=this.GOALS[cfg.mode]||this.GOALS.tdm;this.goal=g[clamp(cfg.pg==null?1:+cfg.pg|0,0,g.length-1)];
+  setup(cfg){this.mid++;this.mode=cfg.mode;if(cfg.mode==='bomb')BOMB.setup(cfg);const g=this.GOALS[cfg.mode]||this.GOALS.tdm;this.goal=g[clamp(cfg.pg==null?1:+cfg.pg|0,0,g.length-1)];
     this.time=this.TIMES.includes(+cfg.ptime)?+cfg.ptime:480;this.assigned=false;this.bases=null;this.played=0;this.intel=[[],[]];this.recent=[];this.hits=[];G.pvpKC=null},
   // BLUE / RED from the roster (players alternate by id, then bots fill the smaller side); 개인전: a side each
   assign(){this.assigned=true;const A=G.actors.slice().sort((p,q)=>p.id-q.id);if(G.mode==='ffa'){for(const a of A)a.side=a.id+2;return}
@@ -51,7 +53,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
       for(let i=BUY_MENU.length-1;i>=0;i--)if(!BUY_MENU[i].items.length)BUY_MENU.splice(i,1)}
     else{BUY_MENU.length=0;this.bm0.forEach((c,i)=>{c.items=this.bi0[i];BUY_MENU.push(c)});this.bm0=this.bi0=null}
     if(typeof UI!=='undefined')UI.buyCat=0},
-  off(){G.pvp=false;this.menu(false);DROPS.LIFE=90;this.hits=[];if(this.mkL){this.mkL.innerHTML='';this.mkPool=[]}const h=$('hud');if(h)h.classList.remove('pvp');const t=$('pvTag');if(t)t.innerHTML=''},
+  off(){G.pvp=false;this.menu(false);if(typeof BOMB!=='undefined')BOMB.off();DROPS.LIFE=90;this.hits=[];if(this.mkL){this.mkL.innerHTML='';this.mkPool=[]}const h=$('hud');if(h)h.classList.remove('pvp');const t=$('pvTag');if(t)t.innerHTML=''},
   // everything a fresh life starts with (as a round start would do)
   fresh(a){a.nb=null;a.team=TH;a.host=false;a.alive=true;a.permaDead=false;a.hp=a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;
     a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;a.holdT=0;a.grabT=0;a.kdP=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.pendingClaw=null;a.zoom=0;
@@ -60,7 +62,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   kit(a){ldRestore(a);this.sanitize(a);a.armor=100;if(a.kit)a.kit.armor=1;a.cur=bestWeapon(a)},
   sanitize(a){for(const s of [1,2,3]){const id=a.inv[s];if(id&&!this.ok(id)){if(a.ammo[id])delete a.ammo[id];a.inv[s]=s===2?'p9':s===3?'knife':null;if(a.inv[s])fillAmmo(a,a.inv[s])}}
     a.inv.frost=0;const o=a.ldo;if(o){for(const s of [1,2,3])if(o[s]&&!this.ok(o[s]))o[s]=s===2?'p9':s===3?'knife':null;o.frost=0}if(a.cur&&!this.ok(a.cur)&&a.cur!=='he'&&a.cur!=='flare')a.cur=bestWeapon(a)},
-  begin(plan){if(NET.cli&&!plan)return;if(!this.assigned)this.assign();AU.stopAll('countdown');dropsClear();G.round=1;G.st='prep';G.time=this.WARM;FX.clearLimbs();
+  begin(plan){if(G.mode==='bomb')return BOMB.begin(plan);if(NET.cli&&!plan)return;if(!this.assigned)this.assign();AU.stopAll('countdown');dropsClear();G.round=1;G.st='prep';G.time=this.WARM;FX.clearLimbs();
     G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.killer=null;G.winner=-1;G.beepAt=this.WARM+1;G.hostN=0;G.score=[0,0];G.pvpKC=null;
     clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
     const pm={},out=[];if(plan)for(const q of plan.P||[])pm[q[0]]=q;const S=plan?null:this.startSpots();
@@ -75,9 +77,9 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     AU.play('siren',{vol:.3});AU.muSet&&AU.muSet('prep');this.autoSet();
     if(NET.host)netEv('round',{n:1,P:out})},
   // the warm-up is over
-  go(remote){if(G.st!=='prep')return;G.st='fight';G.time=this.time;const L=LI();HUD.announce(L?'FIGHT!':'전투 시작!','w',1.8);AU.play('beep2',{vol:.6});AU.muSet&&AU.muSet('fight');
+  go(remote){if(G.mode==='bomb')return BOMB.go(remote);if(G.st!=='prep')return;G.st='fight';G.time=this.time;const L=LI();HUD.announce(L?'FIGHT!':'전투 시작!','w',1.8);AU.play('beep2',{vol:.6});AU.muSet&&AU.muSet('fight');
     if(NET.host&&!remote)netEv('pgo',{})},
-  update(dt){
+  update(dt){if(G.mode==='bomb')return BOMB.update(dt);
     if(G.st==='prep'){G.time-=dt;const s=Math.ceil(G.time);if(s<G.beepAt&&s>=1){G.beepAt=s;if(s<=3)AU.play('beep',{vol:.5})}if(G.time<=0){if(NET.cli)G.time=0;else this.go()}}
     else if(G.st==='fight'){G.time-=dt;this.played+=dt;
       for(const a of G.actors){
@@ -91,7 +93,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   check(){const g=this.goal;
     if(G.mode==='tdm'){const s0=G.score[0]|0,s1=G.score[1]|0;if(s0>=g||s1>=g){this.finish(s0>=s1?0:1);return}if(G.time<=0)this.finish(s0>s1?0:s1>s0?1:-1);return}
     const L=this.leader();if(L&&L.kills>=g){this.finish(L.id);return}if(G.time<=0)this.finish(L?L.id:-1)},
-  iWon(){const P=G.player;if(!P||G.winner==null||G.winner<0)return false;return G.mode==='tdm'?G.winner===(P.side===1?1:0):G.winner===P.id},
+  iWon(){const P=G.player;if(!P||G.winner==null||G.winner<0)return false;return this.teams()?G.winner===(P.side===1?1:0):G.winner===P.id},
   mvp(A){A=(A||G.actors).slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.dmgDealt-p.dmgDealt));return A[0]||null},
   finish(w,remote){if(G.st!=='fight'&&G.st!=='prep')return;G.st='end';G.endT=this.ENDT;G.winner=w;G.time=Math.max(0,G.time);
     for(const a of G.actors){a.cmd.fire=a.cmd.alt=false;a.pvpRT=null;a.pendingMelee=null}
@@ -189,7 +191,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   kill(t,src,o){if(NET.cli&&!NET.ev)return;if(!t.alive)return;o=o||{};let as=o.as||[];
     if(!NET.cli){as=[];for(const id in t.pvpBy||{}){const a=this.byId(+id);if(a&&a!==src&&a!==t&&foe(a,t)&&t.pvpBy[id]>=35)as.push(a.id)}}
     ldSnap(t);t.hp=0;t.alive=false;t.permaDead=false;t.deadT=0;t.deaths++;t.frozen=0;t.zoom=0;t.reloadT=0;t.relKind=null;t.burstN=0;t.pendingMelee=null;t.throwT=0;t.nHold=0;
-    t.an.dead=Math.max(t.an.dead,.001);aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;t.pvpRT=this.RESP;t.pvpBy={};t.pvpStreak=0;
+    t.an.dead=Math.max(t.an.dead,.001);aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;t.pvpRT=G.mode==='bomb'?null:this.RESP;t.pvpBy={};t.pvpStreak=0;if(G.mode==='bomb'&&!NET.cli)BOMB.drop(t);
     AU.at('hdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1});
     if(src&&src!==t){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=2;src.pvpStreak=(src.pvpStreak|0)+1;if(G.mode==='tdm')G.score[src.side===1?1:0]++}
     for(const id of as){const a=this.byId(id);if(a){a.assists=(a.assists|0)+1;a.score+=1}}
@@ -232,7 +234,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
       if(!losClear(e.x,e.y,e.z,t.c.x,t.c.y+1.3,t.c.z)&&!losClear(e.x,e.y,e.z,t.head.x,t.head.y,t.head.z)){if(heard||t===hb)this.botHeard(a,t);continue}
       const sc=d*(known?.7:1)*(t===hb?.5:1)*(this.prot(t)?2.5:1);if(sc<bd){bd=sc;best=t}}
     if(best){if(B.tg!==best){B.tg=best;B.react=D.react*(.7+Math.random()*.6)*(dist3(best.c,c)<5?.5:1);B.aimT0=G.t;B.hsT=0}B.seenT=G.t;B.lkp={x:best.c.x,y:best.c.y,z:best.c.z,t:G.t};
-      if(G.mode==='tdm'){const I=this.intel[a.side===1?1:0];I.push({x:best.c.x,y:best.c.y,z:best.c.z,t:G.t});if(I.length>10)I.shift()}}
+      if(this.teams()){const I=this.intel[a.side===1?1:0];I.push({x:best.c.x,y:best.c.y,z:best.c.z,t:G.t});if(I.length>10)I.shift()}}
     else if(B.tg&&(!B.tg.alive||G.t-B.seenT>.6))B.tg=null;
     const t=B.tg;B.lof=!!t&&losClear(e.x,e.y,e.z,t.c.x,B.hs?t.head.y:t.c.y+t.c.h*.6,t.c.z)},
   range(W){const k=W&&W.kind;return k==='shotgun'?[3,9]:k==='smg'?[5,16]:k==='sniper'?[14,60]:k==='pistol'?[5,18]:k==='melee'?[0,1.6]:[8,30]},
@@ -293,11 +295,13 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(G.st!=='fight')return;
     const D=this.diff();if(B.think<=0){B.think=.11+Math.random()*.06;this.botSee(a,D);
       if(B.tg&&a.inv.he>0&&WPN[a.cur]&&WPN[a.cur].kind!=='nade'){B.nadeCD-=.14;if(B.nadeCD<=0){B.nadeCD=rr(6,12);const d=dist3(B.tg.c,c);if(d>7&&d<18&&B.lof&&Math.random()<.5)equip(a,'he')}}}
-    const tg=B.tg&&B.tg.alive&&foe(a,B.tg)?B.tg:null,W=WPN[a.cur]||{};
+    const tg=B.tg&&B.tg.alive&&foe(a,B.tg)?B.tg:null,W=WPN[a.cur]||{},bm=G.mode==='bomb';
+    if(bm&&BOMB.botAct(a,dt,tg))return;
     this.botGun(a,tg,W);let moving=false;
-    if(tg)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
+    if(tg)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=bm?BOMB.botGoal(a):this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
     if(tg)this.botAim(a,tg,dt,D,WPN[a.cur]||W);
     else if(moving){const v=Math.hypot(c.vx,c.vz);if(v>.5)AI.turnTo(a,Math.atan2(-c.vx,-c.vz),0,dt,6)}
+    else if(bm&&B.holdY!=null)AI.turnTo(a,B.holdY+Math.sin(G.t*.45+a.id*1.7)*.42,-.03,dt,2.6);// (holding an angle in 폭파미션)
     else{if(B.scanY==null)B.scanY=a.yaw;AI.turnTo(a,B.scanY+Math.sin(G.t*.5+a.id*1.7)*1.4,-.03,dt,2.4)}},
 
   // ---------- on screen ----------
@@ -306,7 +310,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(!$('pvTag')){const t=document.createElement('div');t.id='pvTag';hud.appendChild(t)}},
   // teammates (팀 데스매치): a chevron over the head, the name within 28 m
   marks(){const P=G.player;let n=0;
-    if(G.mode==='tdm'&&P&&G.st!=='menu'&&G.st!=='over'){const cam=R.cam,W=innerWidth,H=innerHeight;this.mkL.style.setProperty('--pvc',this.SIDES[P.side===1?1:0].c);
+    if(this.teams()&&P&&G.st!=='menu'&&G.st!=='over'){const cam=R.cam,W=innerWidth,H=innerHeight;this.mkL.style.setProperty('--pvc',this.SIDES[P.side===1?1:0].c);
       for(const a of G.actors){if(a===P||!a.alive||a.side!==P.side||a===G.spec&&!P.alive)continue;_pvV.set(a.head.x,a.head.y+.38,a.head.z).project(cam);if(_pvV.z>1||Math.abs(_pvV.x)>1.05||Math.abs(_pvV.y)>1.05)continue;
         const d=Math.hypot(a.c.x-cam.position.x,a.c.z-cam.position.z);let el=this.mkPool[n];if(!el){el=document.createElement('div');el.className='pvmk';this.mkL.appendChild(el);this.mkPool[n]=el}n++;
         const nm=d<28?esc(a.name):'';if(el._n!==nm){el._n=nm;el.innerHTML=`<i></i>${nm?`<span>${nm}</span>`:''}`}
@@ -320,7 +324,8 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     e.hud.classList.add('pvp');
     // top bar: the mode and the goal; the two scores (팀 데스매치) or my kills and the leader's (개인전); who is up
     const S=this.SIDES;
-    if(tdm){const ms=P.side===1?1:0;set(e.hRound,`${T('tdm')} · ${T('pGoal')} ${this.goal} · <b class="${ms?'z':'h'}">${S[ms].n[L]}</b>`,1);set(e.hSH,String(G.score[0]|0));set(e.hSZ,String(G.score[1]|0));
+    if(G.mode==='bomb')BOMB.hud(dt,set);
+    else if(tdm){const ms=P.side===1?1:0;set(e.hRound,`${T('tdm')} · ${T('pGoal')} ${this.goal} · <b class="${ms?'z':'h'}">${S[ms].n[L]}</b>`,1);set(e.hSH,String(G.score[0]|0));set(e.hSZ,String(G.score[1]|0));
       let a0=0,a1=0;for(const a of G.actors)if(a.alive){if(a.side===1)a1++;else a0++}set(e.hAH,`${S[0].n[L]} ${a0}`);set(e.hAZ,`${S[1].n[L]} ${a1}`)}
     else{const R0=G.actors.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)),rk=R0.indexOf(P)+1,top=R0.find(a=>a!==P);
       set(e.hRound,`${T('ffa')} · ${T('pGoal')} ${this.goal}`);set(e.hSH,String(P.kills|0));set(e.hSZ,String(top?top.kills|0:0));
@@ -328,7 +333,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(G.st==='prep'&&HUD.annT<=0){const s=Math.max(1,Math.ceil(G.time));set(e.hBig,L?`Fight in ${s}`:`${s}초 뒤 시작`);if(e.hBig.className!=='a cd'+(G.time<3.5?' hot':''))e.hBig.className='a cd'+(G.time<3.5?' hot':'')}
     set(e.hDmg,`${L?'Damage':'피해량'} <b>${Math.round(P.dmgDealt||0).toLocaleString('en-US')}</b>`,1);
     // dead: back in …, who did it (his weapon and the health he has left), who I am watching
-    let sp='';if(!P.alive&&(G.st==='fight'||G.st==='prep')){sp=L?`Back in ${Math.max(1,Math.ceil(P.pvpRT==null?this.RESP:P.pvpRT))} s`:`${Math.max(1,Math.ceil(P.pvpRT==null?this.RESP:P.pvpRT))}초 뒤 부활`;
+    let sp='';if(!P.alive&&(G.st==='fight'||G.st==='prep')){sp=G.mode==='bomb'?(L?'Back next round':'다음 라운드에 다시 시작'):L?`Back in ${Math.max(1,Math.ceil(P.pvpRT==null?this.RESP:P.pvpRT))} s`:`${Math.max(1,Math.ceil(P.pvpRT==null?this.RESP:P.pvpRT))}초 뒤 부활`;
       const k=G.pvpKC||G.killer;if(k&&k!==P){const kw=WPN[k.cur];sp+=`<br><small>${T('killedBy',`<b class="${this.cls(k)}">${esc(k.name)}</b>`)}${kw&&kw.n?' · '+esc(kw.n[L]):''}${k.alive?(L?` · ${Math.ceil(k.hp)} HP left`:` · 남은 체력 ${Math.ceil(k.hp)}`):''}</small>`}
       if(G.spec)sp+=`<br><small>${T('spec')}: <b class="${this.cls(G.spec)}">${esc(G.spec.name)}</b> — ${T('specHint')}</small>`}
     set(e.hSpec,sp,1);e.hSpec.style.display=sp?'block':'none';
@@ -338,16 +343,16 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
         if(best)ai=`<span class="${this.cls(best)}">${esc(best.name)}</span>`+(!foe(P,best)?`<span class="bar t"><i style="width:${Math.round(clamp(best.hp/100,0,1)*100)}%"></i></span>`:'')}this.aiS=ai}
     set(e.aimInfo,this.aiS,1);
     // spawn protection and the buy window
-    const tg=$('pvTag');let tx='';if(P.alive&&(G.st==='prep'||G.st==='fight')){if(this.prot(P))tx+=`<div class="pr">${L?'Spawn protection':'스폰 보호 중'}</div>`;
+    const tg=$('pvTag');let tx='';if(G.mode!=='bomb'&&P.alive&&(G.st==='prep'||G.st==='fight')){if(this.prot(P))tx+=`<div class="pr">${L?'Spawn protection':'스폰 보호 중'}</div>`;
       if(G.st==='prep')tx+=`<div class="by">${L?'B: pick your weapons':'B: 무기 선택'}</div>`;else if(P.pvpBuy>G.t)tx+=`<div class="by">${L?`B: change weapons · ${Math.ceil(P.pvpBuy-G.t)} s`:`B: 무기 변경 · ${Math.ceil(P.pvpBuy-G.t)}초`}</div>`}
-    if(tg&&tg.innerHTML!==tx)tg.innerHTML=tx;
+    if(G.mode!=='bomb'&&tg&&tg.innerHTML!==tx)tg.innerHTML=tx;
     this.marks();this.drawHits()},
   // the card while the match ends (the round card's place and looks; the match reward goes on it)
   endCard(){const L=LI(),A=G.actors.slice(),P=G.player,n=v=>Math.round(v).toLocaleString('en-US'),w=G.winner;
     const pic=a=>{try{return portrait('h_'+a.skin,44)}catch(_){return ''}};
     const card=(a,cls,lbl)=>a?`<div class="rmvp ${cls}"><img src="${pic(a)}"><div><small>${lbl}</small><b>${esc(a.name)}</b><span>${T('kills')} ${a.kills} · ${T('deaths')} ${a.deaths} · ${T('dmg')} ${n(a.dmgDealt)}</span></div></div>`:'';
     let hd,cls,mv;
-    if(G.mode==='tdm'){const S=this.SIDES;hd=w<0?(L?'Draw':'무승부'):(L?`${S[w].n[1]} wins`:`${S[w].n[0]} 팀 승리`);cls=w<0?'d':w===1?'z':'h';
+    if(this.teams()){const S=this.SIDES;hd=w<0?(L?'Draw':'무승부'):(L?`${S[w].n[1]} wins`:`${S[w].n[0]} 팀 승리`);cls=w<0?'d':w===1?'z':'h';
       mv=card(this.mvp(A.filter(a=>a.side!==1)),'h',`${S[0].n[L]} MVP`)+card(this.mvp(A.filter(a=>a.side===1)),'z',`${S[1].n[L]} MVP`);
       hd=`<b>${hd}</b><span>${S[0].n[L]} ${G.score[0]|0} : ${G.score[1]|0} ${S[1].n[L]}</span>`}
     else{const R0=A.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.dmgDealt-p.dmgDealt)),win=this.byId(w);cls=!win?'d':win===P?'h':'z';
@@ -356,24 +361,24 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     const rows=this.order(A).slice(0,8);
     let el=$('hRRes');if(!el){el=document.createElement('div');el.id='hRRes';$('hud').appendChild(el)}
     el.innerHTML=`<div class="rhd ${cls}">${hd}</div><div class="rmvps">${mv}</div>
-      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th></tr>${rows.map(a=>`<tr class="${a===P?'me':''}"><td>${esc(a.name)}${HOF.crown(HOF.of(a))}</td><td class="f ${this.cls(a)}">${G.mode==='tdm'?this.SIDES[a.side===1?1:0].n[L]:'■'}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td>${n(a.dmgDealt)}</td></tr>`).join('')}</table>`;
+      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th></tr>${rows.map(a=>`<tr class="${a===P?'me':''}"><td>${esc(a.name)}${HOF.crown(HOF.of(a))}</td><td class="f ${this.cls(a)}">${this.teams()?this.SIDES[a.side===1?1:0].n[L]:'■'}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td>${n(a.dmgDealt)}</td></tr>`).join('')}</table>`;
     HUD.annT=0;HUD.ann=null;$('hBig').className='a off';el.classList.remove('off');el.style.animation='none';void el.offsetWidth;el.style.animation=''},
   // the scoreboard rows (Tab, the results)
   table(A){const mp=NET.on,L=LI(),n=v=>Math.round(v).toLocaleString('en-US');
-    return `<table class="tbl pvt"><tr><th></th><th>${T('name')}</th><th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th><th>${T('score')}</th>${mp?'<th>ping</th>':''}</tr>${A.map(a=>`<tr class="${a.isPlayer?'me ':''}${this.cls(a)}${a.alive?'':' dead'}"><td>■</td><td>${esc(a.name)}${HOF.crown(HOF.of(a))}${a.net?' <b class="mpp">◆</b>':''}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td class="dmg">${n(a.dmgDealt)}</td><td>${Math.round(a.score)}</td>${mp?`<td>${a.net?(NET.host&&a.isPlayer?'—':a.ping>=0&&a.ping!=null?a.ping+'ms':(a.isPlayer?'':'—')):'BOT'}</td>`:''}</tr>`).join('')}</table>`},
+    return `<table class="tbl pvt"><tr><th></th><th>${T('name')}</th><th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th><th>${T('score')}</th>${mp?'<th>ping</th>':''}</tr>${A.map(a=>`<tr class="${a.isPlayer?'me ':''}${this.cls(a)}${a.alive?'':' dead'}"><td>■</td><td>${esc(a.name)}${HOF.crown(HOF.of(a))}${a.net?' <b class="mpp">◆</b>':''}${G.mode==='bomb'&&(G.st==='fight'||G.st==='prep')&&BOMB.carrier()===a&&G.player&&!foe(G.player,a)?' <b class="bmc">C4</b>':''}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td class="dmg">${n(a.dmgDealt)}</td><td>${Math.round(a.score)}</td>${mp?`<td>${a.net?(NET.host&&a.isPlayer?'—':a.ping>=0&&a.ping!=null?a.ping+'ms':(a.isPlayer?'':'—')):'BOT'}</td>`:''}</tr>`).join('')}</table>`},
   order(A){return A.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.score-p.score))},
-  scoreHTML(sm){const L=LI(),S=this.SIDES;if(G.mode==='tdm')return `<div class="finalScore${sm?' sm':''}"><span class="h">${S[0].n[L]} ${G.score[0]|0}</span> : <span class="z">${G.score[1]|0} ${S[1].n[L]}</span></div>`;
+  scoreHTML(sm){const L=LI(),S=this.SIDES;if(this.teams())return `<div class="finalScore${sm?' sm':''}"><span class="h">${S[0].n[L]} ${G.score[0]|0}</span> : <span class="z">${G.score[1]|0} ${S[1].n[L]}</span></div>`;
     const R0=this.order(G.actors);return `<div class="finalScore${sm?' sm':''}"><span class="${R0[0]===G.player?'h':'z'}">${L?'1st':'1위'} ${esc(R0[0]?R0[0].name:'—')} · ${R0[0]?R0[0].kills:0} ${T('kill')}</span></div>`},
-  boardHTML(){const L=LI(),S=this.SIDES,head=`<h3>${T('board')} — ${T(G.mode)} · ${T('pGoal')} ${this.goal}</h3>${this.scoreHTML(true)}`;
-    if(G.mode==='tdm')return head+[0,1].map(s=>`<div class="pvSide ${s?'z':'h'}">${S[s].n[L]} · ${G.score[s]|0}</div>`+this.table(this.order(G.actors.filter(a=>(a.side===1?1:0)===s)))).join('');
+  boardHTML(){const L=LI(),S=this.SIDES,head=`<h3>${T('board')} — ${T(G.mode)} · ${G.mode==='bomb'?`${T('round')} ${G.round}/${G.rounds} · ${T('pWins')} ${BOMB.W}`:`${T('pGoal')} ${this.goal}`}</h3>${this.scoreHTML(true)}`;
+    if(this.teams())return head+[0,1].map(s=>`<div class="pvSide ${s?'z':'h'}">${S[s].n[L]} · ${G.score[s]|0}</div>`+this.table(this.order(G.actors.filter(a=>(a.side===1?1:0)===s)))).join('');
     return head+this.table(this.order(G.actors))},
   // the results screen: the usual one, with the score, the MVP and the table made for 대인전
   resPatch(){const el=$('results');if(!el)return;const L=LI(),P=G.player,w=G.winner;
     const h2=el.querySelector('h2');if(h2)h2.textContent=`${T('results')} — ${T(G.mode)}`;
     const fs=el.querySelector('.finalScore');if(fs)fs.outerHTML=this.scoreHTML(false);
-    const m=G.mode==='tdm'&&w>=0?this.mvp(G.actors.filter(a=>(a.side===1?1:0)===w)):this.mvp(),mv=el.querySelector('.mvp');
-    if(mv&&m)mv.innerHTML=`<img src="${portrait('h_'+m.skin,56)}"><div><small>${T('mvp')}${G.mode==='tdm'&&w>=0?' · '+this.SIDES[w].n[L]:''}</small><b>${esc(m.name)}</b><span>${T('kills')} ${m.kills} · ${T('deaths')} ${m.deaths} · ${T('assists')} ${m.assists|0} · ${T('dmg')} ${Math.round(m.dmgDealt).toLocaleString('en-US')}</span></div>`;
-    const tb=el.querySelector('table.tbl');if(tb)tb.outerHTML=G.mode==='tdm'?[0,1].map(s=>`<div class="pvSide ${s?'z':'h'}">${this.SIDES[s].n[L]} · ${G.score[s]|0}</div>`+this.table(this.order(G.actors.filter(a=>(a.side===1?1:0)===s)))).join(''):this.table(this.order(G.actors));
+    const m=this.teams()&&w>=0?this.mvp(G.actors.filter(a=>(a.side===1?1:0)===w)):this.mvp(),mv=el.querySelector('.mvp');
+    if(mv&&m)mv.innerHTML=`<img src="${portrait('h_'+m.skin,56)}"><div><small>${T('mvp')}${this.teams()&&w>=0?' · '+this.SIDES[w].n[L]:''}</small><b>${esc(m.name)}</b><span>${T('kills')} ${m.kills} · ${T('deaths')} ${m.deaths} · ${T('assists')} ${m.assists|0} · ${T('dmg')} ${Math.round(m.dmgDealt).toLocaleString('en-US')}</span></div>`;
+    const tb=el.querySelector('table.tbl');if(tb)tb.outerHTML=this.teams()?[0,1].map(s=>`<div class="pvSide ${s?'z':'h'}">${this.SIDES[s].n[L]} · ${G.score[s]|0}</div>`+this.table(this.order(G.actors.filter(a=>(a.side===1?1:0)===s)))).join(''):this.table(this.order(G.actors));
     const won=this.iWon();el.classList.toggle('pvwon',won)},
 };
 
@@ -382,31 +387,33 @@ AI.pvp=function(a,dt){PVP.bot(a,dt)};
 (function(){
   // a match: 대인전 on or off (the buy menu, death drops), its settings (alone: the room settings window's bots, goal and time)
   const sm=startMatch;startMatch=function(cfg){const pv=PVP.isMode(cfg&&cfg.mode);G.pvp=pv;PVP.menu(pv);DROPS.LIFE=pv?30:90;
-    if(pv){if(!cfg.ro)cfg=Object.assign({},cfg,{bots:CFG.pbots??7,pg:CFG.pg??1,ptime:CFG.ptime??480});PVP.setup(cfg)}else PVP.hits=[];
+    if(pv){if(!cfg.ro)cfg=Object.assign({},cfg,{bots:CFG.pbots??7,pg:CFG.pg??1,ptime:CFG.ptime??480,pw:CFG.pw??1});PVP.setup(cfg)}else PVP.hits=[];
     return sm.call(this,cfg)};
   const sr=startRound;startRound=function(plan){if(!G.pvp)return sr(plan);return PVP.begin(plan)};
   // no death drops (everyone gets his own guns back), no zombie class menu
   const dd=dropDeath;dropDeath=function(a){if(G.pvp)return;return dd(a)};
   const oo=Main.openOverlay.bind(Main);Main.openOverlay=function(k){if(G.pvp&&k==='zsel'){HUD.note(LI()?'No zombies in PvP':'대인전에는 좀비가 없어요',1.4);return}
-    if(G.pvp&&k==='buy'&&G.player&&!G.player.alive&&this.overlay!=='buy'){HUD.note(LI()?'Weapons can be changed for 12 s after coming back':'무기는 부활 후 12초 동안 바꿀 수 있어요',1.8);return}return oo(k)};
+    if(G.pvp&&k==='buy'&&G.player&&!G.player.alive&&this.overlay!=='buy'){const L=LI();HUD.note(G.mode==='bomb'?(L?'Weapons can be changed at the start of the next round':'다음 라운드 시작 때 무기를 바꿀 수 있어요'):(L?'Weapons can be changed for 12 s after coming back':'무기는 부활 후 12초 동안 바꿀 수 있어요'),1.8);return}return oo(k)};
   // a saved set (Shift+1–3): not while down, not after the buy window
   const les=ldEquipSet;ldEquipSet=function(i){const P=G.player;if(G.pvp&&P&&(!P.alive||G.st==='fight'&&G.t>(P.pvpBuy||0))){ldWhy('pvpT');return}return les(i)};
   // the warm-up and the end: no moving or shooting
-  const pc=Main.playerCmd.bind(Main);Main.playerCmd=function(dt){pc(dt);if(!G.pvp)return;const P=G.player;if(!P||!P.alive)return;
-    if(G.st!=='fight'){const c=P.cmd;c.f=c.s=0;c.jump=false;c.fire=c.alt=false;c.drop=false;if(G.st!=='prep')c.reload=false}};
+  const pc=Main.playerCmd.bind(Main);Main.playerCmd=function(dt){pc(dt);if(!G.pvp)return;const P=G.player;if(!P||!P.alive)return;const c=P.cmd;
+    if(G.st!=='fight'){if(G.mode==='bomb'&&G.st==='end'&&!BOMB.final){c.fire=c.alt=false;c.drop=false;return}// (between rounds: walk about, no shooting)
+      c.f=c.s=0;c.jump=false;c.fire=c.alt=false;c.drop=false;if(G.st!=='prep')c.reload=false}
+    else if(P.bAct){c.f=c.s=0;c.jump=false;c.fire=c.alt=false;c.drop=false;c.duck=P.bAct.k==='defuse'}};// (planting / defusing: hands busy, feet still)
   // spectating: the killer first, then (팀 데스매치) teammates, (개인전) anyone
   const ns=Main.nextSpec.bind(Main);Main.nextSpec=function(){if(!G.pvp)return ns();const P=G.player;
     if(G.pvpKC&&G.pvpKC.alive&&!G.pvpKCd){G.pvpKCd=true;G.spec=G.pvpKC;return}
-    const Lst=G.actors.filter(a=>a.alive&&!a.isPlayer&&(G.mode!=='tdm'||!P||a.side===P.side));if(!Lst.length){G.spec=G.pvpKC&&G.pvpKC.alive?G.pvpKC:null;return}
+    const Lst=G.actors.filter(a=>a.alive&&!a.isPlayer&&(!PVP.teams()||!P||a.side===P.side));if(!Lst.length){G.spec=G.pvpKC&&G.pvpKC.alive?G.pvpKC:null;return}
     G.specIdx=(Lst.indexOf(G.spec)+1)%Lst.length;G.spec=Lst[G.specIdx]};
   // buying: what 대인전 allows, within 12 s of coming back (any time in the warm-up)
   const bc=buyCheck;buyCheck=function(a,id){const r=bc(a,id);if(r||!G.pvp)return r;if(!PVP.ok(id))return 'na';if(G.st==='fight'&&G.t>(a.pvpBuy||0))return 'pvpT';return ''};
   const lw=ldWhy;ldWhy=function(why,id){if(G.pvp&&(why==='pvpT'||why==='na')){const L=LI();
-      HUD.note(why==='pvpT'?(L?'Weapons can only be changed for 12 s after coming back':'무기는 부활 후 12초 동안만 바꿀 수 있어요'):(L?'Special weapons are off in PvP':'대인전에서는 특수 무기를 쓸 수 없어요'),2);AU.play('dry',{vol:.5});return}
+      HUD.note(why==='pvpT'?(G.mode==='bomb'?(L?'Weapons can only be changed in the first 20 s of a round':'무기는 라운드 시작 후 20초까지만 바꿀 수 있어요'):L?'Weapons can only be changed for 12 s after coming back':'무기는 부활 후 12초 동안만 바꿀 수 있어요'):(L?'Special weapons are off in PvP':'대인전에서는 특수 무기를 쓸 수 없어요'),2);AU.play('dry',{vol:.5});return}
     return lw(why,id)};
   const rb=UI.renderBuy;UI.renderBuy=function(){const r=rb.apply(this,arguments);if(!G.pvp)return r;const P=G.player,h=document.querySelector('#buy h3');if(!h||!P)return r;const L=LI();
     let s=h.querySelector('.pvbuy');if(!s){s=document.createElement('span');s.className='pvbuy';h.appendChild(s)}
-    s.textContent=G.st==='prep'?(L?'PvP · plain guns only':'대인전 · 기본 무기만'):P.pvpBuy>G.t?(L?`${Math.ceil(P.pvpBuy-G.t)} s left`:`${Math.ceil(P.pvpBuy-G.t)}초 남음`):(L?'time is up — after the next respawn':'시간 끝 — 다음 부활 때');return r};
+    s.textContent=G.st==='prep'?(L?'PvP · plain guns only':'대인전 · 기본 무기만'):P.pvpBuy>G.t?(L?`${Math.ceil(P.pvpBuy-G.t)} s left`:`${Math.ceil(P.pvpBuy-G.t)}초 남음`):G.mode==='bomb'?(L?'time is up — next round':'시간 끝 — 다음 라운드에'):(L?'time is up — after the next respawn':'시간 끝 — 다음 부활 때');return r};
   // the HUD, the kill feed (names in their colours), the scoreboard and the results
   const hu=HUD.update.bind(HUD);HUD.update=function(dt){hu(dt);if(G.pvp)try{PVP.hud(dt)}catch(e){console.error(e)}else if(this.el.hud&&this.el.hud.classList.contains('pvp'))this.el.hud.classList.remove('pvp')};
   const hf=HUD.feed.bind(HUD);HUD.feed=function(src,w,t,f){if(!G.pvp)return hf(src,w,t,f);const c=a=>a?(PVP.cls(a)==='z'?TZ:TH):-1;
@@ -415,12 +422,12 @@ AI.pvp=function(a,dt){PVP.bot(a,dt)};
   const rs=UI.showResults;UI.showResults=function(){const r=rs.apply(this,arguments);if(G.pvp)try{PVP.resPatch()}catch(e){console.error(e)}return r};
   // the rewards: won = my side (player) won, no infections; the match's "rounds" are its minutes
   const srs=shopRoundStats;shopRoundStats=function(win){const r=srs(win);if(!G.pvp)return r;const P=G.player;r.won=PVP.iWon();r.survived=false;r.infects=0;r.round=1;r.mvp=PVP.mvp()===P&&(P.kills|0)>0;return r};
-  const sms=shopMatchStats;shopMatchStats=function(){const r=sms();if(!G.pvp)return r;const P=G.player;r.won=PVP.iWon();r.infects=0;r.mvp=PVP.mvp()===P&&(P.kills|0)>0;r.rounds=Math.min(10,Math.max(1,Math.round(PVP.played/60)));return r};
+  const sms=shopMatchStats;shopMatchStats=function(){const r=sms();if(!G.pvp)return r;const P=G.player;r.won=PVP.iWon();r.infects=0;r.mvp=PVP.mvp()===P&&(P.kills|0)>0;r.rounds=Math.min(10,Math.max(1,G.mode==='bomb'?G.round|0:Math.round(PVP.played/60)));return r};
   // the side's colour on every body (팀 데스매치), a white shimmer while spawn protection lasts
   const uv=updateVisual;updateVisual=function(a,dt){uv(a,dt);if(!G.pvp||!a.ch||a.team!==TH||!a.ch.grp.visible)return;const T0=a.ch.mat.uniforms.uTint.value;
     // (the side colour follows the light at the body, so a team colour does not glow in the dark)
     const pr=a.ch.mat.uniforms.uProbe.value,k=clamp((pr.r+pr.g+pr.b)*.45,.3,.85);
-    if(a.alive&&a.pvpProt>G.t)T0.set(.9*k,.95*k,k,.22+.12*Math.sin(G.t*14));else if(G.mode==='tdm'){const s=PVP.SIDES[a.side===1?1:0].t;T0.set(s[0]*k,s[1]*k,s[2]*k,.22)}};
+    if(a.alive&&a.pvpProt>G.t)T0.set(.9*k,.95*k,k,.22+.12*Math.sin(G.t*14));else if(PVP.teams()){const s=PVP.SIDES[a.side===1?1:0].t;T0.set(s[0]*k,s[1]*k,s[2]*k,.22)}};
   // the radar: an enemy who just fired shows (a silenced gun does not)
   const aw=RADAR.aware.bind(RADAR);RADAR.aware=function(P,a,dt){if(G.pvp&&G.t-(a.lastFire||-9)<1.5&&!(WPN[a.cur]&&WPN[a.cur].quiet))return true;return aw(P,a,dt)};
   // leaving

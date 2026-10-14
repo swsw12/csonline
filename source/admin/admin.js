@@ -22,7 +22,7 @@ function dur(sec){const s=Math.max(0,Math.round(+sec||0));if(s<60)return s+'초'
 function lvl(xp){let l=1,need=300,acc=0;xp=+xp||0;while(xp>=acc+need&&l<99){acc+=need;l++;need=Math.round(need*1.18)}return l}// (lobby.js recLevel)
 const GN=id=>(GUN_NAMES[id]&&GUN_NAMES[id][0])||id;
 const MN=id=>MAP_NAMES[id]||id||'-';
-const MODE={mut:'뮤테이션',orig:'오리지널',scen:'좀비 시나리오',tdm:'팀 데스매치',ffa:'개인전'};
+const MODE={mut:'뮤테이션',orig:'오리지널',scen:'좀비 시나리오',tdm:'팀 데스매치',ffa:'개인전',bomb:'폭파미션'};
 const KIND={coins:'코인',frags:'해독 조각',tfrags:'초월 조각',tickets:'근하신년 해독기',season_tickets:'시즌 해독기'};
 const PROV={email:'이메일',google:'구글',kakao:'카카오',github:'깃허브',apple:'애플'};
 const online=t=>!!t&&Date.now()-new Date(t)<150e3;

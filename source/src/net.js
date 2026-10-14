@@ -619,7 +619,7 @@ const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:fals
     if(!this.list.length)return `<p class="rempty">${L?'No public rooms right now — make one!':'지금 열린 공개 방이 없어요 — 방을 만들어 보세요'}</p>`;
     return this.list.map(r=>{const pl=r.status==='playing',n=r.players|0,mx=r.max_players|0;
       return `<div class="rrow${pl?' play':''}${n>=mx?' full':''}" data-act="mproom" data-v="${esc(String(r.code||''))}"><div class="rh"><b>${esc(r.host_name||'?')}</b><i>${esc(String(r.code||''))}</i></div>
-        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(['scen','orig','tdm','ffa'].includes(r.mode)?r.mode:'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
+        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(['scen','orig','tdm','ffa','bomb'].includes(r.mode)?r.mode:'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
   render(){const el=$('mpRooms');if(el)el.innerHTML=this.html();const b=document.querySelector('[data-act="mprooms"]');if(b)b.classList.toggle('busy',this.busy)}};
 setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
 

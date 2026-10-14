@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'💣',tag:['신규 모드 · 대인전','New mode · PvP'],t:['폭파미션','Bomb Defusal'],
+    d:['블루 대 레드, 부활 없는 라운드제. 공격팀은 폭탄을 A나 B 사이트에 설치하고(E 길게 3초) 40초를 버티면 승리, 수비팀은 막거나 폭탄 옆에서 E를 6초 눌러 해체하면 승리. 한쪽이 전멸해도 라운드 끝. 전반이 끝나면 공수 교대 — 목표 승수를 먼저 채운 팀이 이겨요. 새 맵 「항만 터미널」에서 해요.','BLUE vs RED in rounds with no respawns. The attackers plant the bomb on site A or B (hold E for 3 s) and hold out for 40 s; the defenders stop them, or hold E next to the bomb for 6 s to defuse it. Wiping out the other side also wins a round. The sides swap at half time — first to the round goal wins. Played on the new map, Harbor Terminal.']},
   {kind:'map',ref:'port',tag:['신규 맵 · 대인전 전용','New map · PvP only'],t:['항만 터미널','Harbor Terminal'],
     d:['대낮의 컨테이너 부두. 거대한 크레인이 선 A 선석과 냉동창고 하역장 B, 가운데에는 X-ray 검사대가 있는 세관 검사장. 부두를 따라 가는 A 롱, 중앙에서 꺾어 드는 A 숏, 세관 홀을 지나 B로, 환적 창고를 지나는 B 터널 — 세 갈래 길에서 맞붙어요. 대인전 모드에서 골라요.','A container port on a clear afternoon. The crane berth (A) under a giant ship-to-shore crane, the cold store\'s loading dock (B), and the customs lane with its X-ray portal in the middle. A long up the quay, A short out of mid, through the customs hall to B, the transit shed as the B tunnel — three ways across. Pick it in the PvP modes.']},
   {kind:'feature',ico:'⚔',tag:['신규 모드 · 대인전','New mode · PvP'],t:['팀 데스매치 · 개인전','Team Deathmatch · Free-for-all'],
