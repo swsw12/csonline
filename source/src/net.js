@@ -456,7 +456,7 @@ NET.leave=function(){ROOMS.down();if(!NET.on)return;
   NET.on=NET.host=NET.cli=false;NET.ui='';NET.out.clear();NET.inQ=[];NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.hostKey='';NET.mig=null;netMigUI(true)};
 function netFatal(msg){console.warn('net: end',msg);const wasGame=NET.ui==='game';NET.leave();NET.msg=msg;if(wasGame||G.st!=='menu'){Main.toTitle();UI.act('mp')}else UI.act('mp');setTimeout(()=>{NET.msg=msg;UI.mpRender&&UI.mpRender()},30)}
 // (a new host waits until its players are back before a match can start: netMigResume)
-NET.start=function(){if(!NET.host||NET.ui!=='lobby'||NET.mig)return;const cfg=Object.assign({},NET.lob.cfg);if(cfg.mode==='scen'){cfg.ep=epSel(cfg);cfg.map=epMapOf(cfg)}else cfg.ep=0;CFG.mpCfg=Object.assign({},cfg);saveCfg();
+NET.start=function(){if(!NET.host||NET.ui!=='lobby'||NET.mig)return;const cfg=Object.assign({},NET.lob.cfg);if(cfg.mode==='scen'){cfg.ep=epSel(cfg);cfg.map=epMapOf(cfg)}else{cfg.ep=0;cfg.map=epMapOf(cfg)}CFG.mpCfg=Object.assign({},cfg);saveCfg();
   cfg.mt=netKey(12);if(NET.lob.pl[0])Object.assign(NET.lob.pl[0],HOF.hello());
   const ro=[];let id=0;for(const p of NET.lob.pl)ro.push([id++,p.n,p.s,p.z,p.k,0,p.f|0,p.an||'']);const names=shuffle(BOT_NAMES.slice());const nb=cfg.mode==='scen'?Math.max(0,Math.min(cfg.bots|0,NET_MAXP-NET.lob.pl.length)):cfg.bots;for(let i=0;i<nb;i++)ro.push([id++,names[i%names.length],rpick(HSKINS),rpick(ZLIST),'']);
   if(cfg.mode==='scen')for(let i=0;i<=SCEN.POOL;i++)ro.push([id++,'Z','guard','rager','',1]);

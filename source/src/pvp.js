@@ -101,7 +101,13 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(NET.host&&!remote)netEv('pend',{w,sc:G.score.slice()})},
 
   // ---------- where people stand ----------
-  rndOpen(){const N=NAV.nodes;if(!N||!N.length)return null;for(let k=0;k<30;k++){const n=N[(Math.random()*N.length)|0];if(n&&n.e.length>=12)return n}return null},
+  rndOpen(){const N=NAV.nodes;if(!N||!N.length)return null;const R=this.hreach();for(let k=0;k<30;k++){const n=N[(Math.random()*N.length)|0];if(n&&n.e.length>=12&&R[n.id])return n}return null},
+  // (v6.49) the nav nodes a person can walk to from the map's spawns (climbs up to 1.45 m): the graph also keeps what only a zombie's jump
+  // reaches (a crane bogie, a cab roof), and nobody should come back to life up there
+  hreach(){const N=NAV.nodes;if(this._hrN===N&&this._hr)return this._hr;const R=new Uint8Array(N.length),st=[];
+    for(const p of (MAP.spawns||[]).concat(MAP.zspawns||[])){const n=navNode(p[0],p[2]||0,p[1]);if(n&&!R[n.id]){R[n.id]=1;st.push(n.id)}}
+    while(st.length){const e=N[st.pop()].e;for(let k=0;k<e.length;k+=3){if(e[k+2]>1.45)continue;const m=e[k];if(!R[m]){R[m]=1;st.push(m)}}}
+    this._hrN=N;this._hr=R;return R},
   // open spots within r of a point on about its level (and the map's spawn points there)
   around(c,r){const L=[];for(const p of (MAP.spawns||[]).concat(MAP.zspawns||[])){const x=p[0],y=p[2]||0,z=p[1];if(Math.hypot(x-c.x,z-c.z)<r&&Math.abs(y-c.y)<2.5)L.push({x,y,z})}
     for(let k=0;k<50&&L.length<24;k++){const n=navAround(c.x,c.z,0,r);if(n&&n.e.length>=10&&Math.abs(n.y-c.y)<2.5&&!L.some(q=>Math.hypot(q.x-n.x,q.z-n.z)<1.1))L.push({x:n.x,y:n.y,z:n.z})}

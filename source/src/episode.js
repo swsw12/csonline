@@ -20,7 +20,7 @@ const EPS={};
   for(let n=1;n<=5;n++)EPS[n]=CHAP[n]||Object.assign({id:n,soon:1},SOON[n])}
 // the scenario plays chapter 1 until the player picks another (0 = the free scenario)
 const epSel=c=>c&&c.ep!=null?c.ep|0:1;
-function epMapOf(c){const e=c&&c.mode==='scen'?EPS[epSel(c)]:null;return e&&!e.soon?e.map:(c&&MAPDEFS[c.map]&&!MAPDEFS[c.map].ep?c.map:'q7')}
+function epMapOf(c){const e=c&&c.mode==='scen'?EPS[epSel(c)]:null;return e&&!e.soon?e.map:(c&&mapOk(c.mode,c.map)?c.map:(mapsFor(c&&c.mode)[0]||'q7'))}
 // radio lines every chapter may use: [ko, en, who (0 control, 1 the team)]
 const EP_RADIO0={
   grab:['붙잡혔어! 누가 좀 떼어 줘!','It has me! Somebody get it off!',1],

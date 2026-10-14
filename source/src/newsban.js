@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'map',ref:'port',tag:['신규 맵 · 대인전 전용','New map · PvP only'],t:['항만 터미널','Harbor Terminal'],
+    d:['대낮의 컨테이너 부두. 거대한 크레인이 선 A 선석과 냉동창고 하역장 B, 가운데에는 X-ray 검사대가 있는 세관 검사장. 부두를 따라 가는 A 롱, 중앙에서 꺾어 드는 A 숏, 세관 홀을 지나 B로, 환적 창고를 지나는 B 터널 — 세 갈래 길에서 맞붙어요. 대인전 모드에서 골라요.','A container port on a clear afternoon. The crane berth (A) under a giant ship-to-shore crane, the cold store\'s loading dock (B), and the customs lane with its X-ray portal in the middle. A long up the quay, A short out of mid, through the customs hall to B, the transit shed as the B tunnel — three ways across. Pick it in the PvP modes.']},
   {kind:'feature',ico:'⚔',tag:['신규 모드 · 대인전','New mode · PvP'],t:['팀 데스매치 · 개인전','Team Deathmatch · Free-for-all'],
     d:['드디어 사람끼리 붙어요. 팀 데스매치는 블루 대 레드, 개인전은 모두가 적. 쓰러져도 3초 뒤 부활하고, 목표 킬을 먼저 채우면 승리. 기본 무기만 쓰고 헤드샷은 4배 — 소총 한 방도 가능해요. 방 만들기와 멀티플레이 대기실의 모드에서 골라요.','People against people at last: Team Deathmatch is BLUE vs RED, Free-for-all is everyone for himself. The fallen are back 3 s later, and the first to the kill goal wins. Plain weapons only, headshots ×4 — a rifle can one-tap. Pick it as the mode in Create Room or in the multiplayer waiting room.']},
   {kind:'weapon',ref:'thanatos9',tag:['신규 출시 · 상점 15,000 코인','Out now · Shop · 15,000 coins'],t:['THANATOS-9','THANATOS-9'],

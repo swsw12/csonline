@@ -5,7 +5,7 @@ D = os.path.join(R, os.environ.get('OUT_DIR', 'dist'))
 FONTS = os.path.join(R, 'fonts')  # Galmuri11 (SIL OFL 1.1); subsetting needs: pip install fonttools brotli
 os.makedirs(os.path.join(D, 'assets'), exist_ok=True)
 os.makedirs(os.path.join(D, 'standalone', 'assets'), exist_ok=True)
-order = ['util', 'i18n', 'design', 'world', 'tex', 'shaders', 'map', 'mapsub', 'mapit_data', 'mapit', 'mapmil_data', 'mapmil', 'maprest', 'mapbt', 'mapep1', 'mapep2', 'mapep3', 'mapep4', 'mapep5', 'nav', 'models', 'gunart', 'vm', 'vmdraw', 'vmrel', 'vmknife', 'audio', 'fx',
+order = ['util', 'i18n', 'design', 'world', 'tex', 'shaders', 'map', 'mapsub', 'mapit_data', 'mapit', 'mapmil_data', 'mapmil', 'maprest', 'mapbt', 'mapport', 'mapep1', 'mapep2', 'mapep3', 'mapep4', 'mapep5', 'nav', 'models', 'gunart', 'vm', 'vmdraw', 'vmrel', 'vmknife', 'audio', 'fx',
          'weapons', 'nyw', 'skull9', 'salamander', 'newguns', 'balrog', 'crateguns', 'katana', 'game', 'ai', 'render', 'ui', 'csoguns', 'realguns', 'minimap', 'net', 'coffin', 'drops', 'supply', 'lobby', 'main', 'scenario', 'range', 'sb', 'account', 'shop', 'rank', 'newsban', 'loadout', 'inv', 'friends', 'touch', 'hskill', 'chat', 'ping', 'epbase', 'aleph', 'argus', 'khepri', 'lyrebird', 'tiamat', 'episode', 'hof', 'invite', 'fireman', 'janus', 'crowbar', 'thanatos', 'm4dk', 'srvnote', 'mailbox', 'gunpop', 'pvp']
 parts = []
 for f in order:
