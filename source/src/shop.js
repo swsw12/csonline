@@ -6,14 +6,14 @@
 // Prices: the database table gun_prices is the truth; this copy (same numbers as schema.sql) is shown until it has loaded.
 const SHOP_FREE=['knife','p9','sg8','k5','g35'];
 const SHOP_PRICE={thanatos9:15000,f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000,killknife:12000,blaze8:6000,winchester:4500,balrog5:6500,balrog11:7000,plasma:7500,thunder:9500,katana:9000,jhammer:7500,dde:8500,janus1:8500,cbmav:9000};
-const SHOP_NOTSOLD=['bhole','skull9','salamander','ak60r','dmp7','bholemini','crimson','m4dk'];// never in the shop: the season / sidearm decoders' guns (a line on their cards), the transcendence exchange's (v6.41), else crate-only
+const SHOP_NOTSOLD=['bhole','skull9','salamander','ak60r','dmp7','bholemini','crimson','janus2','m4dk'];// never in the shop: the season / sidearm decoders' guns (a line on their cards), the transcendence exchange's (v6.41), else crate-only
 const SHOP_GACHA={S:['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],A:['xdz','ripper','xbowa','xbow','sterling','duckfoot']};
 // the decoder's numbers until gacha_config has loaded (same defaults as schema.sql)
 const GACHA_DEF={dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
   season_lines:['gun:bhole','gun:skull9','gun:salamander','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3'],
   side_cost1:500,side_cost10:4500,side_hi:80,side_frag_min:1,side_frag_max:2,side_owned_coins:5000,
-  side_lines:['gun:bholemini','gun:crimson','coins:500','coins:1000','coins:1000','coins:2000','coins:3000','frags:20','frags:20','frags:30','tickets:1','tickets:1'],
+  side_lines:['gun:bholemini','gun:crimson','gun:janus2','coins:500','coins:1000','coins:2000','coins:3000','frags:20','frags:20','frags:30','tickets:1','tickets:1'],// v6.55: JANUS-2 took a coins:1000 line
   ref_new_coins:2000,ref_new_tickets:2,ref_coins:3000,ref_tickets:2,ref_matches:3,ref_cap:10,ref_days:7,// invite links (v6.37, invite.js)
   trans_frag_min:2,trans_frag_max:4,trans_cost:888,trans_guns:['m4dk']};// transcendence (v6.41): fragments from every decoder, 888 for a transcendence gun
 // the 12 lines of the 5×5 card: rows 0-4, columns 5-9, the diagonal from the top left 10, from the top right 11
@@ -23,7 +23,7 @@ const sItem=c=>{const [k,v]=String(c||'').split(':');return k==='gun'?{k,gun:v,n
 const sAmt=n=>LI()?(n>=1000&&n%1000===0?n/1000+'K':fmtC(n)):(n>=10000&&n%10000===0?n/10000+'만':fmtC(n));// short amounts for the small tiles
 const sRank=c=>{const it=sItem(c);return ({gun:0,coins:1,frags:2,tickets:3})[it.k]*1e7-it.n};// the rules list: guns, then coins (biggest first), fragments, decoders
 function seasonGun(id){return (ACC.gc().season_lines||[]).includes('gun:'+id)}
-function sideGun(id){return (ACC.gc().side_lines||[]).includes('gun:'+id)}// the sidearm card's (v6.36: Event Horizon Mini, Crimson Peacemaker)
+function sideGun(id){return (ACC.gc().side_lines||[]).includes('gun:'+id)}// the sidearm card's (v6.36: Event Horizon Mini, Crimson Peacemaker; v6.55: JANUS-2)
 function transGun(id){return (ACC.gc().trans_guns||[]).includes(id)}// the transcendence exchange's (v6.41: the M4A1 Dark Knight)
 // a card's guns (season: Event Horizon, Skull-9 …; side: the sidearm card's), in the order of its list; names: 'A · B' in the language shown
 function cardGuns(k){const o=[];for(const c of ACC.gc()[k==='side'?'side_lines':'season_lines']||[]){const it=sItem(c);if(it.k==='gun'&&WPN[it.gun]&&!o.includes(it.gun))o.push(it.gun)}return o}

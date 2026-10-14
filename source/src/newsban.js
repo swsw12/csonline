@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'janus2',tag:['보조무기 해독기','Sidearm decoder'],t:['JANUS-2','JANUS-2'],
+    d:['성유물을 복원한 신성한 소드오프 유탄 권총. 한 손으로 유탄 5발, 폭발 하나에 80. 좀비를 맞힌 폭발 5번이면 시그널 — 우클릭하면 마리아 조각상이 나오고 총열이 갈라지며 5초간 유탄을 무한으로 쏟아내요. 예비 유탄은 보급으로만 받고, 총열을 꺾어 재장전해요.','A holy sawed-off grenade pistol, a relic restored. Five grenades in one hand, 80 a blast. Five blasts that catch a zombie give the signal — right click and Mary\'s figure comes out as the barrel splits open for 5 s of grenades without limit. Spares come from supplies only, and it reloads by breaking open.']},
   {kind:'map',ref:'hospital',tag:['신규 맵 · 좀비모드','New map · zombie modes'],t:['새벽 종합병원','Saebyeok General Hospital'],
     d:['동트기 직전의 대형 종합병원. 3층까지 뚫린 유리 아트리움 로비, 2층 영상의학과와 중환자실, 3층 수술실과 병동, 헬기가 내려앉은 옥상 헬기장 — 계단실 두 곳과 에스컬레이터로 오르내려요. 구름다리로 이어진 주차타워, 응급의료센터와 그 옥상, 격리 검문소가 선 정문과 치유의 정원까지, 지금까지 가장 큰 맵이에요.','A big general hospital just before dawn: a three-storey glass atrium lobby, radiology and the ICU on 2F, the operating suite and the ward on 3F, a helipad with a helicopter on the roof — two stairwells and the escalators link them. A parking tower joined by a skybridge, the emergency wing and its roof, the quarantine checkpoint at the gate and the healing garden: the largest map yet.']},
   {kind:'map',ref:'bazaar',tag:['신규 맵 · 대인전 전용','New map · PvP only'],t:['사막 바자르','Desert Bazaar'],

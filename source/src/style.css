@@ -1339,6 +1339,15 @@ html.touch .slot button.give{min-height:30px;padding:4px 9px}
 #jnRing b{position:absolute;left:100%;top:100%;margin:-10px 0 0 -6px;font-size:13px;color:#cf9dff;text-shadow:0 0 6px rgba(150,70,255,.95),0 1px 2px #000;white-space:nowrap}
 @keyframes jnPulse{from{opacity:.55}to{opacity:1}}
 html.touch #touch .tAlt.jn{border-color:rgba(200,140,255,.95)!important;background:rgba(70,20,110,.5)!important;box-shadow:0 0 14px rgba(170,90,255,.8);animation:jnPulse .7s ease-in-out infinite alternate}
+/* v6.55 JANUS-2 (janus2.js): the charge and the signal in gold, the form in blue violet (#8A2BE2) */
+#cross.jn.j2 i{background:#ffd75a;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 7px rgba(255,190,60,.95)}
+#cross.jnb.j2 i{background:#8a2be2;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 10px rgba(160,80,255,1)}
+#jnRing.j2 .pg{stroke:#e0b040;filter:drop-shadow(0 0 3px rgba(255,190,60,.85))}
+#jnRing.j2.sig .pg{stroke:#ffd75a}
+#jnRing.j2.b .tr{stroke:rgba(138,43,226,.28)}#jnRing.j2.b .pg{stroke:#8a2be2;filter:drop-shadow(0 0 5px rgba(160,80,255,1))}
+#jnRing.j2 b{color:#ffd75a;text-shadow:0 0 6px rgba(255,180,40,.95),0 1px 2px #000}
+#jnRing.j2.b b{color:#b57cff;text-shadow:0 0 6px rgba(138,43,226,.95),0 1px 2px #000}
+html.touch #touch .tAlt.jn.j2{border-color:rgba(255,215,100,.95)!important;background:rgba(90,60,10,.5)!important;box-shadow:0 0 14px rgba(255,190,60,.8)}
 /* v6.40 Crowbar Maverick (crowbar.js): a shocked zombie player's screen flickers blue at the edges */
 #hud.shk::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(80,160,255,.28) 85%,rgba(150,210,255,.45) 100%);animation:cbShk .11s steps(2) infinite}
 @keyframes cbShk{from{opacity:.55}to{opacity:1}}

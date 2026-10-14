@@ -13,6 +13,8 @@
 // the free hand slaps down on the mask, the barrel splits into two shells (up, down) round a glowing violet core, the fins on its sides
 // swing out, the crest on the mask lifts and the five chambers light. Closing: it shuts with a clank and lets off steam.
 // Network: the state changes go out as ['jn', id, 0 shut | 1 signal | 2 opening]; the grenades are projectiles like the others.
+// v6.55: JANUS-2 (janus2.js) runs on the same machinery: what differs between the two (the form's round, sounds, clips, light, the
+// grenades) sits in JNW / JNP; WPN[id].jn names the JANUS weapon a WPN entry belongs to.
 
 // ---------- atlas: one self-lit violet ----------
 for(const m of ['jnGlow']){if(GA.idx[m]==null){GA_MATS.push(m);GA.idx[m]=GA_MATS.length-1}}
@@ -91,10 +93,24 @@ GUNS.jnorb={parts:[Pt(0,0,0,.05,.05,.07,'jnGlow',{r:.022}),Pt(0,0,0,.034,.034,.1
 {const gg=gunGeo;gunGeo=function(id){const G=GUNS[id];return gg(G&&G.wid?G.wid:id)}}
 
 // ---------- stats ----------
-WPN.janus1={slot:2,kind:'pistol',n:['JANUS-1','JANUS-1'],cost:6000,mag:5,res:0,noRel:1,supOnly:1,jn:1,dmg:JN.DMG,rpm:JN.RPM,semi:1,proj:'jn',alt:'janus',
+WPN.janus1={slot:2,kind:'pistol',n:['JANUS-1','JANUS-1'],cost:6000,mag:5,res:0,noRel:1,supOnly:1,jn:'janus1',dmg:JN.DMG,rpm:JN.RPM,semi:1,proj:'jn',alt:'janus',
   spread:[.004,.02,.06],rec:[.08,.02],kb:JN.KB,stag:JN.STAG,hs:1,reload:1,draw:.7,speed:.97,snd:'jnfire',model:'janus1',hold:'pistol',kickX:[1.15,3,.65]};
 // the JANUS form fires these (unlimited, lighter kick)
 JN.WB=Object.assign({},WPN.janus1,{proj:'jnb',noMag:1,snd:'jnfireb',rec:[.026,.012],spread:[.006,.022,.05],kickX:[.5,1.25,.35]});
+// what differs between the JANUS weapons: the form's round (wb), the sounds of opening / the form coming on / closing, the first-person
+// clips, the bursts, the light while open (lit) and its sparks, the view model's glow in the form (mz), a crosshair class (cx), the
+// flash of a shot in the form (bfx) and the puff after a normal one (sfx), what closing lets off (cfx)
+const JNW={janus1:{wb:JN.WB,sOpen:'jnopen',sOn:'jnon',sClose:'jnclose',open:()=>jnOpenClip(),close:()=>jnCloseClip(),burst:(x,y,z,s)=>jnBurst(x,y,z,s),
+  lit:'#9a50ff',spark:[.8,.5,1],mz:[1.2,.5,2.4],cx:'',
+  bfx(a){const mz=muzzleWorld(a),me=a.isPlayer&&!G.spec;FX.spawn({x:mz.x,y:mz.y,z:mz.z,life:.07,s0:me?.22:.4,s1:me?.38:.7,r:.75,g:.4,b:1,a:1,f:14,add:1});if(a.isPlayer)VM.U.uMuzzle.value.setRGB(.9,.4,1.8)},
+  sfx(a){const mz=muzzleWorld(a);for(let i=0;i<5;i++)FX.spawn({x:mz.x,y:mz.y,z:mz.z,vx:rr(-.4,.4),vy:rr(.2,.9),vz:rr(-.4,.4),life:rr(.6,1.1),s0:.06,s1:rr(.25,.4),r:.58,g:.56,b:.62,a:.35,f:2,drag:2})},
+  cfx(a,mz){for(let i=0;i<14;i++)FX.spawn({x:mz.x+rr(-.08,.08),y:mz.y+rr(-.04,.06),z:mz.z+rr(-.08,.08),vx:rr(-.5,.5),vy:rr(.4,1.4),vz:rr(-.5,.5),life:rr(.6,1.2),s0:.05,s1:rr(.25,.45),r:.86,g:.84,b:.92,a:.4,f:2,drag:2})}}};
+// the JANUS weapon an id is (its JNW entry), the one in the hands, the one this actor's state belongs to
+const jnW=id=>{const W=id&&WPN[id];return W&&W.jn?JNW[W.jn]||null:null};
+const jnHeld=a=>!!(a&&jnW(a.cur));
+const jnC=a=>jnW(a.cur)||JNW[a.jnWid]||JNW.janus1;
+// the grenades: whose they are, how fast they leave, the model they fly as (B = the form's)
+const JNP={jn:{w:'janus1',sp:JN.SPD,mdl:'jnnade'},jnb:{w:'janus1',sp:JN.BSPD,mdl:'jnorb',B:1}};
 VM_POS.janus1={p:[.145,-.175,-.44],r:[.03,.48,.26]};
 BUY_MENU.find(c=>c.k==='pistol').items.push('janus1');
 // first draw: the drum swiped round under the thumb, the hammer cocked; a flicker in the eyes
@@ -135,15 +151,15 @@ function jnAlt(a){if(NET.ghost||!jnOwn(a))return;if(jnForm(a)||a.jnC>0)return;
   if(!(a.jnS>0)){if(a.isPlayer&&!AU.throttle('jnno',700)){HUD.note(LI()?`JANUS — ${a.jnH|0} / ${JN.N} hits`:`JANUS — 적중 ${a.jnH|0} / ${JN.N}`,1.2);AU.play('dry',{vol:.4,rate:1.3})}return}
   if(a.drawT>0||a.fmKd>0||a.grabT>0)return;jnOpen(a)}
 function jnOpen(a){a.jnS=0;a.jnO=JN.OPEN;a.jnB=0;a.jnC=0;a.jnH=0;jnSend(a,2);jnOpenFx(a)}
-function jnOpenFx(a){jnAt(a,'jnopen',.85);if(a.isPlayer){try{VM.playClip(jnOpenClip(),0,JN.OPEN,'jn')}catch(e){console.error(e)}}}
+function jnOpenFx(a){const C=jnC(a);jnAt(a,C.sOpen,.85);if(a.isPlayer){try{VM.playClip(C.open(),0,JN.OPEN,'jn')}catch(e){console.error(e)}}}
 // the opening is over: the form is on
-function jnBStart(a){a.jnB=JN.B;jnAt(a,'jnon',.85);if(!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);jnBurst(mz.x,mz.y,mz.z,1)}// (the player sees it on the view model)
-  if(a.isPlayer){VM.U.uMuzzle.value.setRGB(1.2,.5,2.4);VM.sp.pz.v+=.45;VM.sp.rx.v-=.8;FX.shake=Math.max(FX.shake,.3);
+function jnBStart(a){const C=jnC(a);a.jnB=JN.B;if(C.sOn)jnAt(a,C.sOn,.85);if(!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);C.burst(mz.x,mz.y,mz.z,1)}// (the player sees it on the view model)
+  if(a.isPlayer){VM.U.uMuzzle.value.setRGB(C.mz[0],C.mz[1],C.mz[2]);VM.sp.pz.v+=.45;VM.sp.rx.v-=.8;FX.shake=Math.max(FX.shake,.3);
     HUD.note(LI()?`JANUS — ${JN.B}s of grenades without limit, hold to fire`:`JANUS 모드 — ${JN.B}초간 유탄 무한 연사 (꾹 누르기)`,2)}}
 // it closes (its time is up, or it was put away): every page, own pages tell the rest; was = it was open (or opening) until now
 function jnClose(a,own,was){a.jnB=0;a.jnO=0;a.jnH=0;if(own)jnSend(a,0);if(!was)return;
-  if(a.cur==='janus1'&&a.alive){a.jnC=JN.CLOSE;jnAt(a,'jnclose',.8);const mz=muzzleWorld(a);for(let i=0;i<14;i++)FX.spawn({x:mz.x+rr(-.08,.08),y:mz.y+rr(-.04,.06),z:mz.z+rr(-.08,.08),vx:rr(-.5,.5),vy:rr(.4,1.4),vz:rr(-.5,.5),life:rr(.6,1.2),s0:.05,s1:rr(.25,.45),r:.86,g:.84,b:.92,a:.4,f:2,drag:2});
-    if(a.isPlayer){a.nextFire=Math.max(a.nextFire,G.t+JN.CLOSE*.9);try{VM.playClip(jnCloseClip(),0,JN.CLOSE,'jn')}catch(e){console.error(e)}}}}
+  if(jnHeld(a)&&a.alive){const C=jnC(a);a.jnC=JN.CLOSE;jnAt(a,C.sClose,.8);C.cfx(a,muzzleWorld(a));
+    if(a.isPlayer){a.nextFire=Math.max(a.nextFire,G.t+JN.CLOSE*.9);try{VM.playClip(C.close(),0,JN.CLOSE,'jn')}catch(e){console.error(e)}}}}
 // another page's state change
 function jnRemote(a,st){if(!a||a.team!==TH)return;if(st===1){a.jnS=JN.SIG;a.jnO=a.jnB=a.jnC=0;jnSigFx(a)}else if(st===2){a.jnS=0;a.jnO=JN.OPEN;a.jnB=0;a.jnC=0;jnOpenFx(a)}else{jnClose(a,false,a.jnB>0||a.jnO>0);a.jnS=0}}
 // a violet burst (the form opening, a JANUS blast)
@@ -156,27 +172,31 @@ const jnBotSees=a=>{const B=a.bot,s=B&&B.seen;return s&&s.a&&s.a.alive?s.a:null}
 // ---------- every frame ----------
 function jnTick(a,dt){const own=jnOwn(a);
   if(!a.alive||a.team!==TH){if(a.jnS||a.jnO||a.jnB||a.jnH||a.jnC||a.jnL)jnReset(a);return}
+  // the state belongs to the JANUS weapon in the pistol slot: another one there (JANUS-1 ↔ JANUS-2) starts the count again
+  const sid=a.inv&&jnW(a.inv[2])?a.inv[2]:null;
+  if(sid&&a.jnWid&&sid!==a.jnWid&&own){if(jnForm(a))jnClose(a,true,true);else if(a.jnS>0)jnSend(a,0);a.jnH=0;a.jnS=0}
+  if(sid)a.jnWid=sid;
   if(a.jnS>0){a.jnS=Math.max(0,a.jnS-dt);if(a.jnS<=0&&own){a.jnH=0;jnSend(a,0);if(a.isPlayer)HUD.note(LI()?'The JANUS signal faded':'JANUS 시그널이 사라졌어요',1.6)}}
-  if(a.jnO>0){a.jnO-=dt;if(own&&a.cur!=='janus1')jnClose(a,true,true);else if(a.jnO<=0){a.jnO=0;jnBStart(a)}}
-  if(a.jnB>0){a.jnB-=dt;if(own&&a.cur!=='janus1')jnClose(a,true,true);else if(a.jnB<=0)jnClose(a,own,true)}
+  if(a.jnO>0){a.jnO-=dt;if(own&&!jnHeld(a))jnClose(a,true,true);else if(a.jnO<=0){a.jnO=0;jnBStart(a)}}
+  if(a.jnB>0){a.jnB-=dt;if(own&&!jnHeld(a))jnClose(a,true,true);else if(a.jnB<=0)jnClose(a,own,true)}
   if(a.jnC>0)a.jnC=Math.max(0,a.jnC-dt);
-  // the rounds it holds (a refill shows up as more), so putting it down and taking a new one does not fill it again
-  const am=a.ammo&&a.ammo.janus1;if(am&&a.inv[2]==='janus1')a.jnLeft=am.mag;
-  // the world model: shut / signal / open (with a flash of violet when it changes), and a violet light while it is open
-  const fm=a.cur!=='janus1'?'':jnOpenK(a)>.5?'janus1b':a.jnS>0||a.jnO>0?'janus1s':'janus1n';
-  if(fm!==a.jnFm){if(a.jnFm&&fm&&a.gun&&!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);jnBurst(mz.x,mz.y,mz.z,.6)}a.jnFm=fm}
-  if(a.cur==='janus1'&&jnOpenK(a)>.05){const mz=muzzleWorld(a);if(!a.jnL)a.jnL=DL.add(mz.x,mz.y,mz.z,'#9a50ff',4,1.3,0,{flick:.18});a.jnL.x=mz.x;a.jnL.y=mz.y;a.jnL.z=mz.z;
-    if(!(a.isPlayer&&!G.spec)&&Math.random()<dt*14)FX.spawn({x:mz.x+rr(-.05,.05),y:mz.y+rr(-.05,.05),z:mz.z+rr(-.05,.05),vy:rr(.1,.4),life:rr(.15,.3),s0:.05,s1:.01,r:.8,g:.5,b:1,f:11,add:1})}
+  // the rounds it holds and its spares (a refill shows up as more), so putting it down and taking a new one does not fill it again
+  const am=sid&&a.ammo&&a.ammo[sid];if(am)(a.jnLeft||(a.jnLeft={}))[sid]=[am.mag,am.res|0];
+  // the world model: shut / signal / open (with a burst when it changes), and a light while it is open
+  const hid=jnHeld(a)?a.cur:'',C=jnC(a),fm=hid&&hid+(jnOpenK(a)>.5?'b':a.jnS>0||a.jnO>0?'s':'n');
+  if(fm!==a.jnFm){if(a.jnFm&&fm&&a.gun&&!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);C.burst(mz.x,mz.y,mz.z,.6)}a.jnFm=fm}
+  if(hid&&jnOpenK(a)>.05){const mz=muzzleWorld(a),s=C.spark;if(!a.jnL)a.jnL=DL.add(mz.x,mz.y,mz.z,C.lit,4,1.3,0,{flick:.18});a.jnL.x=mz.x;a.jnL.y=mz.y;a.jnL.z=mz.z;
+    if(!(a.isPlayer&&!G.spec)&&Math.random()<dt*14)FX.spawn({x:mz.x+rr(-.05,.05),y:mz.y+rr(-.05,.05),z:mz.z+rr(-.05,.05),vy:rr(.1,.4),life:rr(.15,.3),s0:.05,s1:.01,r:s[0],g:s[1],b:s[2],f:11,add:1})}
   else if(a.jnL){a.jnL.dead=true;a.jnL=null}
   // a bot with the signal takes it out again (its last grenade emptied it) and opens it as soon as there is a zombie to use it on
   if(own&&a.bot&&!a.isPlayer&&a.jnS>0){const t=jnBotSees(a),near=t&&Math.hypot(t.c.x-a.c.x,t.c.z-a.c.z)<28;
-    if(near&&a.cur!=='janus1'&&a.inv[2]==='janus1'&&WPN[a.cur]&&WPN[a.cur].kind!=='nade')equip(a,'janus1');else if(near&&a.cur==='janus1'&&a.drawT<=0)jnOpen(a)}}
+    if(near&&!jnHeld(a)&&sid&&WPN[a.cur]&&WPN[a.cur].kind!=='nade')equip(a,sid);else if(near&&jnHeld(a)&&a.drawT<=0&&!(a.reloadT>0))jnOpen(a)}}
 
 // ---------- the grenades ----------
-function jnProj(a,eye,dir,kind){const B=kind==='jnb',sp=B?JN.BSPD:JN.SPD;
-  const n={kind,owner:a,w:'janus1',x:eye.x+dir.x*.55,y:eye.y+dir.y*.55-.06,z:eye.z+dir.z*.55,vx:dir.x*sp,vy:dir.y*sp+.5,vz:dir.z*sp,t:0,mesh:null,spin:0,hit:new Set(),upd:PROJ_UPD[kind]};
-  const m=new THREE.Mesh(gunGeo(B?'jnorb':'jnnade'),matGun());m.position.set(n.x,n.y,n.z);m.lookAt(n.x+n.vx,n.y+n.vy,n.z+n.vz);R.scene.add(m);n.mesh=m;NADES.push(n);
-  NET.on&&netFxPush(['p',a.id,WI.janus1,kind,r2(n.x),r2(n.y),r2(n.z),r2(n.vx),r2(n.vy),r2(n.vz)]);return n}
+function jnProj(a,eye,dir,kind){const P=JNP[kind],sp=P.sp;
+  const n={kind,owner:a,w:P.w,x:eye.x+dir.x*.55,y:eye.y+dir.y*.55-.06,z:eye.z+dir.z*.55,vx:dir.x*sp,vy:dir.y*sp+.5,vz:dir.z*sp,t:0,mesh:null,spin:0,hit:new Set(),upd:PROJ_UPD[kind]};
+  const m=new THREE.Mesh(gunGeo(P.mdl),matGun());m.position.set(n.x,n.y,n.z);m.lookAt(n.x+n.vx,n.y+n.vy,n.z+n.vz);R.scene.add(m);n.mesh=m;NADES.push(n);
+  NET.on&&netFxPush(['p',a.id,WI[P.w],kind,r2(n.x),r2(n.y),r2(n.z),r2(n.vx),r2(n.vy),r2(n.vz)]);return n}
 function jnUpd(n,dt){const r=projStep(n,dt,GRAV*.35,(n)=>{jnBoom(n);return 'kill'},(n)=>{jnBoom(n);return 'kill'});if(r==='kill')return true;
   if(n.mesh){n.mesh.position.set(n.x,n.y,n.z);n.mesh.lookAt(n.x+n.vx,n.y+n.vy,n.z+n.vz);sampleProbe(n.x,n.y,n.z,n.mesh.material.uniforms.uProbe.value)}
   if(n.kind==='jnb'){FX.spawn({x:n.x,y:n.y,z:n.z,life:.09,s0:.28,s1:.1,r:.72,g:.38,b:1,a:.8,f:14,add:1});if(Math.random()<.5)FX.spawn({x:n.x,y:n.y,z:n.z,vx:rr(-.4,.4),vy:rr(-.2,.4),vz:rr(-.4,.4),life:rr(.12,.25),s0:.05,s1:.01,r:.85,g:.55,b:1,f:11,add:1})}
@@ -191,7 +211,7 @@ function jnBoom(n){const B=n.kind==='jnb',sc=G.mode==='scen'?JN.SCEN:1;
   detonate(g);jnBurst(n.x,n.y,n.z,B?.9:1.2);
   if(!n.ghost&&!NET.ghost&&!B&&g.hitN>0)jnScore(n.owner)}
 PROJ_UPD.jn=jnUpd;PROJ_UPD.jnb=jnUpd;
-{const np0=nyProj;nyProj=function(a,W,eye,dir,kind){if(kind==='jn'||kind==='jnb')return jnProj(a,eye,dir,kind);return np0(a,W,eye,dir,kind)}}
+{const np0=nyProj;nyProj=function(a,W,eye,dir,kind){if(JNP[kind])return jnProj(a,eye,dir,kind);return np0(a,W,eye,dir,kind)}}
 
 // ---------- first-person clips ----------
 // opening: the gun is raised, muzzle up, a beat — then snapped down level and stopped dead: the shells burst apart on the snap (driven by
@@ -220,22 +240,24 @@ VMX.janus1=function(V,a,dt,o,m){const T=m.tags;
   V.flash.material.color.setHex(fast?0xcf9cff:0xffffff);
   if(fast){const j=.0009;o[0]+=rr(-j,j);o[1]+=rr(-j,j);o[5]+=rr(-j,j)*3}};
 // (the muzzle flash goes back to its own colour on any other gun)
-{const vs=VM.set;VM.set=function(id,skin){vs.call(this,id,skin);if(this.flash&&id!=='janus1')this.flash.material.color.setHex(0xffffff)}}
+{const vs=VM.set;VM.set=function(id,skin){vs.call(this,id,skin);if(this.flash&&!jnW(id))this.flash.material.color.setHex(0xffffff)}}
 
 // ---------- HUD: the crosshair, a ring of five round it (the charge; the signal; the form's time), ∞ in the form ----------
 function jnHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P.cur],live=!!(P.alive&&P.team===TH&&!G.spec&&G.st!=='menu'&&W&&W.jn);
-  const sig=live&&P.jnS>0,B=live&&jnForm(P),cr=HUD.el.cross;
-  if(cr){if(cr.classList.contains('jn')!==!!(sig||B))cr.classList.toggle('jn',!!(sig||B));if(cr.classList.contains('jnb')!==!!B)cr.classList.toggle('jnb',!!B)}
+  const sig=live&&P.jnS>0,B=live&&jnForm(P),cr=HUD.el.cross,cx=(live&&jnW(P.cur)||{}).cx||'';
+  if(cr){if(cr.classList.contains('jn')!==!!(sig||B))cr.classList.toggle('jn',!!(sig||B));if(cr.classList.contains('jnb')!==!!B)cr.classList.toggle('jnb',!!B);
+    for(const k in JNW){const c=JNW[k].cx;if(c&&cr.classList.contains(c)!==(cx===c))cr.classList.toggle(c,cx===c)}}
   let rg=$('jnRing');if(live&&!rg){rg=document.createElement('div');rg.id='jnRing';rg.innerHTML='<svg viewBox="0 0 60 60"><circle class="tr" cx="30" cy="30" r="24"/><circle class="pg" cx="30" cy="30" r="24"/></svg><b></b>';hud.appendChild(rg)}
   if(rg){const on=live&&!(P.zoom>0);rg.style.display=on?'block':'none';if(on){const pg=rg.querySelector('.pg'),b=rg.querySelector('b'),C=150.8,seg=C/5;
-      const cls=B?'b':sig?'sig':'';if(rg.className!==cls)rg.className=cls;let da,off=0,s='';
+      const cls=(B?'b':sig?'sig':'')+(cx?' '+cx:'');if(rg.className!==cls)rg.className=cls;let da,off=0,s='';
       if(B){da=C+' '+C;off=P.jnO>0?0:C*(1-clamp(P.jnB/JN.B,0,1));s='∞'}
       else{const n=sig?JN.N:Math.min(JN.N,P.jnH|0);da=n?Array(n).fill((seg-4).toFixed(2)+' 4').join(' ')+' 0 '+C:'0 '+C;if(sig)s=Math.ceil(P.jnS)+''}
       if(pg.getAttribute('stroke-dasharray')!==da)pg.setAttribute('stroke-dasharray',da);const os=off.toFixed(1);if(pg.getAttribute('stroke-dashoffset')!==os)pg.setAttribute('stroke-dashoffset',os);
       if(b.textContent!==s)b.textContent=s}}
   if(B){const m=HUD.el.hMag;if(m&&m.textContent!=='∞'){m.textContent='∞';m.className=''}}
   // touch: the aim button turns into the transform button while the signal is up
-  if(typeof TOUCH!=='undefined'&&TOUCH.el){const bt=TOUCH.el.querySelector('.tAlt');if(bt&&bt.classList.contains('jn')!==!!sig){bt.classList.toggle('jn',!!sig);const em=bt.querySelector('em');if(em)em.textContent=sig?(LI()?'JANUS':'변신'):(LI()?'AIM':'조준')}}}
+  if(typeof TOUCH!=='undefined'&&TOUCH.el){const bt=TOUCH.el.querySelector('.tAlt');if(bt&&bt.classList.contains('jn')!==!!sig){bt.classList.toggle('jn',!!sig);const em=bt.querySelector('em');if(em)em.textContent=sig?(LI()?'JANUS':'변신'):(LI()?'AIM':'조준')}
+    if(bt)for(const k in JNW){const c=JNW[k].cx;if(c&&bt.classList.contains(c)!==(sig&&cx===c))bt.classList.toggle(c,!!(sig&&cx===c))}}}
 // the weapon name: the charge, the signal's time, the form's time
 function jnTag(P){if(jnForm(P))return LI()?` · JANUS ∞ ${Math.max(0,P.jnB).toFixed(1)}s`:` · JANUS ∞ ${Math.max(0,P.jnB).toFixed(1)}초`;
   if(P.jnS>0)return LI()?` · JANUS ready (right click) ${Math.ceil(P.jnS)}s`:` · JANUS 준비 (우클릭) ${Math.ceil(P.jnS)}초`;
@@ -246,25 +268,26 @@ function jnTag(P){if(jnForm(P))return LI()?` · JANUS ∞ ${Math.max(0,P.jnB).to
   // right click
   const na=nyAlt;nyAlt=function(a,W){if(W&&W.alt==='janus'){jnAlt(a);return}return na(a,W)};
   // the JANUS form fires its own rounds (every page: a remote shot is replayed with the form's sound and flash too)
-  const fg=fireGun;fireGun=function(a,W){if(W===WPN.janus1)a.jnShots=(a.jnShots|0)+1;if(W===WPN.janus1&&a.jnB>0){fg(a,JN.WB);const mz=muzzleWorld(a),me=a.isPlayer&&!G.spec;FX.spawn({x:mz.x,y:mz.y,z:mz.z,life:.07,s0:me?.22:.4,s1:me?.38:.7,r:.75,g:.4,b:1,a:1,f:14,add:1});
-      if(a.isPlayer)VM.U.uMuzzle.value.setRGB(.9,.4,1.8);return}
-    fg(a,W);if(W===WPN.janus1){const mz=muzzleWorld(a);for(let i=0;i<5;i++)FX.spawn({x:mz.x,y:mz.y,z:mz.z,vx:rr(-.4,.4),vy:rr(.2,.9),vz:rr(-.4,.4),life:rr(.6,1.1),s0:.06,s1:rr(.25,.4),r:.58,g:.56,b:.62,a:.35,f:2,drag:2})}};
+  const fg=fireGun;fireGun=function(a,W){const C=W&&W.jn&&W===WPN[W.jn]?JNW[W.jn]:null;if(!C)return fg(a,W);a.jnShots=(a.jnShots|0)+1;
+    if(a.jnB>0){fg(a,C.wb);C.bfx(a);return}
+    fg(a,W);C.sfx(a)};
   // the JANUS form: full-auto while the trigger is held (touch included), no magazine to run dry; nothing fires while it opens or closes
-  const aw=actorWeapons;actorWeapons=function(a,dt){if(a.team!==TH||a.cur!=='janus1'||!a.alive)return aw(a,dt);
+  const aw=actorWeapons;actorWeapons=function(a,dt){if(a.team!==TH||!jnHeld(a)||!a.alive)return aw(a,dt);
     if(a.jnO>0||a.jnC>0){a.cmd.fire=false;return aw(a,dt)}
     if(!(a.jnB>0))return aw(a,dt);
-    const am=a.ammo.janus1;if(!am)return aw(a,dt);const m0=am.mag,lf=a.lastFire;am.mag=Math.max(1,m0);a.pc.fire=false;
+    const am=a.ammo[a.cur];if(!am)return aw(a,dt);const m0=am.mag,lf=a.lastFire;am.mag=Math.max(1,m0);a.pc.fire=false;
     try{return aw(a,dt)}finally{am.mag=m0;if(a.lastFire!==lf)a.nextFire=G.t+60/JN.BRPM}};
   // the five rounds come from supplies only: the buy menu's ammo passes it by, buying the one in hand does nothing
   const hide=(a,f)=>{const S={};for(const k in a.ammo){const W=WPN[k];if(W&&W.supOnly){S[k]=a.ammo[k];delete a.ammo[k]}}try{return f()}finally{Object.assign(a.ammo,S)}};
   const bc=buyCheck;buyCheck=function(a,id){if(id==='ammo'&&a&&a.ammo)return hide(a,()=>bc(a,id));const W=WPN[id];if(W&&W.supOnly&&a&&a.inv&&a.inv[W.slot]===id&&a.team===TH&&a.alive)return 'own';return bc(a,id)};
   const b0=buy;buy=function(a,id,force,o){if(id==='ammo'&&a&&a.ammo)return hide(a,()=>b0(a,id,force,o));const W=WPN[id];if(W&&W.supOnly&&a&&a.inv&&a.inv[W.slot]===id)return force?true:b0(a,id,force,o);return b0(a,id,force,o)};
-  // taken again in the same round: the rounds it had, not a full drum
-  const fa=fillAmmo;fillAmmo=function(a,id){fa(a,id);if(id==='janus1'&&a.jnLeft!=null&&a.ammo.janus1)a.ammo.janus1.mag=Math.min(a.ammo.janus1.mag,a.jnLeft)};
+  // taken again in the same round: the rounds it had (and the spares), not a full drum
+  const fa=fillAmmo;fillAmmo=function(a,id){fa(a,id);const L=a.jnLeft&&a.jnLeft[id],A=a.ammo&&a.ammo[id];
+    if(L&&A&&jnW(id)){A.mag=Math.min(A.mag,L[0]);A.res=Math.max(A.res|0,Math.min(L[1]|0,WPN[id].mag))}};
   // a fresh round: everything starts again (before the loadouts are handed back)
   const cl=NY.clear.bind(NY);NY.clear=function(){cl();for(const a of G.actors){jnReset(a);a.jnLeft=null}};
   // the world model in the hand: shut / signal / open
-  const eg=ensureGun;ensureGun=function(a){if(a.cur!=='janus1'||a.team!==TH||!a.ch)return eg(a);const want=jnOpenK(a)>.5?'janus1b':a.jnS>0||a.jnO>0?'janus1s':'janus1n';if(a.gunId===want)return;
+  const eg=ensureGun;ensureGun=function(a){if(!jnHeld(a)||a.team!==TH||!a.ch)return eg(a);const want=a.cur+(jnOpenK(a)>.5?'b':a.jnS>0||a.jnO>0?'s':'n');if(a.gunId===want)return;
     if(a.gun){a.gun.parent&&a.gun.parent.remove(a.gun);a.gun=null}if(a.gun2){a.gun2.parent&&a.gun2.parent.remove(a.gun2);a.gun2=null}a.gunId=want;if(!a.gunMat)a.gunMat=matGun();
     const m=new THREE.Mesh(gunGeo(want),a.gunMat);m.matrixAutoUpdate=false;a.ch.grp.add(m);a.gun=m;if(a.beam){a.beam.parent&&a.beam.parent.remove(a.beam);a.beam=null}};
   // the state from other pages
@@ -273,8 +296,8 @@ function jnTag(P){if(jnForm(P))return LI()?` · JANUS ∞ ${Math.max(0,P.jnB).to
   const hu0=HUD.update;HUD.update=function(dt){hu0.call(this,dt);try{jnHud()}catch(e){console.error(e)}};
   const ct=cmbTag;cmbTag=function(P,W){return ct(P,W)+(W&&W.jn&&P&&P.team===TH?jnTag(P):'')};
   // bots: they keep it in hand while it is open (its drum reads empty) or about to be, and fire it at what they see
-  const eq=equip;equip=function(a,id,instant){if(a&&a.bot&&!a.isPlayer&&a.cur==='janus1'&&id!=='janus1'&&a.team===TH&&a.alive&&(a.jnO>0||a.jnB>0||a.jnS>0&&jnBotSees(a))&&WPN[id]&&WPN[id].kind!=='claw')return;return eq(a,id,instant)};
-  const au=AI.update.bind(AI);AI.update=function(a,dt){au(a,dt);if(a.team===TH&&a.cur==='janus1'&&a.jnB>0&&a.bot&&jnBotSees(a)&&a.bot.lof)a.cmd.fire=true};
+  const eq=equip;equip=function(a,id,instant){if(a&&a.bot&&!a.isPlayer&&jnHeld(a)&&id!==a.cur&&a.team===TH&&a.alive&&(a.jnO>0||a.jnB>0||a.jnS>0&&jnBotSees(a))&&WPN[id]&&WPN[id].kind!=='claw')return;return eq(a,id,instant)};
+  const au=AI.update.bind(AI);AI.update=function(a,dt){au(a,dt);if(a.team===TH&&jnHeld(a)&&a.jnB>0&&a.bot&&jnBotSees(a)&&a.bot.lof)a.cmd.fire=true};
   // bots: now and then one carries it as its sidearm
   const rl=AI.rollLd.bind(AI);AI.rollLd=function(){const L=rl();if(Math.random()<.07)L[2]='janus1';return L};
 })();

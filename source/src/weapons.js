@@ -236,11 +236,12 @@ function updNade(n,i,dt){{n.t+=dt;if(n.upd){if(n.upd(n,dt))removeNade(i);return}
 function removeNade(i){const n=NADES[i];if(n.mesh){R.scene.remove(n.mesh);n.mesh.material.dispose()}NADES.splice(i,1)}
 function clearNades(){for(let i=NADES.length-1;i>=0;i--){if(NADES[i].light)NADES[i].light.dead=true;removeNade(i)}SMK.clear()}
 function detonate(n){const k=n.kind;
-  // (a round may carry its own numbers: n.R radius, n.dmg, n.kb, n.stag, n.up, n.jw the weapon it counts for, n.he a blast flag, n.vol / n.rate
-  // its sound — JANUS-1's grenades, janus.js; n.hitN = how many zombies the blast caught)
-  if(k==='gl'){const W=WPN.gl40,R0=n.R||4.8,D=n.dmg||W.dmg,KB=n.kb!=null?n.kb:W.kb,ST=n.stag!=null?n.stag:.8,UP=n.up!=null?n.up:5;FX.explode(n.x,n.y,n.z,'he');AU.at('explode',n.x,n.y,n.z,{vol:n.vol||.85,range:80,occ:false,rate:n.rate||1.15});const pd=G.player?dist3(G.player.c,n):99;if(pd<10){FX.shake=Math.max(FX.shake,(.8-pd/12)*(n.shk||1));AU.shock((.7-pd/14)*(n.shk||1))}
+  // (a round may carry its own numbers: n.R radius, n.dmg, n.kb, n.stag, n.up, n.sp the share of the damage left at the edge (.35), n.jw the
+  // weapon it counts for, n.he a blast flag, n.vol / n.rate its sound — the JANUS grenades, janus.js / janus2.js; n.hitN = how many zombies
+  // the blast caught)
+  if(k==='gl'){const W=WPN.gl40,R0=n.R||4.8,D=n.dmg||W.dmg,KB=n.kb!=null?n.kb:W.kb,ST=n.stag!=null?n.stag:.8,UP=n.up!=null?n.up:5,SP=n.sp!=null?n.sp:.35;FX.explode(n.x,n.y,n.z,'he');AU.at('explode',n.x,n.y,n.z,{vol:n.vol||.85,range:80,occ:false,rate:n.rate||1.15});const pd=G.player?dist3(G.player.c,n):99;if(pd<10){FX.shake=Math.max(FX.shake,(.8-pd/12)*(n.shk||1));AU.shock((.7-pd/14)*(n.shk||1))}
     let hit=0;for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;const dx=t.c.x-n.x,dy=t.c.y+1-n.y,dz=t.c.z-n.z;const d=Math.hypot(dx,dy,dz);if(d>R0)continue;if(!losClear(n.x,n.y+.2,n.z,t.c.x,t.c.y+1,t.c.z))continue;
-      const f=1-d/R0;damageActor(t,D*(.35+.65*f),n.owner,{w:n.jw||'gl40',dir:[dx/(d||1),.3,dz/(d||1)],kb:KB*f,stag:ST,x:t.c.x,y:t.c.y+1,z:t.c.z,up:UP*f,he:n.he?1:0});hit++}
+      const f=1-d/R0;damageActor(t,D*(SP+(1-SP)*f),n.owner,{w:n.jw||'gl40',dir:[dx/(d||1),.3,dz/(d||1)],kb:KB*f,stag:ST,x:t.c.x,y:t.c.y+1,z:t.c.z,up:UP*f,he:n.he?1:0});hit++}
     n.hitN=hit;return}
   if(k==='he'){FX.explode(n.x,n.y,n.z,'he');AU.at('explode',n.x,n.y,n.z,{vol:1,range:90,occ:false});const pd=G.player?dist3(G.player.c,n):99;if(pd<14){FX.shake=Math.max(FX.shake,1-pd/14);AU.shock(1-pd/14)}
     if(G.pvp){if(n.owner)PVP.heBlast(n);return}// (대인전: pvp.js)

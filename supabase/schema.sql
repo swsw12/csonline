@@ -6,7 +6,7 @@
 --   * 코인 · 조각 · 보유 총 · 보유 해독기는 테이블에 직접 쓸 수 없고(RLS: 자기 것 읽기만), 아래 함수로만 바뀝니다.
 --   * 총 가격은 gun_prices 테이블이 기준입니다 (게임 화면도 그 값을 씀). tier = 'S' / 'A' 는 근하신년 무기:
 --     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole) · 스컬-9(skull9) · 샐러맨더(salamander)는 시즌 해독기 빙고에서만,
---     이벤트 호라이즌 미니(bholemini) · 크림슨 피스메이커(crimson)는 보조무기 해독기 빙고(v6.36, 숫자 1~80)에서만.
+--     이벤트 호라이즌 미니(bholemini) · 크림슨 피스메이커(crimson) · JANUS-2(janus2, v6.55)는 보조무기 해독기 빙고(v6.36, 숫자 1~80)에서만.
 --   * 보상은 서버가 계산합니다. 라운드 보상(v6.17): 라운드가 끝날 때마다 최대 600 (지난 라운드 보상 뒤 1초당 4까지,
 --     25초 안에 두 번은 안 됨) + 경험치. 판 보상: 판당 최대 1,200, 지난 판 보상 뒤 1분당 100까지, 그날 첫 판 +250.
 --     라운드 + 판 보상을 합쳐 하루(한국 시간) 20,000까지. 가입하면 3,000 코인.
@@ -59,7 +59,7 @@ create table if not exists public.gun_prices (
   gun_id text primary key,
   price  integer not null check (price >= 0),
   free   boolean not null default false,  -- everyone has it from the start
-  sold   boolean not null default true    -- false: not in the shop (bhole, skull9, salamander: the season decoder; bholemini, crimson: the sidearm decoder; tier S / A: the 근하신년 decoder)
+  sold   boolean not null default true    -- false: not in the shop (bhole, skull9, salamander: the season decoder; bholemini, crimson, janus2: the sidearm decoder; tier S / A: the 근하신년 decoder)
 );
 alter table public.gun_prices add column if not exists tier text check (tier in ('S', 'A'));  -- 근하신년: pouch only
 create table if not exists public.owned_guns (
@@ -245,6 +245,19 @@ create table if not exists public.side_boards (
   boards     integer   not null default 1,
   updated_at timestamptz not null default now()
 );
+-- v6.55: JANUS-2 joins the sidearm card the same way (one of the two coins:1000 lines); a card already open takes it on its first
+-- coins:1000 line not done yet, while the list is still the v6.36 one
+with t as (
+  select b.user_id, (select min(i) from generate_subscripts(b.rewards, 1) i where b.rewards[i] = 'coins:1000' and not b.done[i]) as k
+  from public.side_boards b
+  where not ('gun:janus2' = any(b.rewards))
+    and exists (select 1 from public.gacha_config c where c.id = 1 and c.side_lines = '{gun:bholemini,gun:crimson,coins:500,coins:1000,coins:1000,coins:2000,coins:3000,frags:20,frags:20,frags:30,tickets:1,tickets:1}'::text[])
+)
+update public.side_boards b set rewards = b.rewards[1:t.k - 1] || array['gun:janus2'] || b.rewards[t.k + 1:]
+from t where b.user_id = t.user_id and t.k is not null;
+update public.gacha_config set side_lines = '{gun:bholemini,gun:crimson,gun:janus2,coins:500,coins:1000,coins:2000,coins:3000,frags:20,frags:20,frags:30,tickets:1,tickets:1}'::text[]
+where id = 1 and side_lines = '{gun:bholemini,gun:crimson,coins:500,coins:1000,coins:1000,coins:2000,coins:3000,frags:20,frags:20,frags:30,tickets:1,tickets:1}'::text[];
+alter table public.gacha_config alter column side_lines set default '{gun:bholemini,gun:crimson,gun:janus2,coins:500,coins:1000,coins:2000,coins:3000,frags:20,frags:20,frags:30,tickets:1,tickets:1}';
 create table if not exists public.gacha_log (
   id       bigint generated always as identity primary key,
   user_id  uuid not null references auth.users(id) on delete cascade,
@@ -438,6 +451,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('thunder',9500,false,true,null),
   ('bholemini',0,false,false,null),
   ('crimson',0,false,false,null),
+  ('janus2',0,false,false,null),
   ('katana',9000,false,true,null),
   ('jhammer',7500,false,true,null),
   ('dde',8500,false,true,null),
