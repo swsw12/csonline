@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'🏁',tag:['신규 모드 · 대인전','New mode · PvP'],t:['무기 레이스','Arms Race'],
+    d:['모두가 적. 처치할 때마다 손에 든 총이 다음 무기로 바뀌어요 — 소총에서 시작해 기관총 · 기관단총 · 산탄총 · 저격총 · 권총을 지나 마지막은 칼 한 자루. 칼 단계에서 칼로 처치하면 우승! 칼에 당하면 한 단계 내려가요. 방 만들기 · 대기실의 모드에서 골라요.','Everyone is an enemy. Every kill swaps the gun in your hands for the next one — from rifles through the machine gun, SMGs, shotguns, snipers and pistols to the last step, a knife. A knife kill on the knife step wins! A knife kill on you sets you back a step. Pick it as the mode in Create Room or the waiting room.']},
   {kind:'feature',ico:'💣',tag:['신규 모드 · 대인전','New mode · PvP'],t:['폭파미션','Bomb Defusal'],
     d:['블루 대 레드, 부활 없는 라운드제. 공격팀은 폭탄을 A나 B 사이트에 설치하고(E 길게 3초) 40초를 버티면 승리, 수비팀은 막거나 폭탄 옆에서 E를 6초 눌러 해체하면 승리. 한쪽이 전멸해도 라운드 끝. 전반이 끝나면 공수 교대 — 목표 승수를 먼저 채운 팀이 이겨요. 새 맵 「항만 터미널」에서 해요.','BLUE vs RED in rounds with no respawns. The attackers plant the bomb on site A or B (hold E for 3 s) and hold out for 40 s; the defenders stop them, or hold E next to the bomb for 6 s to defuse it. Wiping out the other side also wins a round. The sides swap at half time — first to the round goal wins. Played on the new map, Harbor Terminal.']},
   {kind:'map',ref:'port',tag:['신규 맵 · 대인전 전용','New map · PvP only'],t:['항만 터미널','Harbor Terminal'],

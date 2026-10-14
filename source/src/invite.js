@@ -29,7 +29,7 @@ const INVT={list:[],shown:{},busy:false,off:false,last:0,lastN:0,sent:{},join:nu
   pop(id,html,on){let o=$(id);if(o)o.remove();o=document.createElement('div');o.id=id;o.className='ipop';o.innerHTML=`<div class="ipw">${html}</div>`;
     o.addEventListener('click',e=>{const t=e.target.closest('[data-ip]');if(e.target===o){o.remove();return}if(t){o.remove();on(t.dataset.ip,o)}});document.body.appendChild(o);return o},
   roomLine(map,mode,code){const L=LI();const m=typeof MAPDEFS!=='undefined'&&MAPDEFS[map]?mapName(map):(map||'');
-    const md=mode?T(['scen','orig','tdm','ffa','bomb'].includes(mode)?mode:'mut'):'';return [m,md,(L?'room ':'방 ')+code].filter(Boolean).map(esc).join(' · ')},
+    const md=mode?T(['scen','orig','tdm','ffa','bomb','race'].includes(mode)?mode:'mut'):'';return [m,md,(L?'room ':'방 ')+code].filter(Boolean).map(esc).join(' · ')},
   show(x){const L=LI(),left=Math.max(5e3,180e3-(Date.now()-Date.parse(x.at)||0));
     const o=this.pop('invPop',`<div class="iph">${SVG_INV}<b>${L?'Room invite':'방 초대'}</b></div>
       <div class="ipr"><span>${L?`<b>${esc(x.from)}</b>${HOF.chip(x.ft,'sm')} invites you to their room`:`<b>${esc(x.from)}</b>${HOF.chip(x.ft,'sm')}님이 방에 초대했어요`}</span><small>${this.roomLine(x.map,x.mode,x.code)}</small></div>

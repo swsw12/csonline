@@ -1479,6 +1479,15 @@ html.touch #pvTag{top:calc(50% + 36px)}
 #hTime.bomb{color:#ff4a3a;animation:bmBlink 1s steps(2) infinite}
 .bmc{color:#ffb43a;font-size:11px}
 html.touch #bmBar{top:calc(50% + 34px)}
+/* ---- v6.51 무기 레이스 (race.js): the ladder bar under the top bar, the step column ---- */
+#rcBar{position:absolute;left:50%;top:88px;transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:3px 10px;background:rgba(8,10,14,.6);border:1px solid rgba(255,255,255,.12);border-radius:3px;font-size:12px;color:#e8e2cf;text-shadow:1px 1px 0 #000;pointer-events:none;white-space:nowrap}
+#rcBar b{color:#ffd24a;font-size:12px}
+#rcBar img{height:16px;vertical-align:-3px;margin-right:4px}
+#rcBar .nx{opacity:.55}#rcBar .nx img{height:14px}#rcBar .ar{font-style:normal;color:#8a8f98;font-size:10px}
+#rcBar .seg{display:flex;gap:2px;margin-left:4px}#rcBar .seg i{width:6px;height:8px;background:rgba(255,255,255,.16);border-radius:1px}
+#rcBar .seg i.kn{width:8px;background:rgba(255,210,74,.28)}#rcBar .seg i.me{background:#5ab4ff}#rcBar .seg i.ld{box-shadow:0 0 0 1px #ffd24a inset;background:#ffd24a}#rcBar .seg i.me.ld{background:#5ab4ff;box-shadow:0 0 0 1px #ffd24a}
+td.rclv{color:#ffd24a}td.rclv small{color:#8a8f98;font-size:10px}
+html.touch #rcBar{top:76px;font-size:11px}
 
 </style>
 </head><body>
@@ -14071,7 +14080,7 @@ const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:fals
     if(!this.list.length)return `<p class="rempty">${L?'No public rooms right now — make one!':'지금 열린 공개 방이 없어요 — 방을 만들어 보세요'}</p>`;
     return this.list.map(r=>{const pl=r.status==='playing',n=r.players|0,mx=r.max_players|0;
       return `<div class="rrow${pl?' play':''}${n>=mx?' full':''}" data-act="mproom" data-v="${esc(String(r.code||''))}"><div class="rh"><b>${esc(r.host_name||'?')}</b><i>${esc(String(r.code||''))}</i></div>
-        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(['scen','orig','tdm','ffa','bomb'].includes(r.mode)?r.mode:'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
+        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(['scen','orig','tdm','ffa','bomb','race'].includes(r.mode)?r.mode:'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
   render(){const el=$('mpRooms');if(el)el.innerHTML=this.html();const b=document.querySelector('[data-act="mprooms"]');if(b)b.classList.toggle('busy',this.busy)}};
 setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
 
@@ -14492,6 +14501,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.51','2026-10-14',[
+ ['NEW','무기 레이스 — 모두가 적인 개인전에서 처치할 때마다 다음 무기로 바뀌어요 (소총 → 기관총 → 기관단총 → 산탄총 → 저격총 → 권총 → 칼). 마지막 칼 단계에서 칼로 처치하면 우승, 칼에 당하면 한 단계 내려가요. 단계 수 10 / 15 / 20 · 제한 시간 5 / 8 / 10분 (끝나면 가장 높은 단계가 우승) · 모든 맵에서 해요','Arms Race — everyone for himself, and every kill moves you to the next gun (rifles → machine gun → SMGs → shotguns → snipers → pistols → the knife). A knife kill on the last step, the knife, wins; a knife kill on you sets you back a step. 10 / 15 / 20 steps, 5 / 8 / 10 min (when time is up the highest step wins), on every map'],
+ ['NEW','무기 레이스 화면 — 상단에 내 단계 · 1위 단계 · 순위, 그 아래 지금 무기 ▶ 다음 무기와 단계 막대. 점수판 · 결과에 단계 칸. 무기는 고를 수 없고 (구매 · 장비 세트 · 버리기 꺼짐) 부활하면 그 단계 무기로 시작','Arms Race on screen — my step, the leader\'s and my place up top, my gun ▶ the next one and a bar of steps under it; a step column on the scoreboard and the results. No picking weapons (buying, saved sets and dropping are off); you come back with the gun of your step']]],
 ['v6.50','2026-10-14',[
  ['NEW','폭파미션 — 블루 대 레드 라운드제 (부활 없음). 공격팀은 폭탄을 A나 B 사이트에 설치 (E 길게 3초), 수비팀은 막거나 해체 (폭탄 옆에서 E 길게 6초). 설치되면 40초 뒤 폭발 · 한쪽 전멸 · 시간 종료 (1분 45초)로도 라운드가 끝나요. 전반이 끝나면 공수 교대, 목표 승수 (4 / 6 / 8승)를 먼저 채운 팀이 승리. 「항만 터미널」에서 해요','Bomb Defusal — BLUE vs RED in rounds, no respawns. The attackers plant the bomb on site A or B (hold E for 3 s), the defenders stop it or defuse it (hold E next to it for 6 s). A planted bomb goes off after 40 s; a wiped-out side or the clock (1:45) also ends a round. The sides swap at half time; first to the round goal (4 / 6 / 8) wins. Played on Harbor Terminal'],
  ['NEW','폭탄 — 공격팀 한 명이 등에 메고 시작, 쓰러지면 그 자리에 떨어지고 공격팀이 밟으면 주워요. 설치된 폭탄은 빨간 불이 깜빡이며 갈수록 빨리 삑삑 — 상단 시계가 폭탄 시계로 바뀌어요. 레이더와 화면에 A · B 사이트 표시','The bomb — one attacker starts with it on his back; it drops where he falls and an attacker picks it up by walking over it. Once planted it blinks red and beeps faster and faster, and the clock up top turns into the bomb\'s. Sites A and B are marked on the radar and on screen'],
@@ -14888,8 +14900,8 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       art:`<img class="a1" src="${portrait('h_'+(HSKINS[1]||skin),140)}"><img class="a3" src="${portrait('h_'+(HSKINS[2]||skin),110)}">`},
     {act:'range',cls:'c3',t:L?'SHOOTING RANGE':'사격장',s:L?'Dummies at 10–50 m, moving targets, free weapons':'10–50 m 더미 · 이동 표적 · 무기 무료',tag:L?'Practice':'연습',
       art:`<img class="gun g1" src="${gunIcon('sr8',40)}"><img class="gun g2" src="${gunIcon('kv47',48)}"><img class="gun g3" src="${gunIcon('d50',34)}">`}];
-  const news=L?[['NEW','Bomb Defusal — plant on A or B, defuse with E (Harbor Terminal)'],['NEW','New PvP map: Harbor Terminal — a container port, three ways across'],['NEW','PvP — Team Deathmatch (BLUE vs RED) · Free-for-all'],['UP','THANATOS-9: the barrage lasts 3 s (was 5 s)'],['NEW','New weapons you receive (admin grant, letter, coupon) show in a window'],['UP','Survivors named for their units — KNP SOU · PJ · LEGION · CBIRF'],['UP','Survivors in masks — a ballistic visor, a half-mask, a shemagh and a CBRN mask'],['NEW','Mailbox and coupons — the letter button next to your coins: rewards from the admins, coupon codes'],['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
-    :[['NEW','폭파미션 — A·B 사이트에 폭탄 설치 · E로 해체 (항만 터미널)'],['NEW','대인전 전용맵 「항만 터미널」 — 컨테이너 부두 · 세 갈래 길'],['NEW','대인전 — 팀 데스매치 (블루 대 레드) · 개인전'],['UP','THANATOS-9 연속 찌르기 5초 → 3초'],['NEW','무기 지급 알림 — 운영자 지급 · 우편 · 쿠폰으로 받은 무기가 창으로 떠요'],['UP','생존자 이름 변경 — KNP SOU · PJ · LEGION · CBIRF (출신 특수부대)'],['UP','생존자 4명 마스크 착용 — 방탄 바이저 · 반면 마스크 · 시마그 · 방독면'],['NEW','우편함 · 쿠폰 — 코인 옆 편지 버튼에서 운영자가 보낸 보상과 쿠폰을 받아요'],['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
+  const news=L?[['NEW','Arms Race — every kill brings the next gun, a knife kill on the last step wins'],['NEW','Bomb Defusal — plant on A or B, defuse with E (Harbor Terminal)'],['NEW','New PvP map: Harbor Terminal — a container port, three ways across'],['NEW','PvP — Team Deathmatch (BLUE vs RED) · Free-for-all'],['UP','THANATOS-9: the barrage lasts 3 s (was 5 s)'],['NEW','New weapons you receive (admin grant, letter, coupon) show in a window'],['UP','Survivors named for their units — KNP SOU · PJ · LEGION · CBIRF'],['UP','Survivors in masks — a ballistic visor, a half-mask, a shemagh and a CBRN mask'],['NEW','Mailbox and coupons — the letter button next to your coins: rewards from the admins, coupon codes'],['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
+    :[['NEW','무기 레이스 — 처치할 때마다 다음 무기 · 마지막 칼 단계에서 칼로 처치하면 우승'],['NEW','폭파미션 — A·B 사이트에 폭탄 설치 · E로 해체 (항만 터미널)'],['NEW','대인전 전용맵 「항만 터미널」 — 컨테이너 부두 · 세 갈래 길'],['NEW','대인전 — 팀 데스매치 (블루 대 레드) · 개인전'],['UP','THANATOS-9 연속 찌르기 5초 → 3초'],['NEW','무기 지급 알림 — 운영자 지급 · 우편 · 쿠폰으로 받은 무기가 창으로 떠요'],['UP','생존자 이름 변경 — KNP SOU · PJ · LEGION · CBIRF (출신 특수부대)'],['UP','생존자 4명 마스크 착용 — 방탄 바이저 · 반면 마스크 · 시마그 · 방독면'],['NEW','우편함 · 쿠폰 — 코인 옆 편지 버튼에서 운영자가 보낸 보상과 쿠폰을 받아요'],['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof"><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
@@ -14902,13 +14914,13 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.50 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.51 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap()};
 // ---------- room settings window (bots) ----------
 const dd=(chg,k,cur,opts,dis)=>`<select class="dd" data-chg="${chg}" data-k="${k}"${dis?' disabled':''}>${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?' selected':''}>${esc(String(l))}</option>`).join('')}</select>`;
 // (v6.48: 대인전 — 팀 데스매치 · 개인전, pvp.js; modeKey: a mode's name / rules key, an unknown one reads as Original)
-const modeKey=m=>['mut','orig','scen','tdm','ffa','bomb'].includes(m)?m:'orig';
-const OPT={mode:()=>[['mut',T('mut')],['orig',T('orig')],['scen',T('scen')],['tdm',T('tdm')],['ffa',T('ffa')],['bomb',T('bomb')]],map:m=>mapsFor(m).map(id=>[id,mapName(id)]),rounds:()=>[[5,5],[7,7],[9,9]],time:()=>[[120,'2'+T('min')],[180,'3'+T('min')],[240,'4'+T('min')]],diff:()=>[0,1,2,3].map(i=>[i,T('d'+i)]),blackout:()=>[[1,T('on')],[0,T('off')]]};
+const modeKey=m=>['mut','orig','scen','tdm','ffa','bomb','race'].includes(m)?m:'orig';
+const OPT={mode:()=>[['mut',T('mut')],['orig',T('orig')],['scen',T('scen')],['tdm',T('tdm')],['ffa',T('ffa')],['race',T('race')],['bomb',T('bomb')]],map:m=>mapsFor(m).map(id=>[id,mapName(id)]),rounds:()=>[[5,5],[7,7],[9,9]],time:()=>[[120,'2'+T('min')],[180,'3'+T('min')],[240,'4'+T('min')]],diff:()=>[0,1,2,3].map(i=>[i,T('d'+i)]),blackout:()=>[[1,T('on')],[0,T('off')]]};
 function roomPreview(c){const L=LI();return `<div class="rprev">${thumb(c.map,'big')}<div class="rpi"><b>${esc(mapName(c.map))}</b><span>${T(modeKey(c.mode))}</span></div></div>
   <p class="rdesc">${(MAPDEFS[c.map]||MAPDEFS.q7).d[L]}</p><div class="rrule"><b>${L?'Rules':'규칙'}</b>${T(modeKey(c.mode)+'D')}</div>`}
 function charPick(act){const L=LI();return `<div class="rsec"><div class="rst">${T('char')}</div><div class="cards">${HSKINS.map(k=>`<div class="card${CFG.skin===k?' on':''}" data-act="${act}" data-v="skin:${k}" title="${esc(HSKIN_T[k][L])}"><img src="${portrait('h_'+k,62)}"><span>${HSKIN_N[k][L]}</span></div>`).join('')}</div></div>
@@ -14921,7 +14933,7 @@ UI.buildSetup=function(){const L=LI();const row=(l,ctl)=>`<div class="fr"><label
       ${ep?'':row(T('map'),dd('set','map',CFG.map,OPT.map(CFG.mode)))}
       ${PVP.isMode(CFG.mode)?row(T('bots'),dd('set','pbots',CFG.pbots??7,PVP.BOTS.map(v=>[v,v+(L?' bots':'명')]))):CFG.mode==='scen'?row(T('allies'),dd('set','scBots',CFG.scBots??3,[0,1,3,5,7].map(v=>[v,v+(L?' allies':'명')]))):row(T('bots'),dd('set','bots',CFG.bots,[[7,7],[11,11],[15,15],[19,19]].map(([v])=>[v,v+(L?' bots':'명')])))}
       ${row(T('diff'),`<button class="diffBtn d${CFG.diff}" data-act="diffopen"><span class="sk">${skulls(CFG.diff+1)}</span><b>${T('d'+CFG.diff)}</b><i>▸</i></button>`)}
-      ${CFG.mode==='scen'?row(L?'Stages':'스테이지',`<span class="fixv">${ep?(EPS[ep]&&EPS[ep].stages&&EPS[ep].stages.some(D=>D&&D.k==='escape')?(L?'4 zones · boss · escape · 3 lives':'구역 4곳 · 보스전 · 탈출 · 목숨 3개'):(L?'4 zones · boss · 3 lives':'구역 4곳 · 보스전 · 목숨 3개')):(L?'5 stages × 3 waves · 3 lives':'5스테이지 × 3웨이브 · 목숨 3개')}</span>`):CFG.mode==='bomb'?row(T('pWins'),dd('set','pw',CFG.pw??1,BOMB.winOpts())):PVP.isMode(CFG.mode)?row(T('pGoal'),dd('set','pg',CFG.pg??1,PVP.goalOpts(CFG.mode)))+row(T('pTime'),dd('set','ptime',CFG.ptime??480,PVP.timeOpts())):row(T('rounds'),dd('set','rounds',CFG.rounds,OPT.rounds().map(([v])=>[v,v+(L?' rounds':'라운드')])))+row(T('rtime'),dd('set','time',CFG.time,OPT.time()))+row(T('boSet'),dd('set','blackout',CFG.blackout??1,OPT.blackout()))}
+      ${CFG.mode==='scen'?row(L?'Stages':'스테이지',`<span class="fixv">${ep?(EPS[ep]&&EPS[ep].stages&&EPS[ep].stages.some(D=>D&&D.k==='escape')?(L?'4 zones · boss · escape · 3 lives':'구역 4곳 · 보스전 · 탈출 · 목숨 3개'):(L?'4 zones · boss · 3 lives':'구역 4곳 · 보스전 · 목숨 3개')):(L?'5 stages × 3 waves · 3 lives':'5스테이지 × 3웨이브 · 목숨 3개')}</span>`):CFG.mode==='bomb'?row(T('pWins'),dd('set','pw',CFG.pw??1,BOMB.winOpts())):PVP.isMode(CFG.mode)?row(T(CFG.mode==='race'?'pLadder':'pGoal'),dd('set','pg',CFG.pg??1,PVP.goalOpts(CFG.mode)))+row(T('pTime'),dd('set','ptime',CFG.ptime??480,PVP.timeOpts())):row(T('rounds'),dd('set','rounds',CFG.rounds,OPT.rounds().map(([v])=>[v,v+(L?' rounds':'라운드')])))+row(T('rtime'),dd('set','time',CFG.time,OPT.time()))+row(T('boSet'),dd('set','blackout',CFG.blackout??1,OPT.blackout()))}
     </div><div class="rside">${CFG.mode==='scen'?epCards('set'):roomPreview(CFG)}</div></div>
     <div class="wchars">${charPick('set')}</div>
     <div class="dpFoot"><button data-act="back">${T('cancel')}</button><button class="ok" data-act="go">${ICO.play} ${L?'Start game':'게임 시작'}</button></div></div>`;
@@ -14933,7 +14945,7 @@ UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.
   $('lobby').innerHTML=`<div class="win room"><div class="dpHead"><b>${L?'Waiting Room':'게임 대기실'}</b><span>${L?'Room code':'방 코드'} <span class="mpcode">${esc(NET.code)}</span> <button class="mini" data-act="mpcopy">${T('mpCopy')}</button> · ${T('mpShare')}</span><button class="x" data-act="mpleave">✕</button></div>
     <div class="wbody"><div class="slots">${slots.map((p,i)=>p?`<div class="slot pl${p.k===NET.me?' me':''}"><span class="no">${i+1}</span><img src="${portrait('h_'+(HSKINS.includes(p.s)?p.s:'guard'),40)}"><div><b>${esc(p.n||'?')}</b>${p.k===NET.me?`<small>(${T('mpMe')})</small>`:''}<em>${i===0?'':(p.r?T('mpRelay')+' · ':'')+(p.p||0)+'ms'}</em></div>${i===0?`<span class="ht">${T('mpHost')}</span>`:H&&NET.kind==='peerjs'?`<button class="give" data-act="mpgive" data-v="${esc(p.k)}">${T('mpGive')}</button>`:'<span class="rd">READY</span>'}</div>`
         :`<div class="slot empty"><span class="no">${i+1}</span><div>${L?'Open':'빈 자리'}</div></div>`).join('')}<div class="rchat"></div><div class="sprev">${c.mode==='scen'&&epSel(c)?epPrev(epSel(c),c.diff):roomPreview(c)}</div></div>
-      <div class="rside"><div class="rform">${row(T('mode'),'mode',OPT.mode())}${c.mode==='scen'?`<div class="fr"><label>${L?'Chapter':'챕터'}</label>${dd('mpset','ep',epSel(c),epOpts(),!H)}</div>`:''}${c.mode==='scen'&&epSel(c)?'':row(T('map'),'map',OPT.map(c.mode))}${row(c.mode==='scen'?T('allies'):T('mpBots'),'bots',c.mode==='scen'?[[0,0],[1,1],[3,3],[5,5],[7,7]]:PVP.isMode(c.mode)?PVP.MPBOTS.map(v=>[v,v]):[[0,0],[4,4],[8,8],[12,12]])}${row(T('diff'),'diff',OPT.diff())}${c.mode==='scen'?'':c.mode==='bomb'?`<div class="fr"><label>${T('pWins')}</label>${dd('mpset','pw',c.pw??1,BOMB.winOpts(),!H)}</div>`:PVP.isMode(c.mode)?`<div class="fr"><label>${T('pGoal')}</label>${dd('mpset','pg',c.pg??1,PVP.goalOpts(c.mode),!H)}</div><div class="fr"><label>${T('pTime')}</label>${dd('mpset','ptime',c.ptime??480,PVP.timeOpts(),!H)}</div>`:row(T('rounds'),'rounds',OPT.rounds())+row(T('rtime'),'time',OPT.time())+row(T('boSet'),'blackout',OPT.blackout())}</div>
+      <div class="rside"><div class="rform">${row(T('mode'),'mode',OPT.mode())}${c.mode==='scen'?`<div class="fr"><label>${L?'Chapter':'챕터'}</label>${dd('mpset','ep',epSel(c),epOpts(),!H)}</div>`:''}${c.mode==='scen'&&epSel(c)?'':row(T('map'),'map',OPT.map(c.mode))}${row(c.mode==='scen'?T('allies'):T('mpBots'),'bots',c.mode==='scen'?[[0,0],[1,1],[3,3],[5,5],[7,7]]:PVP.isMode(c.mode)?PVP.MPBOTS.map(v=>[v,v]):[[0,0],[4,4],[8,8],[12,12]])}${row(T('diff'),'diff',OPT.diff())}${c.mode==='scen'?'':c.mode==='bomb'?`<div class="fr"><label>${T('pWins')}</label>${dd('mpset','pw',c.pw??1,BOMB.winOpts(),!H)}</div>`:PVP.isMode(c.mode)?`<div class="fr"><label>${T(c.mode==='race'?'pLadder':'pGoal')}</label>${dd('mpset','pg',c.pg??1,PVP.goalOpts(c.mode),!H)}</div><div class="fr"><label>${T('pTime')}</label>${dd('mpset','ptime',c.ptime??480,PVP.timeOpts(),!H)}</div>`:row(T('rounds'),'rounds',OPT.rounds())+row(T('rtime'),'time',OPT.time())+row(T('boSet'),'blackout',OPT.blackout())}</div>
         ${H?'':`<p class="hint">${T('mpOnlyHost')}</p>`}</div></div>
     <div class="wchars">${charPick('mpme')}</div>
     <div class="dpFoot"><span class="conn">${NET.kind==='room'?(conn&&conn.kind==='relay'?T('mpRelay')+(NET.relayWhy?' ('+relayWhyT(NET.relayWhy)+')':''):T('mpDirect'))+' · claude.ai':'PeerJS · '+T('mpDirect')} · ${lb.pl.length}/${NET_MAXP}${H&&NET.kind==='peerjs'?' · '+ROOMS.label():''}</span><button data-act="mpleave">${T('mpLeave')}</button>${H?`<button class="ok" data-act="mpstart">${ICO.play} ${T('mpStart')}</button>`:`<span class="mpwait">${T('mpWait')}</span>`}</div></div>`;
@@ -16673,6 +16685,8 @@ function rankLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'🏁',tag:['신규 모드 · 대인전','New mode · PvP'],t:['무기 레이스','Arms Race'],
+    d:['모두가 적. 처치할 때마다 손에 든 총이 다음 무기로 바뀌어요 — 소총에서 시작해 기관총 · 기관단총 · 산탄총 · 저격총 · 권총을 지나 마지막은 칼 한 자루. 칼 단계에서 칼로 처치하면 우승! 칼에 당하면 한 단계 내려가요. 방 만들기 · 대기실의 모드에서 골라요.','Everyone is an enemy. Every kill swaps the gun in your hands for the next one — from rifles through the machine gun, SMGs, shotguns, snipers and pistols to the last step, a knife. A knife kill on the knife step wins! A knife kill on you sets you back a step. Pick it as the mode in Create Room or the waiting room.']},
   {kind:'feature',ico:'💣',tag:['신규 모드 · 대인전','New mode · PvP'],t:['폭파미션','Bomb Defusal'],
     d:['블루 대 레드, 부활 없는 라운드제. 공격팀은 폭탄을 A나 B 사이트에 설치하고(E 길게 3초) 40초를 버티면 승리, 수비팀은 막거나 폭탄 옆에서 E를 6초 눌러 해체하면 승리. 한쪽이 전멸해도 라운드 끝. 전반이 끝나면 공수 교대 — 목표 승수를 먼저 채운 팀이 이겨요. 새 맵 「항만 터미널」에서 해요.','BLUE vs RED in rounds with no respawns. The attackers plant the bomb on site A or B (hold E for 3 s) and hold out for 40 s; the defenders stop them, or hold E next to the bomb for 6 s to defuse it. Wiping out the other side also wins a round. The sides swap at half time — first to the round goal wins. Played on the new map, Harbor Terminal.']},
   {kind:'map',ref:'port',tag:['신규 맵 · 대인전 전용','New map · PvP only'],t:['항만 터미널','Harbor Terminal'],
@@ -21927,7 +21941,7 @@ const INVT={list:[],shown:{},busy:false,off:false,last:0,lastN:0,sent:{},join:nu
   pop(id,html,on){let o=$(id);if(o)o.remove();o=document.createElement('div');o.id=id;o.className='ipop';o.innerHTML=`<div class="ipw">${html}</div>`;
     o.addEventListener('click',e=>{const t=e.target.closest('[data-ip]');if(e.target===o){o.remove();return}if(t){o.remove();on(t.dataset.ip,o)}});document.body.appendChild(o);return o},
   roomLine(map,mode,code){const L=LI();const m=typeof MAPDEFS!=='undefined'&&MAPDEFS[map]?mapName(map):(map||'');
-    const md=mode?T(['scen','orig','tdm','ffa','bomb'].includes(mode)?mode:'mut'):'';return [m,md,(L?'room ':'방 ')+code].filter(Boolean).map(esc).join(' · ')},
+    const md=mode?T(['scen','orig','tdm','ffa','bomb','race'].includes(mode)?mode:'mut'):'';return [m,md,(L?'room ':'방 ')+code].filter(Boolean).map(esc).join(' · ')},
   show(x){const L=LI(),left=Math.max(5e3,180e3-(Date.now()-Date.parse(x.at)||0));
     const o=this.pop('invPop',`<div class="iph">${SVG_INV}<b>${L?'Room invite':'방 초대'}</b></div>
       <div class="ipr"><span>${L?`<b>${esc(x.from)}</b>${HOF.chip(x.ft,'sm')} invites you to their room`:`<b>${esc(x.from)}</b>${HOF.chip(x.ft,'sm')}님이 방에 초대했어요`}</span><small>${this.roomLine(x.map,x.mode,x.code)}</small></div>
@@ -23487,18 +23501,18 @@ Object.assign(STR.en,{tdm:'Team Deathmatch',ffa:'Free-for-all',
   pGoal:'Kill goal',pTime:'Time limit',assists:'Assists',kill:'kills'});
 const _pvV=new THREE.Vector3();
 const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
-  GOALS:{tdm:[40,60,100],ffa:[15,25,40]},TIMES:[300,480,600],BOTS:[3,5,7,9,11],MPBOTS:[0,2,4,6,8,10,12],
+  GOALS:{tdm:[40,60,100],ffa:[15,25,40],race:[10,15,20]},TIMES:[300,480,600],BOTS:[3,5,7,9,11],MPBOTS:[0,2,4,6,8,10,12],
   SIDES:[{n:['블루','BLUE'],c:'#5ab4ff',t:[.16,.4,1]},{n:['레드','RED'],c:'#ff4b3a',t:[1,.2,.12]}],
   // what 대인전 lets in: the plain guns, the three melee weapons, HE, flares, armour and ammo (no frost, no specials, no crate guns)
   GUNS:['knife','axe','hammer','p9','f7','tw9','d50','r6','sg8','db2','m14','as12','k5','k9','um45','pd50','g35','kv47','br3','ar7','ar5c','hr17',
     'sr8','r700','dm14','hmg','mg6','he','flare','armor','ammo'],
   MEL:{knife:.85,axe:.8,hammer:.6},AP:{sniper:.97,rifle:.78,mg:.8,smg:.62,pistol:.65,shotgun:.72},
   mid:0,mode:'tdm',goal:50,time:480,assigned:false,bases:null,played:0,intel:[[],[]],recent:[],hits:[],bm0:null,bi0:null,_D:null,aiS:'',aiT:0,
-  isMode(m){return m==='tdm'||m==='ffa'||m==='bomb'},
+  isMode(m){return m==='tdm'||m==='ffa'||m==='bomb'||m==='race'},
   // the modes with two sides (BLUE / RED): 팀 데스매치, 폭파미션 (v6.50)
-  teams(){return G.mode!=='ffa'},
+  teams(){return G.mode!=='ffa'&&G.mode!=='race'},// (무기 레이스 is everyone for himself too, v6.51)
   ok(id){return (this.SET||(this.SET=new Set(this.GUNS))).has(id)},
-  goalOpts(m){const L=LI();return (this.GOALS[m]||this.GOALS.tdm).map((g,i)=>[i,g+(L?' kills':'킬')])},
+  goalOpts(m){const L=LI();return (this.GOALS[m]||this.GOALS.tdm).map((g,i)=>[i,g+(m==='race'?(L?' steps':'단계'):(L?' kills':'킬'))])},
   timeOpts(){return this.TIMES.map(s=>[s,s/60+T('min')])},
   byId(id){return (NET.ids&&NET.ids.get(id))||G.actors.find(a=>a.id===id)||null},
   // a name's colour class: the side's in 팀 데스매치; in 개인전 me blue, everyone else red
@@ -23508,10 +23522,10 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   canHit(t){return G.st==='fight'&&!!t&&t.alive&&!this.prot(t)},
 
   // ---------- the match ----------
-  setup(cfg){this.mid++;this.mode=cfg.mode;if(cfg.mode==='bomb')BOMB.setup(cfg);const g=this.GOALS[cfg.mode]||this.GOALS.tdm;this.goal=g[clamp(cfg.pg==null?1:+cfg.pg|0,0,g.length-1)];
+  setup(cfg){this.mid++;this.mode=cfg.mode;if(cfg.mode==='bomb')BOMB.setup(cfg);const g=this.GOALS[cfg.mode]||this.GOALS.tdm;this.goal=g[clamp(cfg.pg==null?1:+cfg.pg|0,0,g.length-1)];if(cfg.mode==='race')RACE.setup();
     this.time=this.TIMES.includes(+cfg.ptime)?+cfg.ptime:480;this.assigned=false;this.bases=null;this.played=0;this.intel=[[],[]];this.recent=[];this.hits=[];G.pvpKC=null},
   // BLUE / RED from the roster (players alternate by id, then bots fill the smaller side); 개인전: a side each
-  assign(){this.assigned=true;const A=G.actors.slice().sort((p,q)=>p.id-q.id);if(G.mode==='ffa'){for(const a of A)a.side=a.id+2;return}
+  assign(){this.assigned=true;const A=G.actors.slice().sort((p,q)=>p.id-q.id);if(!this.teams()){for(const a of A)a.side=a.id+2;return}
     const pl=A.filter(a=>a.net||(a.isPlayer&&!NET.on)),n=[0,0];pl.forEach((a,i)=>{a.side=i%2;n[a.side]++});
     for(const a of A){if(pl.includes(a))continue;const s=n[0]<=n[1]?0:1;a.side=s;n[s]++}},
   // the buy menu while 대인전 runs: the categories keep only what PVP.GUNS lets in (an empty one goes); put back on the way out
@@ -23520,19 +23534,19 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
       for(let i=BUY_MENU.length-1;i>=0;i--)if(!BUY_MENU[i].items.length)BUY_MENU.splice(i,1)}
     else{BUY_MENU.length=0;this.bm0.forEach((c,i)=>{c.items=this.bi0[i];BUY_MENU.push(c)});this.bm0=this.bi0=null}
     if(typeof UI!=='undefined')UI.buyCat=0},
-  off(){G.pvp=false;this.menu(false);if(typeof BOMB!=='undefined')BOMB.off();DROPS.LIFE=90;this.hits=[];if(this.mkL){this.mkL.innerHTML='';this.mkPool=[]}const h=$('hud');if(h)h.classList.remove('pvp');const t=$('pvTag');if(t)t.innerHTML=''},
+  off(){G.pvp=false;this.menu(false);if(typeof BOMB!=='undefined')BOMB.off();if(typeof RACE!=='undefined')RACE.off();DROPS.LIFE=90;this.hits=[];if(this.mkL){this.mkL.innerHTML='';this.mkPool=[]}const h=$('hud');if(h)h.classList.remove('pvp');const t=$('pvTag');if(t)t.innerHTML=''},
   // everything a fresh life starts with (as a round start would do)
   fresh(a){a.nb=null;a.team=TH;a.host=false;a.alive=true;a.permaDead=false;a.hp=a.maxHp=100;a.lvl=1;a.infR=0;a.reviveT=0;a.respawnT=0;a.reviving=0;a.frozen=0;a.staggerT=0;a.skillT=0;
     a.skillCD=0;a.shriekT=0;a.dizzy=0;a.bombs=0;a.rootT=0;a.burnT=0;a.sawRev=0;a.dragonG=0;a.holdT=0;a.grabT=0;a.kdP=0;a.burstN=0;a.spinV=0;a.pendingMelee=null;a.pendingClaw=null;a.zoom=0;
     a.turning=0;a.bSt=0;a.throwT=0;a.nHold=0;a.cmb=null;a.reloadT=0;a.relKind=null;a.deadT=0;a.kvx=a.kvz=0;a.an.dead=0;a.an.atk=0;a.an.flinch=0;a.pvpRT=null;a.pvpBy={};a.pvpStreak=0},
   // the loadout of this life: the one noted (ldSnap) or given, cleaned of anything 대인전 does not allow; armour always
-  kit(a){ldRestore(a);this.sanitize(a);a.armor=100;if(a.kit)a.kit.armor=1;a.cur=bestWeapon(a)},
+  kit(a){if(G.mode==='race')return RACE.kit(a);ldRestore(a);this.sanitize(a);a.armor=100;if(a.kit)a.kit.armor=1;a.cur=bestWeapon(a)},
   sanitize(a){for(const s of [1,2,3]){const id=a.inv[s];if(id&&!this.ok(id)){if(a.ammo[id])delete a.ammo[id];a.inv[s]=s===2?'p9':s===3?'knife':null;if(a.inv[s])fillAmmo(a,a.inv[s])}}
     a.inv.frost=0;const o=a.ldo;if(o){for(const s of [1,2,3])if(o[s]&&!this.ok(o[s]))o[s]=s===2?'p9':s===3?'knife':null;o.frost=0}if(a.cur&&!this.ok(a.cur)&&a.cur!=='he'&&a.cur!=='flare')a.cur=bestWeapon(a)},
   begin(plan){if(G.mode==='bomb')return BOMB.begin(plan);if(NET.cli&&!plan)return;if(!this.assigned)this.assign();AU.stopAll('countdown');dropsClear();G.round=1;G.st='prep';G.time=this.WARM;FX.clearLimbs();
     G.moralePts=0;G.moraleLvl=0;G.lastHuman=null;G.spec=null;G.deathCam=0;G.killer=null;G.winner=-1;G.beepAt=this.WARM+1;G.hostN=0;G.score=[0,0];G.pvpKC=null;
     clearNades();NY.clear();for(const l of DL.list)if(l.flare)l.dead=true;
-    const pm={},out=[];if(plan)for(const q of plan.P||[])pm[q[0]]=q;const S=plan?null:this.startSpots();
+    const pm={},out=[];if(plan)for(const q of plan.P||[])pm[q[0]]=q;const S=plan?null:this.startSpots();if(G.mode==='race')for(const a of G.actors)a.raceLv=0;
     for(const a of G.actors){this.fresh(a);a.r0={k:a.kills,i:a.infects,dm:a.dmgDealt,sc:a.score||0,hs:a.hsKills|0};
       if(a.bot&&!a.pup)a.ldo=this.botLd();this.kit(a);
       const q=pm[a.id];if(q)placeAt(a,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);else{const p=S&&S.get(a)||[0,1,0,0];placeAt(a,p[0],p[1],p[2],p[3])}
@@ -23540,8 +23554,8 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
       if(NET.host)out.push([a.id,r2(a.c.x),r2(a.c.y),r2(a.c.z),r3(a.yaw),0]);
       if(a.isPlayer){VM.set(a.cur,a.skin);R.PU.uInfect.value=0}if(a.bot)this.botInit(a);if(typeof HSK!=='undefined')HSK.clear(a)}
     BO.reset();BO.next=1e9;SUP.reset();FX.clearDecals();HUD.roundStart();
-    const L=LI(),md=T(G.mode);HUD.announce(md,'w',2.6);HUD.note(L?`B: weapons · Tab: scoreboard · first to ${this.goal} kills`:`B: 무기 선택 · Tab: 점수판 · 목표 ${this.goal}킬`,5);
-    AU.play('siren',{vol:.3});AU.muSet&&AU.muSet('prep');this.autoSet();
+    const L=LI(),md=T(G.mode);HUD.announce(md,'w',2.6);HUD.note(G.mode==='race'?(L?`Every kill gives the next gun · ${this.goal} steps · a knife kill on the last one wins`:`처치할 때마다 다음 무기 · ${this.goal}단계 · 마지막 칼 단계에서 칼로 처치하면 우승`):L?`B: weapons · Tab: scoreboard · first to ${this.goal} kills`:`B: 무기 선택 · Tab: 점수판 · 목표 ${this.goal}킬`,5);
+    AU.play('siren',{vol:.3});AU.muSet&&AU.muSet('prep');if(G.mode!=='race')this.autoSet();
     if(NET.host)netEv('round',{n:1,P:out})},
   // the warm-up is over
   go(remote){if(G.mode==='bomb')return BOMB.go(remote);if(G.st!=='prep')return;G.st='fight';G.time=this.time;const L=LI();HUD.announce(L?'FIGHT!':'전투 시작!','w',1.8);AU.play('beep2',{vol:.6});AU.muSet&&AU.muSet('fight');
@@ -23554,14 +23568,14 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
         if(a.pvpProt>G.t&&(a.lastFire||-9)>a.pvpSpawnT)a.pvpProt=0}// (protection ends at the first shot)
       for(const I of this.intel)while(I.length&&G.t-I[0].t>12)I.shift();
       if(!NET.cli)this.check();
-      if(G.st==='fight'){const top=G.mode==='tdm'?Math.max(G.score[0],G.score[1]):((this.leader()||{}).kills|0);if(G.time<30||top>=this.goal-3)AU.muSet&&AU.muSet('intense')}}
+      if(G.st==='fight'){const top=G.mode==='tdm'?Math.max(G.score[0],G.score[1]):G.mode==='race'?RACE.lv(this.leader())+1:((this.leader()||{}).kills|0);if(G.time<30||top>=this.goal-3)AU.muSet&&AU.muSet('intense')}}
     else if(G.st==='end'){G.endT-=dt;if(G.endT<=0&&!NET.cli){G.st='over';UI.showResults();if(NET.host)netEv('over')}}},
-  leader(){let b=null;for(const a of G.actors)if(!b||a.kills>b.kills||a.kills===b.kills&&(a.deaths<b.deaths||a.deaths===b.deaths&&a.dmgDealt>b.dmgDealt))b=a;return b},
-  check(){const g=this.goal;
+  leader(){if(G.mode==='race')return this.order(G.actors)[0]||null;let b=null;for(const a of G.actors)if(!b||a.kills>b.kills||a.kills===b.kills&&(a.deaths<b.deaths||a.deaths===b.deaths&&a.dmgDealt>b.dmgDealt))b=a;return b},
+  check(){const g=this.goal;if(G.mode==='race'){if(G.time<=0){const L=this.leader();this.finish(L?L.id:-1)}return}// (무기 레이스: the knife kill ends it in kill())
     if(G.mode==='tdm'){const s0=G.score[0]|0,s1=G.score[1]|0;if(s0>=g||s1>=g){this.finish(s0>=s1?0:1);return}if(G.time<=0)this.finish(s0>s1?0:s1>s0?1:-1);return}
     const L=this.leader();if(L&&L.kills>=g){this.finish(L.id);return}if(G.time<=0)this.finish(L?L.id:-1)},
   iWon(){const P=G.player;if(!P||G.winner==null||G.winner<0)return false;return this.teams()?G.winner===(P.side===1?1:0):G.winner===P.id},
-  mvp(A){A=(A||G.actors).slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.dmgDealt-p.dmgDealt));return A[0]||null},
+  mvp(A){if(G.mode==='race')return this.order(A||G.actors)[0]||null;A=(A||G.actors).slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.dmgDealt-p.dmgDealt));return A[0]||null},
   finish(w,remote){if(G.st!=='fight'&&G.st!=='prep')return;G.st='end';G.endT=this.ENDT;G.winner=w;G.time=Math.max(0,G.time);
     for(const a of G.actors){a.cmd.fire=a.cmd.alt=false;a.pvpRT=null;a.pendingMelee=null}
     const won=this.iWon();AU.play(won?'stingH':'stingZ',{vol:.7});AU.muSet&&AU.muSet(won?'win':'dead');
@@ -23611,7 +23625,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     for(let i=0;i<16;i++){const n=this.rndOpen();if(n)C.push({x:n.x,y:n.y,z:n.z,b:0})}
     for(const p of (MAP.spawns||[]).concat(MAP.zspawns||[]))if(Math.random()<.35)C.push({x:p[0],y:p[2]||0,z:p[1],b:0});
     for(const c of C){let de=99;for(const t of F)de=Math.min(de,Math.hypot(t.c.x-c.x,t.c.z-c.z)+Math.abs(t.c.y-c.y)*2);c.de=de;
-      let sc=Math.min(de,40)*(G.mode==='ffa'?1:.5)+(c.b?22:0)+rr(0,6);if(de<10)sc-=60;
+      let sc=Math.min(de,40)*(this.teams()?.5:1)+(c.b?22:0)+rr(0,6);if(de<10)sc-=60;
       if(Mt.length){let dm=99;for(const t of Mt)dm=Math.min(dm,Math.hypot(t.c.x-c.x,t.c.z-c.z));sc+=dm<20?6:dm<35?2:0}
       for(const r of this.recent)if(G.t-r.t<4&&Math.hypot(r.x-c.x,r.z-c.z)<3)sc-=15;c.sc=sc}
     C.sort((p,q)=>q.sc-p.sc);let pick=null;
@@ -23624,7 +23638,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   respawn(a,p){if(NET.cli&&!NET.ev)return;this.fresh(a);if(a.bot&&!a.pup&&Math.random()<.15)a.ldo=this.botLd();this.kit(a);
     placeAt(a,p[0],p[1],p[2],p[3]);ensureRig(a);equip(a,bestWeapon(a),true);a.drawT=0;a.pvpProt=G.t+this.PROT;a.pvpBuy=G.t+this.BUYW;a.pvpSpawnT=G.t;a.lastFire=-9;
     if(NET.host&&a.net&&!a.isPlayer)a.pvpSp={x:p[0],z:p[2],t:G.t};// (its owner's page still reports the old place for a moment: netOnState below)
-    if(a.isPlayer){VM.set(a.cur,a.skin);if(VM.draw)VM.draw(.4);G.spec=null;G.deathCam=0;G.killer=null;G.pvpKC=null;G.pvpKCd=false;const L=LI();HUD.note(L?'Back in! B: change weapons (12 s)':'부활! B: 무기 변경 (12초)',2.2)}
+    if(a.isPlayer){VM.set(a.cur,a.skin);if(VM.draw)VM.draw(.4);G.spec=null;G.deathCam=0;G.killer=null;G.pvpKC=null;G.pvpKCd=false;const L=LI();HUD.note(G.mode==='race'?(L?'Back in!':'부활!'):L?'Back in! B: change weapons (12 s)':'부활! B: 무기 변경 (12초)',2.2)}
     if(a.bot)this.botSpawn(a);if(typeof HSK!=='undefined')HSK.clear(a);
     if(NET.host)netEv('prs',{i:a.id,p:[r2(p[0]),r2(p[1]),r2(p[2]),r3(p[3])]})},
 
@@ -23647,8 +23661,8 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(t.hp<=0)this.kill(t,src,o);return dealt},
   // a client's claimed hit, checked on the host: an allowed weapon, no more than one hit of it can do, at no more than its rate of fire
   claimOk(src,t,h){if(G.st!=='fight'||this.prot(t))return false;const w=WL[h[2]],f=h[3]|0,W=WPN[w],dmg=+h[1]||0;
-    if(f&8)return (w==='he'||!w)&&dmg<=this.HED+2;// (a grenade still goes off after its thrower is down)
-    if(!src.alive||!W||!this.ok(w))return false;
+    if(f&8)return G.mode!=='race'&&(w==='he'||!w)&&dmg<=this.HED+2;// (a grenade still goes off after its thrower is down)
+    if(!src.alive||!W||!this.ok(w))return false;if(G.mode==='race'&&!RACE.okWep(src,w))return false;
     const cap=W.kind==='melee'?Math.max(W.dmg[0],W.dmg[1])*2*1.05:(W.dmg||0)*(W.hs||3)*1.05;if(dmg>cap+.5)return false;
     const B=src.pvpTB||(src.pvpTB={n:0,t:G.t}),per=W.kind==='melee'?(W.cleave?6:3):(W.pellets||1)*(W.rpm||600)/60;B.n=Math.max(0,B.n-(G.t-B.t)*per*1.6);B.t=G.t;B.n++;
     return B.n<=Math.max(12,(W.pellets||1)*4)},
@@ -23667,7 +23681,9 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
       if(n>=2)HUD.announce(n===2?(L?'DOUBLE KILL':'더블 킬'):n===3?(L?'TRIPLE KILL':'트리플 킬'):(L?`${n} KILLS IN A ROW`:`${n}연속 킬`),'w',1.4)}
     if(t.isPlayer){onPlayerDeath(src);G.deathCam=this.KCAM;G.pvpKC=src&&src!==t?src:null;G.pvpKCd=false}
     if(t.bot)this.botDie(t);
-    if(NET.host)netEv('pk',{i:t.id,s:src?src.id:-1,w:o.w||'',hs:o.hs?1:0,d:o.dir?[r2(o.dir[0]),r2(o.dir[1]),r2(o.dir[2])]:0,as})},
+    let rw=null;if(G.mode==='race')rw=RACE.onKill(t,src,o);
+    if(NET.host)netEv('pk',{i:t.id,s:src?src.id:-1,w:o.w||'',hs:o.hs?1:0,d:o.dir?[r2(o.dir[0]),r2(o.dir[1]),r2(o.dir[2])]:0,as,rl:o.rl||0});
+    if(rw!=null&&!NET.cli)this.finish(rw)},
   // where a hit on me came from: a red arc round the crosshair for a second
   hitDir(src){const P=G.player;if(!src||!P)return;this.hits.push({x:src.c.x,z:src.c.z,t:G.t});if(this.hits.length>4)this.hits.shift()},
 
@@ -23792,6 +23808,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     // top bar: the mode and the goal; the two scores (팀 데스매치) or my kills and the leader's (개인전); who is up
     const S=this.SIDES;
     if(G.mode==='bomb')BOMB.hud(dt,set);
+    else if(G.mode==='race')RACE.hud(dt,set);
     else if(tdm){const ms=P.side===1?1:0;set(e.hRound,`${T('tdm')} · ${T('pGoal')} ${this.goal} · <b class="${ms?'z':'h'}">${S[ms].n[L]}</b>`,1);set(e.hSH,String(G.score[0]|0));set(e.hSZ,String(G.score[1]|0));
       let a0=0,a1=0;for(const a of G.actors)if(a.alive){if(a.side===1)a1++;else a0++}set(e.hAH,`${S[0].n[L]} ${a0}`);set(e.hAZ,`${S[1].n[L]} ${a1}`)}
     else{const R0=G.actors.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)),rk=R0.indexOf(P)+1,top=R0.find(a=>a!==P);
@@ -23811,7 +23828,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     set(e.aimInfo,this.aiS,1);
     // spawn protection and the buy window
     const tg=$('pvTag');let tx='';if(G.mode!=='bomb'&&P.alive&&(G.st==='prep'||G.st==='fight')){if(this.prot(P))tx+=`<div class="pr">${L?'Spawn protection':'스폰 보호 중'}</div>`;
-      if(G.st==='prep')tx+=`<div class="by">${L?'B: pick your weapons':'B: 무기 선택'}</div>`;else if(P.pvpBuy>G.t)tx+=`<div class="by">${L?`B: change weapons · ${Math.ceil(P.pvpBuy-G.t)} s`:`B: 무기 변경 · ${Math.ceil(P.pvpBuy-G.t)}초`}</div>`}
+      if(G.mode==='race'){}else if(G.st==='prep')tx+=`<div class="by">${L?'B: pick your weapons':'B: 무기 선택'}</div>`;else if(P.pvpBuy>G.t)tx+=`<div class="by">${L?`B: change weapons · ${Math.ceil(P.pvpBuy-G.t)} s`:`B: 무기 변경 · ${Math.ceil(P.pvpBuy-G.t)}초`}</div>`}
     if(G.mode!=='bomb'&&tg&&tg.innerHTML!==tx)tg.innerHTML=tx;
     this.marks();this.drawHits()},
   // the card while the match ends (the round card's place and looks; the match reward goes on it)
@@ -23822,21 +23839,21 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(this.teams()){const S=this.SIDES;hd=w<0?(L?'Draw':'무승부'):(L?`${S[w].n[1]} wins`:`${S[w].n[0]} 팀 승리`);cls=w<0?'d':w===1?'z':'h';
       mv=card(this.mvp(A.filter(a=>a.side!==1)),'h',`${S[0].n[L]} MVP`)+card(this.mvp(A.filter(a=>a.side===1)),'z',`${S[1].n[L]} MVP`);
       hd=`<b>${hd}</b><span>${S[0].n[L]} ${G.score[0]|0} : ${G.score[1]|0} ${S[1].n[L]}</span>`}
-    else{const R0=A.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.dmgDealt-p.dmgDealt)),win=this.byId(w);cls=!win?'d':win===P?'h':'z';
-      hd=`<b>${win?(win===P?(L?'You win!':'우승!'):(L?`${esc(win.name)} wins`:`${esc(win.name)} 우승`)):(L?'Draw':'무승부')}</b><span>${T('pGoal')} ${this.goal}</span>`;
+    else{const R0=G.mode==='race'?this.order(A):A.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.dmgDealt-p.dmgDealt)),win=this.byId(w);cls=!win?'d':win===P?'h':'z';
+      hd=`<b>${win?(win===P?(L?'You win!':'우승!'):(L?`${esc(win.name)} wins`:`${esc(win.name)} 우승`)):(L?'Draw':'무승부')}</b><span>${G.mode==='race'?`${T('race')} · ${this.goal}${L?' steps':'단계'}`:`${T('pGoal')} ${this.goal}`}</span>`;
       mv=card(R0[0],R0[0]===P?'h':'z',L?'1st':'1위')+card(R0[1],R0[1]===P?'h':'z',L?'2nd':'2위')}
     const rows=this.order(A).slice(0,8);
     let el=$('hRRes');if(!el){el=document.createElement('div');el.id='hRRes';$('hud').appendChild(el)}
     el.innerHTML=`<div class="rhd ${cls}">${hd}</div><div class="rmvps">${mv}</div>
-      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th></tr>${rows.map(a=>`<tr class="${a===P?'me':''}"><td>${esc(a.name)}${HOF.crown(HOF.of(a))}</td><td class="f ${this.cls(a)}">${this.teams()?this.SIDES[a.side===1?1:0].n[L]:'■'}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td>${n(a.dmgDealt)}</td></tr>`).join('')}</table>`;
+      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th></tr>${rows.map(a=>`<tr class="${a===P?'me':''}"><td>${esc(a.name)}${HOF.crown(HOF.of(a))}</td><td class="f ${this.cls(a)}">${this.teams()?this.SIDES[a.side===1?1:0].n[L]:G.mode==='race'?`${T('lvl')} ${RACE.lv(a)+1}`:'■'}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td>${n(a.dmgDealt)}</td></tr>`).join('')}</table>`;
     HUD.annT=0;HUD.ann=null;$('hBig').className='a off';el.classList.remove('off');el.style.animation='none';void el.offsetWidth;el.style.animation=''},
   // the scoreboard rows (Tab, the results)
   table(A){const mp=NET.on,L=LI(),n=v=>Math.round(v).toLocaleString('en-US');
-    return `<table class="tbl pvt"><tr><th></th><th>${T('name')}</th><th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th><th>${T('score')}</th>${mp?'<th>ping</th>':''}</tr>${A.map(a=>`<tr class="${a.isPlayer?'me ':''}${this.cls(a)}${a.alive?'':' dead'}"><td>■</td><td>${esc(a.name)}${HOF.crown(HOF.of(a))}${a.net?' <b class="mpp">◆</b>':''}${G.mode==='bomb'&&(G.st==='fight'||G.st==='prep')&&BOMB.carrier()===a&&G.player&&!foe(G.player,a)?' <b class="bmc">C4</b>':''}</td><td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td class="dmg">${n(a.dmgDealt)}</td><td>${Math.round(a.score)}</td>${mp?`<td>${a.net?(NET.host&&a.isPlayer?'—':a.ping>=0&&a.ping!=null?a.ping+'ms':(a.isPlayer?'':'—')):'BOT'}</td>`:''}</tr>`).join('')}</table>`},
-  order(A){return A.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.score-p.score))},
+    return `<table class="tbl pvt"><tr><th></th><th>${T('name')}</th>${G.mode==='race'?`<th>${T('lvl')}</th>`:''}<th>${T('kills')}</th><th>${T('deaths')}</th><th>${T('assists')}</th><th>${T('dmg')}</th><th>${T('score')}</th>${mp?'<th>ping</th>':''}</tr>${A.map(a=>`<tr class="${a.isPlayer?'me ':''}${this.cls(a)}${a.alive?'':' dead'}"><td>■</td><td>${esc(a.name)}${HOF.crown(HOF.of(a))}${a.net?' <b class="mpp">◆</b>':''}${G.mode==='bomb'&&(G.st==='fight'||G.st==='prep')&&BOMB.carrier()===a&&G.player&&!foe(G.player,a)?' <b class="bmc">C4</b>':''}</td>${G.mode==='race'?`<td class="rclv">${RACE.lv(a)+1}<small>/${RACE.ladder().length}</small></td>`:''}<td>${a.kills}</td><td>${a.deaths}</td><td>${a.assists|0}</td><td class="dmg">${n(a.dmgDealt)}</td><td>${Math.round(a.score)}</td>${mp?`<td>${a.net?(NET.host&&a.isPlayer?'—':a.ping>=0&&a.ping!=null?a.ping+'ms':(a.isPlayer?'':'—')):'BOT'}</td>`:''}</tr>`).join('')}</table>`},
+  order(A){if(G.mode==='race')return A.slice().sort((p,q)=>(RACE.lv(q)-RACE.lv(p))||(q.kills-p.kills)||(p.deaths-q.deaths)||(q.score-p.score));return A.slice().sort((p,q)=>(q.kills-p.kills)||(p.deaths-q.deaths)||(q.score-p.score))},
   scoreHTML(sm){const L=LI(),S=this.SIDES;if(this.teams())return `<div class="finalScore${sm?' sm':''}"><span class="h">${S[0].n[L]} ${G.score[0]|0}</span> : <span class="z">${G.score[1]|0} ${S[1].n[L]}</span></div>`;
-    const R0=this.order(G.actors);return `<div class="finalScore${sm?' sm':''}"><span class="${R0[0]===G.player?'h':'z'}">${L?'1st':'1위'} ${esc(R0[0]?R0[0].name:'—')} · ${R0[0]?R0[0].kills:0} ${T('kill')}</span></div>`},
-  boardHTML(){const L=LI(),S=this.SIDES,head=`<h3>${T('board')} — ${T(G.mode)} · ${G.mode==='bomb'?`${T('round')} ${G.round}/${G.rounds} · ${T('pWins')} ${BOMB.W}`:`${T('pGoal')} ${this.goal}`}</h3>${this.scoreHTML(true)}`;
+    const R0=this.order(G.actors);return `<div class="finalScore${sm?' sm':''}"><span class="${R0[0]===G.player?'h':'z'}">${L?'1st':'1위'} ${esc(R0[0]?R0[0].name:'—')} · ${G.mode==='race'?`${T('lvl')} ${R0[0]?RACE.lv(R0[0])+1:0}`:`${R0[0]?R0[0].kills:0} ${T('kill')}`}</span></div>`},
+  boardHTML(){const L=LI(),S=this.SIDES,head=`<h3>${T('board')} — ${T(G.mode)} · ${G.mode==='bomb'?`${T('round')} ${G.round}/${G.rounds} · ${T('pWins')} ${BOMB.W}`:G.mode==='race'?`${this.goal}${L?' steps':'단계'}`:`${T('pGoal')} ${this.goal}`}</h3>${this.scoreHTML(true)}`;
     if(this.teams())return head+[0,1].map(s=>`<div class="pvSide ${s?'z':'h'}">${S[s].n[L]} · ${G.score[s]|0}</div>`+this.table(this.order(G.actors.filter(a=>(a.side===1?1:0)===s)))).join('');
     return head+this.table(this.order(G.actors))},
   // the results screen: the usual one, with the score, the MVP and the table made for 대인전
@@ -23860,21 +23877,23 @@ AI.pvp=function(a,dt){PVP.bot(a,dt)};
   // no death drops (everyone gets his own guns back), no zombie class menu
   const dd=dropDeath;dropDeath=function(a){if(G.pvp)return;return dd(a)};
   const oo=Main.openOverlay.bind(Main);Main.openOverlay=function(k){if(G.pvp&&k==='zsel'){HUD.note(LI()?'No zombies in PvP':'대인전에는 좀비가 없어요',1.4);return}
+    if(G.pvp&&G.mode==='race'&&k==='buy'){HUD.note(LI()?'No picking weapons in Arms Race — every kill brings the next gun':'무기 레이스에서는 무기를 고를 수 없어요 — 처치하면 다음 무기가 와요',2);return}
     if(G.pvp&&k==='buy'&&G.player&&!G.player.alive&&this.overlay!=='buy'){const L=LI();HUD.note(G.mode==='bomb'?(L?'Weapons can be changed at the start of the next round':'다음 라운드 시작 때 무기를 바꿀 수 있어요'):(L?'Weapons can be changed for 12 s after coming back':'무기는 부활 후 12초 동안 바꿀 수 있어요'),1.8);return}return oo(k)};
   // a saved set (Shift+1–3): not while down, not after the buy window
-  const les=ldEquipSet;ldEquipSet=function(i){const P=G.player;if(G.pvp&&P&&(!P.alive||G.st==='fight'&&G.t>(P.pvpBuy||0))){ldWhy('pvpT');return}return les(i)};
+  const les=ldEquipSet;ldEquipSet=function(i){const P=G.player;if(G.pvp&&G.mode==='race')return;if(G.pvp&&P&&(!P.alive||G.st==='fight'&&G.t>(P.pvpBuy||0))){ldWhy('pvpT');return}return les(i)};
   // the warm-up and the end: no moving or shooting
   const pc=Main.playerCmd.bind(Main);Main.playerCmd=function(dt){pc(dt);if(!G.pvp)return;const P=G.player;if(!P||!P.alive)return;const c=P.cmd;
     if(G.st!=='fight'){if(G.mode==='bomb'&&G.st==='end'&&!BOMB.final){c.fire=c.alt=false;c.drop=false;return}// (between rounds: walk about, no shooting)
       c.f=c.s=0;c.jump=false;c.fire=c.alt=false;c.drop=false;if(G.st!=='prep')c.reload=false}
-    else if(P.bAct){c.f=c.s=0;c.jump=false;c.fire=c.alt=false;c.drop=false;c.duck=P.bAct.k==='defuse'}};// (planting / defusing: hands busy, feet still)
+    else if(P.bAct){c.f=c.s=0;c.jump=false;c.fire=c.alt=false;c.drop=false;c.duck=P.bAct.k==='defuse'}
+    if(G.mode==='race')c.drop=false};// (무기 레이스: the gun of the step stays in hand)// (planting / defusing: hands busy, feet still)
   // spectating: the killer first, then (팀 데스매치) teammates, (개인전) anyone
   const ns=Main.nextSpec.bind(Main);Main.nextSpec=function(){if(!G.pvp)return ns();const P=G.player;
     if(G.pvpKC&&G.pvpKC.alive&&!G.pvpKCd){G.pvpKCd=true;G.spec=G.pvpKC;return}
     const Lst=G.actors.filter(a=>a.alive&&!a.isPlayer&&(!PVP.teams()||!P||a.side===P.side));if(!Lst.length){G.spec=G.pvpKC&&G.pvpKC.alive?G.pvpKC:null;return}
     G.specIdx=(Lst.indexOf(G.spec)+1)%Lst.length;G.spec=Lst[G.specIdx]};
   // buying: what 대인전 allows, within 12 s of coming back (any time in the warm-up)
-  const bc=buyCheck;buyCheck=function(a,id){const r=bc(a,id);if(r||!G.pvp)return r;if(!PVP.ok(id))return 'na';if(G.st==='fight'&&G.t>(a.pvpBuy||0))return 'pvpT';return ''};
+  const bc=buyCheck;buyCheck=function(a,id){const r=bc(a,id);if(r||!G.pvp)return r;if(G.mode==='race')return 'na';if(!PVP.ok(id))return 'na';if(G.st==='fight'&&G.t>(a.pvpBuy||0))return 'pvpT';return ''};
   const lw=ldWhy;ldWhy=function(why,id){if(G.pvp&&(why==='pvpT'||why==='na')){const L=LI();
       HUD.note(why==='pvpT'?(G.mode==='bomb'?(L?'Weapons can only be changed in the first 20 s of a round':'무기는 라운드 시작 후 20초까지만 바꿀 수 있어요'):L?'Weapons can only be changed for 12 s after coming back':'무기는 부활 후 12초 동안만 바꿀 수 있어요'):(L?'Special weapons are off in PvP':'대인전에서는 특수 무기를 쓸 수 없어요'),2);AU.play('dry',{vol:.5});return}
     return lw(why,id)};
@@ -23907,7 +23926,7 @@ AI.pvp=function(a,dt){PVP.bot(a,dt)};
 // ---------- network: what the host tells everyone ----------
 Object.assign(CLIH,{
   pgo(){PVP.go(true)},
-  pk(L,m){const t=byId(m.i);if(!t)return;netWithEv(()=>PVP.kill(t,m.s>=0?byId(m.s):null,{w:m.w,hs:!!m.hs,dir:m.d?[m.d[0]/100,m.d[1]/100,m.d[2]/100]:null,as:Array.isArray(m.as)?m.as:[]}))},
+  pk(L,m){const t=byId(m.i);if(!t)return;netWithEv(()=>PVP.kill(t,m.s>=0?byId(m.s):null,{w:m.w,hs:!!m.hs,dir:m.d?[m.d[0]/100,m.d[1]/100,m.d[2]/100]:null,as:Array.isArray(m.as)?m.as:[],rl:Array.isArray(m.rl)?m.rl:null}))},
   prs(L,m){const a=byId(m.i);if(!a||!Array.isArray(m.p))return;netWithEv(()=>PVP.respawn(a,[m.p[0]/100,m.p[1]/100,m.p[2]/100,m.p[3]/1000]))},
   pend(L,m){if(Array.isArray(m.sc))G.score=m.sc.slice(0,2);netWithEv(()=>PVP.finish(m.w,true))},
   phit(L,m){const s=byId(m.s);if(s)PVP.hitDir(s)}});
@@ -24164,6 +24183,62 @@ Object.assign(HOSTH,{
   bu(L,m){const a=actorOfKey(L.key);if(!a||!G.pvp||G.mode!=='bomb')return;if(m.on){const k=BOMB.canAct(a);if(k)BOMB.start(a,k)}else BOMB.stop(a)}});
 // the radar: the site letters and the bomb go in with the pings (drawn under the people)
 if(typeof PING!=='undefined'){const pm=PING.mini;PING.mini=function(){pm.apply(this,arguments);if(G.mode==='bomb')try{BOMB.mini.apply(BOMB,arguments)}catch(e){console.error(e)}}}
+
+// ---- race.js ----
+'use strict';
+// ============ 무기 레이스 (v6.51): every kill moves you to the next gun; a knife kill on the last step, the knife, wins ============
+// A 대인전 mode played like 개인전 (G.pvp, a side of one's own, back 3 s after a death with 2 s of protection). Nobody picks weapons:
+// everyone carries the gun of his step (RACE.ladder(): 10 / 15 / 20 steps from the room's pg, rifles → machine gun → SMGs → shotguns →
+// snipers → pistols → the knife) and the knife. A kill hands over the next gun on the spot (a fresh magazine, a quick draw); a knife kill
+// also sets the victim back a step. The last step is the knife alone, and a knife kill there wins. When the clock (5 / 8 / 10 min)
+// runs out, the highest step wins (then kills, then fewer deaths). The host works the steps out and sends them with the kill (pk.rl);
+// a client's hit claim has to come from its gun, the one before it (a level-up still on its way) or the knife.
+Object.assign(STR.ko,{race:'무기 레이스',
+  raceD:'모두가 적. 처치할 때마다 다음 무기로 바뀌고, 마지막 칼 단계에서 칼로 처치하면 우승. 칼에 당하면 한 단계 내려가요. 쓰러져도 3초 뒤 부활 · 무기는 고를 수 없어요. 시간이 끝나면 가장 높은 단계가 우승.',
+  pLadder:'단계 수',lvl:'단계'});
+Object.assign(STR.en,{race:'Arms Race',
+  raceD:'Everyone is an enemy. Every kill moves you to the next gun; a knife kill on the last step, the knife, wins. A knife kill on you sets you back a step. The fallen are back 3 s later; nobody picks weapons. When time runs out, the highest step wins.',
+  pLadder:'Steps',lvl:'Level'});
+const RACE={
+  LADDERS:{10:['kv47','ar7','pd50','k5','m14','r700','sr8','d50','p9','knife'],
+    15:['ar7','kv47','hr17','g35','hmg','pd50','um45','k9','m14','sg8','r700','sr8','d50','p9','knife'],
+    20:['kv47','ar7','ar5c','hr17','g35','mg6','hmg','pd50','um45','k5','k9','as12','m14','sg8','dm14','r700','sr8','d50','p9','knife']},
+  L:null,bar:null,barK:'',
+  setup(){this.L=this.LADDERS[PVP.goal]||this.LADDERS[15]},
+  ladder(){return this.L||this.LADDERS[15]},
+  lv(a){return clamp(a&&a.raceLv|0,0,this.ladder().length-1)},
+  wep(a){return this.ladder()[this.lv(a)]},
+  // what a hit may come from: the gun of this step, the one before it (a level-up the client has not seen yet) or the knife
+  okWep(a,w){if(w==='knife')return true;const L=this.ladder(),i=this.lv(a);return w===L[i]||i>0&&w===L[i-1]},
+  name(id){const W=WPN[id];return W&&W.n?W.n[LI()]:id},
+  // the kit of a life: the gun of this step (a full magazine and its spare), the knife, armour
+  kit(a){const id=this.wep(a);a.inv={1:null,2:null,3:'knife',he:0,frost:0,flare:0};a.ammo={};ldKitReset(a);
+    if(id!=='knife'){const W=WPN[id];a.inv[W.slot]=id;fillAmmo(a,id)}a.armor=100;a.kit.armor=1;a.cur=id;a.prev='knife'},
+  // a level-up while alive: the old gun goes, the next one comes out
+  give(a){const id=this.wep(a);for(const s of [1,2])if(a.inv[s]&&a.inv[s]!==id){delete a.ammo[a.inv[s]];a.inv[s]=null}
+    if(id!=='knife'){const W=WPN[id];a.inv[W.slot]=id;fillAmmo(a,id)}a.reloadT=0;a.relKind=null;equip(a,id);a.prev='knife'},// (Q goes to the knife and back)
+  // a kill: the killer a step up (a knife kill on the last step wins), a knife kill sets the victim one back. The host works it out and
+  // puts it on the kill (o.rl, sent as pk.rl); a client takes the host's numbers. Returns the winner's id on the host
+  onKill(t,src,o){const N=this.ladder().length,P=G.player,L=LI(),knife=o.w==='knife',lv0=src?this.lv(src):0;let win=null;
+    if(Array.isArray(o.rl)){if(src)src.raceLv=o.rl[0]|0;t.raceLv=o.rl[1]|0}
+    else{if(src&&src!==t){if(lv0===N-1&&knife)win=src.id;else src.raceLv=Math.min(N-1,lv0+1)}if(knife&&src&&src!==t)t.raceLv=Math.max(0,this.lv(t)-1);o.rl=[src?this.lv(src):0,this.lv(t)]}
+    const up=src&&src!==t&&this.lv(src)>lv0;if(up&&src.alive)this.give(src);
+    if(up&&src===P){const lv=this.lv(P);AU.play('lvlup',{vol:.5});
+      if(lv===N-1)HUD.announce(L?'THE KNIFE — one more':'마지막 칼 단계!','w',2);HUD.note(lv===N-1?(L?'A knife kill wins it':'칼로 처치하면 우승'):`${L?'Level':'단계'} ${lv+1}/${N} · ${this.name(this.wep(P))}`,2.2)}
+    else if(up&&this.lv(src)===N-1)HUD.note(L?`${src.name} is on the knife`:`${src.name} — 칼 단계 도달`,2.5);
+    if(t===P&&knife&&src&&src!==t)HUD.note(L?'Knifed — down a step':'칼에 당했어요 — 한 단계 내려가요',2.4);
+    return win},
+  // the HUD: the top bar (my step, the leader's, my place) and the ladder bar under it (my gun, the next, a dot per step)
+  hud(dt,set){const P=G.player,e=HUD.el,L=LI(),N=this.ladder().length,O=PVP.order(G.actors),rk=O.indexOf(P)+1,top=O.find(a=>a!==P);
+    set(e.hRound,`${T('race')} · ${N}${L?' steps':'단계'}`);set(e.hSH,String(this.lv(P)+1));set(e.hSZ,String(top?this.lv(top)+1:0));
+    set(e.hAH,L?`Rank ${rk}/${O.length}`:`순위 ${rk}/${O.length}`);set(e.hAZ,top?(rk===1?(L?`2nd ${top.name}`:`2위 ${top.name}`):(L?`1st ${O[0].name}`:`1위 ${O[0].name}`)):'');
+    if(!this.bar){const b=document.createElement('div');b.id='rcBar';$('hud').appendChild(b);this.bar=b}
+    const me=this.lv(P),ld=O[0]===P?(top?this.lv(top):-1):this.lv(O[0]),k=me+':'+ld+':'+N+':'+L;
+    if(k!==this.barK){this.barK=k;const Ld=this.ladder(),cur=Ld[me],nx=Ld[me+1];let dots='';for(let i=0;i<N;i++)dots+=`<i class="${i<=me?'me':''}${i===ld?' ld':''}${i===N-1?' kn':''}"></i>`;
+      this.bar.innerHTML=`<b>${L?'LV':'단계'} ${me+1}/${N}</b><span class="cur"><img src="${weaponIcon(cur,16)}">${esc(this.name(cur))}</span>${nx?`<i class="ar">▶</i><span class="nx"><img src="${weaponIcon(nx,14)}">${esc(this.name(nx))}</span>`:''}<span class="seg">${dots}</span>`}
+    if(this.bar.style.display!=='flex')this.bar.style.display='flex'},
+  off(){if(this.bar)this.bar.style.display='none';this.barK=''},
+};
 
 </script>
 </body></html>
