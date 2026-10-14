@@ -1491,3 +1491,16 @@ html.touch #bmBar{top:calc(50% + 34px)}
 #rcBar .seg i.kn{width:8px;background:rgba(255,210,74,.28)}#rcBar .seg i.me{background:#5ab4ff}#rcBar .seg i.ld{box-shadow:0 0 0 1px #ffd24a inset;background:#ffd24a}#rcBar .seg i.me.ld{background:#5ab4ff;box-shadow:0 0 0 1px #ffd24a}
 td.rclv{color:#ffd24a}td.rclv small{color:#8a8f98;font-size:10px}
 html.touch #rcBar{top:76px;font-size:11px}
+/* v6.56 SENTINEL: the player's own sentry on screen (rounds · watch); lit up while it is on a target */
+.sntMk{position:absolute;transform:translate(-50%,-100%);padding:1px 6px;font-size:11px;font-weight:bold;color:#7fe6ff;background:rgba(4,10,14,.55);border:1px solid rgba(90,216,255,.55);border-radius:3px;pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px #000}
+.sntMk::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-4px;border:4px solid transparent;border-top-color:rgba(90,216,255,.75)}
+.sntMk.hot{color:#ff8a7a;border-color:rgba(255,110,90,.75);box-shadow:0 0 6px rgba(255,90,70,.45)}.sntMk.hot::after{border-top-color:rgba(255,110,90,.85)}
+/* v6.56 Q7 vaccine launcher: the bio-scanner's marks over the zombies in view (health · CURE in green · IMMUNE on a host) */
+.vaxMk{position:absolute;transform:translate(-50%,-100%);padding:0 5px;font-size:10px;font-weight:bold;color:#c8d0c8;background:rgba(6,10,6,.5);border:1px solid rgba(200,208,200,.35);border-radius:3px;pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px #000}
+.vaxMk.ok{color:#7dff9a;border-color:rgba(125,255,154,.8);background:rgba(4,22,8,.6);box-shadow:0 0 7px rgba(90,255,130,.55);font-size:11px}
+.vaxMk.imm{color:#8a8f98;border-color:rgba(138,143,152,.45);font-size:9px}
+#hFeed img.vxI{height:12px;margin:0 1px}
+/* v6.56 Bloodhound: a marked zombie, seen through walls by every human (distance); it blinks in its last 2 s */
+.hndMk{position:absolute;transform:translate(-50%,-100%);padding:0 5px;font-size:11px;font-weight:bold;color:#ff6a5a;background:rgba(20,4,4,.55);border:1px solid rgba(255,80,60,.75);border-radius:3px;pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px #000;box-shadow:0 0 6px rgba(255,60,40,.4)}
+.hndMk.end{animation:hndBlink .3s steps(2) infinite}
+@keyframes hndBlink{50%{opacity:.35}}

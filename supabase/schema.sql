@@ -408,6 +408,7 @@ create policy "read own episodes" on public.ep_records for select to authenticat
 -- ---------- price list (re-running updates it; tier S / A = pouch only) ----------
 -- v6.42: a price or a shop flag set on the admin page (admin_set) is kept when this file runs again; file_price / file_sold keep what
 -- the file says (the admin page's reset puts those back)
+-- v6.56: sentinel · q7vac · bhound are crate guns like ak60r / dmp7 (not sold; an account that owns one picks it from the buy menu)
 alter table public.gun_prices add column if not exists admin_set  boolean not null default false;
 alter table public.gun_prices add column if not exists file_price integer;
 alter table public.gun_prices add column if not exists file_sold  boolean;
@@ -464,6 +465,9 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('salamander',0,false,false,null),
   ('ak60r',0,false,false,null),
   ('dmp7',0,false,false,null),
+  ('sentinel',0,false,false,null),
+  ('q7vac',0,false,false,null),
+  ('bhound',0,false,false,null),
   ('rdc',0,false,false,'S'),
   ('mdrill',0,false,false,'S'),
   ('mlaunch',0,false,false,'S'),

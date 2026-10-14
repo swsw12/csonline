@@ -173,9 +173,10 @@ const SUP={list:[],seq:1,next:1e9,MAXN:2,
       else if(b.mk)b.mk.style.display='none';
       // opening: host / solo decides
       if(own&&b.landed){for(const a of G.actors){if(!a.alive||a.team!==TH)continue;if(Math.abs(a.c.x-b.x)>1.1||Math.abs(a.c.z-b.z)>1.1||Math.abs(a.c.y-b.y)>1.6)continue;this.open(a,b);break}}}},
+  // what is inside: Event Horizon 30 %, a crate gun 35 % (v6.56: five of them, from 30 %), a heavy gun 15 %, the kit 20 %
   open(a,b){const i=this.list.indexOf(b);if(i>=0)this.list.splice(i,1);this.drop(b);
     const r=Math.random(),heavy=['gx6','airb','ripper','rdc','hmg','gl40','bdc'].filter(w=>WPN[w]&&a.inv[1]!==w),cg=CRATE_GUNS.filter(w=>WPN[w]&&a.inv[1]!==w);
-    let k='kit',w='';if(r<.3&&a.inv[1]!=='bhole'){k='w';w='bhole'}else if(r<.6&&cg.length){k='w';w=rpick(cg)}else if(r<.8&&heavy.length){k='w';w=rpick(heavy)}
+    let k='kit',w='';if(r<.3&&a.inv[1]!=='bhole'){k='w';w='bhole'}else if(r<.65&&cg.length){k='w';w=rpick(cg)}else if(r<.8&&heavy.length){k='w';w=rpick(heavy)}
     this.give(a,k,w,b.x,b.y,b.z);if(NET.host)netEv('so',{d:b.id,i:a.id,k,w,x:r2(b.x),y:r2(b.y),z:r2(b.z)})},
   give(a,k,w,x,y,z){const L=LI();AU.at('pickup',x,y+.5,z,{vol:.9});FX.spawn({x,y:y+.5,z,life:.5,s0:.4,s1:2.5,r:1,g:.8,b:.4,a:.6,f:14,add:1});
     if(k==='w'){const W=WPN[w];if(!W)return;a.inv[1]=w;a.ammo[w]={mag:W.mag,res:W.res};gunFresh(a,w);equip(a,w);
