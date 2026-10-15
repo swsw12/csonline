@@ -263,7 +263,7 @@ function renderSheet(){const u=ST.user;if(!u)return;const sc=document.querySelec
   </div>`;
   if(!document.querySelector('.sheet'))sheetShell(html);else document.querySelector('.sheet').innerHTML=html;const s2=document.querySelector('.sheet');if(s2)s2.scrollTop=y}
 const COINR={welcome:'가입 보상',buy:'무기 구매',match:'판 보상',round:'라운드 보상',ep_first:'챕터 첫 클리어',mission:'미션 보상',decoder:'근하신년 해독기',bingo_win:'근하신년 빙고',
-  season_decoder:'시즌 해독기',season_win:'시즌 빙고',side_decoder:'보조무기 해독기',side_win:'보조무기 빙고',gift:'선물 보냄',ref_welcome:'초대 링크 보너스',ref_reward:'초대 보상',admin:'관리자',mail:'우편 보상',coupon:'쿠폰'};
+  season_decoder:'시즌 해독기',season_win:'시즌 빙고',side_decoder:'보조무기 해독기',side_win:'보조무기 빙고',gift:'선물 보냄',ref_welcome:'초대 링크 보너스',ref_reward:'초대 보상',admin:'관리자',mail:'우편 보상',coupon:'쿠폰',ach:'업적 보상'};
 const GSRC={decode:'근하신년',free:'무료 근하신년',ticket:'보유 근하신년',season:'시즌',side:'보조무기',exchange:'조각 교환',trans:'초월 교환',letters:'근하신년 글자',pull:'예전 행운 주머니'};
 function ulogHtml(u){const k=ST.utab;
   if(k==='coin'){const L=u.coin_log||[];if(!L.length)return '<div class="empty">코인 기록이 없어요.</div>';

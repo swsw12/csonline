@@ -33,6 +33,9 @@ const misMake=(db,uid)=>{db.mis=db.mis||{};const d=today(),L=db.mis[uid]||[];if(
 const misJ=(db,uid)=>{const d=today(),mid=Date.parse(d+'T00:00:00Z')+864e5-9*3600e3;
   return {day:d,resets_in:Math.max(0,Math.floor((mid-Date.now())/1000)),missions:(db.mis&&db.mis[uid]||[]).filter(m=>m.day===d).sort((a,b)=>a.slot-b.slot).map(m=>({slot:m.slot,id:m.id,tier:m.tier,kind:m.kind,goal:m.goal,progress:m.progress,coins:m.coins,tickets:m.tickets,ko:m.ko,en:m.en,claimed:m.claimed}))}};
 const rankV=(R,k)=>k==='kills'?R.k:k==='infects'?R.inf:k==='best'?R.best:R.xp;
+// v6.57: achievements and titles (same list and rules as schema.sql: ach_defs, qz_ach_stats, qz_title_worn, qz_ach_claim, qz_title_wear)
+const ACHD=JSON.parse('[["kill1","kill",1,"kills",100,300,0,null,0,10],["kill2","kill",2,"kills",1000,1000,0,"hunter",2,10],["kill3","kill",3,"kills",5000,2000,1,null,0,10],["kill4","kill",4,"kills",15000,3000,2,"slayer",4,10],["kill5","kill",5,"kills",40000,5000,3,"reaper",5,10],["hs1","hs",1,"hs",50,300,0,null,0,20],["hs2","hs",2,"hs",500,1000,0,"marksman",2,20],["hs3","hs",3,"hs",2500,2000,1,null,0,20],["hs4","hs",4,"hs",8000,4000,2,"oneshot",4,20],["dmg1","dmg",1,"dmg",200000,300,0,null,0,30],["dmg2","dmg",2,"dmg",2000000,1000,0,null,0,30],["dmg3","dmg",3,"dmg",10000000,2000,1,"firepower",3,30],["dmg4","dmg",4,"dmg",40000000,4000,2,"artillery",4,30],["knife1","knife",1,"kn",10,300,0,null,0,40],["knife2","knife",2,"kn",100,1000,0,"blade",2,40],["knife3","knife",3,"kn",500,2500,1,"bladedance",4,40],["mvp1","mvp",1,"mvp",5,300,0,null,0,50],["mvp2","mvp",2,"mvp",30,1000,0,"ace",3,50],["mvp3","mvp",3,"mvp",100,3000,2,"dominator",4,50],["inf1","inf",1,"inf",30,300,0,null,0,60],["inf2","inf",2,"inf",300,1000,0,"plague",2,60],["inf3","inf",3,"inf",1500,2500,1,"pandemic",3,60],["inf4","inf",4,"inf",5000,5000,3,"patientzero",5,60],["zw1","zw",1,"zw",10,300,0,null,0,70],["zw2","zw",2,"zw",100,1000,0,"horde",2,70],["zw3","zw",3,"zw",500,3000,2,"legion",4,70],["surv1","surv",1,"surv",10,300,0,null,0,80],["surv2","surv",2,"surv",100,1000,0,"survivor",2,80],["surv3","surv",3,"surv",500,2500,1,"immortal",4,80],["surv4","surv",4,"surv",2000,5000,3,"lasthuman",5,80],["win1","win",1,"wins",5,300,0,null,0,90],["win2","win",2,"wins",50,1500,0,"resistance",3,90],["win3","win",3,"wins",200,4000,2,"hero",4,90],["ep1","ep",1,"ep",1,500,0,null,0,100],["ep2","ep",2,"ep",3,1500,1,null,0,100],["ep3","ep",3,"ep",5,3000,2,"liberator",4,100],["eph1","eph",1,"eph",1,1000,0,null,0,110],["eph2","eph",2,"eph",3,2500,1,null,0,110],["eph3","eph",3,"eph",5,5000,3,"hellwalker",4,110],["epx1","epx",1,"epx",1,2000,1,"expert",4,120],["epx2","epx",2,"epx",5,8000,5,"nightmare",5,120],["medal1","medal",1,"medal",1,1000,0,"flawless",3,130],["medal2","medal",2,"medal",5,3000,2,null,0,130],["medal3","medal",3,"medal",15,6000,4,"perfect",5,130],["hof1","hof",1,"hof",1,3000,2,null,0,140],["pk1","pk",1,"pk",50,300,0,null,0,150],["pk2","pk",2,"pk",500,1500,0,"gunslinger",2,150],["pk3","pk",3,"pk",3000,4000,2,"duelist",4,150],["pw1","pw",1,"pw",5,300,0,null,0,160],["pw2","pw",2,"pw",50,1500,0,"merc",3,160],["pw3","pw",3,"pw",200,4000,2,"warhound",4,160],["rw1","rw",1,"rw",1,500,0,null,0,170],["rw2","rw",2,"rw",10,2000,1,"armsmaster",4,170],["bomb1","bomb",1,"bm",5,300,0,null,0,180],["bomb2","bomb",2,"bm",50,2000,1,"demolition",3,180],["lv1","lv",1,"lv",10,500,0,"recruit",1,190],["lv2","lv",2,"lv",20,1000,0,"veteran",2,190],["lv3","lv",3,"lv",30,2500,1,"elite",3,190],["lv4","lv",4,"lv",40,5000,3,"oldguard",4,190],["games1","games",1,"games",10,300,0,null,0,200],["games2","games",2,"games",100,1000,0,"regular",2,200],["games3","games",3,"games",500,3000,2,"resident",3,200],["games4","games",4,"games",2000,6000,4,"legend",5,200],["hours1","hours",1,"hours",10,500,0,null,0,210],["hours2","hours",2,"hours",50,1500,0,"nightshift",2,210],["hours3","hours",3,"hours",200,4000,2,"oldtimer",4,210],["guns1","guns",1,"guns",10,500,0,null,0,220],["guns2","guns",2,"guns",25,1500,0,"collector",2,220],["guns3","guns",3,"guns",45,4000,2,"arsenal",4,220],["cure1","cure",1,"cu",1,300,0,null,0,230],["cure2","cure",2,"cu",20,1500,0,"medic",3,230],["cure3","cure",3,"cu",100,4000,2,"savior",4,230],["mark1","mark",1,"mk",20,300,0,null,0,240],["mark2","mark",2,"mk",300,1500,0,"tracker",3,240],["crate1","crate",1,"cr",5,300,0,null,0,250],["crate2","crate",2,"cr",50,1500,0,"supply",2,250]]').map(([id,grp,tier,stat,goal,coins,tickets,title,g,ord])=>({id,grp,tier,stat,goal,coins,tickets,title,g,ord}));
+const LVT=[0,300,654,1072,1565,2147,2834,3645,4602,5731,7063,8635,10490,12679,15262,18310,21907,26151,31159,37068,44041,52269,61978,73435,86954,102906,121729,143940,170149,201076,237570,280633,331447,391408,462162,545652,644170,760421,897597,1059465,1250469,1475854,1741808,2055634,2425949,2862921,3378548,3986988,4704947,5552139,6551826,7731457,9123422,10765941,12704113,14991156,17689867,20874346,24632031,29066099,34298299,40472295,47757610,56354282,66498355,78468361,92592968,109260004,128927106,152134286,179518758,211832435,249962574,294956138,348048544,410697583,484623449,571855971,674790347,796252911,939578737,1108703212,1308270093,1543759013,1821635939,2149530712,2536446544,2993007226,3531748831,4167463925,4917607736,5802777433,6847277675,8079787961,9534150098,11250297420,13275351260,15664914791,18484599758],lvOf=xp=>LVT.filter(t=>t<=Math.max(0,xp|0)).length;
 const of=window.fetch.bind(window);
 window.fetch=async function(input,init){const url=typeof input==='string'?input:input.url;if(!url.startsWith(URL0))return of(input,init);
   init=init||{};const m=(init.method||'GET').toUpperCase(),u=new URL(url),p=u.pathname,body=init.body?JSON.parse(init.body):null,H=init.headers||{};
@@ -41,6 +44,18 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
   const db=load();const bearer=String(H.Authorization||'').replace('Bearer ','');const tk=db.tok[bearer];const uid=tk&&!tk.refresh&&tk.exp>Date.now()?tk.uid:null;
   // the hall of fame (v6.24; same rules as qz_claim / qz_ep_firsts): db.hof = [{ep,diff,match,at,time,members:[uid]}]
   const HOFL=()=>db.hof||(db.hof=[]),hofOf=id=>HOFL().filter(h=>h.members.includes(id)).map(h=>h.ep*10+h.diff).sort((a,b)=>a-b),hofBest=id=>{const L=hofOf(id);return L.length?L[L.length-1]:null};
+  // v6.57: the numbers an achievement reads, the tiers claimed (db.achc[uid] = [{id,at}]), the title worn (window.__MOCK_ACH = {stat: n} adds to the numbers)
+  const ACL=id=>(db.achc||(db.achc={}))[id]||(db.achc[id]=[]),achStats=id=>{const Q=db.prof[id],R=REC(Q),E=Object.values(Q.epr||{});
+    return Object.assign({},Q.ach||{},{ep:new Set(E.filter(e=>e.clears>0).map(e=>e.ep)).size,eph:new Set(E.filter(e=>e.clears>0&&e.diff>=2).map(e=>e.ep)).size,epx:new Set(E.filter(e=>e.clears>0&&e.diff===3).map(e=>e.ep)).size,
+      medal:E.filter(e=>e.medal==='S').length,kills:R.k,inf:R.inf,games:R.g,lv:lvOf(R.xp),hours:Math.floor((Q.playSecs|0)/3600),guns:(db.own[id]||[]).length,hof:hofOf(id).length},
+      id===uid&&window.__MOCK_ACH?Object.fromEntries(Object.entries(window.__MOCK_ACH).map(([k,v])=>[k,v+((Object.assign({},Q.ach||{},{kills:R.k,inf:R.inf,games:R.g,lv:lvOf(R.xp),guns:(db.own[id]||[]).length}))[k]|0)])):{})},
+    achHas=(id,d)=>ACL(id).some(c=>c.id===d.id),achReady=id=>{const S0=achStats(id);return ACHD.filter(d=>!achHas(id,d)&&(S0[d.stat]|0)>=d.goal).length},
+    titleWorn=id=>{const Q=db.prof[id];if(!Q)return null;const w=Q.title;if(w==='none')return null;
+      if(w&&/^hof:/.test(w)){if(hofOf(id).includes(+w.slice(4)))return w}else if(w&&ACL(id).some(c=>{const d=ACHD.find(x=>x.id===c.id);return d&&d.title===w}))return w;
+      const b=hofBest(id);if(b!=null)return 'hof:'+b;const L=ACL(id).map(c=>({c,d:ACHD.find(x=>x.id===c.id)})).filter(x=>x.d&&x.d.title).sort((a,b)=>b.d.g-a.d.g||b.c.at-a.c.at||b.d.ord-a.d.ord);return L.length?L[0].d.title:null},
+    achJ=id=>{const S0=achStats(id);return {stats:S0,claimed:ACL(id).map(c=>c.id),ready:ACHD.filter(d=>!achHas(id,d)&&(S0[d.stat]|0)>=d.goal).length,title:db.prof[id].title||null,worn:titleWorn(id),
+      defs:ACHD.map(d=>({id:d.id,grp:d.grp,tier:d.tier,stat:d.stat,goal:d.goal,coins:d.coins,tickets:d.tickets,title:d.title,g:d.g}))}},
+    achAdd=(id,o)=>{const Q=db.prof[id];Q.ach=Q.ach||{};for(const k in o){const v=o[k]|0;if(v)Q.ach[k]=(Q.ach[k]|0)+v}};
   try{
   if(p==='/auth/v1/signup'&&m==='POST'){const e=String(body.email||'').toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return err(400,{code:400,error_code:'validation_failed',msg:'Unable to validate email address: invalid format'});
     if(Object.values(db.users).some(x=>x.email===e))return err(422,{code:422,error_code:'user_already_exists',msg:'User already registered'});
@@ -75,6 +90,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
   if(p==='/rest/v1/rpc/qz_room_down'&&uid){RM();const code=String((body||{}).p_code||'').slice(0,8).toUpperCase(),r=db.rooms[code],gone=!!(r&&r.host===uid);if(gone)delete db.rooms[code];save(db);return res(200,{ok:true,gone})}
   if(p.startsWith('/rest/v1/rpc/')){const fn=p.slice(13);
     if(window.__MOCK_OFF&&window.__MOCK_OFF.includes(fn))return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+' without parameters in the schema cache'});
+    if(fn==='qz_titles_of'){const N=(Array.isArray(body&&body.p_names)?body.p_names:[]).slice(0,16),o={};for(const id in db.prof){const n=db.prof[id].nickname;if(!N.includes(n))continue;const w=titleWorn(id);o[n]=o[n]||[];if(w&&!o[n].includes(w))o[n].push(w)}return res(200,o)}
     if(fn==='qz_ep_firsts')return res(200,HOFL().slice().sort((a,b)=>a.ep-b.ep||a.diff-b.diff).map(h=>({ep:h.ep,diff:h.diff,at:h.at,time:h.time,team:h.members.map(id=>db.prof[id]?db.prof[id].nickname:null).filter(Boolean)})));
     // the ranking: anyone (a guest too); nicknames and records only, accounts without a finished match left out
     // v6.42: the server notices showing now (anyone): window.__MOCK_NOTICES = [{id,title,body,level,popup,starts_at,ends_at}]
@@ -82,8 +98,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_ranking'){const k=['level','kills','infects','best'].includes(body&&body.p_kind)?body.p_kind:'level',ids=Object.keys(db.prof);
       const all=ids.map((id,i)=>({id,i,R:REC(db.prof[id]),n:db.prof[id].nickname})).filter(x=>x.R.g>0).map(x=>({...x,v:rankV(x.R,k)}));
       all.sort((a,b)=>b.v-a.v||b.R.xp-a.R.xp||a.i-b.i);const rk=v=>1+all.filter(x=>x.v>v).length;
-      const top=all.slice(0,50).map(x=>({rank:rk(x.v),nickname:x.n,value:x.v,xp:x.R.xp,games:x.R.g,me:x.id===uid,ft:hofBest(x.id)}));
-      let me=null;if(uid&&db.prof[uid]){const R=REC(db.prof[uid]),v=rankV(R,k);me={nickname:db.prof[uid].nickname,value:v,xp:R.xp,games:R.g,rank:R.g>0?rk(v):null,ft:hofBest(uid)}}
+      const top=all.slice(0,50).map(x=>({rank:rk(x.v),nickname:x.n,value:x.v,xp:x.R.xp,games:x.R.g,me:x.id===uid,ft:hofBest(x.id),tt:titleWorn(x.id)}));
+      let me=null;if(uid&&db.prof[uid]){const R=REC(db.prof[uid]),v=rankV(R,k);me={nickname:db.prof[uid].nickname,value:v,xp:R.xp,games:R.g,rank:R.g>0?rk(v):null,ft:hofBest(uid),tt:titleWorn(uid)}}
       return res(200,{kind:k,top,me,total:all.length})}
     if(!uid)return err(401,{code:'PGRST301',message:'JWT expired'});const P=db.prof[uid];
     // window.__MOCK_OFF = ['qz_season', ...]: a database that has not been updated yet (checked above)
@@ -92,11 +108,11 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     const FRL=()=>db.fr||(db.fr=[]),GFL=()=>db.gifts||(db.gifts=[]),pair=(x,y)=>FRL().find(f=>f.a===x&&f.b===y||f.a===y&&f.b===x);
     const find=w=>{w=String(w||'').trim();if(!w)throw 'not_found';const c=w.toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.length===6)for(const id in db.prof){FC(id);if(db.prof[id].fcode===c)return id}
       const ids=Object.keys(db.prof).filter(id=>db.prof[id].nickname.toLowerCase()===w.toLowerCase());if(!ids.length)throw 'not_found';if(ids.length>1)throw 'nick_many';return ids[0]};
-    const card=(id,x)=>{const Q=db.prof[id];FC(id);return Object.assign({code:Q.fcode,nickname:Q.nickname,xp:REC(Q).xp,ft:hofBest(id)},x||{})};
+    const card=(id,x)=>{const Q=db.prof[id];FC(id);return Object.assign({code:Q.fcode,nickname:Q.nickname,xp:REC(Q).xp,ft:hofBest(id),tt:titleWorn(id)},x||{})};
     const DML=()=>db.dms||(db.dms=[]),dmNew=()=>DML().filter(m=>m.to===uid&&!m.seen).length,touch=()=>{if(P)P.seenT=Date.now()};
     // ---- invites (v6.37; same rules as qz_invite* / qz_ref_*) ----
     const IVL=()=>db.inv||(db.inv=[]),invMine=()=>IVL().filter(i=>i.to===uid&&Date.now()-i.at<180e3),invN=()=>invMine().length;
-    const invJ=()=>invMine().sort((a,b)=>b.at-a.at).map(i=>({code:i.code,map:i.map,mode:i.mode,at:new Date(i.at).toISOString(),from:db.prof[i.from].nickname,fc:FC(i.from),ft:hofBest(i.from)}));
+    const invJ=()=>invMine().sort((a,b)=>b.at-a.at).map(i=>({code:i.code,map:i.map,mode:i.mode,at:new Date(i.at).toISOString(),from:db.prof[i.from].nickname,fc:FC(i.from),ft:hofBest(i.from),tt:titleWorn(i.from)}));
     const RFL=()=>db.refs||(db.refs=[]),refJ=Q=>({by:Q.refBy&&db.prof[Q.refBy]?db.prof[Q.refBy].nickname:null,done:!!Q.refDone,left:Math.max(0,GCFG.ref_matches-(Q.matches|0)),
       n:RFL().filter(r=>r.referrer===uid).length,paid:RFL().filter(r=>r.referrer===uid&&r.rewarded).length,new:RFL().filter(r=>r.referrer===uid&&!r.seen).length});
     const frJ=()=>{FC(uid);touch();const L=FRL(),last=Q=>{const t=Math.max(Q.last||0,Q.lastR||0,Q.seenT||0);return t?new Date(t).toISOString():null};
@@ -168,7 +184,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(fn==='qz_gift_inbox'){const L=GFL().filter(g=>g.to===uid&&!g.seen);for(const g of L)g.seen=true;save(db);return res(200,{gifts:L.map(g=>({gun:g.gun,from:db.prof[g.from]?db.prof[g.from].nickname:'?',at:g.at}))})}
     }catch(e){if(typeof e==='string')return pgerr(e);throw e}}
     if(fn==='qz_me'){if(!P)newProfile(db,uid,db.users[uid].email.split('@')[0]);const Q=db.prof[uid];FC(uid);save(db);
-      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,tfrags:Q.tfr|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid),ref:refJ(Q),admin:!!window.__MOCK_ADMIN,ban:window.__MOCK_BAN||null,mail_new:MAILS().length,gun_new:GNS().length})}
+      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,tfrags:Q.tfr|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid),ref:refJ(Q),admin:!!window.__MOCK_ADMIN,ban:window.__MOCK_BAN||null,mail_new:MAILS().length,gun_new:GNS().length,title:titleWorn(uid),title_set:Q.title||null,ach_ready:achReady(uid)})}
     if(fn==='qz_ny_add'){let q=Math.max(P.nyQ|0,0);const v=[body.p_g,body.p_h,body.p_s,body.p_n].map(x=>Math.min(Math.max(x|0,0),8)),ad=v.map(x=>{const t=Math.min(x,q);q-=t;return t});
       P.ny=(P.ny||[0,0,0,0]).map((x,i)=>x+ad[i]);P.nyQ=0;save(db);return res(200,{added:ad,ny:P.ny})}
     if(fn==='qz_ny_exchange'){const c=body.p_choice;if(c!=='ny'&&c!=='season')return pgerr('bad_choice');const N=P.ny||[0,0,0,0];if(Math.min(...N)<1)return pgerr('no_set');
@@ -177,12 +193,14 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_buy'){const r=PM[body.p_gun];if(r&&r.tier)return pgerr('gacha_only');if(!r||!r.sold)return pgerr('not_for_sale');if(r.free||db.own[uid].includes(body.p_gun))return pgerr('already_owned');
       if(P.coins<r.price)return pgerr('not_enough_coins');P.coins-=r.price;db.own[uid].push(body.p_gun);db.log.push([uid,-r.price,'buy']);save(db);return res(200,{coins:P.coins,gun:body.p_gun})}
     if(fn==='qz_claim'){if(window.__MOCK_NOMATCH&&'p_match' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_bonus, p_cleared, p_match, ...) in the schema cache'});
+      if(window.__MOCK_NOACH&&'p_ach' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_ach, p_bonus, ...) in the schema cache'});
       if(window.__MOCK_NOHS&&'p_hs' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_cleared, p_damage, p_hs, ...) in the schema cache'});
       const mins=(Date.now()-(P.last||Date.now()-15*60e3))/60e3*(window.__MOCK_TIMEWARP||1);if(mins<1.5)return pgerr('too_soon');
       const cl=(v,a)=>Math.min(Math.max(v|0,0),a),k=cl(body.p_kills,80);let raw=body.p_mode==='scen'?100+50*cl(body.p_stage,5)+(body.p_cleared?200:0)+5*k
         :100+15*cl(body.p_rounds,10)+7*Math.min(k,60)+12*cl(body.p_infects,30)+5*Math.floor(cl(body.p_damage,60000)/1000)+(body.p_won?130:0)+(body.p_mvp?80:0);
       raw=Math.min(raw,1200,Math.floor(mins*100));const d0=P.day===today()?P.dayE:0,bonus=P.bday!==today()?250:0,got=Math.max(0,Math.min(raw+bonus,20000-d0));
       P.coins+=got;P.earned+=got;P.matches++;P.last=Date.now();P.day=today();P.bday=today();P.dayE=d0+got;P.nyQ=Math.min(8,2+Math.floor(k/6));db.log.push([uid,got,'match']);save(db);
+      const s0=achStats(uid);
       const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false}),sc=cl(body.p_score,30000),inf=cl(body.p_infects,30),gx=Math.min(4000,Math.max(25,Math.round(sc*.75+k*10+inf*15)));
       R0.g++;R0.k+=k;R0.inf+=inf;R0.best=Math.max(R0.best,sc);R0.xp+=gx;
       // daily missions: this match's numbers, clamped the same way (headshot kills at most the kills). window.__MOCK_NOHS: a database before p_hs
@@ -194,8 +212,13 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(ep_clear){let mt=String(body.p_match||'').replace(/[^A-Za-z0-9]/g,'').slice(0,24);if(!mt)mt='u:'+uid;let h=HOFL().find(x=>x.ep===ep&&x.diff===ed);
         if(!h){h={ep,diff:ed,match:mt,at:new Date().toISOString(),time:et,members:[]};HOFL().push(h)}
         if(h.match===mt&&Date.now()-Date.parse(h.at)<15*60e3&&h.members.length<8&&!h.members.includes(uid)){h.members.push(uid);ep_hof=true}}
+      if(ep_clear){P.epr=P.epr||{};const e=P.epr[ep+':'+ed]||(P.epr[ep+':'+ed]={ep,diff:ed,clears:0,medal:null});e.clears++;if(body.p_bonus&&!(body.p_lives|0))e.medal='S'}
+      const A=body.p_ach&&typeof body.p_ach==='object'&&!Array.isArray(body.p_ach)?body.p_ach:{},ai=v=>/^-?\d{1,9}$/.test(String(v))?+v:0,pvp=['tdm','ffa','bomb','race'].includes(body.p_mode),zm=['orig','mut'].includes(body.p_mode);
+      achAdd(uid,{hs:Math.min(cl(body.p_hs,1e9),k),dmg:cl(body.p_damage,60000),wins:zm&&body.p_won?1:0,mvp:body.p_mvp?1:0,pk:pvp?k:0,pw:pvp&&body.p_won?1:0,rw:body.p_mode==='race'&&body.p_won?1:0,
+        kn:Math.min(Math.max(ai(A.kn),0),40,k),cu:Math.min(Math.max(ai(A.cu),0),20),mk:Math.min(Math.max(ai(A.mk),0),200),cr:Math.min(Math.max(ai(A.cr),0),10),bm:Math.min(Math.max(ai(A.pl),0),12)+Math.min(Math.max(ai(A.df),0),12)});
+      const s1=achStats(uid),ach_hit=ACHD.filter(d=>!achHas(uid,d)&&(s1[d.stat]|0)>=d.goal&&(s0[d.stat]|0)<d.goal).map(d=>d.id);window.__mockAch=body.p_ach;
       save(db);
-      return res(200,{got,coins:P.coins,bonus,raw,day_left:20000-P.dayE,xp_got:gx,rec:REC(P),missions,ep_clear,ep_hof,firsts:ep>0?hofOf(uid):null})}
+      return res(200,{got,coins:P.coins,bonus,raw,day_left:20000-P.dayE,xp_got:gx,rec:REC(P),missions,ep_clear,ep_hof,firsts:ep>0?hofOf(uid):null,ach_hit,ach_ready:achReady(uid)})}
     // v6.17: a finished round (same numbers as qz_round_claim in schema.sql)
     if(fn==='qz_round_claim'){if(window.__MOCK_NOROUND)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_round_claim in the schema cache'});
       if(['scen','range',''].includes(body.p_mode||''))return pgerr('no_rounds');
@@ -203,9 +226,19 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       const cl=(v,a)=>Math.min(Math.max(v|0,0),a),k=cl(body.p_kills,30),inf=cl(body.p_infects,12),dm=cl(body.p_damage,40000),sc=cl(body.p_score,8000);
       let raw=150+8*k+12*inf+5*Math.floor(dm/1000)+(body.p_won?120:0)+(body.p_survived?60:0)+(body.p_mvp?80:0);raw=Math.min(raw,600,Math.floor(secs*4));
       const d0=P.day===today()?P.dayE:0,got=Math.max(0,Math.min(raw,20000-d0)),gx=Math.min(1500,Math.max(10,Math.round(sc*.6+k*8+inf*12)));
-      P.coins+=got;P.earned+=got;P.lastR=Date.now();P.day=today();P.dayE=d0+got;const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false});R0.xp+=gx;db.log.push([uid,got,'round']);save(db);
+      P.coins+=got;P.earned+=got;P.lastR=Date.now();P.day=today();P.dayE=d0+got;const R0=P.rec||(P.rec={g:0,k:0,inf:0,best:0,xp:0,imported:false});R0.xp+=gx;db.log.push([uid,got,'round']);
+      if(['orig','mut'].includes(body.p_mode))achAdd(uid,{surv:body.p_survived?1:0,zw:body.p_won&&!body.p_survived?1:0});save(db);
       return res(200,{got,coins:P.coins,raw,xp_got:gx,day_left:20000-P.dayE,rec:REC(P)})}
     if(fn==='qz_missions'){misMake(db,uid);save(db);return res(200,misJ(db,uid))}
+    if(fn==='qz_achievements'){save(db);return res(200,achJ(uid))}
+    if(fn==='qz_ach_claim'){if(window.__MOCK_BAN)return pgerr('banned');const S0=achStats(uid),pid=body.p_id||'',L=ACHD.filter(d=>(!pid||d.id===pid)&&!achHas(uid,d)&&(S0[d.stat]|0)>=d.goal);
+      if(!L.length){if(pid&&ACL(uid).some(c=>c.id===pid))return pgerr('already_claimed');return pgerr('not_done')}
+      let c=0,t=0;const titles=[];for(const d of L){ACL(uid).push({id:d.id,at:Date.now()});c+=d.coins;t+=d.tickets;if(d.title)titles.push(d.title)}
+      P.coins+=c;P.earned+=c;P.tickets=(P.tickets|0)+t;db.log.push([uid,c,'ach']);save(db);
+      return res(200,{got:c,got_tickets:t,ids:L.map(d=>d.id),titles,coins:P.coins,tickets:P.tickets|0,ach:achJ(uid)})}
+    if(fn==='qz_title_wear'){const w=String(body.p_title==null?'':body.p_title).trim()||null;
+      if(w&&w!=='none'){if(/^hof:/.test(w)){if(!hofOf(uid).includes(+w.slice(4)))return pgerr('no_title')}else if(!ACL(uid).some(c=>{const d=ACHD.find(x=>x.id===c.id);return d&&d.title===w}))return pgerr('no_title')}
+      P.title=w;save(db);return res(200,{title:w,worn:titleWorn(uid)})}
     if(fn==='qz_mission_claim'){const m=(db.mis&&db.mis[uid]||[]).find(x=>x.day===today()&&x.slot===(body.p_slot|0));if(!m)return pgerr('no_mission');if(m.claimed)return pgerr('already_claimed');
       if(m.progress<m.goal)return pgerr('not_done');m.claimed=true;P.coins+=m.coins;P.earned+=m.coins;P.tickets=(P.tickets|0)+m.tickets;db.log.push([uid,m.coins,'mission']);save(db);
       return res(200,{got:m.coins,got_tickets:m.tickets,coins:P.coins,tickets:P.tickets,missions:misJ(db,uid)})}

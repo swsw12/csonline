@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'★',tag:['신규 기능','New'],t:['업적 · 칭호','Achievements · titles'],
+    d:['25가지 업적 · 76단계 — 단계마다 코인 · 근하신년 해독기 보상, 일부는 칭호까지. 지금까지의 기록도 그대로 쳐줘요. 얻은 칭호(5등급 · 48가지)를 하나 골라 달면 로비 · 대기실 · 머리 위 · 채팅 · 랭킹에서 이름 옆에 보여요. 로비의 「업적」 버튼에서.','25 achievements in 76 tiers — each tier pays coins or 근하신년 decoders, some a title. Your record so far counts. Wear one of the titles you earn (48, in five grades) and it shows next to your name in the lobby, the waiting room, over your head, in chat and the ranking. The lobby\'s Achievements button.']},
   {kind:'weapon',ref:'sentinel',tag:['보급 무기 · 기관총','Crate weapon · machine gun'],t:['센티넬','Sentinel'],
     d:['손에 들면 150발 벨트 경기관총, 우클릭하면 삼각대를 펴고 자동 포탑이 돼요. 24m 안에서 보이는 가장 가까운 좀비를 분당 600발로 쏘며 밀어내고, 그동안 나는 권총으로 싸워요. 1번을 누르면 어디서든 접혀서 손으로 돌아오고, 탄이 떨어지거나 45초가 지나면 스스로 돌아와요.','In the hands a 150-round belt-fed light machine gun; right click and it sets itself up on its tripod as a sentry. It fires at the nearest zombie it can see within 24 m, 600 a minute that shove, while you fight on with your pistol. Press 1 and it folds up and comes back to your hands from anywhere; it also comes back by itself when its rounds run out or after 45 s.']},
   {kind:'weapon',ref:'q7vac',tag:['보급 무기 · 특수','Crate weapon · special'],t:['Q7 백신 발사기','Q7 Vaccine Launcher'],

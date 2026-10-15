@@ -32,7 +32,7 @@ const INVT={list:[],shown:{},busy:false,off:false,last:0,lastN:0,sent:{},join:nu
     const md=mode?T(['scen','orig','tdm','ffa','bomb','race'].includes(mode)?mode:'mut'):'';return [m,md,(L?'room ':'방 ')+code].filter(Boolean).map(esc).join(' · ')},
   show(x){const L=LI(),left=Math.max(5e3,180e3-(Date.now()-Date.parse(x.at)||0));
     const o=this.pop('invPop',`<div class="iph">${SVG_INV}<b>${L?'Room invite':'방 초대'}</b></div>
-      <div class="ipr"><span>${L?`<b>${esc(x.from)}</b>${HOF.chip(x.ft,'sm')} invites you to their room`:`<b>${esc(x.from)}</b>${HOF.chip(x.ft,'sm')}님이 방에 초대했어요`}</span><small>${this.roomLine(x.map,x.mode,x.code)}</small></div>
+      <div class="ipr"><span>${L?`<b>${esc(x.from)}</b>${TTL.chip(TTL.row(x),'sm')} invites you to their room`:`<b>${esc(x.from)}</b>${TTL.chip(TTL.row(x),'sm')}님이 방에 초대했어요`}</span><small>${this.roomLine(x.map,x.mode,x.code)}</small></div>
       <div class="ipb"><button class="ok" data-ip="join">${L?'Join':'참가하기'}</button><button data-ip="no">${L?'No thanks':'거절'}</button></div>`,(a,o)=>{o.remove();
         if(a==='join'){ACC.inviteAnswer(x.fc,x.code).catch(()=>{});this.go(x.code)}else if(a==='no'){ACC.inviteAnswer(x.fc,x.code).catch(()=>{});AU.play('ui',{vol:.3})}});
     AU.play('uiok',{vol:.6});clearTimeout(this.to);this.to=setTimeout(()=>{if(o.isConnected)o.remove()},left)},

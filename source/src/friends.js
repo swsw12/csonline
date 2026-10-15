@@ -29,7 +29,7 @@ const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,chat:null,
     if(ACC.signed()){this.lastLoad=Date.now();ACC.loadFriends().then(()=>this.render()).catch(e=>{this.msg=ACC.errText(e);this.ok=false;this.render()})}},
   close(){const o=$('frWin');if(o)o.remove();this.del=null;this.chat=null},
   render(){const o=$('frWin');if(!o)return;if(this.chat){this.renderChat();return}const L=LI(),signed=ACC.signed(),F=ACC.fr,inp=$('frIn'),keep=inp?inp.value:'';
-    const row=(f,btns,sub)=>`<div class="frr"><span class="frlv">Lv.${recLevel(f.xp|0).l}</span><span class="frnm"><b>${esc(f.nickname)}${HOF.chip(f.ft,'sm')}</b><small>#${esc(f.code||'')}${sub?' · ':''}${sub?(f.seen&&frOn(f)?'<em class="on">'+esc(sub)+'</em>':esc(sub)):''}</small></span><span class="frbt">${btns}</span></div>`;
+    const row=(f,btns,sub)=>`<div class="frr"><span class="frlv">Lv.${recLevel(f.xp|0).l}</span><span class="frnm"><b>${esc(f.nickname)}${TTL.chip(TTL.row(f),'sm')}</b><small>#${esc(f.code||'')}${sub?' · ':''}${sub?(f.seen&&frOn(f)?'<em class="on">'+esc(sub)+'</em>':esc(sub)):''}</small></span><span class="frbt">${btns}</span></div>`;
     let body;
     if(!ACC.on)body=`<p class="frn">${L?'Accounts are not set up yet.':'계정 서버가 아직 연결되지 않았어요.'}</p>`;
     else if(!signed)body=`<p class="frn">${L?'Sign in to add friends and send them guns.':'로그인하면 친구를 추가하고 총을 선물할 수 있어요.'}</p><button class="frbig" data-fr="login">${L?'Sign in':'로그인'}</button>`;
@@ -48,11 +48,11 @@ const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,chat:null,
   // ---- the chat panel (v6.25) ----
   chatFriend(){const c=this.chat;return c&&((ACC.fr&&ACC.fr.friends)||[]).find(x=>x.code===c.code)},
   openChat(code){const f=((ACC.fr&&ACC.fr.friends)||[]).find(x=>x.code===code);if(!f)return;
-    this.chat={code,nick:f.nickname,ft:f.ft,msgs:[],last:0,err:'',busy:false,seen:f.seen,loaded:false};f.dm=0;this.render();this.chatPull(true);
+    this.chat={code,nick:f.nickname,ft:f.ft,tt:f.tt,msgs:[],last:0,err:'',busy:false,seen:f.seen,loaded:false};f.dm=0;this.render();this.chatPull(true);
     const i=$('fcIn');if(i)i.focus()},
   closeChat(){this.chat=null;this.render();frPoll(true)},
   renderChat(){const o=$('frWin');if(!o||!this.chat)return;const L=LI(),c=this.chat,f=this.chatFriend(),on=frOn({seen:c.seen||(f&&f.seen)}),keep=$('fcIn')?$('fcIn').value:'';
-    o.innerHTML=`<div class="frw"><div class="frh"><button class="frback" data-fr="cback" aria-label="back">‹</button>${SVG_CHAT}<b>${esc(c.nick)}${HOF.chip(c.ft,'sm')}</b><small class="${on?'on':''}">${on?(L?'● online':'● 접속 중'):f?esc(frAgo(f.last)):''}</small><span class="sgap"></span><button class="frx" data-fr="x" aria-label="close">×</button></div>
+    o.innerHTML=`<div class="frw"><div class="frh"><button class="frback" data-fr="cback" aria-label="back">‹</button>${SVG_CHAT}<b>${esc(c.nick)}${TTL.chip(TTL.row(c),'sm')}</b><small class="${on?'on':''}">${on?(L?'● online':'● 접속 중'):f?esc(frAgo(f.last)):''}</small><span class="sgap"></span><button class="frx" data-fr="x" aria-label="close">×</button></div>
       <div class="fcb"><div id="fcLog" class="fclog"></div>${c.err?`<div class="frm bad">${esc(c.err)}</div>`:''}
         <div class="fcsend"><input id="fcIn" maxlength="200" placeholder="${L?'Message':'메시지 입력'}" autocomplete="off" spellcheck="false"><button data-fr="csend"${c.busy?' disabled':''}>${L?'Send':'보내기'}</button></div></div></div>`;
     const i=$('fcIn');if(i)i.value=keep;this.chatLog(true)},

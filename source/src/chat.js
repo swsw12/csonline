@@ -6,6 +6,7 @@
 // a player; a team line only reaches players on the sender's side. Joins and leaves show as grey lines. Alone, the lines just show.
 // Phones: the 💬 button on the top bar opens the box (and the keyboard).
 // v6.24: a line carries its sender's hall-of-fame title (f = the code, an = the account nickname; hof.js checks it): a crown and a gold name.
+// v6.57: and the title worn (tt, ach.js checks it with the server): the title before the name.
 const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escAt:0,
   MAXLEN:90,KEEP:60,SHOW:8,FADE:9000,
   // where it shows: a match (and its results), or a multiplayer waiting room
@@ -40,18 +41,18 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
     const now=Date.now();this.mine=this.mine.filter(t=>now-t<5000);if(this.mine.length>=6){this.add({sys:1,m:L?'Slow down a little':'채팅이 너무 빨라요. 잠시 후에 보내 주세요'});return}this.mine.push(now);
     const tm=this.team&&this.where()==='game',P=G.player,tc=P&&G.st!=='menu'?pingTc(P):null;
     if(NET.on&&NET.cli)netToHost({t:'chat',m,tm:tm?1:0});
-    else if(NET.on&&NET.host)this.relay({n:this.myName(),m,tm,tc,k:NET.me||'host',...HOF.hello()});
+    else if(NET.on&&NET.host)this.relay({n:this.myName(),m,tm,tc,k:NET.me||'host',...TTL.hello()});
     else this.add({n:this.myName(),m,tm,tc,me:1});
     if(this.where()==='game')this.closeIn();else this.inp.focus()},
   myName(){return (G.player&&G.player.name)||myName()},
   clean(t){return String(t||'').replace(/[\u0000-\u001f\u007f]/g,'').replace(/\s+/g,' ').trim().slice(0,this.MAXLEN)},
   // the host: shows a line here and sends it on (a team line only to that side)
-  relay(o){const out={t:'chat',n:String(o.n||'?').slice(0,16),m:o.m,tm:o.tm?1:0,tc:o.tc==null?-1:o.tc};if(HOF.valid(o.f)&&o.an){out.f=+o.f;out.an=String(o.an).slice(0,16)}
+  relay(o){const out={t:'chat',n:String(o.n||'?').slice(0,16),m:o.m,tm:o.tm?1:0,tc:o.tc==null?-1:o.tc};if(HOF.valid(o.f)&&o.an){out.f=+o.f;out.an=String(o.an).slice(0,16)}if(typeof o.tt==='string'){out.tt=o.tt.slice(0,24);if(o.an)out.an=String(o.an).slice(0,16)}
     for(const [k,Lk] of NET.links){if(Lk.dead)continue;if(out.tm&&NET.ui==='game'){const a=actorOfKey(k);if(!a||pingTc(a)!==o.tc)continue}netSend(k,k===o.k?{...out,me:1}:out)}
-    const P=G.player;if(!out.tm||!P||pingTc(P)===o.tc)this.add({n:out.n,m:out.m,tm:out.tm,tc:o.tc,me:o.k===(NET.me||'host'),f:out.f,an:out.an})},
+    const P=G.player;if(!out.tm||!P||pingTc(P)===o.tc)this.add({n:out.n,m:out.m,tm:out.tm,tc:o.tc,me:o.k===(NET.me||'host'),f:out.f,an:out.an,tt:out.tt})},
   // a grey line for everyone (joins, leaves)
   sys(m){if(NET.on&&NET.host)netAll({t:'chat',s:1,m});this.add({sys:1,m})},
-  add(o){this.lines.push({n:o.n||'',m:o.m||'',tm:!!o.tm,tc:o.tc==null||o.tc<0?null:o.tc,sys:!!o.sys,me:!!o.me,f:o.f|0,an:o.an||'',at:Date.now()});
+  add(o){this.lines.push({n:o.n||'',m:o.m||'',tm:!!o.tm,tc:o.tc==null||o.tc<0?null:o.tc,sys:!!o.sys,me:!!o.me,f:o.f|0,an:o.an||'',tt:typeof o.tt==='string'?o.tt:undefined,at:Date.now()});
     if(this.lines.length>this.KEEP)this.lines.splice(0,this.lines.length-this.KEEP);this.ensure();this.render();
     if(!o.sys&&!o.me&&this.where())AU.play('ui',{vol:.25,rate:1.6})},
   render(){if(!this.box)return;const w=this.where(),L=LI(),room=w==='lobby';this.place();
@@ -63,15 +64,15 @@ const CHAT={on:false,team:false,lines:[],box:null,bar:null,inp:null,mine:[],escA
     const h=list.map(l=>{const fade=open?1:Math.min(1,(this.FADE-(now-l.at))/1200);
       if(l.sys)return `<div class="cl sys" style="opacity:${fade.toFixed(2)}">${esc(l.m)}</div>`;
       const side=l.tc===TH||l.tc==='s0'?'h':l.tc===TZ||l.tc==='s1'?'z':'n';// (대인전: the sides, ping.js pingTc)
-      const hc=HOF.line(l);
-      return `<div class="cl ${side}${l.me?' me':''}" style="opacity:${fade.toFixed(2)}">${l.tm?`<i>${L?'[Team]':'[우리 편]'}</i> `:''}<b${hc?` class="hof" title="${esc(HOF.full(hc,L))}"`:''}>${hc?SVG_CROWN:''}${esc(l.n)}</b><span>: ${esc(l.m)}</span></div>`}).join('');
+      const tt=TTL.line(l),hof=tt&&TTL.isHof(tt);
+      return `<div class="cl ${side}${l.me?' me':''}" style="opacity:${fade.toFixed(2)}">${l.tm?`<i>${L?'[Team]':'[우리 편]'}</i> `:''}${tt&&!hof?`<em class="ctt g${TTL.grade(tt)}" title="${esc(TTL.full(tt,L))}">${esc(TTL.name(tt,L))}</em> `:''}<b${hof?` class="hof" title="${esc(TTL.full(tt,L))}"`:''}>${hof?SVG_CROWN:''}${esc(l.n)}</b><span>: ${esc(l.m)}</span></div>`}).join('');
     // rebuilt only when something changed; in the room the log scrolls and follows the newest line unless it was scrolled up
     const B=this.box;if(h===B._h)return;const end=B.scrollHeight-B.scrollTop-B.clientHeight<24;B._h=h;B.innerHTML=h;if(room&&end)B.scrollTop=B.scrollHeight}};
 // network: a client's line comes to the host, the host's lines come to everyone
 HOSTH.chat=function(L,m){const now=Date.now();L.chatT=(L.chatT||[]).filter(t=>now-t<5000);if(L.chatT.length>=6)return;L.chatT.push(now);
   const txt=CHAT.clean(m.m);if(!txt)return;const a=NET.ui==='game'?actorOfKey(L.key):null,p=NET.lob&&NET.lob.pl.find(x=>x.k===L.key);
-  CHAT.relay({n:(a&&a.name)||L.name||'?',m:txt,tm:!!m.tm&&!!a,tc:a?pingTc(a):null,k:L.key,f:a?a.hofC:p&&p.f,an:a?a.hofN:p&&p.an})};
-CLIH.chat=function(L,m){if(m.s){CHAT.add({sys:1,m:CHAT.clean(m.m)});return}CHAT.add({n:String(m.n||'?').slice(0,16),m:CHAT.clean(m.m),tm:!!m.tm,tc:m.tc,me:!!m.me,f:HOF.valid(m.f)?+m.f:0,an:String(m.an||'').slice(0,16)})};
+  CHAT.relay({n:(a&&a.name)||L.name||'?',m:txt,tm:!!m.tm&&!!a,tc:a?pingTc(a):null,k:L.key,f:a?a.hofC:p&&p.f,an:a?a.hofN:p&&p.an,tt:a?a.ttC:p&&p.tt})};
+CLIH.chat=function(L,m){if(m.s){CHAT.add({sys:1,m:CHAT.clean(m.m)});return}CHAT.add({n:String(m.n||'?').slice(0,16),m:CHAT.clean(m.m),tm:!!m.tm,tc:m.tc,me:!!m.me,f:HOF.valid(m.f)?+m.f:0,an:String(m.an||'').slice(0,16),tt:typeof m.tt==='string'?m.tt.slice(0,24):undefined})};
 (function(){
   // Enter / Y / U open the box (before the game's own key handling, which ignores keys typed into an input)
   addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'))return;

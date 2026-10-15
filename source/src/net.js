@@ -197,7 +197,7 @@ function netLinkUp(L){if(L.onUp)L.onUp();
   if(NET.kind==='room'&&L.kind==='p2p'){if(NET.host)RSIG.setSig(L.key,null);else RSIG.set({sig:null})}
   // a client says hello to its host only (other pages may open links to it while a new host is being found)
   if(NET.cli&&L.key===NET.hostKey){const M=NET.mig;if(M&&M.dial&&M.dial.k===L.key)M.dial.up=true;NET.msg='';netSend(L.key,netHello());UI.mpRender&&UI.mpRender();netMigUI()}}
-function netHello(){const o={t:'hello',v:NET_VER,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,...HOF.hello()};if(typeof TOUCH!=='undefined'&&TOUCH.on)o.tc=1;
+function netHello(){const o={t:'hello',v:NET_VER,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,...TTL.hello()};if(typeof TOUCH!=='undefined'&&TOUCH.on)o.tc=1;
   // on the way to a new host: which hand-over this is, who turned out to be gone, and (scenario) this player's weapon upgrades
   const M=NET.mig;if(M&&M.role==='cli'){o.mg=M.g||1;o.sk=[...M.gone].slice(0,NET_MAXP);const P=G.player;if(NET.ui==='game'&&P&&G.mode==='scen'&&P.wup)o.wu=P.wup}return o}
 function netLinkDown(L,why){if(L.dead)return;console.warn('net: link down',L.kind,why);L.dead=true;L.ok=false;try{L.close()}catch(e){}
@@ -369,7 +369,7 @@ const HOSTH={
   hello(L,m){if(m.v!==NET_VER){netSend(L.key,{t:'bye',why:'ver'});return}
     if(NET.ui==='game'&&!actorOfKey(L.key)){netSend(L.key,{t:'bye',why:m.mg?'mig':'ingame'});return}
     let p=NET.lob.pl.find(p=>p.k===L.key);if(!p){if(NET.lob.pl.length>=NET_MAXP){netSend(L.key,{t:'bye',why:'full'});return}p={k:L.key};NET.lob.pl.push(p);HUD.note(T('mpJoined',String(m.n||'?').slice(0,14)),2.5);AU.play('uiok',{vol:.4})}
-    p.n=String(m.n||'?').slice(0,14);p.s=HSKINS.includes(m.s)?m.s:'guard';p.z=ZLIST.includes(m.z)?m.z:'rager';p.f=HOF.valid(m.f)?+m.f:0;p.an=p.f?String(m.an||'').slice(0,16):'';p.t=m.tc?1:0;L.name=p.n;netLobbyCast();
+    p.n=String(m.n||'?').slice(0,14);p.s=HSKINS.includes(m.s)?m.s:'guard';p.z=ZLIST.includes(m.z)?m.z:'rager';p.f=HOF.valid(m.f)?+m.f:0;p.tt=typeof m.tt==='string'?m.tt.slice(0,24):null;p.an=p.f||p.tt?String(m.an||'').slice(0,16):'';p.t=m.tc?1:0;L.name=p.n;netLobbyCast();
     if(m.mg)netMigHello(L,m)},
   ping(L){},
   pong(L,m){if(m.h&&!(L.srtt&&NET.ui==='game'))L.rtt=lerp(L.rtt||0,Math.max(0,netNow()-m.h),L.rtt?.3:1)},
@@ -425,7 +425,7 @@ const CLIH={
 function netHandle(L,m){if(NET.cli&&L.key!==NET.hostKey){netMigAsk(L,m);return}const H=NET.host?HOSTH:CLIH;const f=H[m.t];if(f)f(L,m)}
 
 // ---------- lobby ----------
-function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=CFG.mpName;me.s=CFG.skin;me.z=CFG.zclass;Object.assign(me,HOF.hello());me.t=typeof TOUCH!=='undefined'&&TOUCH.on?1:0}
+function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=CFG.mpName;me.s=CFG.skin;me.z=CFG.zclass;Object.assign(me,TTL.hello());me.t=typeof TOUCH!=='undefined'&&TOUCH.on?1:0}
   for(const p of NET.lob.pl){const L=NET.links.get(p.k);p.p=L?Math.round(L.rtt):0;p.r=L&&L.kind==='relay'?1:0}
   // (every player keeps the list: if this page vanishes they agree on who takes over; pub: whether the room is listed)
   NET.lob.pub=ROOMS.pubOn?1:0;NET.lob.g=NET.gen|0;
@@ -439,7 +439,7 @@ NET.create=async function(){netTables();const kind=await netDetect();if(!kind){N
   try{if(kind==='room'){NET.code=NET_FIXED_CODE;NET.me='k'+netKey(9);await RSIG.open()}
     else for(let i=0;;i++){NET.code=netKey(4);try{await PJ.host();break}catch(e){PJ.close();if(!(e&&e.type==='unavailable-id')||i>=4)throw e}}}
   catch(e){PJ.close();NET.on=false;NET.ui='';NET.msg=T('mpFail')+(e&&e.type?' ('+e.type+')':'');UI.mpRender();return}
-  NET.lob.pl=[{k:NET.me,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,h:1,...HOF.hello()}];NET.msg='';ROOMS.pubOn=kind==='peerjs'&&CFG.mpPub!==false;UI.mpLobby();ROOMS.tick()};
+  NET.lob.pl=[{k:NET.me,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,h:1,...TTL.hello()}];NET.msg='';ROOMS.pubOn=kind==='peerjs'&&CFG.mpPub!==false;UI.mpLobby();ROOMS.tick()};
 NET.join=async function(code){netTables();code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){NET.msg=T('mpBad');UI.mpRender();return}
   const kind=await netDetect();if(!kind){NET.msg=T('mpNone');UI.mpRender();return}
   NET.on=true;NET.host=false;NET.cli=true;NET.ui='join';NET.code=code;NET.hostKey='';NET.links.clear();NET.out.clear();NET.inQ=[];NET.lastK=0;NET.msg=T('mpConnecting');NET.gen=0;NET.mig=null;UI.mpRender();
@@ -457,8 +457,8 @@ NET.leave=function(){ROOMS.down();if(!NET.on)return;
 function netFatal(msg){console.warn('net: end',msg);const wasGame=NET.ui==='game';NET.leave();NET.msg=msg;if(wasGame||G.st!=='menu'){Main.toTitle();UI.act('mp')}else UI.act('mp');setTimeout(()=>{NET.msg=msg;UI.mpRender&&UI.mpRender()},30)}
 // (a new host waits until its players are back before a match can start: netMigResume)
 NET.start=function(){if(!NET.host||NET.ui!=='lobby'||NET.mig)return;const cfg=Object.assign({},NET.lob.cfg);if(cfg.mode==='scen'){cfg.ep=epSel(cfg);cfg.map=epMapOf(cfg)}else{cfg.ep=0;cfg.map=epMapOf(cfg)}CFG.mpCfg=Object.assign({},cfg);saveCfg();
-  cfg.mt=netKey(12);if(NET.lob.pl[0])Object.assign(NET.lob.pl[0],HOF.hello());
-  const ro=[];let id=0;for(const p of NET.lob.pl)ro.push([id++,p.n,p.s,p.z,p.k,0,p.f|0,p.an||'']);const names=shuffle(BOT_NAMES.slice());const nb=cfg.mode==='scen'?Math.max(0,Math.min(cfg.bots|0,NET_MAXP-NET.lob.pl.length)):cfg.bots;for(let i=0;i<nb;i++)ro.push([id++,names[i%names.length],rpick(HSKINS),rpick(ZLIST),'']);
+  cfg.mt=netKey(12);if(NET.lob.pl[0])Object.assign(NET.lob.pl[0],TTL.hello());
+  const ro=[];let id=0;for(const p of NET.lob.pl)ro.push([id++,p.n,p.s,p.z,p.k,0,p.f|0,p.an||'',typeof p.tt==='string'?p.tt:null]);const names=shuffle(BOT_NAMES.slice());const nb=cfg.mode==='scen'?Math.max(0,Math.min(cfg.bots|0,NET_MAXP-NET.lob.pl.length)):cfg.bots;for(let i=0;i<nb;i++)ro.push([id++,names[i%names.length],rpick(HSKINS),rpick(ZLIST),'']);
   if(cfg.mode==='scen')for(let i=0;i<=SCEN.POOL;i++)ro.push([id++,'Z','guard','rager','',1]);
   for(const L of NET.links.values())L.inGame=NET.lob.pl.some(p=>p.k===L.key);
   netEv('start',{cfg,ro});netBegin(cfg,ro)};
@@ -691,8 +691,8 @@ function netHud(dt){const el=$('hNet');if(!el)return;if(!NET.on||NET.ui!=='game'
     if(Math.abs(_dn.x)<.06&&Math.abs(_dn.y)<.3)continue;// the crosshair readout already names whoever is under it
     if(!losClear(cam.x,cam.y,cam.z,hx,hy-.3,hz))continue;
     let e=NTAG.pool[n];if(!e){e=document.createElement('div');e.className='ntag';lay.appendChild(e);NTAG.pool.push(e)}n++;
-    const hc=HOF.of(a),t=a.name+'|'+hc;if(e.dataset.t!==t){e.dataset.t=t;e.innerHTML=hc?`<small class="hn">${SVG_CROWN}${esc(HOF.name(hc,LI()))}</small>${esc(a.name)}`:esc(a.name)}
-    const cn='ntag'+(a.team===TZ?' z':'')+(hc?' hof':'');if(e.className!==cn)e.className=cn;e.style.display='block';
+    const tt=TTL.of(a),t=a.name+'|'+(tt||'');if(e.dataset.t!==t){e.dataset.t=t;e.innerHTML=tt?TTL.tag(tt)+esc(a.name):esc(a.name)}// (v6.57: the title worn, ach.js)
+    const cn='ntag'+(a.team===TZ?' z':'')+(tt?(TTL.isHof(tt)?' hof':' tt'):'');if(e.className!==cn)e.className=cn;e.style.display='block';
     e.style.transform=`translate(${((_dn.x*.5+.5)*W).toFixed(1)}px,${((-_dn.y*.5+.5)*H).toFixed(1)}px) translate(-50%,-100%)`;e.style.opacity=clamp(1.3-d/45,.35,1).toFixed(2)}
   for(let i=n;i<NTAG.pool.length;i++)NTAG.pool[i].style.display='none'}
 

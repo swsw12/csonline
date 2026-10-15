@@ -29,6 +29,10 @@
 --   * 관리자 2차(v6.43): 부운영자(admins.role 'staff': 조회 · 닉네임 · 정지 · 의심 유저 · 방 내리기 · 기록), 우편(mails: 전체 또는 고른 플레이어, 로비 우편함에서 받기),
 --     쿠폰(coupons: 계정마다 한 번, 총 횟수 · 기간), 공개 방 내리기(room_blocks: 그 방장은 정한 시간 동안 다시 못 올림).
 --   * 무기 알림(v6.46): 관리자가 계정에 바로 넣은 무기는 gun_notices에 남고, 게임 로비에서 무기 그림과 함께 창으로 한 번 뜹니다.
+--   * 업적 · 칭호(v6.57): 업적 목록은 ach_defs(이 파일이 원본 — 다시 실행하면 숫자가 돌아옴), 받은 단계는 ach_claims. 진행도는 기록(킬 · 감염 ·
+--     판 수 · 레벨 · 플레이 시간 · 보유 무기 · 챕터)과 profiles.ach 카운터(헤드샷 · 피해량 · 승리 · MVP · 생존 라운드 · 대인전 · 근접 처치 · 치료 …;
+--     qz_claim / qz_round_claim이 올림, 이전 기록은 처음 한 번 coin_log에서 채움)에서 읽고, 보상은 qz_ach_claim이 한 번만 줍니다.
+--     칭호는 받은 업적 단계와 명예의 전당에서 생기고, 착용은 profiles.title(qz_title_wear; 비우면 자동).
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -78,6 +82,150 @@ create table if not exists public.coin_log (
   at      timestamptz not null default now()
 );
 create index if not exists coin_log_user on public.coin_log(user_id, at desc);
+-- v6.57: achievements (업적) and titles (칭호). ach = the counters the record does not keep, added up by qz_claim / qz_round_claim:
+-- hs headshot kills, dmg damage, wins Mutation · Original matches won, mvp match MVPs, surv rounds lived through as a human, zw rounds
+-- won as a zombie, pk / pw PvP kills / wins, rw arms races won, kn melee kills, cu Q7 cures, mk Bloodhound marks, cr supply crates,
+-- bm bombs planted or defused. ach_fill: the counters were filled once from coin_log (every match and round paid before v6.57).
+-- title = the title worn: null = automatic (the hall of fame's best, else the rarest one earned), 'none', 'hof:<ep*10+diff>' or the
+-- id of an achievement title
+alter table public.profiles add column if not exists ach      jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists ach_fill boolean not null default false;
+alter table public.profiles add column if not exists title    text;
+create index if not exists profiles_nickname on public.profiles(nickname);
+-- every tier of every achievement: grp = its ladder, stat = the number it reads (qz_ach_stats), goal, the reward (coins and 근하신년
+-- decoders) and the title it gives (title_g = that title's grade 1..5; the automatic title picks the highest). The game names them.
+create table if not exists public.ach_defs (
+  id      text primary key,
+  grp     text not null,
+  tier    smallint not null check (tier between 1 and 9),
+  stat    text not null,
+  goal    bigint not null check (goal > 0),
+  coins   integer not null default 0 check (coins between 0 and 20000),
+  tickets integer not null default 0 check (tickets between 0 and 10),
+  title   text,
+  title_g smallint not null default 0 check (title_g between 0 and 5),
+  ord     integer not null default 0,
+  active  boolean not null default true
+);
+-- the tiers each account has taken the reward of (and so the titles it has)
+create table if not exists public.ach_claims (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  ach_id  text not null,
+  at      timestamptz not null default now(),
+  primary key (user_id, ach_id)
+);
+alter table public.ach_defs   enable row level security;
+alter table public.ach_claims enable row level security;
+drop policy if exists "read achievements" on public.ach_defs;
+create policy "read achievements" on public.ach_defs for select to anon, authenticated using (true);
+drop policy if exists "read own achievements" on public.ach_claims;
+create policy "read own achievements" on public.ach_claims for select to authenticated using ((select auth.uid()) = user_id);
+-- the list (this file is its source: running it again puts these numbers back)
+insert into public.ach_defs (id, grp, tier, stat, goal, coins, tickets, title, title_g, ord) values
+  ('kill1', 'kill', 1, 'kills', 100, 300, 0, null, 0, 10),
+  ('kill2', 'kill', 2, 'kills', 1000, 1000, 0, 'hunter', 2, 10),
+  ('kill3', 'kill', 3, 'kills', 5000, 2000, 1, null, 0, 10),
+  ('kill4', 'kill', 4, 'kills', 15000, 3000, 2, 'slayer', 4, 10),
+  ('kill5', 'kill', 5, 'kills', 40000, 5000, 3, 'reaper', 5, 10),
+  ('hs1', 'hs', 1, 'hs', 50, 300, 0, null, 0, 20),
+  ('hs2', 'hs', 2, 'hs', 500, 1000, 0, 'marksman', 2, 20),
+  ('hs3', 'hs', 3, 'hs', 2500, 2000, 1, null, 0, 20),
+  ('hs4', 'hs', 4, 'hs', 8000, 4000, 2, 'oneshot', 4, 20),
+  ('dmg1', 'dmg', 1, 'dmg', 200000, 300, 0, null, 0, 30),
+  ('dmg2', 'dmg', 2, 'dmg', 2000000, 1000, 0, null, 0, 30),
+  ('dmg3', 'dmg', 3, 'dmg', 10000000, 2000, 1, 'firepower', 3, 30),
+  ('dmg4', 'dmg', 4, 'dmg', 40000000, 4000, 2, 'artillery', 4, 30),
+  ('knife1', 'knife', 1, 'kn', 10, 300, 0, null, 0, 40),
+  ('knife2', 'knife', 2, 'kn', 100, 1000, 0, 'blade', 2, 40),
+  ('knife3', 'knife', 3, 'kn', 500, 2500, 1, 'bladedance', 4, 40),
+  ('mvp1', 'mvp', 1, 'mvp', 5, 300, 0, null, 0, 50),
+  ('mvp2', 'mvp', 2, 'mvp', 30, 1000, 0, 'ace', 3, 50),
+  ('mvp3', 'mvp', 3, 'mvp', 100, 3000, 2, 'dominator', 4, 50),
+  ('inf1', 'inf', 1, 'inf', 30, 300, 0, null, 0, 60),
+  ('inf2', 'inf', 2, 'inf', 300, 1000, 0, 'plague', 2, 60),
+  ('inf3', 'inf', 3, 'inf', 1500, 2500, 1, 'pandemic', 3, 60),
+  ('inf4', 'inf', 4, 'inf', 5000, 5000, 3, 'patientzero', 5, 60),
+  ('zw1', 'zw', 1, 'zw', 10, 300, 0, null, 0, 70),
+  ('zw2', 'zw', 2, 'zw', 100, 1000, 0, 'horde', 2, 70),
+  ('zw3', 'zw', 3, 'zw', 500, 3000, 2, 'legion', 4, 70),
+  ('surv1', 'surv', 1, 'surv', 10, 300, 0, null, 0, 80),
+  ('surv2', 'surv', 2, 'surv', 100, 1000, 0, 'survivor', 2, 80),
+  ('surv3', 'surv', 3, 'surv', 500, 2500, 1, 'immortal', 4, 80),
+  ('surv4', 'surv', 4, 'surv', 2000, 5000, 3, 'lasthuman', 5, 80),
+  ('win1', 'win', 1, 'wins', 5, 300, 0, null, 0, 90),
+  ('win2', 'win', 2, 'wins', 50, 1500, 0, 'resistance', 3, 90),
+  ('win3', 'win', 3, 'wins', 200, 4000, 2, 'hero', 4, 90),
+  ('ep1', 'ep', 1, 'ep', 1, 500, 0, null, 0, 100),
+  ('ep2', 'ep', 2, 'ep', 3, 1500, 1, null, 0, 100),
+  ('ep3', 'ep', 3, 'ep', 5, 3000, 2, 'liberator', 4, 100),
+  ('eph1', 'eph', 1, 'eph', 1, 1000, 0, null, 0, 110),
+  ('eph2', 'eph', 2, 'eph', 3, 2500, 1, null, 0, 110),
+  ('eph3', 'eph', 3, 'eph', 5, 5000, 3, 'hellwalker', 4, 110),
+  ('epx1', 'epx', 1, 'epx', 1, 2000, 1, 'expert', 4, 120),
+  ('epx2', 'epx', 2, 'epx', 5, 8000, 5, 'nightmare', 5, 120),
+  ('medal1', 'medal', 1, 'medal', 1, 1000, 0, 'flawless', 3, 130),
+  ('medal2', 'medal', 2, 'medal', 5, 3000, 2, null, 0, 130),
+  ('medal3', 'medal', 3, 'medal', 15, 6000, 4, 'perfect', 5, 130),
+  ('hof1', 'hof', 1, 'hof', 1, 3000, 2, null, 0, 140),
+  ('pk1', 'pk', 1, 'pk', 50, 300, 0, null, 0, 150),
+  ('pk2', 'pk', 2, 'pk', 500, 1500, 0, 'gunslinger', 2, 150),
+  ('pk3', 'pk', 3, 'pk', 3000, 4000, 2, 'duelist', 4, 150),
+  ('pw1', 'pw', 1, 'pw', 5, 300, 0, null, 0, 160),
+  ('pw2', 'pw', 2, 'pw', 50, 1500, 0, 'merc', 3, 160),
+  ('pw3', 'pw', 3, 'pw', 200, 4000, 2, 'warhound', 4, 160),
+  ('rw1', 'rw', 1, 'rw', 1, 500, 0, null, 0, 170),
+  ('rw2', 'rw', 2, 'rw', 10, 2000, 1, 'armsmaster', 4, 170),
+  ('bomb1', 'bomb', 1, 'bm', 5, 300, 0, null, 0, 180),
+  ('bomb2', 'bomb', 2, 'bm', 50, 2000, 1, 'demolition', 3, 180),
+  ('lv1', 'lv', 1, 'lv', 10, 500, 0, 'recruit', 1, 190),
+  ('lv2', 'lv', 2, 'lv', 20, 1000, 0, 'veteran', 2, 190),
+  ('lv3', 'lv', 3, 'lv', 30, 2500, 1, 'elite', 3, 190),
+  ('lv4', 'lv', 4, 'lv', 40, 5000, 3, 'oldguard', 4, 190),
+  ('games1', 'games', 1, 'games', 10, 300, 0, null, 0, 200),
+  ('games2', 'games', 2, 'games', 100, 1000, 0, 'regular', 2, 200),
+  ('games3', 'games', 3, 'games', 500, 3000, 2, 'resident', 3, 200),
+  ('games4', 'games', 4, 'games', 2000, 6000, 4, 'legend', 5, 200),
+  ('hours1', 'hours', 1, 'hours', 10, 500, 0, null, 0, 210),
+  ('hours2', 'hours', 2, 'hours', 50, 1500, 0, 'nightshift', 2, 210),
+  ('hours3', 'hours', 3, 'hours', 200, 4000, 2, 'oldtimer', 4, 210),
+  ('guns1', 'guns', 1, 'guns', 10, 500, 0, null, 0, 220),
+  ('guns2', 'guns', 2, 'guns', 25, 1500, 0, 'collector', 2, 220),
+  ('guns3', 'guns', 3, 'guns', 45, 4000, 2, 'arsenal', 4, 220),
+  ('cure1', 'cure', 1, 'cu', 1, 300, 0, null, 0, 230),
+  ('cure2', 'cure', 2, 'cu', 20, 1500, 0, 'medic', 3, 230),
+  ('cure3', 'cure', 3, 'cu', 100, 4000, 2, 'savior', 4, 230),
+  ('mark1', 'mark', 1, 'mk', 20, 300, 0, null, 0, 240),
+  ('mark2', 'mark', 2, 'mk', 300, 1500, 0, 'tracker', 3, 240),
+  ('crate1', 'crate', 1, 'cr', 5, 300, 0, null, 0, 250),
+  ('crate2', 'crate', 2, 'cr', 50, 1500, 0, 'supply', 2, 250)
+on conflict (id) do update set grp = excluded.grp, tier = excluded.tier, stat = excluded.stat, goal = excluded.goal, coins = excluded.coins,
+  tickets = excluded.tickets, title = excluded.title, title_g = excluded.title_g, ord = excluded.ord, active = true;
+-- whole numbers out of text (0 when it is not one): integer, bigint
+create or replace function public.qz_int(t text) returns integer
+language sql immutable set search_path = '' as $$
+  select case when t ~ '^-?[0-9]{1,9}$' then t::integer else 0 end
+$$;
+create or replace function public.qz_big(t text) returns bigint
+language sql immutable set search_path = '' as $$
+  select case when t ~ '^-?[0-9]{1,18}$' then t::bigint else 0 end
+$$;
+-- the counters of every match and round paid before v6.57, from coin_log, once per account (matches clamped as qz_claim clamps them)
+update public.profiles p set ach = p.ach || jsonb_strip_nulls(s.v), ach_fill = true
+from (select l.user_id, jsonb_build_object(
+    'hs', sum(least(greatest(public.qz_int(l.detail ->> 'hs'), 0), least(greatest(public.qz_int(l.detail ->> 'kills'), 0), 80))) filter (where l.reason = 'match'),
+    'dmg', sum(least(greatest(public.qz_int(l.detail ->> 'damage'), 0), 60000)) filter (where l.reason = 'match'),
+    'wins', count(*) filter (where l.reason = 'match' and l.detail ->> 'mode' in ('orig', 'mut') and l.detail ->> 'won' = 'true'),
+    'mvp', count(*) filter (where l.reason = 'match' and l.detail ->> 'mvp' = 'true'),
+    'pk', sum(least(greatest(public.qz_int(l.detail ->> 'kills'), 0), 80)) filter (where l.reason = 'match' and l.detail ->> 'mode' in ('tdm', 'ffa', 'bomb', 'race')),
+    'pw', count(*) filter (where l.reason = 'match' and l.detail ->> 'mode' in ('tdm', 'ffa', 'bomb', 'race') and l.detail ->> 'won' = 'true'),
+    'rw', count(*) filter (where l.reason = 'match' and l.detail ->> 'mode' = 'race' and l.detail ->> 'won' = 'true'),
+    'surv', count(*) filter (where l.reason = 'round' and l.detail ->> 'mode' in ('orig', 'mut') and l.detail ->> 'survived' = 'true'),
+    'zw', count(*) filter (where l.reason = 'round' and l.detail ->> 'mode' in ('orig', 'mut') and l.detail ->> 'won' = 'true'
+      and coalesce(l.detail ->> 'survived', 'false') <> 'true')) as v
+  from public.coin_log l where l.reason in ('match', 'round') group by l.user_id) s
+where p.id = s.user_id and not p.ach_fill;
+update public.profiles set ach_fill = true where not ach_fill;
+alter table public.profiles alter column ach_fill set default true;
 -- the lucky pouch: one row of numbers, and every result ever drawn
 create table if not exists public.gacha_config (
   id           integer primary key default 1 check (id = 1),
@@ -554,9 +702,118 @@ language sql stable security definer set search_path = '' as $$
   from public.ep_firsts f
 $$;
 
+-- ---------- achievements and titles (v6.57) ----------
+-- the level a number of xp is: the game's recLevel (lobby.js: 300 xp to level 2, each level 18 % more, 99 at most), as a table of
+-- the xp each level starts at (worked out by the game's own code, so the two always agree)
+create or replace function public.qz_level(p_xp bigint) returns integer
+language sql immutable set search_path = '' as $$
+  select count(*)::integer from unnest(array[0,300,654,1072,1565,2147,2834,3645,4602,5731,7063,8635,10490,12679,15262,18310,21907,26151,31159,37068,44041,52269,61978,73435,86954,102906,121729,143940,170149,201076,237570,280633,331447,391408,462162,545652,644170,760421,897597,1059465,1250469,1475854,1741808,2055634,2425949,2862921,3378548,3986988,4704947,5552139,6551826,7731457,9123422,10765941,12704113,14991156,17689867,20874346,24632031,29066099,34298299,40472295,47757610,56354282,66498355,78468361,92592968,109260004,128927106,152134286,179518758,211832435,249962574,294956138,348048544,410697583,484623449,571855971,674790347,796252911,939578737,1108703212,1308270093,1543759013,1821635939,2149530712,2536446544,2993007226,3531748831,4167463925,4917607736,5802777433,6847277675,8079787961,9534150098,11250297420,13275351260,15664914791,18484599758]::bigint[]) t where t <= greatest(coalesce(p_xp, 0), 0)
+$$;
+-- counters added up key by key (b's whole numbers onto a's)
+create or replace function public.qz_ach_add(a jsonb, b jsonb) returns jsonb
+language sql immutable set search_path = '' as $$
+  select coalesce(a, '{}'::jsonb) || coalesce((select jsonb_object_agg(e.k, public.qz_big(coalesce(a, '{}'::jsonb) ->> e.k) + public.qz_big(e.v))
+    from jsonb_each_text(coalesce(b, '{}'::jsonb)) as e(k, v) where public.qz_big(e.v) <> 0), '{}'::jsonb)
+$$;
+-- every number an achievement reads, for one account: the record (kills, inf, games, lv from xp, hours played in matches, guns owned),
+-- the chapters (ep: chapters cleared, eph: on hard or expert, epx: on expert, medal: S medals, hof: first-clear teams) and the counters
+create or replace function public.qz_ach_stats(uid uuid) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  p public.profiles;
+  e jsonb;
+begin
+  p := (select t from public.profiles t where t.id = uid);
+  if p.id is null then return '{}'::jsonb; end if;
+  e := (select jsonb_build_object('ep', count(distinct r.ep) filter (where r.clears > 0),
+      'eph', count(distinct r.ep) filter (where r.clears > 0 and r.diff >= 2),
+      'epx', count(distinct r.ep) filter (where r.clears > 0 and r.diff = 3),
+      'medal', count(*) filter (where r.best_medal = 'S'))
+    from public.ep_records r where r.user_id = uid);
+  return coalesce(p.ach, '{}'::jsonb) || coalesce(e, '{}'::jsonb) || jsonb_build_object('kills', p.rec_kills, 'inf', p.rec_infects,
+    'games', p.rec_games, 'lv', public.qz_level(p.xp), 'hours', floor(p.play_secs / 3600.0)::bigint,
+    'guns', (select count(*) from public.owned_guns o where o.user_id = uid),
+    'hof', (select count(*) from public.ep_first_members m where m.user_id = uid));
+end $$;
+-- the tiers reached and not claimed yet
+create or replace function public.qz_ach_ready(uid uuid) returns integer
+language plpgsql stable security definer set search_path = '' as $$
+declare s jsonb;
+begin
+  s := public.qz_ach_stats(uid);
+  return (select count(*) from public.ach_defs d where d.active and public.qz_big(s ->> d.stat) >= d.goal
+    and not exists (select 1 from public.ach_claims c where c.user_id = uid and c.ach_id = d.id));
+end $$;
+-- the tiers a match just reached (s0: the numbers before it)
+create or replace function public.qz_ach_hits(uid uuid, s0 jsonb) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare s1 jsonb;
+begin
+  s1 := public.qz_ach_stats(uid);
+  return coalesce((select jsonb_agg(d.id order by d.ord, d.tier) from public.ach_defs d where d.active
+    and public.qz_big(s1 ->> d.stat) >= d.goal and public.qz_big(s0 ->> d.stat) < d.goal
+    and not exists (select 1 from public.ach_claims c where c.user_id = uid and c.ach_id = d.id)), '[]'::jsonb);
+end $$;
+-- the title one account wears, as everyone sees it: the one it set while it still has it ('none': nothing), else automatic — the hall
+-- of fame's best ('hof:<code>'), else the highest grade of its achievement titles (the latest of those)
+create or replace function public.qz_title_worn(uid uuid) returns text
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  w text;
+  b integer;
+begin
+  w := (select p.title from public.profiles p where p.id = uid);
+  if w = 'none' then return null; end if;
+  if w like 'hof:%' then
+    if exists (select 1 from public.ep_first_members m where m.user_id = uid and 'hof:' || (m.ep * 10 + m.diff) = w) then return w; end if;
+  elsif w is not null then
+    if exists (select 1 from public.ach_claims c join public.ach_defs d on d.id = c.ach_id where c.user_id = uid and d.title = w) then return w; end if;
+  end if;
+  b := public.qz_first_best(uid);
+  if b is not null then return 'hof:' || b; end if;
+  return (select d.title from public.ach_claims c join public.ach_defs d on d.id = c.ach_id where c.user_id = uid and d.title is not null
+    order by d.title_g desc, c.at desc, d.ord desc limit 1);
+end $$;
+-- everything the achievements window shows: the tiers (defs), the numbers (stats), the tiers claimed, how many wait (ready), the title
+-- worn (worn) and as set (title: null = automatic)
+create or replace function public.qz_ach_json(uid uuid) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare s jsonb;
+begin
+  s := public.qz_ach_stats(uid);
+  return jsonb_build_object('stats', s,
+    'claimed', coalesce((select jsonb_agg(c.ach_id order by c.at) from public.ach_claims c where c.user_id = uid), '[]'::jsonb),
+    'ready', (select count(*) from public.ach_defs d where d.active and public.qz_big(s ->> d.stat) >= d.goal
+      and not exists (select 1 from public.ach_claims c where c.user_id = uid and c.ach_id = d.id)),
+    'title', (select p.title from public.profiles p where p.id = uid), 'worn', public.qz_title_worn(uid),
+    'defs', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'grp', d.grp, 'tier', d.tier, 'stat', d.stat, 'goal', d.goal,
+      'coins', d.coins, 'tickets', d.tickets, 'title', d.title, 'g', d.title_g) order by d.ord, d.tier) from public.ach_defs d where d.active), '[]'::jsonb));
+end $$;
+-- the titles worn by the accounts with these nicknames (16 at most; anyone may ask): in a match another player's title shows only when
+-- the server says that nickname wears it
+create or replace function public.qz_titles_of(p_names text[]) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_object_agg(s.nickname, s.ts), '{}'::jsonb)
+  from (select t.nickname, coalesce(jsonb_agg(distinct w.v) filter (where w.v is not null), '[]'::jsonb) as ts
+        from public.profiles t cross join lateral (select public.qz_title_worn(t.id) as v) w
+        where t.nickname = any((coalesce(p_names, '{}'::text[]))[1:16]) group by t.nickname) s
+$$;
+revoke all on function public.qz_level(bigint) from public, anon, authenticated;
+revoke all on function public.qz_int(text) from public, anon, authenticated;
+revoke all on function public.qz_big(text) from public, anon, authenticated;
+revoke all on function public.qz_ach_add(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.qz_ach_stats(uuid) from public, anon, authenticated;
+revoke all on function public.qz_ach_ready(uuid) from public, anon, authenticated;
+revoke all on function public.qz_ach_hits(uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.qz_title_worn(uuid) from public, anon, authenticated;
+revoke all on function public.qz_ach_json(uuid) from public, anon, authenticated;
+revoke all on function public.qz_titles_of(text[]) from public;
+grant execute on function public.qz_titles_of(text[]) to anon, authenticated;
+
 -- ---------- what the game calls (POST /rest/v1/rpc/<name>) ----------
 -- me: nickname, coins, fragments, pouch pity, the free decoder, 근하신년 decoders kept (tickets), owned guns, admin / ban (v6.42),
--- the friend code, gifts not shown yet and friend requests waiting (v6.18), the episode records (v6.20), hall-of-fame titles (v6.24)
+-- the friend code, gifts not shown yet and friend requests waiting (v6.18), the episode records (v6.20), hall-of-fame titles (v6.24),
+-- the title worn and the achievement rewards waiting (v6.57)
 -- (creates the profile if the account is older than this file)
 create or replace function public.qz_me() returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -590,6 +847,8 @@ begin
       'new', (select count(*) from public.referrals f where f.referrer = uid and not f.seen)),
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
     'rec', public.qz_rec(p), 'eps', public.qz_eps(uid), 'firsts', public.qz_firsts_of(uid),
+    -- (v6.57: title = the title worn as others see it, title_set = as set (null: automatic), ach_ready = achievement rewards waiting)
+    'title', public.qz_title_worn(uid), 'title_set', p.title, 'ach_ready', public.qz_ach_ready(uid),
     -- (v6.42: admin = may open the admin page; ban = {until, forever, reason} while banned)
     'admin', exists (select 1 from public.admins a where a.user_id = uid),
     'mail_new', (select count(*) from public.qz_mail_open(uid)),   -- (v6.43: letters waiting in the mailbox)
@@ -644,19 +903,27 @@ end $$;
 -- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder.
 -- v6.24: p_match = the match's id (the same on every page of it): the first clear of an episode × difficulty starts its hall-of-fame
 -- row, and the other accounts of that match join it (ep_hof in the answer = this account just did)
+-- v6.57: the achievements' counters (profiles.ach) take this match's numbers, clamped like the rest; p_ach = what only the game counts
+-- ({kn melee kills, cu Q7 cures, mk Bloodhound marks, cr supply crates, pl / df bombs planted / defused}); ach_hit in the answer =
+-- the tiers this match reached, ach_ready = every tier waiting to be claimed
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean);
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer);   -- v6.11, before p_hs
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer);   -- v6.12, before the episodes
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean);   -- v6.20, before p_match
+drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text);   -- v6.24, before p_ach
 create or replace function public.qz_claim(p_mode text, p_rounds integer, p_kills integer, p_infects integer, p_damage integer,
   p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0, p_hs integer default 0,
   p_ep integer default 0, p_diff integer default 1, p_time integer default 0, p_lives integer default 0, p_bonus boolean default false,
-  p_match text default '') returns jsonb
+  p_match text default '', p_ach jsonb default null) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   p public.profiles;
   today date := (now() at time zone 'Asia/Seoul')::date;
+  v_s0 jsonb;
+  v_hit jsonb;
+  v_pvp boolean := coalesce(p_mode, '') in ('tdm', 'ffa', 'bomb', 'race');
+  v_zm boolean := coalesce(p_mode, '') in ('orig', 'mut');
   mins numeric;
   raw integer;
   bonus integer := 0;
@@ -689,6 +956,7 @@ begin
   p := (select t from public.profiles t where t.id = uid);
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
+  v_s0 := public.qz_ach_stats(uid);   -- (v6.57: the numbers before this match, to tell the tiers it reaches)
   v_secs := extract(epoch from (now() - coalesce(p.last_claim, p.created_at, now() - interval '1 day')));   -- (an episode's clear time fits in it)
   -- an episode's clear counts when it took 4 minutes at least (v6.21; 5 before) and no longer than the time since the last paid match, and (from
   -- episode 2 on) the episode before it was cleared; only such a clear pays the clear and the escape
@@ -773,10 +1041,27 @@ begin
     from public.daily_missions m where m.user_id = uid and m.day = today);
   update public.daily_missions m set progress = least(m.goal, m.progress + coalesce((v_gain ->> m.kind)::integer, 0))
   where m.user_id = uid and m.day = today and m.progress < m.goal;
+  -- achievements (v6.57): this match's counters (melee kills at most the kills), then the tiers it reached
+  update public.profiles set ach = public.qz_ach_add(ach, jsonb_build_object(
+      'hs', least(greatest(coalesce(p_hs, 0), 0), k),
+      'dmg', least(greatest(coalesce(p_damage, 0), 0), 60000),
+      'wins', case when v_zm and coalesce(p_won, false) then 1 else 0 end,
+      'mvp', case when coalesce(p_mvp, false) then 1 else 0 end,
+      'pk', case when v_pvp then k else 0 end,
+      'pw', case when v_pvp and coalesce(p_won, false) then 1 else 0 end,
+      'rw', case when p_mode = 'race' and coalesce(p_won, false) then 1 else 0 end,
+      'kn', least(greatest(public.qz_int(p_ach ->> 'kn'), 0), 40, k),
+      'cu', least(greatest(public.qz_int(p_ach ->> 'cu'), 0), 20),
+      'mk', least(greatest(public.qz_int(p_ach ->> 'mk'), 0), 200),
+      'cr', least(greatest(public.qz_int(p_ach ->> 'cr'), 0), 10),
+      'bm', least(greatest(public.qz_int(p_ach ->> 'pl'), 0), 12) + least(greatest(public.qz_int(p_ach ->> 'df'), 0), 12)))
+  where id = uid;
+  v_hit := public.qz_ach_hits(uid, v_s0);
   return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 20000 - p.day_earned,
     'xp_got', gx, 'rec', public.qz_rec(p), 'missions', v_mis, 'tickets', p.dec_tickets,
     'ep_first', v_first, 'ep_tickets', v_tix, 'ep_clear', v_clear, 'ep_medal', v_medal, 'eps', case when v_ep > 0 then public.qz_eps(uid) end,
-    'ep_hof', v_hof, 'firsts', case when v_ep > 0 then public.qz_firsts_of(uid) end);
+    'ep_hof', v_hof, 'firsts', case when v_ep > 0 then public.qz_firsts_of(uid) end,
+    'ach_hit', v_hit, 'ach_ready', public.qz_ach_ready(uid));
 end $$;
 
 -- the coins and xp for one finished round (v6.17): a round of the infection modes pays about what a whole match paid before.
@@ -821,6 +1106,11 @@ begin
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'round', jsonb_build_object('mode', p_mode,
     'round', p_round, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'survived', p_survived,
     'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx));
+  -- achievements (v6.57): a round lived through as a human, or won as a zombie (Mutation, Original)
+  if p_mode in ('orig', 'mut') then
+    update public.profiles set ach = public.qz_ach_add(ach, jsonb_build_object('surv', case when coalesce(p_survived, false) then 1 else 0 end,
+      'zw', case when coalesce(p_won, false) and not coalesce(p_survived, false) then 1 else 0 end)) where id = uid;
+  end if;
   return jsonb_build_object('got', got, 'coins', p.coins, 'raw', raw, 'xp_got', gx, 'day_left', 20000 - p.day_earned, 'rec', public.qz_rec(p));
 end $$;
 
@@ -867,9 +1157,9 @@ declare
   v_val integer;
 begin
   -- equal values share a rank (1, 2, 2, 4); within a tie the higher xp, then the older account, is listed first (v6.42: banned accounts are left out)
-  -- (ft: the hall-of-fame title shown next to the name, v6.24)
+  -- (ft: the hall-of-fame title shown next to the name, v6.24; tt: the title worn, v6.57)
   v_top := (select coalesce(jsonb_agg(jsonb_build_object('rank', r.rk, 'nickname', r.nickname, 'value', r.v, 'xp', r.xp, 'games', r.rec_games,
-      'me', coalesce(r.id = uid, false), 'ft', public.qz_first_best(r.id)) order by r.n), '[]'::jsonb)
+      'me', coalesce(r.id = uid, false), 'ft', public.qz_first_best(r.id), 'tt', public.qz_title_worn(r.id)) order by r.n), '[]'::jsonb)
     from (select t.id, t.nickname, t.xp, t.rec_games, s.v, rank() over (order by s.v desc) as rk,
             row_number() over (order by s.v desc, t.xp desc, t.created_at, t.id) as n
           from public.profiles t cross join lateral (select public.qz_rank_value(t, k) as v) s
@@ -878,7 +1168,7 @@ begin
     p := (select t from public.profiles t where t.id = uid);
     if p.id is not null then
       v_val := public.qz_rank_value(p, k);
-      v_me := jsonb_build_object('nickname', p.nickname, 'value', v_val, 'xp', p.xp, 'games', p.rec_games, 'ft', public.qz_first_best(p.id),
+      v_me := jsonb_build_object('nickname', p.nickname, 'value', v_val, 'xp', p.xp, 'games', p.rec_games, 'ft', public.qz_first_best(p.id), 'tt', public.qz_title_worn(p.id),
         'rank', case when p.rec_games > 0 then 1 + (select count(*) from public.profiles t where t.rec_games > 0 and (t.banned_until is null or t.banned_until <= now()) and public.qz_rank_value(t, k) > v_val) end);
     end if;
   end if;
@@ -1097,6 +1387,80 @@ revoke all on function public.qz_missions() from public, anon;
 revoke all on function public.qz_mission_claim(integer) from public, anon;
 grant execute on function public.qz_missions() to authenticated;
 grant execute on function public.qz_mission_claim(integer) to authenticated;
+
+-- ---------- achievements and titles (v6.57) ----------
+-- the player's achievements: every tier (defs, with the reward and the title), the numbers (stats), the tiers claimed, how many wait
+-- (ready), the title worn (worn: as others see it; title: as set, null = automatic). The numbers move when a match or round is paid
+-- (qz_claim, qz_round_claim); the record's own (kills, infections, matches, level, hours, guns, chapters) are read as they are.
+create or replace function public.qz_achievements() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  return public.qz_ach_json(uid);
+end $$;
+-- the reward of one tier reached (p_id), or of every tier reached and not claimed yet (p_id null or ''), once each: coins (outside the
+-- day's limit) and 근하신년 decoders; titles = the titles it gave
+create or replace function public.qz_ach_claim(p_id text default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  s jsonb;
+  v_ids jsonb;
+  v_coins integer;
+  v_tix integer;
+  v_titles jsonb;
+  p public.profiles;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  s := public.qz_ach_stats(uid);
+  v_ids := (select coalesce(jsonb_agg(d.id order by d.ord, d.tier), '[]'::jsonb) from public.ach_defs d where d.active
+    and (coalesce(p_id, '') = '' or d.id = p_id) and public.qz_big(s ->> d.stat) >= d.goal
+    and not exists (select 1 from public.ach_claims c where c.user_id = uid and c.ach_id = d.id));
+  if jsonb_array_length(v_ids) = 0 then
+    if coalesce(p_id, '') <> '' and exists (select 1 from public.ach_claims c where c.user_id = uid and c.ach_id = p_id) then raise exception 'already_claimed'; end if;
+    raise exception 'not_done';
+  end if;
+  insert into public.ach_claims (user_id, ach_id) select uid, x.v from jsonb_array_elements_text(v_ids) as x(v) on conflict do nothing;
+  v_coins := (select coalesce(sum(d.coins), 0) from public.ach_defs d where d.id in (select x.v from jsonb_array_elements_text(v_ids) as x(v)));
+  v_tix := (select coalesce(sum(d.tickets), 0) from public.ach_defs d where d.id in (select x.v from jsonb_array_elements_text(v_ids) as x(v)));
+  v_titles := (select coalesce(jsonb_agg(d.title order by d.ord, d.tier), '[]'::jsonb) from public.ach_defs d
+    where d.title is not null and d.id in (select x.v from jsonb_array_elements_text(v_ids) as x(v)));
+  update public.profiles set coins = coins + v_coins, earned_total = earned_total + v_coins, dec_tickets = dec_tickets + v_tix where id = uid;
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, v_coins, 'ach', jsonb_build_object('ids', v_ids, 'tickets', v_tix));
+  p := (select t from public.profiles t where t.id = uid);
+  return jsonb_build_object('got', v_coins, 'got_tickets', v_tix, 'ids', v_ids, 'titles', v_titles, 'coins', p.coins, 'tickets', p.dec_tickets,
+    'ach', public.qz_ach_json(uid));
+end $$;
+-- the title to wear: an achievement title this account has, 'hof:<code>' of a first-clear team it is in, 'none' (nothing), or null /
+-- '' (automatic) → {title (as set), worn (as everyone sees it)}
+create or replace function public.qz_title_wear(p_title text default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  w text := nullif(btrim(coalesce(p_title, '')), '');
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if w is not null and w <> 'none' then
+    if w like 'hof:%' then
+      if not exists (select 1 from public.ep_first_members m where m.user_id = uid and 'hof:' || (m.ep * 10 + m.diff) = w) then raise exception 'no_title'; end if;
+    elsif not exists (select 1 from public.ach_claims c join public.ach_defs d on d.id = c.ach_id where c.user_id = uid and d.title = w) then
+      raise exception 'no_title';
+    end if;
+  end if;
+  update public.profiles set title = w where id = uid;
+  if not found then raise exception 'no_profile'; end if;
+  return jsonb_build_object('title', w, 'worn', public.qz_title_worn(uid));
+end $$;
+revoke all on function public.qz_achievements() from public, anon;
+revoke all on function public.qz_ach_claim(text) from public, anon;
+revoke all on function public.qz_title_wear(text) from public, anon;
+grant execute on function public.qz_achievements() to authenticated;
+grant execute on function public.qz_ach_claim(text) to authenticated;
+grant execute on function public.qz_title_wear(text) to authenticated;
 
 -- ---------- the 근하신년 decoder bingo ----------
 drop function if exists public.qz_pull(integer, boolean);   -- the old lucky pouch
@@ -1725,7 +2089,7 @@ revoke all on function public.qz_on_signup() from public, anon, authenticated;
 revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
-revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text) from public, anon;
+revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text, jsonb) from public, anon;
 revoke all on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) from public, anon;
 revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo_json(uuid) from public, anon, authenticated;
@@ -1755,7 +2119,7 @@ revoke all on function public.qz_eps(uuid) from public, anon, authenticated;
 grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
-grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text) to authenticated;
+grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text, jsonb) to authenticated;
 grant execute on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) to authenticated;
 grant execute on function public.qz_bingo() to authenticated;
 grant execute on function public.qz_decode(integer, boolean, boolean) to authenticated;
@@ -1876,18 +2240,18 @@ begin
     update public.profiles set fcode = public.qz_fcode_new() where id = uid;
     me := (select t.fcode from public.profiles t where t.id = uid);
   end if;
-  -- (ft: the hall-of-fame title shown next to the name, v6.24; seen / dm: v6.25)
+  -- (ft: the hall-of-fame title shown next to the name, v6.24; seen / dm: v6.25; tt: the title worn, v6.57)
   update public.profiles set last_seen = now() where id = uid and (last_seen is null or last_seen < now() - interval '20 seconds');
   return jsonb_build_object('code', me,
     'friends', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp,
-        'last', greatest(t.last_seen, t.last_claim, t.last_round), 'seen', t.last_seen, 'since', f.accepted_at, 'ft', public.qz_first_best(t.id),
+        'last', greatest(t.last_seen, t.last_claim, t.last_round), 'seen', t.last_seen, 'since', f.accepted_at, 'ft', public.qz_first_best(t.id), 'tt', public.qz_title_worn(t.id),
         'dm', (select count(*) from public.friend_msgs m where m.to_id = uid and m.from_id = t.id and not m.seen))
         order by greatest(t.last_seen, t.last_claim, t.last_round) desc nulls last, t.nickname)
       from public.friends f join public.profiles t on t.id = case when f.a = uid then f.b else f.a end
       where (f.a = uid or f.b = uid) and f.accepted), '[]'::jsonb),
-    'incoming', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id)) order by f.at desc)
+    'incoming', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id), 'tt', public.qz_title_worn(t.id)) order by f.at desc)
       from public.friends f join public.profiles t on t.id = f.a where f.b = uid and not f.accepted), '[]'::jsonb),
-    'outgoing', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id)) order by f.at desc)
+    'outgoing', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'xp', t.xp, 'at', f.at, 'ft', public.qz_first_best(t.id), 'tt', public.qz_title_worn(t.id)) order by f.at desc)
       from public.friends f join public.profiles t on t.id = f.b where f.a = uid and not f.accepted), '[]'::jsonb),
     'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen),
     'dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen),
@@ -2220,7 +2584,7 @@ declare uid uuid := auth.uid();
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   return coalesce((select jsonb_agg(jsonb_build_object('code', i.code, 'map', i.map, 'mode', i.mode, 'at', i.at,
-      'from', t.nickname, 'fc', t.fcode, 'ft', public.qz_first_best(t.id)) order by i.at desc)
+      'from', t.nickname, 'fc', t.fcode, 'ft', public.qz_first_best(t.id), 'tt', public.qz_title_worn(t.id)) order by i.at desc)
     from public.room_invites i join public.profiles t on t.id = i.from_id
     where i.to_id = uid and i.at > now() - interval '3 minutes'), '[]'::jsonb);
 end $$;
