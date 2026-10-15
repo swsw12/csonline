@@ -625,17 +625,19 @@ setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
 
 // ---------- screens ----------
 UI.mpMenu=function(){const L=LI();const inC=NET.kind==='room',inP=NET.kind==='peerjs',pub=CFG.mpPub!==false,noR=inC||NET.detected&&!NET.kind;
-  $('mp').innerHTML=`<h2>${T('mp')}</h2><div class="mpwrap"><div class="mpbox">
-    <label>${T('mpName')}</label><input id="mpName" maxlength="14" value="${esc(CFG.mpName||'')}" autocomplete="off" spellcheck="false">
-    <button data-act="mpcreate" class="big">${T('mpCreate')}</button>
+  // (v6.58: a window like the room settings: the name, a room of my own and a code on the left, the open rooms on the right, the link state below)
+  const conn=inC?T('mpViaRoom'):inP?T('mpViaPJ'):NET.detecting?T('mpChecking'):NET.detected?T('mpNone'):'';
+  $('mp').innerHTML=`<div class="win mpw"><div class="dpHead"><b>${T('mp')}</b><span>${L?`Play together · up to ${NET_MAXP}`:`함께 플레이 · 최대 ${NET_MAXP}명`}</span><button class="x" data-act="back">✕</button></div>
+    <div class="mpwrap"><div class="mpbox">
+    <label>${T('mpName')}</label><input id="mpName" maxlength="14" value="${esc(CFG.mpName||'')}" placeholder="${esc(myName())}" autocomplete="off" spellcheck="false">
+    <button data-act="mpcreate" class="big mpgo">${T('mpCreate')}</button>
     ${!noR&&ROOMS.srv()?`<div class="seg mppub"><button data-act="mppub" data-v="1" class="${pub?'on':''}">${L?'Public room':'공개 방'}</button><button data-act="mppub" data-v="0" class="${pub?'':'on'}">${L?'Private':'비공개'}</button></div>
       ${ACC.signed()?'':`<p class="hint mpnote">${L?'Sign in and your room shows up in the list':'로그인하면 방이 목록에 떠요'}</p>`}`:''}
     <label>${T('mpCode')}</label><div class="mprow"><input id="mpCode" maxlength="4" value="${inC?NET_FIXED_CODE:''}" placeholder="${T('mpCodePh')}" autocomplete="off" spellcheck="false"><button data-act="mpjoin">${T('mpJoin')}</button></div>
     ${inC?`<label class="ck${CFG.p2pOnly?' on':''}" data-act="mpp2p"><i></i>${T('mpP2POnly')}</label>`:''}
-    <p class="mpmsg" id="mpMsg">${esc(NET.msg||'')}</p>
-    <p class="hint">${inC?T('mpViaRoom'):inP?T('mpViaPJ'):NET.detecting?T('mpChecking'):NET.detected?T('mpNone'):''}</p></div>
+    <p class="mpmsg" id="mpMsg">${esc(NET.msg||'')}</p></div>
     ${noR?'':`<div class="mprooms"><div class="mprh"><b>${L?'Public rooms':'공개 방 목록'}</b><button class="mini" data-act="mprooms">${L?'Refresh':'새로고침'}</button></div><div id="mpRooms" class="rlist">${ROOMS.html()}</div></div>`}</div>
-    <div class="mbtns row"><button data-act="back">${T('back')}</button></div>`;
+    <div class="dpFoot"><span class="conn">${conn}</span><button data-act="back">${T('back')}</button></div></div>`;
   const nm=$('mpName');nm.addEventListener('change',()=>{CFG.mpName=nm.value.trim().slice(0,14)||CFG.mpName;saveCfg()});
   const cd=$('mpCode');cd.addEventListener('keydown',e=>{if(e.key==='Enter'){UI.act('mpjoin')}});cd.addEventListener('input',()=>{cd.value=cd.value.toUpperCase().replace(/[^A-Z0-9]/g,'')})};
 // the lobby is rebuilt only when something in it changed; ping readings are patched in place (a rebuild would eat clicks)
@@ -658,7 +660,7 @@ UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.
   UI.show('lobby')};
 UI.mpAct=function(a,v){
   if(a==='mp'){UI.ret=null;UI.show('mp');UI.mpMenu();ROOMS.load();if(!NET.kind&&!NET.detecting){NET.detecting=true;netDetect().then(()=>{NET.detecting=false;NET.detected=true;if(UI.open==='mp')UI.mpMenu()})}}
-  else if(a==='mpcreate'||a==='mpjoin'||a==='mproom'){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg();
+  else if(a==='mpcreate'||a==='mpjoin'||a==='mproom'){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(typeof ACC!=='undefined'&&ACC.signed()&&String(ACC.me.nickname||'').slice(0,14))||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg();
     if(NET.on)return;if(a==='mpcreate')NET.create();else if(a==='mproom'){const cd=$('mpCode');if(cd)cd.value=v||'';NET.join(v)}else NET.join(($('mpCode')||{}).value)}
   else if(a==='mppub'){CFG.mpPub=v!=='0';saveCfg();for(const b of document.querySelectorAll('[data-act="mppub"]'))b.classList.toggle('on',(b.dataset.v!=='0')===CFG.mpPub)}
   else if(a==='mprooms'){ROOMS.load()}

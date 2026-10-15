@@ -101,8 +101,18 @@ function rankLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(
   const mb=add('tmis','mis',SVG_MIS,L?'Missions':'미션');add('trank','rank',SVG_TROPHY,L?'Ranking':'랭킹');
   const dot=mb.querySelector('.dot'),want=ACC.misReady()>0;if(want&&!dot){const d=document.createElement('i');d.className='dot';d.title=L?'A mission reward to claim':'받을 미션 보상이 있어요';mb.appendChild(d)}else if(!want&&dot)dot.remove()}
 
+// (v6.58) the lobby's record panel: today's three missions at a glance (a click opens the missions window; a guest is asked to sign in)
+function misLobby(){const p=document.querySelector('#menu .lobBot .lrec');if(!p||!ACC.on)return;const L=LI();let el=p.querySelector('.lmis');
+  if(!el){el=document.createElement('div');el.className='lmis';p.appendChild(el)}
+  const hd=t=>`<div class="lmh"><b>${L?'Today\'s missions':'오늘의 미션'}</b>${t}</div>`;
+  if(!ACC.signed()){el.dataset.act='acc';el.innerHTML=hd('')+`<p>${L?'Sign in for 3 missions a day — coins and decoders for playing.':'로그인하면 매일 미션 3개 — 플레이만 해도 코인 · 해독기 보상'}</p>`;return}
+  el.dataset.act='mis';const M=ACC.mis,ms=M&&M.missions||[],old=!M||M.resets_in!=null&&Date.now()-M.at>M.resets_in*1000;
+  if(old||!ms.length){el.innerHTML=hd('')+`<p>${L?'Open the missions window ›':'미션 창에서 확인하기 ›'}</p>`;return}
+  const ready=ACC.misReady(),done=ms.filter(m=>m.progress>=m.goal).length;
+  el.innerHTML=hd(`<span>${ready?`<em>${L?`${ready} to claim`:`보상 ${ready}개`}</em>`:`${done} / ${ms.length}`}</span>`)+ms.map(m=>{const t=MIS_TIER[m.tier]||MIS_TIER[1],p=Math.min(1,m.progress/Math.max(1,m.goal)),ok=m.progress>=m.goal;
+    return `<div class="lmr t${m.tier|0}${ok?' done':''}${m.claimed?' got':''}"><em>${t[L?1:0]}</em><span>${esc(misText(m,L))}</span><i><u style="width:${Math.round(p*100)}%"></u></i><small>${m.claimed?'✔':fmtC(Math.min(m.progress,m.goal))+' / '+fmtC(m.goal)}</small></div>`}).join('')}
 (function(){
-  const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{rankLobby()}catch(e){console.error(e)}return r};
+  const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{rankLobby();misLobby()}catch(e){console.error(e)}return r};
   const act0=UI.act;UI.act=function(a,v,el){
     if(a==='rank'){RKW.open('rank');return}
     if(a==='mis'){RKW.open('mis');return}

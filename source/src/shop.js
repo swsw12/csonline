@@ -558,7 +558,7 @@ function shopLobby(){const top=document.querySelector('#menu .lobTop');if(!top)r
   if(signed){const nb=top.querySelector('.prof b');if(nb)nb.textContent=me.nickname}
   const old=top.querySelector('.accChip');if(old)old.remove();
   if(ACC.on){const ch=document.createElement('div');ch.className='accChip';
-    ch.innerHTML=signed||(me&&me.cached)?`<button class="acoin" data-act="shop" title="${L?'Coins':'코인'}">${COIN}<b>${fmtC(me.coins)}</b></button><button class="aname" data-act="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`
+    ch.innerHTML=signed||(me&&me.cached)?`<button class="acoin" data-act="shop" title="${L?'Coins':'코인'}">${COIN}<b>${fmtC(me.coins)}</b></button><button class="aname" data-act="acc" title="${L?'My account':'내 계정'} · ${esc(me.nickname)}">${SVG_USER}<span>${esc(me.nickname)}</span></button>`
       :`<button class="alog" data-act="acc">${SVG_USER}<span>${L?'Sign in':'로그인'}</span></button>`;
     const pf=top.querySelector('.prof');if(pf)pf.after(ch);else top.prepend(ch)}
   const tb=top.querySelector('.tbtns');if(tb&&!tb.querySelector('.tshop')){const b=document.createElement('button');b.className='tshop';b.dataset.act='shop';b.innerHTML=SVG_CART+`<span>${L?'Shop':'상점'}</span>`;tb.prepend(b)}

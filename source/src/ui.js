@@ -39,7 +39,7 @@ const FS={
   label(){const L=LI();return this.on()?(L?'Windowed':'창 모드'):(L?'Fullscreen':'전체화면')},
 };
 // keep every fullscreen button's label in step (screens rebuilt by the resize that fullscreen causes are caught by the later passes)
-FS.sync=()=>{for(const b of document.querySelectorAll('[data-act="full"] span,[data-act="full"].fslbl'))b.textContent=FS.label()};
+FS.sync=()=>{for(const b of document.querySelectorAll('[data-act="full"] span,[data-act="full"].fslbl'))b.textContent=FS.label();for(const b of document.querySelectorAll('[data-act="full"][title]'))b.title=FS.label()};
 for(const ev of ['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,()=>{FS.sync();setTimeout(FS.sync,120);setTimeout(FS.sync,500)});
 // ---------- phone: switch to landscape and lock it (for players who keep the phone's auto-rotate off) ----------
 // Android Chrome only allows screen.orientation.lock() while fullscreen, so: fullscreen first, then lock.

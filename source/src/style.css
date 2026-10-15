@@ -271,8 +271,8 @@ button.mini{min-width:0;padding:4px 10px;font-size:12px;vertical-align:middle}
 .mc.c0 .a1{left:40%}
 .mc .gun{left:50%;transform:translateX(-50%) rotate(-14deg);width:82%;height:auto}.mc .g1{top:16%}.mc .g2{top:38%;transform:translateX(-50%) rotate(8deg);width:88%}.mc .g3{top:62%;width:40%;transform:translateX(-50%) rotate(-24deg)}
 .mtag{position:absolute;top:10px;left:10px;z-index:2;font-size:11px;padding:3px 8px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.18);color:#ddd;border-radius:2px}
-.mbar{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:10px 12px 12px;background:linear-gradient(#2a2d33f2,#15171bf2);border-top:2px solid #e8a33a;display:flex;flex-direction:column;gap:4px}
-.mbar b{font-size:18px;color:#ffd890;letter-spacing:1px;text-shadow:2px 2px 0 #000}.mbar span{font-size:11px;color:#a8aeb6}
+.mc .mbar{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:10px 12px 12px;background:linear-gradient(#2a2d33f2,#15171bf2);border-top:2px solid #e8a33a;display:flex;flex-direction:column;gap:4px}
+.mc .mbar b{font-size:18px;color:#ffd890;letter-spacing:1px;text-shadow:2px 2px 0 #000}.mc .mbar span{font-size:11px;color:#a8aeb6}
 .mc.c0 .mbar{border-top-color:var(--z)}.mc.c0 .mbar b{color:#ffb08a}
 .lobBot{display:grid;grid-template-columns:1.15fr 1fr 1.25fr;gap:12px}
 .lp{background:linear-gradient(#23262bee,#15171bee);border:1px solid #3e424a;border-radius:4px;padding:0 0 10px;min-height:150px;display:flex;flex-direction:column}
@@ -365,7 +365,7 @@ button.mini{min-width:0;padding:4px 10px;font-size:12px;vertical-align:middle}
 /* small landscape screens (phones): compact menus */
 @media (max-height:520px){
   .lob{gap:8px}.lobTop{padding:4px 8px}.lobLogo{font-size:18px}.prof img{height:30px}.tbtns button{padding:4px 8px}.tbtns svg{width:14px;height:14px}
-  .mc{height:auto;min-height:0;aspect-ratio:3/2.4}.mbar{padding:6px 8px}.mbar b{font-size:14px}.mbar span{display:none}.mtag{font-size:9px;top:6px;left:6px}
+  .mc{height:auto;min-height:0;aspect-ratio:3/2.4}.mc .mbar{padding:6px 8px}.mc .mbar b{font-size:14px}.mc .mbar span{display:none}.mtag{font-size:9px;top:6px;left:6px}
   .lobBot{display:none}.lob .foot{display:none}
   .wbody{padding:8px;gap:8px}.fr{padding:3px 6px}.dd,.tin{padding:5px 26px 5px 8px}.wchars{padding:0 8px 8px;gap:8px}.rsec .card{width:64px}.rsec .card img{height:60px}
   .obody{min-height:0;padding:10px 12px}.win .dpFoot{padding:6px 10px}
@@ -1564,3 +1564,143 @@ i.ttm{font-style:normal;font-size:9px;margin-left:4px;vertical-align:1px;color:#
 .achRes button{font:inherit;font-size:12px;padding:4px 11px;background:linear-gradient(#d29a22,#9a6a0c);border:1px solid #ffd060;color:#1c1406;font-weight:bold;border-radius:3px;cursor:pointer;pointer-events:auto;min-width:0;box-shadow:none}
 #rkWin .spages,#rkWin .stabs,#rkWin .achTop,#rkWin .ttNow,#rkWin .swh,#rkWin .sfoot{flex:none}
 @media (max-height:520px){.tbtns .tach{display:none}}/* phones: achievements are a tab of the missions window (the missions button carries their red dot) */
+/* v6.58 UI pass — the lobby top bar: the profile (opens the account) · coins · the main buttons, never wrapped letter by letter · settings as icons (a ⋯ menu when narrow) */
+.lobTop{position:relative;gap:10px;min-height:48px}
+@media (min-width:901px){.lobTop{flex-wrap:nowrap}}
+.lobLogo{flex:none}
+.prof{flex:0 1 auto;min-width:0;margin-left:0;border-radius:3px}
+.prof>div{min-width:0}
+.prof>div>b:first-child{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prof.pa{cursor:pointer;transition:background .12s}
+.prof.pa:hover{background:rgba(255,255,255,.05)}
+.prof.pa:hover>div>b:first-child{color:#ffd890}
+.accChip{flex:none}
+.accChip .aname{padding:6px 9px}
+.accChip .aname span{display:none}
+.tbtns{margin-left:auto;flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tbtns::-webkit-scrollbar{display:none}
+.tbtns button{flex:none;white-space:nowrap;min-width:50px;padding:6px 8px}
+.tbtns button span{white-space:nowrap}
+.tutil{flex:none;display:flex;align-items:center;gap:2px;padding-left:8px;border-left:1px solid #3a3e46}
+.tutil button{min-width:0;width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;gap:9px;background:transparent;border:1px solid transparent;border-radius:3px;color:#a8aeb6;box-shadow:none;font-size:13px;white-space:nowrap}
+.tutil button:hover{background:#2a2d33;border-color:#e8a33a;color:#ffd890}
+.tutil button span{display:none}
+.tutil svg{width:17px;height:17px;flex:none}
+.tutil .pb{display:inline-block;width:17px;font-size:19px;line-height:1;color:#ffd890;text-align:center}
+.tutil .tpatch{display:none}
+.tmore{display:none}
+@media (max-width:1180px){
+  .tmore{display:flex;flex:none;align-items:center;justify-content:center;min-width:0;width:40px;height:40px;padding:0;background:linear-gradient(#33373f,#202328);border:1px solid #4a4e56;border-radius:3px;color:#cfd3da;box-shadow:none}
+  .tmore:hover{border-color:#e8a33a;color:#ffd890}
+  .tmore svg{width:16px;height:16px}
+  .tutil{display:none;position:absolute;right:8px;top:calc(100% + 6px);z-index:40;flex-direction:column;align-items:stretch;gap:2px;padding:6px;min-width:180px;border:1px solid #4a4e56;border-radius:4px;background:linear-gradient(#2a2d33,#1b1d22);box-shadow:0 12px 30px rgba(0,0,0,.65)}
+  .tutil.open{display:flex}
+  .tutil button{width:auto;height:auto;justify-content:flex-start;padding:9px 12px;color:#d8dce2}
+  .tutil button span{display:inline}
+  .tutil .tpatch{display:flex}}
+@media (max-width:820px){.lobLogo{display:none}}
+@media (max-height:520px) and (max-width:1180px){.tutil{grid-template-columns:1fr 1fr;min-width:330px}.tutil.open{display:grid}}
+.mc .mtag{max-width:calc(100% - 36px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.touch .tmore{width:44px;height:44px}
+html.touch .tutil button{min-height:44px}
+/* the notice panel: the what's-new button as a pill next to the patch notes' + */
+.lpt .nbo{margin-left:auto;display:flex;align-items:center;gap:5px;min-width:0;height:22px;padding:0 8px 0 4px;font:inherit;font-size:11px;color:#ffd890;background:#2a2410;border:1px solid #6a5420;border-radius:3px;cursor:pointer;box-shadow:none}
+.lpt .nbo i{font-style:normal;font-size:9px;font-weight:bold;padding:1px 4px;border-radius:2px;background:var(--z);color:#fff}
+.lpt .nbo:hover{border-color:#e8a33a;color:#fff;background:#3a3014}
+.lpt .nbo+.pplus{margin-left:0}
+/* the lobby fits the window: the bottom panels give way first (their lists scroll), a wide screen gets a wider lobby */
+.lob{max-height:100%}
+.lob>.lobTop,.lob>.mcards,.lob>.foot,.lob>.srvBan{flex:none}
+.lobBot{flex:0 1 auto;min-height:150px;grid-template-rows:minmax(0,1fr)}
+.lp{min-height:0;overflow:hidden}
+.lp .news,.lp .mlist{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#4a4e56 transparent}
+.lp .mlist{align-content:start;padding-bottom:2px}
+@media (min-width:1500px){.lob{width:min(1320px,100%)}}
+/* the mission cards' progress bars (they were drawn at the bottom of the screen: the lobby card bar's .mbar rule took them) */
+#rkWin .mtx .mbar{position:relative;display:block;padding:0}
+/* the news window: past 12 slides a counter instead of a row of dots (the "don't show" button stays in view) */
+#nbWin .nbf{flex-wrap:nowrap}
+#nbWin .nbd{flex:1 1 auto;min-width:0;flex-wrap:wrap;row-gap:6px}
+#nbWin .nbh2{flex:none}
+#nbWin .nbn{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;color:#8b93a0;font-size:12px;font-variant-numeric:tabular-nums}
+#nbWin .nbn b{color:#ffd56a;font-size:15px}
+#nbWin .nbn i{flex:1;max-width:240px;height:4px;margin-left:8px;background:#2a2e36;border-radius:2px;overflow:hidden}
+#nbWin .nbn i u{display:block;height:100%;background:#e2b54a;transition:width .3s}
+/* windows taller than the screen: the title bar and the buttons stay in view (the room settings' Start game at 720p) */
+/* (sticky keeps clear of the screen's padding: the offsets reach past it, to the very edge) */
+.win .dpHead{position:sticky;top:-18px;z-index:3}
+.win .dpFoot{position:sticky;bottom:-18px;z-index:3;box-shadow:0 -8px 16px rgba(0,0,0,.45)}
+@media (max-height:520px) and (orientation:landscape){.win .dpHead{top:-8px}.win .dpFoot{bottom:-8px}}
+html.touch .win .dpHead{top:calc(max(8px,env(safe-area-inset-top)) * -1)}
+html.touch .win .dpFoot{bottom:calc(max(8px,env(safe-area-inset-bottom)) * -1)}
+/* room settings · waiting room: the character rows in one line, the section names never broken */
+.rst>span{flex:none;white-space:nowrap}
+.rsec .cards{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,84px));gap:6px}
+.rsec .card{width:auto;min-width:0}
+.rsec .card span{text-align:center;line-height:1.2;word-break:keep-all}
+/* the difficulty cards on a phone: short enough for the OK button to show */
+@media (max-height:520px){#diffPick{align-items:center;padding:6px 0}.dpWin{width:min(820px,96vw)}.dpCards{padding:8px 10px;gap:8px}
+  .dpCard{min-height:0;padding:10px 10px 30px}.dpCard .rank{margin:2px 0 4px}.dpCard .nm{font-size:17px}.dpCard .en{margin:0 0 4px}.dpCard .tip{margin-top:4px}#diffPick .dpFoot{padding:0 10px 10px}}
+/* multiplayer: a window like the others */
+.win.mpw{width:min(940px,96vw);background:linear-gradient(#24272d,#16181c);border:1px solid #5a5e66;box-shadow:0 0 0 1px #000,0 12px 40px rgba(0,0,0,.7);border-radius:4px;overflow:clip;margin:auto 0}
+#mp .mpw .mpwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;padding:14px;align-items:start}
+#mp .mpw .mpbox,#mp .mpw .mprooms{width:auto;min-width:0}
+#mp .mpw .mpbox{gap:7px;padding:4px 14px 10px;background:rgba(0,0,0,.2);border:1px solid #2e3138}
+#mp .mpw .mprooms{padding:4px 12px 12px;background:rgba(0,0,0,.2);border:1px solid #2e3138;align-self:stretch}
+#mp .mpw .mprh b{color:#ffd890;font-size:12px}
+#mp .mpw .mpgo{margin-top:4px;color:#1a1408;background:linear-gradient(#f2b850,#c8862a);border-color:#f2c870}
+#mp .mpw .mpgo:hover{filter:brightness(1.1)}
+#mp .mpw .mpmsg:empty{display:none}
+#mp .mpw .dpFoot .conn{flex:1;min-width:0;text-align:left}
+#mp .mpw .rlist{max-height:min(330px,46vh)}
+@media (max-width:640px){#mp .mpw .mpwrap{grid-template-columns:1fr}}
+@media (max-height:520px){#mp .mpw .mpwrap{padding:8px;gap:8px}#mp .mpw .mpbox{padding:2px 10px 8px;gap:5px}#mp .mpw .mprooms{padding:2px 10px 8px}#mp .mpw .mpbox button.big{padding:9px 14px;font-size:15px}
+  #mp input{padding:7px 10px;font-size:15px}#mp .mpw .rlist{max-height:46vh}}
+/* the pause menu on a phone: two columns, every button on screen */
+@media (max-height:520px){#pause{justify-content:center;gap:8px}#pause h2{margin:0;font-size:18px}
+  #pause .mbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(480px,92vw);min-width:0}
+  #pause .mbtns .big,#pause .mbtns [data-act="quit"]{grid-column:1/-1}
+  html.touch #pause .mbtns button{padding:10px 14px;font-size:14px}}
+/* the zombie class choice: a grid of the six that fits without scrolling (three across, one row of six on a phone) */
+#zsel{width:min(780px,94vw);box-sizing:border-box}
+#zsel .cards.wide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#zsel .cards.wide .card,html.touch #zsel .cards.wide .card{width:auto;min-width:0}
+@media (max-height:520px){#zsel{width:min(940px,96vw);padding:8px 10px;max-height:96vh}#zsel h3{margin:0 0 6px;font-size:14px}
+  #zsel .cards.wide{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}#zsel .card{padding:4px 3px}#zsel .card img{height:52px}
+  #zsel .cards.wide .card p{font-size:10px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}#zsel .hint{display:none}}
+/* a phone: the hint line under the big round text, not over it */
+html.touch #hNote{top:38%;width:max-content;max-width:72vw;box-sizing:border-box}
+/* an overlay open on a phone (zombie class choice, buy menu): only its close button stays over it, a zombie's skill buttons too */
+#touch.ov.zt .tSkill,#touch.ov.zt .tZsel,#touch.ov.zt .tNV{display:none!important}
+/* the lobby's record panel: today's missions (a click opens the missions window) */
+.lmis{flex:1 1 auto;min-height:0;overflow-y:auto;margin:8px 10px 0;padding:7px 9px;display:flex;flex-direction:column;gap:6px;background:rgba(0,0,0,.25);border:1px solid #2e3138;cursor:pointer;scrollbar-width:thin;scrollbar-color:#4a4e56 transparent}
+.lmis:hover{border-color:#e8a33a}
+.lmh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:11px}
+.lmh b{color:#ffd890;font-size:12px;font-weight:normal}
+.lmh span{color:#8a9098;font-variant-numeric:tabular-nums}
+.lmh em{font-style:normal;font-weight:bold;color:#1a1408;background:#e8a33a;padding:1px 6px;border-radius:2px}
+.lmr{display:grid;grid-template-columns:auto minmax(0,1fr) 54px auto;align-items:center;gap:6px;font-size:11px;color:#c8ccd2}
+.lmr em{font-style:normal;font-size:9px;padding:1px 4px;border-radius:2px;background:#2e4a28;color:#bfe8a8;white-space:nowrap}
+.lmr.t2 em{background:#23395e;color:#b8d4ff}.lmr.t3 em{background:#5a2414;color:#ffc8a8}
+.lmr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lmr i{height:5px;background:#16181b;border:1px solid #33373e;border-radius:3px;overflow:hidden}
+.lmr i u{display:block;height:100%;background:linear-gradient(90deg,#c88a1e,#ffd24a)}
+.lmr.done i u{background:linear-gradient(90deg,#4aa83a,#9be07a)}
+.lmr small{min-width:42px;text-align:right;color:#8a9098;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lmr.done small{color:#9be07a}
+.lmr.got{opacity:.55}
+.lmis p{margin:0;font-size:11px;color:#8a9098}
+/* the results: the buttons stay on screen under a long table (sixteen players) */
+#results>.mbtns{position:sticky;bottom:-18px;z-index:2;align-self:stretch;padding:12px 0 18px;background:linear-gradient(rgba(5,6,9,0),rgba(5,6,9,.94) 40%)}
+@media (max-height:520px) and (orientation:landscape){#results>.mbtns{bottom:-8px;padding:8px 0}}
+html.touch #results>.mbtns{bottom:calc(max(8px,env(safe-area-inset-bottom)) * -1);padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.lrec .recs{padding:8px 10px 2px}.lrec .recs div{padding:5px 2px;gap:2px}.lrec .lvrow{padding-top:4px}.lmis{gap:5px}
+/* the top bar too narrow for everything (lobFit, lobby.js): a smaller logo, then none, then the main buttons as icons */
+.lobTop.t1 .lobLogo{font-size:18px;letter-spacing:1px}
+.lobTop.t2 .lobLogo{display:none}
+.lobTop.t3 .tbtns button{min-width:40px;padding:8px 9px}
+.lobTop.t3 .tbtns button span{display:none}
+.mc .mbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* touch: the coins / mail / account buttons and the results' shop and mission buttons big enough for a thumb */
+html.touch .accChip button{min-height:40px;min-width:40px;justify-content:center}
+html.touch #results [data-act="shop"],html.touch #results [data-act="mis"]{min-height:36px}

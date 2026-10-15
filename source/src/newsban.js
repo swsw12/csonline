@@ -134,7 +134,7 @@ const NBAN={i:0,timer:null,shown:false,
       <div class="nbb"><button class="nbar l" data-nb="p"${n<2?' disabled':''}>‹</button><div class="nbc k${e.kind}" key="${this.i}"><div class="nba">${this.art(e)}<i class="nbg"></i></div>
         <div class="nbt"><span class="nbtag">${esc(e.tag?e.tag[L]:'')}</span>${kn?`<span class="nbk">${esc(kn)}</span>`:''}<h3>${esc(e.t[L])}</h3><p>${esc(e.d[L])}</p>
         ${W&&typeof SHOP!=='undefined'?`<button class="nbgo" data-nb="shop" data-v="${e.ref}">${L?'See it in the shop':'상점에서 보기'} ›</button>`:''}</div></div><button class="nbar r" data-nb="n"${n<2?' disabled':''}>›</button></div>
-      <div class="nbf"><div class="nbd">${A.map((_,k)=>`<i class="${k===this.i?'on':''}" data-nb="d" data-v="${k}"></i>`).join('')}</div><button class="nbh2" data-nb="hide">${L?'Don\'t show for 2 hours':'2시간 동안 보지 않기'}</button></div></div>`},
+      <div class="nbf">${n<=12?`<div class="nbd">${A.map((_,k)=>`<i class="${k===this.i?'on':''}" data-nb="d" data-v="${k}"></i>`).join('')}</div>`:`<div class="nbn"><b>${this.i+1}</b><span>/ ${n}</span><i><u style="width:${((this.i+1)/n*100).toFixed(1)}%"></u></i></div>`}<button class="nbh2" data-nb="hide">${L?'Don\'t show for 2 hours':'2시간 동안 보지 않기'}</button></div></div>`},
   close(){const o=$('nbWin');if(o)o.remove();clearInterval(this.timer);this.timer=null},
   // first lobby of this page load: wait for the lobby and for a sign-in window already open to close
   boot(){if(this.shown||this.hidden()||!this.list().length)return;this.shown=true;let n=0;
