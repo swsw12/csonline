@@ -4,7 +4,7 @@
 const GA_MATS=['blk','blk2','steel','bright','wood','olive','tan','rub','brass','glove','sl_guard','sl_medic','sl_soldier','sl_hazmat','skin','zs_rager',
   'zs_runner','zs_brute','zs_scream','claw','red','heGreen','frost','lens','muzzle','white','wood2','gunmetal','cuff','hglove','nail','flesh',
   'tan2','smoke','carbon','rail','vent','engraved','wood3','bluesteel','grip2','orange','yellow','olive2','camo','belt','chrome','axehead','forged','zbSkin','zbEye','zbMouth','zbTongue','burlap','coffW','coffL','zs_coffin','dred','dyel','zs_fireman','sl_fmcoat'];
-const GA={W:1024,H:2048,P:128,idx:{},tex:null,texVM:null,canvas:null};// 8 x 16 slots of 128 px (v6.21: two more rows for the chapters' props; v6.29: two more for 5챕터; v6.41: one more, the atlas a power of two now)
+const GA={W:1024,H:4096,P:128,idx:{},tex:null,texVM:null,canvas:null};// 8 x 32 slots of 128 px (v6.21: two more rows for the chapters' props; v6.29: two more for 5챕터; v6.41: one more, the atlas a power of two now; v6.61: twice as tall, the first 128 slots were all taken)
 const GA_SLOTS=GA.W/GA.P*(GA.H/GA.P);// slots the atlas holds (the module painters skip a material past it)
 GA_MATS.forEach((m,i)=>GA.idx[m]=i);
 function paintGunAtlas(){const PS=GA.P;
@@ -81,12 +81,19 @@ function paintGunAtlas(){const PS=GA.P;
   GA.texVM=new THREE.CanvasTexture(cv);GA.texVM.magFilter=THREE.NearestFilter;GA.texVM.minFilter=THREE.LinearFilter;GA.texVM.generateMipmaps=false}
 // part: {c:[x,y,z], s:[w,h,d], m, rx?, ry?, rz?, tag?}
 const GD=560;// pixels per metre inside a patch (view model); world models use fewer
+// part deformations (v6.61): kz [kx front, kx back, ky front, ky back] scales the cross-section along the part's own z (front = -z) about
+// the anchors ax / ay (-1: the -x / bottom face stays put, 1: the +x / top face, 0: the middle); sy [dy front, dy back] shears it up or
+// down along z (a slanted block); ky [kx bottom, kx top, kz bottom, kz top] tapers it along its own y (rbox's profile). Normals follow.
+function partDef(p){if(!p.kz&&!p.sy)return null;const hx=p.s[0]/2,hy=p.s[1]/2,hz=p.s[2]/2,K=p.kz||[1,1,1,1],S=p.sy||[0,0],ax=(p.ax||0)*hx,ay=(p.ay||0)*hy,iz=1/(2*hz);
+  return (P,N)=>{for(let k=0;k<P.length;k+=3){const x=P[k],y=P[k+1],z=P[k+2],t=clamp((z+hz)*iz,0,1),kx=K[0]+(K[1]-K[0])*t,ky=K[2]+(K[3]-K[2])*t;
+    P[k]=ax+(x-ax)*kx;P[k+1]=ay+(y-ay)*ky+S[0]+(S[1]-S[0])*t;
+    const a=(x-ax)*(K[1]-K[0])*iz,b=((y-ay)*(K[3]-K[2])+(S[1]-S[0]))*iz,nx=N[k]/kx,ny=N[k+1]/ky,nz=N[k+2]-a*nx-b*ny,l=Math.hypot(nx,ny,nz)||1;N[k]=nx/l;N[k+1]=ny/l;N[k+2]=nz/l}}}
 // parts become bevelled boxes (rbox): a chamfer catches the light along every edge; o.bevel sets the default size (0 = plain boxes for distant models), p.r overrides per part
 function partGeo(parts,o){o=o||{};const pos=[],nrm=[],uv=[],idx=[];const W=GA.W,H=GA.H,PS=GA.P,LIM=PS-2;const m4=new THREE.Matrix4(),e=new THREE.Euler(),v=new THREE.Vector3(),n=new THREE.Vector3();
   const bev=o.bevel==null?.0035:o.bevel;
   parts.forEach((p,pi)=>{const [cx,cy,cz]=p.c,[sx,sy,sz]=p.s;const mi=GA.idx[p.m]!=null?GA.idx[p.m]:0;const px0=(mi%8)*PS,py0=Math.floor(mi/8)*PS;
-    e.set(p.rx||0,p.ry||0,p.rz||0,'XYZ');m4.makeRotationFromEuler(e);const mn=Math.min(sx,sy,sz);const r=p.r!=null?Math.min(p.r,mn*.5):Math.min(bev,mn*.22);
-    rbox(p.s,{r},0,(fk,g)=>{const [fu,fv]=faceDims(p.s,fk);const pw=Math.min(LIM,Math.max(1,fu*(o.gd||GD))),ph=Math.min(LIM,Math.max(1,fv*(o.gd||GD)));
+    e.set(p.rx||0,p.ry||0,p.rz||0,'XYZ');m4.makeRotationFromEuler(e);const mn=Math.min(sx,sy,sz);const r=p.r!=null?Math.min(p.r,mn*.5):Math.min(bev,mn*.22);const D=partDef(p);
+    rbox(p.s,p.ky?{r,tx:[p.ky[0],p.ky[1]],tz:[p.ky[2],p.ky[3]]}:{r},0,(fk,g)=>{if(D)D(g.P,g.N);const [fu,fv]=faceDims(p.s,fk);const pw=Math.min(LIM,Math.max(1,fu*(o.gd||GD))),ph=Math.min(LIM,Math.max(1,fv*(o.gd||GD)));
       const ox=px0+1+Math.floor(hash2(pi,FK.indexOf(fk),3)*(LIM-pw)),oy=py0+1+Math.floor(hash2(pi,FK.indexOf(fk),4)*(LIM-ph));const base=pos.length/3;
       for(let j=0;j<g.nb;j++)for(let i=0;i<g.na;i++){const k=(j*g.na+i)*3;v.set(g.P[k],g.P[k+1],g.P[k+2]).applyMatrix4(m4);pos.push(v.x+cx,v.y+cy,v.z+cz);
         n.set(g.N[k],g.N[k+1],g.N[k+2]).applyMatrix4(m4);nrm.push(n.x,n.y,n.z);uv.push((ox+g.A[i]*pw)/W,1-(oy+(1-g.B[j])*ph)/H)}
@@ -283,7 +290,7 @@ const ICONS={};
 // a pair (G.iconDual = the far gun's [z, y] offset): the far gun is drawn first and dimmer, the near one over it with a dark rim
 function gunIcon(id,h){h=h||22;const key=id+':'+h;if(ICONS[key])return ICONS[key];const G=GUNS[id];if(!G)return null;
   let z0=1e9,z1=-1e9,y0=1e9,y1=-1e9;const sets=G.iconDual?[G.iconDual,[0,0]]:[[0,0]],Q=sets.map(()=>[]);
-  sets.forEach((o,gi)=>{for(const p of G.parts){if(p.c[0]<-.01&&G.parts.some(q=>q!==p&&Math.abs(q.c[0]+p.c[0])<.002&&q.c[2]===p.c[2]))continue;const c=Math.cos(p.rx||0),s=Math.sin(p.rx||0),dz2=p.ry?Math.abs(p.s[0]/2*Math.sin(p.ry))+Math.abs(p.s[2]/2*Math.cos(p.ry)):p.s[2]/2;const pts=[];for(const a of [-1,1])for(const b of [-1,1]){const dy=a*p.s[1]/2,dz=b*dz2;const yy=p.c[1]+dy*c-dz*s+o[1],zz=p.c[2]+dy*s+dz*c+o[0];pts.push([zz,yy]);z0=Math.min(z0,zz);z1=Math.max(z1,zz);y0=Math.min(y0,yy);y1=Math.max(y1,yy)}Q[gi].push(pts)}});
+  sets.forEach((o,gi)=>{for(const p of G.parts){if(p.c[0]<-.01&&G.parts.some(q=>q!==p&&Math.abs(q.c[0]+p.c[0])<.002&&q.c[2]===p.c[2]))continue;const c=Math.cos(p.rx||0),s=Math.sin(p.rx||0),dz2=p.ry?Math.abs(p.s[0]/2*Math.sin(p.ry))+Math.abs(p.s[2]/2*Math.cos(p.ry)):p.s[2]/2;const pts=[];for(const a of [-1,1])for(const b of [-1,1]){let dy=a*p.s[1]/2,dz=b*dz2;if(p.kz||p.sy||p.ky){const t=(b+1)/2,K=p.kz||[1,1,1,1],S=p.sy||[0,0],ay=(p.ay||0)*p.s[1]/2;dy=ay+(dy-ay)*(K[2]+(K[3]-K[2])*t)+S[0]+(S[1]-S[0])*t;if(p.ky)dz*=a<0?p.ky[2]:p.ky[3]}const yy=p.c[1]+dy*c-dz*s+o[1],zz=p.c[2]+dy*s+dz*c+o[0];pts.push([zz,yy]);z0=Math.min(z0,zz);z1=Math.max(z1,zz);y0=Math.min(y0,yy);y1=Math.max(y1,yy)}Q[gi].push(pts)}});
   const sc=(h-4)/Math.max(.05,y1-y0);const w=Math.ceil((z1-z0)*sc)+4;const [cv,x]=mkCanvas(w,h);
   const draw=(quads,fill,ox,oy)=>{x.fillStyle=fill;for(const q of quads){x.beginPath();const o=[q[0],q[1],q[3],q[2]];o.forEach((p,i)=>{const px=2+(z1-p[0])*sc+ox,py=2+(y1-p[1])*sc+oy;i?x.lineTo(px,py):x.moveTo(px,py)});x.closePath();x.fill()}};
   Q.forEach((quads,gi)=>{if(gi>0)for(const [ox,oy] of [[-1,0],[1,0],[0,-1],[0,1],[1,1]])draw(quads,'#000',ox,oy);else draw(quads,'#000',1,1);draw(quads,gi<Q.length-1?'#b9b4a8':'#e8e4d8',0,0)});
