@@ -557,6 +557,7 @@ create policy "read own episodes" on public.ep_records for select to authenticat
 -- v6.42: a price or a shop flag set on the admin page (admin_set) is kept when this file runs again; file_price / file_sold keep what
 -- the file says (the admin page's reset puts those back)
 -- v6.56: sentinel · q7vac · bhound are crate guns like ak60r / dmp7 (not sold; an account that owns one picks it from the buy menu)
+-- v6.59: glock — a plain pistol sold for 1,000 coins; dglock (Double Glock) — a crate gun like the others (a sidearm)
 alter table public.gun_prices add column if not exists admin_set  boolean not null default false;
 alter table public.gun_prices add column if not exists file_price integer;
 alter table public.gun_prices add column if not exists file_sold  boolean;
@@ -570,6 +571,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('d50',1500,false,true,null),
   ('tw9',1800,false,true,null),
   ('r6',2000,false,true,null),
+  ('glock',1000,false,true,null),
   ('db2',1500,false,true,null),
   ('m14',3500,false,true,null),
   ('as12',4500,false,true,null),
@@ -616,6 +618,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('sentinel',0,false,false,null),
   ('q7vac',0,false,false,null),
   ('bhound',0,false,false,null),
+  ('dglock',0,false,false,null),
   ('rdc',0,false,false,'S'),
   ('mdrill',0,false,false,'S'),
   ('mlaunch',0,false,false,'S'),

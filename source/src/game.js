@@ -275,6 +275,10 @@ function separate(dt){const A=G.actors;for(let i=0;i<A.length;i++){const a=A[i];
 // ---------- weapons in hand ----------
 // fanning the hammer (Crimson Peacemaker, right button): the rest of the cylinder goes off at W.fanRpm, each shot weaker and much looser
 function fanShot(W){return W.fanW||(W.fanW=Object.assign({},W,{dmg:W.dmg*W.fanDm,spread:W.spread.map(x=>x*2.4),kb:W.kb*.55}))}
+// a gun with a burst mode (v6.59, the Glocks: glock.js): W.gBurst = {n rounds a pull, rpm inside the burst, cd after it, spr spread ×, dm damage ×};
+// right click switches it on and off, kept per gun (a.gbm); gbOn tells whether the gun in hand is in it, gbShot is the gun as it fires then
+function gbShot(W){const g=W.gBurst;return W.gbW||(W.gbW=Object.assign({},W,{burst:g.n,rpm:g.rpm,burstCd:g.cd,semi:1,dmg:W.dmg*(g.dm||1),spread:W.spread.map(x=>x*(g.spr||1))}))}
+const gbOn=(a,W)=>!!(W&&W.gBurst&&a.gbm&&a.gbm[a.cur]);
 function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(cmd.drop&&!pc.drop&&a.team===TH)playerDrop(a);// G: throw the gun in hand (drops.js)
   if(a.holdT>0&&a.team===TZ&&!a.host){cmd.fire=cmd.alt=cmd.skill=false}// pinned by the Ripper: no claws, no skill
@@ -308,7 +312,9 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(W.alt&&W.kind!=='saw'&&cmd.alt&&!pc.alt&&a.drawT<=0&&(a.reloadT<=0||W.alt==='detonate'))nyAlt(a,W);
   // zoom levels cycle with the right button
   // Dual Berettas: the aim key flips the stance (looks only)
-  if(W.dual&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
+  if(W.gBurst&&cmd.alt&&!pc.alt&&a.drawT<=0){const m=a.gbm||(a.gbm={});m[a.cur]=!m[a.cur];a.burstN=0;if(a.isPlayer){const L=LI(),n=W.gBurst.n;AU.play('slide',{vol:.28,rate:1.7});
+    HUD.note(m[a.cur]?(L?`${n}-round burst`:`${n}점사`):W.semi?(L?'Semi-auto':'반자동'):(L?'Full auto':'연사'),1.2)}}
+  if(W.dual&&!W.gBurst&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
   if(W.zoom&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0){a.zoom=(a.zoom+1)%(W.zoom.length+1);a.zoomWas=0;if(a.isPlayer)AU.play('ui',{vol:.3,rate:.7})}
   // Blaze-8: right click fires a special shell from its own slot (cuts a shell reload short).
   if(W.spEvery&&a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire&&(a.isPlayer?cmd.alt&&!pc.alt:(a.spAm&&a.spAm[a.cur]>0&&cmd.fire&&Math.random()<.04))&&a.spAm&&a.spAm[a.cur]>0){
@@ -328,15 +334,15 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
     else{a.reloadT=W.reload;a.relKind='mag';a.relCh=am.mag>0;if(a.isPlayer)VM.reload(W,W.reload,'mag',am.mag===0);
       else AU.at('magout',a.c.x,a.c.y+1.2,a.c.z,{vol:.4,range:15})}return}
   if(W.kind==='saw'){sawUpdate(a,W,dt);return}
-  const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;
+  const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;const BW=gbOn(a,W)?gbShot(W):W;
   // a burst keeps going after the trigger is released
-  if(a.burstN>0){if(ready){if(am.mag<=0){a.burstN=0;a.fanB=0}else{const fb=a.fanB&&W.fanRpm;fireGun(a,fb?fanShot(W):W);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/(fb?W.fanRpm:W.rpm):W.burstCd);if(a.burstN<=0)a.fanB=0}}return}
+  if(a.burstN>0){if(ready){if(am.mag<=0){a.burstN=0;a.fanB=0}else{const fb=a.fanB&&W.fanRpm;fireGun(a,fb?fanShot(W):BW);a.burstN--;a.nextFire=G.t+(a.burstN>0?60/(fb?W.fanRpm:BW.rpm):BW.burstCd);if(a.burstN<=0)a.fanB=0}}return}
   // Dual Berettas in the sideways stance fire full-auto while held (a pair with bRpm, the Dual MP7A1, fires faster in it)
-  if(cmd.fire&&ready&&(!((W.semi&&!(W.dual&&a.dualB))||W.burst)||!pc.fire||!a.isPlayer)){
+  if(cmd.fire&&ready&&(!((BW.semi&&!(W.dual&&a.dualB))||BW.burst)||!pc.fire||!a.isPlayer)){
     if(am.mag<=0){if(!pc.fire&&a.isPlayer)AU.play('dry',{vol:.6});a.nextFire=G.t+.25;return}
     if(W.spin&&a.spinV<1)return;
-    fireGun(a,W);a.an.atk=0;
-    if(W.burst){a.burstN=W.burst-1;a.nextFire=G.t+(a.burstN>0?60/W.rpm:W.burstCd)}else a.nextFire=G.t+60/(W.rpm*(W.bRpm&&a.dualB?W.bRpm:1))}}
+    fireGun(a,BW);a.an.atk=0;
+    if(BW.burst){a.burstN=BW.burst-1;a.nextFire=G.t+(a.burstN>0?60/BW.rpm:BW.burstCd)}else a.nextFire=G.t+60/(W.rpm*(W.bRpm&&a.dualB?W.bRpm:1))}}
 // zombies: claws, spore bomb and class skill
 function zombieAttack(a,dt){const cmd=a.cmd,pc=a.pc,Z=ZCLASS[a.zc];
   if(a.cur==='zbomb'){zbombUpdate(a,dt);return}

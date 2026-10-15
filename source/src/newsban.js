@@ -5,6 +5,10 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'dglock',tag:['보급 무기 · 권총','Crate weapon · pistol'],t:['더블 글록','Double Glock'],
+    d:['양손에 한 자루씩 든 기관권총 — 두 자루가 번갈아 분당 1,250발을 쏟아내요. 탄창 33발 × 2, 보급상자 전용 무기답게 주무기 못지않은 화력을 보조무기 칸에 넣어 다녀요. 우클릭하면 6점사: 더 모여서 맞고 한 발 피해 +10%.','A machine pistol in each hand, the two firing in turn at 1,250 rounds a minute. Two 33-round magazines and the firepower of a crate primary, carried in the sidearm slot. Right click for 6-round bursts: tighter, 10% more damage a round.']},
+  {kind:'weapon',ref:'glock',tag:['신규 권총 · 상점 1,000 코인','New pistol · Shop · 1,000 coins'],t:['글록','Glock'],
+    d:['가볍고 믿음직한 9mm 권총. 17발 탄창에 빠른 재장전, 한 발은 USP보다 조금 약하지만 더 빨리 쏴요. 우클릭하면 3점사로 바뀌고, 한 번 더 누르면 반자동으로 돌아와요.','A light, dependable 9 mm pistol: 17 rounds and a quick reload, a little less a shot than the USP but quicker. Right click switches it to 3-round bursts; again, back to semi-auto.']},
   {kind:'feature',ico:'★',tag:['신규 기능','New'],t:['업적 · 칭호','Achievements · titles'],
     d:['25가지 업적 · 76단계 — 단계마다 코인 · 근하신년 해독기 보상, 일부는 칭호까지. 지금까지의 기록도 그대로 쳐줘요. 얻은 칭호(5등급 · 48가지)를 하나 골라 달면 로비 · 대기실 · 머리 위 · 채팅 · 랭킹에서 이름 옆에 보여요. 로비의 「업적」 버튼에서.','25 achievements in 76 tiers — each tier pays coins or 근하신년 decoders, some a title. Your record so far counts. Wear one of the titles you earn (48, in five grades) and it shows next to your name in the lobby, the waiting room, over your head, in chat and the ranking. The lobby\'s Achievements button.']},
   {kind:'weapon',ref:'sentinel',tag:['보급 무기 · 기관총','Crate weapon · machine gun'],t:['센티넬','Sentinel'],
