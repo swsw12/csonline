@@ -67,12 +67,12 @@ GUN_DESIGN.glock={mag:17,ch:1,act:'slide',x:.4,d:.04,roll:.3};WPN.glock.fd=GUN_D
 GUN_DESIGN.dglock={mag:66,ch:1,act:'slide',x:.5,d:.04};WPN.dglock.fd=GUN_DESIGN.dglock;WPN.dglock.ch=1;
 
 // ---------- the weapon name on the HUD: the burst mode ----------
-{const ct=cmbTag;cmbTag=function(P,W){return ct(P,W)+(W&&P&&gbOn(P,W)?(LI()?` · ${W.gBurst.n}-round burst`:` · ${W.gBurst.n}점사`):'')}}
-// touch: the aim button says what it switches to while a gun with a burst mode is in hand (점사, or back to 반자동 / 연사); the label goes
+{const ct=cmbTag;cmbTag=function(P,W){return ct(P,W)+(W&&P&&gbOn(P,W)?' · '+gbName(W,true,LI()):'')}}
+// touch: the aim button says what it switches to while a gun with a second mode is in hand (점사 / 펌프, or back to 반자동 / 연사); the label goes
 // back to 조준 after, unless the Thanatos or a Janus has taken the button over (their own labels)
 function glkTouch(P){if(typeof TOUCH==='undefined'||!TOUCH.el)return;const bt=TOUCH.el.querySelector('.tAlt'),em=bt&&bt.querySelector('em');if(!em)return;
   const W=P&&P.alive&&P.team===TH?WPN[P.cur]:null,L=LI();
-  if(W&&W.gBurst){const t=gbOn(P,W)?(W.semi?(L?'SEMI':'반자동'):(L?'AUTO':'연사')):(L?'BURST':'점사');if(em.textContent!==t)em.textContent=t;bt.dataset.gb='1'}
+  if(W&&(W.gBurst||W.gMode)){const t=gbShort(W,!gbOn(P,W),L);if(em.textContent!==t)em.textContent=t;bt.dataset.gb='1'}
   else if(bt.dataset.gb){delete bt.dataset.gb;if(!bt.dataset.th&&!bt.classList.contains('jn'))em.textContent=L?'AIM':'조준'}}
 {const hu=HUD.update;HUD.update=function(dt){const r=hu.apply(this,arguments);try{glkTouch(G.player)}catch(e){console.error(e)}return r}}
 

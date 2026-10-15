@@ -144,7 +144,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.a
   a.lastFire=G.t;alertBots(a,eye.x,eye.z)}
 // one pellet/bullet: world first, then actors, apply damage/knockback/effects
 const SHOT_FILTER={skip:b=>b.o.pass};
-function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=110;
+function shotTrace(a,ox,oy,oz,dx,dy,dz,W,pi){if(W.pen&&typeof penTrace==='function')return penTrace(a,ox,oy,oz,dx,dy,dz,W,pi);const range=110;// (W.pen: a round through several zombies, realguns2.js)
   const hw=rayCast(ox,oy,oz,dx,dy,dz,range,SHOT_FILTER);const tW=hw?hw.t:range;const wn=hw?[hw.nx,hw.ny,hw.nz]:null,wbox=hw?hw.box:null;
   const ha=rayActors(a,ox,oy,oz,dx,dy,dz,tW);
   const tEnd=ha?ha.t:tW;const ex=ox+dx*tEnd,ey=oy+dy*tEnd,ez=oz+dz*tEnd;if(W.cmb)a.shotEnd=[ex,ey,ez];

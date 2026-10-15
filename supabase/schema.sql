@@ -558,6 +558,7 @@ create policy "read own episodes" on public.ep_records for select to authenticat
 -- the file says (the admin page's reset puts those back)
 -- v6.56: sentinel · q7vac · bhound are crate guns like ak60r / dmp7 (not sold; an account that owns one picks it from the buy menu)
 -- v6.59: glock — a plain pistol sold for 1,000 coins; dglock (Double Glock) — a crate gun like the others (a sidearm)
+-- v6.60: vector (3,500) · an94 (5,000) · m82 (8,500) sold; spas12d (SPAS-12 Dragon's Breath) · m32c (M32 Cluster) crate guns
 alter table public.gun_prices add column if not exists admin_set  boolean not null default false;
 alter table public.gun_prices add column if not exists file_price integer;
 alter table public.gun_prices add column if not exists file_sold  boolean;
@@ -572,6 +573,9 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('tw9',1800,false,true,null),
   ('r6',2000,false,true,null),
   ('glock',1000,false,true,null),
+  ('vector',3500,false,true,null),
+  ('an94',5000,false,true,null),
+  ('m82',8500,false,true,null),
   ('db2',1500,false,true,null),
   ('m14',3500,false,true,null),
   ('as12',4500,false,true,null),
@@ -619,6 +623,8 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('q7vac',0,false,false,null),
   ('bhound',0,false,false,null),
   ('dglock',0,false,false,null),
+  ('spas12d',0,false,false,null),
+  ('m32c',0,false,false,null),
   ('rdc',0,false,false,'S'),
   ('mdrill',0,false,false,'S'),
   ('mlaunch',0,false,false,'S'),

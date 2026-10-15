@@ -275,10 +275,15 @@ function separate(dt){const A=G.actors;for(let i=0;i<A.length;i++){const a=A[i];
 // ---------- weapons in hand ----------
 // fanning the hammer (Crimson Peacemaker, right button): the rest of the cylinder goes off at W.fanRpm, each shot weaker and much looser
 function fanShot(W){return W.fanW||(W.fanW=Object.assign({},W,{dmg:W.dmg*W.fanDm,spread:W.spread.map(x=>x*2.4),kb:W.kb*.55}))}
-// a gun with a burst mode (v6.59, the Glocks: glock.js): W.gBurst = {n rounds a pull, rpm inside the burst, cd after it, spr spread ×, dm damage ×};
-// right click switches it on and off, kept per gun (a.gbm); gbOn tells whether the gun in hand is in it, gbShot is the gun as it fires then
-function gbShot(W){const g=W.gBurst;return W.gbW||(W.gbW=Object.assign({},W,{burst:g.n,rpm:g.rpm,burstCd:g.cd,semi:1,dmg:W.dmg*(g.dm||1),spread:W.spread.map(x=>x*(g.spr||1))}))}
-const gbOn=(a,W)=>!!(W&&W.gBurst&&a.gbm&&a.gbm[a.cur]);
+// a gun with a second firing mode on the right button: W.gBurst = a burst mode (v6.59, the Glocks: {n rounds a pull, rpm inside the burst, cd
+// after it, spr spread ×, dm damage ×, rk recoil ×}), or W.gMode = any other (v6.60, the SPAS-12's pump: {o what changes, n / n0 [ko, en] the
+// two modes' names, s / s0 their short names for the touch button}); the mode is kept per gun (a.gbm); gbOn tells whether the gun in hand is
+// in it, gbShot is the gun as it fires then, gbName / gbShort name a mode (on = the second one)
+function gbShot(W){if(W.gbW)return W.gbW;const g=W.gBurst;
+  return W.gbW=g?Object.assign({},W,{burst:g.n,rpm:g.rpm,burstCd:g.cd,semi:1,dmg:W.dmg*(g.dm||1),spread:W.spread.map(x=>x*(g.spr||1)),rec:W.rec.map(x=>x*(g.rk||1))}):Object.assign({},W,W.gMode.o)}
+const gbOn=(a,W)=>!!(W&&(W.gBurst||W.gMode)&&a.gbm&&a.gbm[a.cur]);
+function gbName(W,on,L){const M=W.gMode;if(on)return M?M.n[L?1:0]:L?`${W.gBurst.n}-round burst`:`${W.gBurst.n}점사`;return M&&M.n0?M.n0[L?1:0]:W.semi?(L?'Semi-auto':'반자동'):(L?'Full auto':'연사')}
+function gbShort(W,on,L){const M=W.gMode;if(on)return M?M.s[L?1:0]:L?'BURST':'점사';return M&&M.s0?M.s0[L?1:0]:W.semi?(L?'SEMI':'반자동'):(L?'AUTO':'연사')}
 function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(cmd.drop&&!pc.drop&&a.team===TH)playerDrop(a);// G: throw the gun in hand (drops.js)
   if(a.holdT>0&&a.team===TZ&&!a.host){cmd.fire=cmd.alt=cmd.skill=false}// pinned by the Ripper: no claws, no skill
@@ -312,9 +317,8 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(W.alt&&W.kind!=='saw'&&cmd.alt&&!pc.alt&&a.drawT<=0&&(a.reloadT<=0||W.alt==='detonate'))nyAlt(a,W);
   // zoom levels cycle with the right button
   // Dual Berettas: the aim key flips the stance (looks only)
-  if(W.gBurst&&cmd.alt&&!pc.alt&&a.drawT<=0){const m=a.gbm||(a.gbm={});m[a.cur]=!m[a.cur];a.burstN=0;if(a.isPlayer){const L=LI(),n=W.gBurst.n;AU.play('slide',{vol:.28,rate:1.7});
-    HUD.note(m[a.cur]?(L?`${n}-round burst`:`${n}점사`):W.semi?(L?'Semi-auto':'반자동'):(L?'Full auto':'연사'),1.2)}}
-  if(W.dual&&!W.gBurst&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
+  if((W.gBurst||W.gMode)&&cmd.alt&&!pc.alt&&a.drawT<=0){const m=a.gbm||(a.gbm={});m[a.cur]=!m[a.cur];a.burstN=0;if(a.isPlayer){AU.play('slide',{vol:.28,rate:1.7});HUD.note(gbName(W,m[a.cur],LI()),1.2)}}
+  if(W.dual&&!W.gBurst&&!W.gMode&&cmd.alt&&!pc.alt&&a.drawT<=0){a.dualB=!a.dualB;if(a.isPlayer)AU.play('slide',{vol:.3,rate:1.35})}
   if(W.zoom&&cmd.alt&&!pc.alt&&a.drawT<=0&&a.reloadT<=0){a.zoom=(a.zoom+1)%(W.zoom.length+1);a.zoomWas=0;if(a.isPlayer)AU.play('ui',{vol:.3,rate:.7})}
   // Blaze-8: right click fires a special shell from its own slot (cuts a shell reload short).
   if(W.spEvery&&a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire&&(a.isPlayer?cmd.alt&&!pc.alt:(a.spAm&&a.spAm[a.cur]>0&&cmd.fire&&Math.random()<.04))&&a.spAm&&a.spAm[a.cur]>0){
@@ -342,7 +346,11 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
     if(am.mag<=0){if(!pc.fire&&a.isPlayer)AU.play('dry',{vol:.6});a.nextFire=G.t+.25;return}
     if(W.spin&&a.spinV<1)return;
     fireGun(a,BW);a.an.atk=0;
-    if(BW.burst){a.burstN=BW.burst-1;a.nextFire=G.t+(a.burstN>0?60/BW.rpm:BW.burstCd)}else a.nextFire=G.t+60/(W.rpm*(W.bRpm&&a.dualB?W.bRpm:1))}}
+    if(BW.burst){a.burstN=BW.burst-1;a.nextFire=G.t+(a.burstN>0?60/BW.rpm:BW.burstCd)}
+    else{let rpm=BW.rpm*(W.bRpm&&a.dualB?W.bRpm:1);// (BW: a second mode may change the rate, the SPAS-12's pump)
+      // (v6.60) the AN-94's hyperburst: the first W.hyper rounds of every pull go off at W.hyperRpm (a fresh pull: the trigger let go, or a pause)
+      if(W.hyper){const fresh=!pc.fire||G.t-(a.hypT||-9)>.25;a.hypN=fresh?1:(a.hypN|0)+1;a.hypT=G.t;if(a.hypN<W.hyper)rpm=W.hyperRpm}
+      a.nextFire=G.t+60/rpm}}}
 // zombies: claws, spore bomb and class skill
 function zombieAttack(a,dt){const cmd=a.cmd,pc=a.pc,Z=ZCLASS[a.zc];
   if(a.cur==='zbomb'){zbombUpdate(a,dt);return}

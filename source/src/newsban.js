@@ -5,6 +5,16 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'spas12d',tag:['보급 무기 · 산탄총','Crate weapon · shotgun'],t:['SPAS-12 드래곤브레스','SPAS-12 Dragon’s Breath'],
+    d:['마그네슘 소이탄을 쓰는 반자동 산탄총 — 쏠 때마다 총구에서 불꽃이 뿜어져 나오고, 맞은 좀비는 3초 동안 불타요 (초당 44). 8발에 9펠릿. 우클릭하면 펌프 액션: 느리지만 더 세고 (펠릿 27) 더 모여요. 한 번 더 누르면 반자동.','A semi-auto shotgun with magnesium incendiary shells: every shot throws a plume of fire, and a zombie it hits burns for 3 s (44 a second). Eight shells, nine pellets. Right click for pump action: slower but harder (27 a pellet) and tighter; again, back to semi-auto.']},
+  {kind:'weapon',ref:'m32c',tag:['보급 무기 · 특수','Crate weapon · special'],t:['M32 클러스터','M32 Cluster'],
+    d:['집속탄을 넣은 6연발 회전식 유탄발사기. 유탄이 터지면 자탄 5개가 흩어져 좀비에 닿거나 잠시 뒤 다시 터져요. 우클릭하면 남은 탄을 연달아 쏘고, 실린더는 쏠 때마다 한 칸씩 돌아가요.','A six-shot revolving grenade launcher loaded with cluster rounds: each grenade bursts and throws out five bomblets that go off on a zombie or a moment later. Right click ripples off the rest; the cylinder turns a sixth with every round.']},
+  {kind:'weapon',ref:'vector',tag:['신규 기관단총 · 상점 3,500 코인','New SMG · Shop · 3,500 coins'],t:['크리스 벡터','KRISS Vector'],
+    d:['반동을 아래로 꺾어 주는 .45 기관단총. 분당 1,150발을 쏟아내는데도 총구가 거의 안 떠요. 탄창이 25발로 짧으니 재장전 타이밍이 중요해요. 대인전에서도 쓸 수 있어요.','A .45 SMG whose action pushes the recoil down: 1,150 rounds a minute and the muzzle hardly climbs. The 25-round magazine runs dry fast, so time your reloads. Allowed in PvP.']},
+  {kind:'weapon',ref:'an94',tag:['신규 소총 · 상점 5,000 코인','New rifle · Shop · 5,000 coins'],t:['AN-94','AN-94'],
+    d:['하이퍼버스트 돌격소총 — 방아쇠를 당길 때마다 첫 2발이 분당 1,800발로 거의 한 점에 꽂히고, 그다음은 분당 620발로 이어져요. 우클릭하면 2점사 전용. 대인전에서도 쓸 수 있어요.','A hyperburst assault rifle: the first two rounds of every pull go out at 1,800 a minute, all but on one spot, then it carries on at 620. Right click for 2-round bursts only. Allowed in PvP.']},
+  {kind:'weapon',ref:'m82',tag:['신규 저격총 · 상점 8,500 코인','New sniper rifle · Shop · 8,500 coins'],t:['바렛 M82A1','Barrett M82A1'],
+    d:['.50 BMG 반자동 대물 저격총. 한 발 165에 줄 선 좀비를 4마리까지 꿰뚫고 (한 마리 지날 때마다 25% 감소) 크게 밀쳐내요. 대신 무겁고 반동이 커요. 탄창 10발.','A .50 BMG semi-auto anti-materiel rifle: 165 a round, through up to four zombies in a line (a quarter less after each), with a heavy shove. Heavy, and it kicks. Ten rounds.']},
   {kind:'weapon',ref:'dglock',tag:['보급 무기 · 권총','Crate weapon · pistol'],t:['더블 글록','Double Glock'],
     d:['양손에 한 자루씩 든 기관권총 — 두 자루가 번갈아 분당 1,250발을 쏟아내요. 탄창 33발 × 2, 보급상자 전용 무기답게 주무기 못지않은 화력을 보조무기 칸에 넣어 다녀요. 우클릭하면 6점사: 더 모여서 맞고 한 발 피해 +10%.','A machine pistol in each hand, the two firing in turn at 1,250 rounds a minute. Two 33-round magazines and the firepower of a crate primary, carried in the sidearm slot. Right click for 6-round bursts: tighter, 10% more damage a round.']},
   {kind:'weapon',ref:'glock',tag:['신규 권총 · 상점 1,000 코인','New pistol · Shop · 1,000 coins'],t:['글록','Glock'],
