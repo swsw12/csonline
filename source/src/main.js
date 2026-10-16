@@ -36,9 +36,22 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     R.PU.uNV.value=0;R.PU.uZ.value=0;R.PU.uDeath.value=0;R.PU.uInfect.value=0;R.vmVisible=false;window.onbeforeunload=null;AU.stopAll('countdown');this.menuDemo();UI.buildTitle();UI.show('menu');AU.muSet&&AU.muSet('calm')},
   pause(){if(G.st==='menu'||G.st==='over'||this.paused)return;this.paused=true;this.pausedAt=performance.now();this.closeOverlay(true);UI.buildPause();UI.show('pause')},
   resume(){UI.hideAll();this.paused=false;this.lock()},
-  lock(){const c=$('cv');if(this.lockFail)return;try{const p=c.requestPointerLock&&c.requestPointerLock();if(p&&p.catch)p.catch(()=>this.onLockFail())}catch(e){this.onLockFail()}},
+  // v6.63: raw mouse input where the browser has it (unadjustedMovement: Chrome and Edge on Windows / Mac) — no OS acceleration and none of
+  // the jumps the cursor-based movement throws in on a fast flick (they spun the view round); the plain lock elsewhere. One request at a time
+  lock(){const c=$('cv');if(this.lockFail||(this.lockPend&&performance.now()-(this.lockPendAt||0)<2000)||document.pointerLockElement===c)return;if(!c.requestPointerLock){this.onLockFail(true);return}
+    const fail=e=>{this.lockPend=false;this.onLockFail(e)};
+    const plain=()=>{this.rawMv=false;let p;try{p=c.requestPointerLock()}catch(e){fail(e);return}if(p&&p.then){this.lockPend=true;this.lockPendAt=performance.now();p.then(()=>{this.lockPend=false},fail)}};
+    if(this.rawOk===false){plain();return}
+    let p;try{p=c.requestPointerLock({unadjustedMovement:true})}catch(e){this.rawOk=false;plain();return}
+    if(!(p&&p.then)){this.rawOk=false;this.rawMv=false;return}// (no promise: the options are not understood, the plain lock is on its way)
+    this.lockPend=true;this.lockPendAt=performance.now();p.then(()=>{this.lockPend=false;this.rawOk=true;this.rawMv=true},e=>{this.lockPend=false;if(e&&e.name==='NotSupportedError'){this.rawOk=false;plain()}else this.onLockFail(e)})},
   unlock(){if(document.pointerLockElement)try{document.exitPointerLock()}catch(e){}},
-  onLockFail(){if(this.lockFail)return;this.lockFail=true;HUD.note(T('noLock'),6)},
+  // a refused request (clicked again within a second of Esc, the window not focused yet) is not the end of pointer lock: a note, and the next
+  // click asks again. Turning at the screen edges (lockFail) only where pointer lock is not there (e true) or never once worked in four tries
+  // (a frame that may not lock) — before v6.63 the first refusal switched it on for good, and a quick flick then spun the view at the edge
+  onLockFail(e){if(this.lockFail)return;const t=performance.now();if(t-(this.lockFailAt||0)<300)return;this.lockFailAt=t;this.lockFails=(this.lockFails||0)+1;
+    if(e===true||(this.lockFails>=4&&!this.lockedOnce)){this.lockFail=true;HUD.note(T('noLock'),6);return}
+    if(G.st!=='menu'&&G.st!=='over')HUD.note(T('relock'),3)},
   // ---------- overlays during play ----------
   openOverlay(k){if(this.overlay===k){this.closeOverlay();return}this.closeOverlay(true);const P=G.player;if(!P)return;
     if(k==='buy'){if(P.team!==TH||!P.alive){HUD.note(T('zOnly'));return}UI.buyStage=0;UI.renderBuy();$('buy').classList.remove('off')}
@@ -55,8 +68,9 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
   // ---------- input ----------
   setupInput(){const cv=$('cv');
     document.addEventListener('pointerlockchange',()=>{this.locked=document.pointerLockElement===cv;this.lockAt=performance.now();$('app').classList.toggle('locked',this.locked);
+      if(this.locked){this.lockFails=0;this.lockedOnce=true;this.lockPend=false}
       if(!this.locked&&G.player&&G.st!=='menu'&&G.st!=='over'&&!this.overlay&&!this.paused)this.pause()});
-    document.addEventListener('pointerlockerror',()=>this.onLockFail());
+    document.addEventListener('pointerlockerror',()=>{this.lockPend=false;this.onLockFail()});
     cv.addEventListener('mousedown',e=>{AU.init();if(G.st==='menu'||G.st==='over'||this.paused)return;if(!this.locked&&!this.lockFail&&!this.overlay){this.lock();return}
       if(e.button===0)this.ml=true;if(e.button===2)this.mr=true;
       if(e.button===0&&this.specOn())this.nextSpec()});
@@ -64,10 +78,16 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     addEventListener('contextmenu',e=>{if(G.st!=='menu')e.preventDefault()});
     addEventListener('mousemove',e=>{this.mx=e.clientX;this.my=e.clientY;if(!G.player||this.paused||G.st==='menu'||G.st==='over')return;if(!this.locked&&!this.lockFail)return;if(this.overlay&&!this.locked)return;
       const P=G.player;if(!P.alive)return;
-      // browsers sometimes report a huge jump right after the lock engages: ignore it
-      if(performance.now()-(this.lockAt||0)<150||Math.abs(e.movementX)>500||Math.abs(e.movementY)>500)return;
+      // the first moments after the lock engages can carry a stale jump: skipped. Raw input (rawMv) is taken as it comes, bar the absurd; the
+      // browser's own movement can throw in a jump when it warps the cursor back: one event far bigger than the recent motion and against it, or
+      // past 900, is dropped — never two in a row, so a real flick back loses one frame at most (before v6.63: anything past 500, both ways)
+      const t=performance.now();if(t-(this.lockAt||0)<150)return;const dx=e.movementX||0,dy=e.movementY||0,ax=Math.abs(dx),ay=Math.abs(dy);if(ax>2500||ay>2500)return;
+      if(t-(this.mvT||0)>120){this.mvMag=0;this.mvDX=0;this.mvDY=0}this.mvT=t;
+      if(this.locked&&!this.rawMv){const m=Math.max(180,(this.mvMag||0)*5);
+        if(!this.mvDrop&&(ax>900||ay>900||(ax>m&&dx*(this.mvDX||0)<0)||(ay>m&&dy*(this.mvDY||0)<0))){this.mvDrop=true;return}}
+      this.mvDrop=false;this.mvMag=(this.mvMag||0)*.75+Math.max(ax,ay)*.25;this.mvDX=(this.mvDX||0)*.6+dx*.4;this.mvDY=(this.mvDY||0)*.6+dy*.4;
       const Wz=WPN[P.cur];const z=P.zoom>0&&Wz&&Wz.zoom?Wz.zoom[P.zoom-1]/CFG.fov:1;const k=CFG.sens*.0022*z;
-      P.yaw=wrapA(P.yaw-e.movementX*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*e.movementY*k,-1.53,1.53)});
+      P.yaw=wrapA(P.yaw-dx*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*dy*k,-1.53,1.53)});
     addEventListener('wheel',e=>{const P=G.player;if(!P||!P.alive||this.paused||this.overlay||G.st==='menu')return;const order=P.team===TZ?['claw','zbomb']:[P.inv[1],P.inv[2],P.inv[3]||'knife',...H_NADES.filter(k=>P.inv[k]>0)].filter(Boolean);
       if(P.team===TZ&&P.bombs<=0)return;const i=order.indexOf(P.cur);const n=order[(i+(e.deltaY>0?1:-1)+order.length)%order.length];equip(P,n)},{passive:true});
     // v6.62: Ctrl+R (Cmd+R, with or without Shift) never reloads the page — Ctrl is crouch and R reloads, so the two together used to

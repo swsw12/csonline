@@ -8,6 +8,9 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.63','2026-10-16',[
+ ['FIX','마우스를 옆으로 빠르게 돌리면 시점이 빙빙 돌던 문제 — 지원되는 브라우저(크롬 · 엣지, 윈도우 · 맥)에선 마우스 원시 입력을 써서 윈도우 마우스 가속 없이 움직인 만큼만 돌고, 빠르게 휘두를 때 브라우저가 끼워 넣던 튀는 값도 걸러요 (감도가 조금 다르게 느껴지면 설정에서 조절)','A quick sideways flick no longer spins the view — where the browser offers it (Chrome and Edge on Windows and Mac) the mouse is read raw: no Windows pointer acceleration, the view turns exactly as far as the mouse moves, and the jumps a browser could throw in on a fast flick are filtered out (if the sensitivity feels a little different, set it in the options)'],
+ ['FIX','마우스 고정이 한 번 거절되면(Esc를 누르고 바로 클릭 등) 그 뒤로 계속 화면 가장자리에 커서를 대면 도는 모드가 되던 문제 — 이제 화면을 다시 클릭하면 마우스가 다시 고정돼요','A refused mouse lock (a click right after Esc, say) no longer switches the game to turning at the screen edge for good — click the screen again and the mouse locks again']]],
 ['v6.62','2026-10-16',[
  ['FIX','Ctrl+R로 게임이 새로고침되던 문제 — 앉기(Ctrl)와 재장전(R)을 같이 누르면 페이지가 새로고침돼 판이 끊겼어요. 이제 이 페이지에선 Ctrl+R(맥은 Cmd+R)로 새로고침되지 않아요 (채팅 입력 중에도). 새로고침이 필요하면 F5나 브라우저의 새로고침 버튼','Ctrl+R no longer reloads the game — crouch (Ctrl) and reload (R) together used to reload the page and drop you out of the match. On this page Ctrl+R (Cmd+R on a Mac) does nothing now, in the chat box too; F5 or the browser’s reload button still reload']]],
 ['v6.61','2026-10-15',[
@@ -478,7 +481,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.62 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.63 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap();setTimeout(lobFit,0)};
 // (v6.58) the top bar keeps every button in view: past its width the logo gets smaller, then goes, then the main buttons lose
 // their words (a tooltip keeps them); run after every module has put its buttons in, on every resize and when the lobby shows again
