@@ -77,7 +77,7 @@ const INQ={tab:'new',kind:'bug',body:'',contact:'',busy:false,res:'',resBad:fals
         ${guest?`<label class="ict"><span>${L?'A way to reach you':'답장 받을 연락처'} <small>${L?'(optional, e-mail or the like — only the operators see it)':'(선택 — 이메일 등, 운영진만 봐요)'}</small></span><input name="ic" maxlength="100" autocomplete="email" placeholder="you@example.com" value="${esc(this.contact)}"></label>
           <p class="inote">${L?'A guest\'s answers show under My inquiries in this browser only.':'게스트 문의의 답변은 이 브라우저의 「내 문의」에서만 볼 수 있어요.'} <button class="ilink" data-iq="login">${L?'Sign in':'로그인'}</button>${L?' to see them anywhere.':'하면 어디서든 볼 수 있어요.'}</p>`
           :`<p class="inote">${L?'Sent as':'보내는 계정'}: <b>${esc(ACC.me.nickname)}</b> — ${L?'the answer comes back here and in My inquiries.':'답변은 「내 문의」로 와요.'}</p>`}
-        <p class="inote dim">${L?'Sent along':'함께 가는 정보'}: ${esc(this.ctxLine())}</p>`;
+        <p class="inote dim">${L?'Sent along':'함께 가는 정보'}: ${esc(this.ctxLine())}${typeof LEGAL!=='undefined'?` · <a href="${LEGAL.privacy}" target="_blank" rel="noopener">${L?'Privacy':'개인정보처리방침'}</a>`:''}</p>`;
       foot=`<div class="pwf"><button class="isend" data-iq="send"${this.busy?' disabled':''}>${this.busy?'…':(L?'Send':'보내기')}</button></div>`}
     else{const R=this.rows;
       body=R==null?`<p class="mem">${L?'Loading…':'불러오는 중…'}</p>`:!R.length?`<p class="mem">${L?'No inquiries yet.':'아직 보낸 문의가 없어요.'}</p>`

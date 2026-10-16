@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{name_ko}} · QUARANTINE Z</title>
+<meta name="description" content="QUARANTINE Z {{name_ko}} / {{name_en}}">
+<style>
+{{css}}
+</style></head>
+<body>
+<header><a class="wm" href="./" title="QUARANTINE Z">QUARANTINE<b>Z</b></a><nav aria-label="언어 / Language"><button type="button" data-l="ko" aria-pressed="true">한국어</button><button type="button" data-l="en" aria-pressed="false">English</button></nav></header>
+<main>
+{{content}}
+</main>
+<footer><a href="./" data-ko="게임으로 돌아가기" data-en="Back to the game">게임으로 돌아가기</a><a href="{{other_file}}" data-keep data-ko="{{other_ko}}" data-en="{{other_en}}">{{other_ko}}</a><span data-ko="시행일 {{effective}}" data-en="Effective {{effective}}">시행일 {{effective}}</span></footer>
+<script>
+(function(){var q=new URLSearchParams(location.search).get('lang'),L=q==='en'||q==='ko'?q:(String(navigator.language||'').toLowerCase().indexOf('ko')===0?'ko':'en');
+  function set(l){L=l;document.documentElement.lang=l;var A=document.querySelectorAll('article[lang]'),i,x;for(i=0;i<A.length;i++)A[i].hidden=A[i].getAttribute('lang')!==l;
+    x=document.querySelectorAll('[data-l]');for(i=0;i<x.length;i++)x[i].setAttribute('aria-pressed',String(x[i].getAttribute('data-l')===l));
+    x=document.querySelectorAll('[data-ko]');for(i=0;i<x.length;i++)x[i].textContent=x[i].getAttribute(l==='ko'?'data-ko':'data-en');
+    x=document.querySelectorAll('a[data-keep]');for(i=0;i<x.length;i++)x[i].setAttribute('href',x[i].getAttribute('href').split('?')[0]+'?lang='+l);
+    var h=document.querySelector('article[lang="'+l+'"] h1');if(h)document.title=h.textContent+' · QUARANTINE Z'}
+  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-l]');if(!b)return;set(b.getAttribute('data-l'));try{history.replaceState(null,'','?lang='+L+location.hash)}catch(x){}});
+  set(L)})();
+</script>
+</body></html>

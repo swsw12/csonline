@@ -494,29 +494,32 @@ async function gPopHist(){const L=LI();gPop(L?'History':'획득 기록',`<div cl
     const src=SRC[x.src]||(L?'pouch':'복주머니');return `<tr${x.tier?' class="t'+x.tier+'"':''}><td>${t}</td><td>${what}${x.pity_hit?` <small>${L?'pity':'천장'}</small>`:''}</td><td><small>${src}</small></td></tr>`}).join('')}</table>`}
 
 // ---------- the account window: sign in / sign up / password / my account ----------
-const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
+const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:'',cf:'',agree:false},
   open(mode){let o=$('accWin');if(!o){o=document.createElement('div');o.id='accWin';document.body.appendChild(o);
       o.addEventListener('click',e=>{if(e.target===o){this.close();return}const t=e.target.closest('[data-aa]');if(t)this.act(t.dataset.aa,t.dataset.v)});
       o.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();this.act('go')}});
       o.addEventListener('keyup',e=>e.stopPropagation())}
     this.mode=mode||'in';this.msg='';this.ok=false;this.render();const i=o.querySelector('input');if(i)setTimeout(()=>{try{i.focus()}catch(e){}},30)},
   close(){const o=$('accWin');if(o)o.remove();try{LS.set('accSeen',1)}catch(e){}},
-  grab(){const o=$('accWin');if(!o)return;for(const k of ['email','pw','nick']){const i=o.querySelector('[name="'+k+'"]');if(i)this.f[k]=i.value}},
+  grab(){const o=$('accWin');if(!o)return;for(const k of ['email','pw','nick','cf']){const i=o.querySelector('[name="'+k+'"]');if(i)this.f[k]=i.value}const a=o.querySelector('[name="agree"]');if(a)this.f.agree=a.checked},
   render(){const o=$('accWin');if(!o)return;this.grab();const L=LI(),m=this.mode,f=this.f,me=ACC.me;
     const inp=(k,type,ph,ac)=>`<input name="${k}" type="${type}" placeholder="${ph}" autocomplete="${ac}" value="${esc(f[k]||'')}" maxlength="${k==='nick'?16:120}">`;
     const tabs=m==='in'||m==='up'?`<div class="atabs"><button class="${m==='in'?'on':''}" data-aa="mode" data-v="in">${L?'Sign in':'로그인'}</button><button class="${m==='up'?'on':''}" data-aa="mode" data-v="up">${L?'Sign up':'회원가입'}</button></div>`:'';
-    const OA=ACC.oauthList(),so=(m==='in'||m==='up')&&OA.length?`<div class="aor"><span>${L?'or':'또는'}</span></div><div class="aso">${OA.map(p=>`<button class="ao ${p}" data-aa="oauth" data-v="${p}">${p==='google'?'<b>G</b> '+(L?'Continue with Google':'Google로 계속'):p==='kakao'?'<b>K</b> '+(L?'Continue with Kakao':'카카오로 계속'):esc(p)}</button>`).join('')}</div>`:'';
+    const OA=ACC.oauthList(),so=(m==='in'||m==='up')&&OA.length?`<div class="aor"><span>${L?'or':'또는'}</span></div><div class="aso">${OA.map(p=>`<button class="ao ${p}" data-aa="oauth" data-v="${p}">${p==='google'?'<b>G</b> '+(L?'Continue with Google':'Google로 계속'):p==='kakao'?'<b>K</b> '+(L?'Continue with Kakao':'카카오로 계속'):esc(p)}</button>`).join('')}</div>
+      <p class="anote small"><span>${L?`Continuing with ${OA.length>1?'these':'it'} means you are 14 or older and agree to ${LEGAL.sent(1)}.`:`계속하면 만 14세 이상이며 ${LEGAL.sent(0)}에 동의하는 것으로 봐요.`}</span></p>`:'';
     let body='';
     if(m==='in')body=`<label>${L?'E-mail':'이메일'}${inp('email','email','you@example.com','email')}</label><label>${L?'Password':'비밀번호'}${inp('pw','password','••••••','current-password')}</label>
-      <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Sign in':'로그인')}</button><button class="alink" data-aa="mode" data-v="reset">${L?'Forgot your password?':'비밀번호를 잊었어요'}</button>${so}`;
+      <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Sign in':'로그인')}</button><button class="alink" data-aa="mode" data-v="reset">${L?'Forgot your password?':'비밀번호를 잊었어요'}</button>${so}<p class="anote small center"><span>${LEGAL.links(L)}</span></p>`;
     else if(m==='up')body=`<label>${L?'Nickname':'닉네임'} <small>${L?'2–16 characters':'2~16자'}</small>${inp('nick','text',L?'Survivor':'생존자','nickname')}</label><label>${L?'E-mail':'이메일'}${inp('email','email','you@example.com','email')}</label>
       <label>${L?'Password':'비밀번호'} <small>${L?'6+ characters':'6자 이상'}</small>${inp('pw','password','••••••','new-password')}</label>
+      <label class="achk"><input type="checkbox" name="agree"${f.agree?' checked':''}><span>${L?`I am 14 or older and agree to ${LEGAL.sent(1)}`:`만 14세 이상이며 ${LEGAL.sent(0)}에 동의해요`}</span></label>
       <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Create account':'가입하기')}</button><p class="anote">${COIN} ${L?'3,000 coins to start with':'가입하면 3,000 코인을 드려요'}</p>${so}`;
     else if(m==='reset')body=`<p class="anote">${L?'We will mail you a link to set a new password.':'새 비밀번호를 정할 수 있는 링크를 메일로 보내 드려요.'}</p><label>${L?'E-mail':'이메일'}${inp('email','email','you@example.com','email')}</label>
       <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Send the link':'링크 보내기')}</button><button class="alink" data-aa="mode" data-v="in">${L?'Back to sign in':'로그인으로 돌아가기'}</button>`;
     else if(m==='newpw')body=`<p class="anote">${L?'Choose a new password.':'새 비밀번호를 정해 주세요.'}</p><label>${L?'New password':'새 비밀번호'}${inp('pw','password','••••••','new-password')}</label>
       <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Save':'저장')}</button>`;
     else if(m==='sent')body=`<p class="anote big">${this.msg?esc(this.msg):''}</p><button class="ago" data-aa="mode" data-v="in">${L?'OK':'확인'}</button>`;
+    else if(m==='bye')body=`<p class="anote big">${this.msg?esc(this.msg):''}</p><button class="ago" data-aa="x">${L?'OK':'확인'}</button>`;
     else if(m==='nick'&&me)body=`<p class="anote big">${L?'Welcome! Pick the nickname other players will see.':'환영해요! 다른 플레이어에게 보일 닉네임을 정해 주세요.'}</p>
       <label>${L?'Nickname':'닉네임'} <small>${L?'2–16 characters':'2~16자'}</small>${inp('nick','text',esc(me.nickname),'nickname')}</label>
       <button class="ago" data-aa="nick"${this.busy?' disabled':''}>${this.busy?'…':(L?'Use this nickname':'이 닉네임으로 할게요')}</button>
@@ -525,15 +528,28 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
         <div class="ams"><span>${L?'Earned':'모은 코인'} <b>${fmtC(me.earned||0)}</b></span><span>${L?'Matches':'정산한 판'} <b>${fmtC(me.matches||0)}</b></span><span>${L?'Left today':'오늘 남은 보상'} <b>${fmtC(me.dayLeft==null?20000:me.dayLeft)}</b></span><span>${L?'Guns owned':'보유 총'} <b>${(me.owned?me.owned.size:0)+SHOP_FREE.length}</b></span><span>${L?'Fragments':'해독 조각'} <b>${fmtC(me.frags||0)}</b></span></div>
         ${me.email?`<p class="anote">${esc(me.email)}</p>`:''}</div>
       <label>${L?'Nickname':'닉네임'}${inp('nick','text',esc(me.nickname),'nickname')}</label><button class="ago" data-aa="nick"${this.busy?' disabled':''}>${L?'Change nickname':'닉네임 바꾸기'}</button>
-      <div class="arow"><button class="alink" data-aa="shop">${L?'Open the shop':'상점 열기'}</button><button class="alink red" data-aa="out">${L?'Sign out':'로그아웃'}</button></div>`;
+      <div class="arow"><button class="alink" data-aa="shop">${L?'Open the shop':'상점 열기'}</button><button class="alink red" data-aa="out">${L?'Sign out':'로그아웃'}</button></div>
+      <div class="arow afoot"><span>${LEGAL.links(L)}</span><button class="alink dim" data-aa="mode" data-v="del">${L?'Delete account':'회원 탈퇴'}</button></div>`;
+    else if(m==='del'&&me){const pw=ACC.hasPw();body=`<p class="anote big">${L?'Deleting the account removes all of this for good:':'계정을 지우면 아래 것들이 모두 사라지고 되돌릴 수 없어요.'}</p>
+      <ul class="adel">${(L?['Coins, fragments, decoders, owned guns and bingo cards','Level, records, achievements, titles, the hall of fame and the rankings','Friends, friend messages, gifts received and invites','Letters and coupons used, your inquiries and their answers']
+        :['코인 · 조각 · 해독기 · 보유 무기 · 빙고판','레벨 · 기록 · 업적 · 칭호 · 명예의 전당 · 랭킹','친구 · 친구 메시지 · 받은 선물 · 초대','우편 · 쿠폰 사용 기록 · 내 문의와 답변']).map(x=>`<li>${x}</li>`).join('')}</ul>
+      <p class="anote">${L?'Signing up again with the same e-mail starts from nothing. Records of what the operators did to the account stay, no longer tied to anyone.':'같은 이메일로 다시 가입해도 되살릴 수 없어요. 운영자가 계정에 한 조치 기록은 누구 것인지 알 수 없게 바뀐 채 남아요.'}</p>
+      ${pw?`<label>${L?'Your password':'비밀번호 확인'}${inp('pw','password','••••••','current-password')}</label>`:''}
+      <label><span>${L?'Type <b>DELETE</b> to confirm':'확인을 위해 <b>탈퇴</b>라고 적어 주세요'}</span><input name="cf" type="text" autocomplete="off" spellcheck="false" value="${esc(f.cf||'')}" maxlength="10"></label>
+      <button class="ago red" data-aa="del"${this.busy?' disabled':''}>${this.busy?'…':(L?'Delete my account':'계정 지우기')}</button><button class="alink" data-aa="mode" data-v="me">${L?'Cancel':'취소'}</button>`}
     else body=`<p class="anote">${L?'Not signed in.':'로그인되어 있지 않아요.'}</p><button class="ago" data-aa="mode" data-v="in">${L?'Sign in':'로그인'}</button>`;
-    const title={in:L?'Sign in':'로그인',up:L?'Sign up':'회원가입',reset:L?'Reset password':'비밀번호 재설정',newpw:L?'New password':'새 비밀번호',sent:L?'Check your mail':'메일을 확인해 주세요',me:L?'My account':'내 계정',nick:L?'Your nickname':'닉네임 정하기'}[m]||'';
+    const title={in:L?'Sign in':'로그인',up:L?'Sign up':'회원가입',reset:L?'Reset password':'비밀번호 재설정',newpw:L?'New password':'새 비밀번호',sent:L?'Check your mail':'메일을 확인해 주세요',me:L?'My account':'내 계정',nick:L?'Your nickname':'닉네임 정하기',del:L?'Delete account':'회원 탈퇴',bye:L?'Account deleted':'회원 탈퇴 완료'}[m]||'';
     o.innerHTML=`<div class="awin"><div class="awh"><b>${title}</b><button data-aa="x" aria-label="close">×</button></div>${tabs}<div class="awb">${body}
-      ${m!=='sent'&&this.msg?`<div class="amsg ${this.ok?'ok':'bad'}">${esc(this.msg)}</div>`:''}
+      ${m!=='sent'&&m!=='bye'&&this.msg?`<div class="amsg ${this.ok?'ok':'bad'}">${esc(this.msg)}</div>`:''}
       ${m==='in'||m==='up'?`<button class="aguest" data-aa="x">${L?'Play as a guest — free guns only':'게스트로 계속 — 기본 총만 사용'}</button>`:''}</div></div>`},
   act(a,v){const L=LI();
     if(a==='x'){this.close();return}
-    if(a==='mode'){this.grab();this.mode=v;this.msg='';this.render();return}
+    if(a==='mode'){this.grab();this.mode=v;this.msg='';if(v==='del'){this.f.cf='';this.f.pw='';ACC.refreshUser().then(()=>{if(this.mode==='del'&&$('accWin'))this.render()})}this.render();return}
+    if(a==='del'){this.grab();const f=this.f,word=String(f.cf||'').trim().toUpperCase();
+      if(word!=='탈퇴'&&word!=='DELETE'){this.msg=L?'Type DELETE in the box to confirm':'확인 칸에 「탈퇴」라고 적어 주세요';this.ok=false;this.render();return}
+      const pw=ACC.hasPw()?String(f.pw||''):null;if(pw!=null&&!pw){this.msg=L?'Enter your password':'비밀번호를 적어 주세요';this.ok=false;this.render();return}
+      this.run(async()=>{await ACC.deleteAccount(pw);this.f={email:'',pw:'',nick:'',cf:'',agree:false};this.mode='bye';
+        this.msg=L?'Your account is deleted. Thank you for playing.':'계정을 지웠어요. 그동안 함께해 줘서 고마워요.';AU.play('uiok',{vol:.4})});return}
     if(a==='oauth'){ACC.oauth(v);return}
     if(a==='shop'){this.close();SHOP.open();return}
     if(a==='out'){ACC.signOut().then(()=>{this.close();shopToast(L?'Signed out':'로그아웃했어요')});return}
@@ -544,6 +560,7 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
       if((m==='in'||m==='up'||m==='reset')&&!/^\S+@\S+\.\S+$/.test(f.email.trim())){this.msg=L?'Enter your e-mail address':'이메일을 입력해 주세요';this.ok=false;this.render();return}
       if((m==='in'||m==='up'||m==='newpw')&&(f.pw||'').length<6){this.msg=L?'Use a password of at least 6 characters':'비밀번호는 6자 이상이에요';this.ok=false;this.render();return}
       if(m==='up'&&(f.nick||'').trim().length<2){this.msg=L?'Pick a nickname (2–16 characters)':'닉네임을 2~16자로 정해 주세요';this.ok=false;this.render();return}
+      if(m==='up'&&!f.agree){this.msg=L?'Tick the box: 14 or older, and agreeing to the terms and the privacy policy':'만 14세 이상 · 약관 동의에 체크해 주세요';this.ok=false;this.render();return}
       if(m==='in')this.run(async()=>{await ACC.signIn(f.email.trim(),f.pw);this.done(L?'Welcome back, ':'어서 와요, ')});
       else if(m==='up')this.run(async()=>{const r=await ACC.signUp(f.email.trim(),f.pw,f.nick.trim());
         if(r.confirm){this.mode='sent';this.msg=L?'We sent a confirmation link to '+f.email.trim()+'. Open it to finish signing up — you will come back here signed in.':f.email.trim()+' 로 인증 메일을 보냈어요. 메일의 링크를 누르면 로그인된 상태로 돌아와요.'}

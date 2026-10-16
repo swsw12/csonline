@@ -1,0 +1,8 @@
+{
+  "_": "privacy.html / terms.html are built from these (build.py): operator = the person responsible (개인정보 보호책임자), email = a public contact address (leave empty to point to the in-game 문의하기 only), db_region = the Supabase project's region (Project Settings → General), effective = the date the current text takes effect (also sent with an e-mail sign-up as terms)",
+  "operator": "QUARANTINE Z 운영자",
+  "operator_en": "the QUARANTINE Z operator",
+  "email": "",
+  "db_region": "",
+  "effective": "2026-10-17"
+}

@@ -2,6 +2,11 @@
 // ============ Accounts (Supabase): sign-in, coins, the guns you own ============
 // No library: Supabase's auth (GoTrue, /auth/v1) and data (PostgREST, /rest/v1) endpoints are called with fetch.
 // The project's URL and key (SB) live in sb.js since v6.42 (the admin page, admin.html, is built with the same file).
+// v6.67: the terms and the privacy policy, pages of their own next to the game (build.py makes them from legal/; ver = their effective date)
+const LEGAL={terms:'terms.html',privacy:'privacy.html',ver:'%LEGAL_VER%',
+  a(f,t,L){return `<a href="${f}${L?'?lang=en':''}" target="_blank" rel="noopener">${t}</a>`},
+  links(L){return this.a(this.terms,L?'Terms':'이용약관',L)+' · '+this.a(this.privacy,L?'Privacy':'개인정보처리방침',L)},// (a footer's two links)
+  sent(L){return L?'the '+this.a(this.terms,'Terms',1)+' and the '+this.a(this.privacy,'Privacy Policy',1):this.a(this.terms,'이용약관',0)+'과 '+this.a(this.privacy,'개인정보처리방침',0)}};// (the two in a sentence)
 const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:null,mis:null,prices:null,gcfg:null,ready:false,busy:false,subs:[],lastErr:'',
   // ---- plumbing ----
   ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}},
@@ -59,13 +64,24 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   // ---- the player's actions ----
   async signIn(email,pw){const s=await this.req('POST','/auth/v1/token?grant_type=password',{email,password:pw},false);this.setSes(s);await this.loadMe();return this.me},
   async signUp(email,pw,nick){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';
-    const s=await this.req('POST','/auth/v1/signup'+q,{email,password:pw,data:{nickname:nick}},false);
+    const s=await this.req('POST','/auth/v1/signup'+q,{email,password:pw,data:{nickname:nick,terms:LEGAL.ver}},false);// (terms: the version of the terms agreed to)
     if(s&&s.access_token){this.setSes(s);await this.loadMe();return {ok:1}}return {confirm:1}},// e-mail confirmation is on: the link brings the player back signed in
   // (Google: the account picker every time — a shared computer, a PC방, never signs the next player in as the last one)
   oauthUrl(p){return SB.url.replace(/\/+$/,'')+'/auth/v1/authorize?provider='+encodeURIComponent(p)+(this.here()?'&redirect_to='+encodeURIComponent(this.here()):'')+(p==='google'?'&prompt=select_account':'')},
   oauth(p){location.assign(this.oauthUrl(p))},
   async recover(email){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';await this.req('POST','/auth/v1/recover'+q,{email},false)},
   async newPassword(pw){await this.call('PUT','/auth/v1/user',{password:pw})},
+  // the account has a password (an e-mail sign-up): deleting it asks for that first. Google / Kakao only: none to ask for
+  hasPw(){const u=this.ses&&this.ses.user,a=u&&u.app_metadata,P=a&&(Array.isArray(a.providers)?a.providers:a.provider?[a.provider]:null);return P?P.includes('email'):!!(u&&u.email)},
+  async refreshUser(){if(!this.ses)return null;try{const u=await this.call('GET','/auth/v1/user');if(u&&u.id&&this.ses){this.ses.user=u;this.setSes(this.ses)}return u}catch(e){return null}},
+  // v6.67: 회원 탈퇴 — an e-mail account proves its password first (a fresh sign-in), then qz_account_delete takes the account and
+  // everything on it (schema.sql); this browser then forgets the session and what it kept of the account
+  async deleteAccount(pw){const u=this.ses&&this.ses.user,uid=u&&u.id,em=u&&u.email||this.me&&this.me.email;if(!this.ses)throw new Error('not_signed_in');
+    if(pw!=null)this.setSes(await this.req('POST','/auth/v1/token?grant_type=password',{email:em,password:pw},false));
+    await this.rpc('qz_account_delete',{p_confirm:'delete'});
+    this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.side=null;this.mis=null;this.fr=null;this.refRec=null;this.ls('qz_me',null);
+    if(uid&&this.ls('qz_recFor')===uid)this.ls('qz_recFor',null);const A=this.ls('qz_nickAsk');if(uid&&Array.isArray(A))this.ls('qz_nickAsk',A.filter(x=>x!==uid));
+    this.emit();return true},
   async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.side=null;this.mis=null;this.ls('qz_me',null);this.emit()},
   async setNick(n){const r=await this.rpc('qz_set_nickname',{p_nick:n});if(this.me){this.me.nickname=r;this.ls('qz_me',{...this.ls('qz_me'),nickname:r})}this.emit();return r},
   async buy(id){const r=await this.rpc('qz_buy',{p_gun:id});if(this.me){this.me.coins=r.coins;this.me.owned.add(id);this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,owned:[...this.me.owned]})}this.emit();return r},
@@ -194,6 +210,9 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/no_mail/.test(m))return T2('이미 받은 우편이에요','That letter was taken already');
     if(/room_closed/.test(m))return T2('운영자가 공개 목록에서 내린 방이에요 (비공개로는 계속할 수 있어요)','An admin took this room off the public list (it goes on privately)');
     if(/not_admin/.test(m))return T2('관리자 계정이 아니에요','Not an admin account');
+    if(/admin_account/.test(m))return T2('관리자 계정은 탈퇴할 수 없어요. 관리 페이지 운영진에서 먼저 빼 주세요','An admin account cannot be deleted — take it off the staff first');
+    if(/confirm_needed/.test(m))return T2('확인 문구가 맞지 않아요','The confirmation does not match');
+    if(/qz_account_delete/.test(m))return T2('탈퇴는 서버 업데이트(schema.sql) 뒤에 할 수 있어요','Deleting needs the server updated (schema.sql)');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
     if(/not_enough_tfrags/.test(m))return T2('초월 조각이 부족해요','Not enough transcendence fragments');
     if(/not_enough_frags/.test(m))return T2('해독 조각이 부족해요','Not enough fragments');

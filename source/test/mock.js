@@ -16,7 +16,7 @@ const oauthUser=(db,t)=>{const mt=/^oauthr?_(google|kakao)_([a-z0-9]{1,20})$/.ex
 // v6.66: an operator's answer to an inquiry (the admin page's qz_admin_inquiry_reply); done false keeps it open
 window.__mockInqReply=(id,text,done)=>{const db=load(),q=(db.inq||[]).find(x=>x.id===id);if(!q)return false;q.reply=text;q.reply_at=new Date().toISOString();q.seen=false;if(done!==false)q.status='done';save(db);return true};
 const ses=(db,uid)=>{const a='at_'+uuid(),r='rt_'+uuid();db.tok[a]={uid,exp:Date.now()+3600e3};db.tok[r]={uid,refresh:1};const u=db.users[uid];
-  return {access_token:a,token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,refresh_token:r,user:{id:uid,email:u.email,user_metadata:u.meta}}};
+  return {access_token:a,token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,refresh_token:r,user:{id:uid,email:u.email,user_metadata:u.meta,app_metadata:{provider:u.prov||'email',providers:[u.prov||'email']}}}};
 const REC=Q=>Object.assign({g:0,k:0,inf:0,best:0,xp:0,imported:false},Q.rec||{});
 // v6.66: an account that picked no nickname (Google / Kakao) starts as 생존자 + 4 digits (schema.sql qz_auto_nick)
 const autoNick=()=>'생존자'+String(Math.floor(Math.random()*10000)).padStart(4,'0');
@@ -216,6 +216,12 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       P.ny=(P.ny||[0,0,0,0]).map((x,i)=>x+ad[i]);P.nyQ=0;save(db);return res(200,{added:ad,ny:P.ny})}
     if(fn==='qz_ny_exchange'){const c=body.p_choice;if(c!=='ny'&&c!=='season')return pgerr('bad_choice');const N=P.ny||[0,0,0,0];if(Math.min(...N)<1)return pgerr('no_set');
       P.ny=N.map(x=>x-1);if(c==='ny')P.tickets=(P.tickets|0)+2;else P.sTk=(P.sTk|0)+1;save(db);return res(200,{ny:P.ny,tickets:P.tickets|0,season_tickets:P.sTk|0})}
+    // v6.67: 회원 탈퇴 (same rules as qz_account_delete): the account and everything on it; window.__mockDeleted = the ids gone
+    if(fn==='qz_account_delete'){if((body||{}).p_confirm!=='delete')return pgerr('confirm_needed');if(window.__MOCK_ADMIN)return pgerr('admin_account');
+      delete db.users[uid];delete db.prof[uid];delete db.own[uid];for(const k in db.tok)if(db.tok[k].uid===uid)delete db.tok[k];
+      db.inq=(db.inq||[]).filter(q=>q.uid!==uid);db.fr=FRL().filter(f=>f.a!==uid&&f.b!==uid);db.dms=DML().filter(m=>m.from!==uid&&m.to!==uid);db.gifts=GFL().filter(g=>g.to!==uid);
+      db.log=db.log.filter(l=>l[0]!==uid);if(db.mis)delete db.mis[uid];if(db.bingo)delete db.bingo[uid];if(db.season)delete db.season[uid];if(db.side)delete db.side[uid];
+      (window.__mockDeleted=window.__mockDeleted||[]).push(uid);save(db);return res(200,{ok:true})}
     if(fn==='qz_set_nickname'){P.nickname=clean(body.p_nick);save(db);return res(200,P.nickname)}
     if(fn==='qz_buy'){const r=PM[body.p_gun];if(r&&r.tier)return pgerr('gacha_only');if(!r||!r.sold)return pgerr('not_for_sale');if(r.free||db.own[uid].includes(body.p_gun))return pgerr('already_owned');
       if(P.coins<r.price)return pgerr('not_enough_coins');P.coins-=r.price;db.own[uid].push(body.p_gun);db.log.push([uid,-r.price,'buy']);save(db);return res(200,{coins:P.coins,gun:body.p_gun})}

@@ -13,6 +13,12 @@ for f in order:
     if os.path.exists(p):
         parts.append('// ---- ' + f + '.js ----\n' + open(p, encoding='utf8').read())
 js = '\n'.join(parts)
+# v6.67: the terms and the privacy policy — legal/legal.json holds the operator, the contact, the database region and the date the text
+# takes effect; the game's LEGAL.ver (account.js, sent with an e-mail sign-up) is that date
+import json, html as _html, re as _re
+LG = os.path.join(R, 'legal')
+LCFG = json.load(open(os.path.join(LG, 'legal.json'), encoding='utf8')) if os.path.isdir(LG) else {'effective': ''}
+js = js.replace("'%LEGAL_VER%'", json.dumps(str(LCFG.get('effective', ''))))
 css = open(os.path.join(S, 'style.css'), encoding='utf8').read()
 body = open(os.path.join(S, 'body.html'), encoding='utf8').read()
 # font subset: every non-ASCII char used anywhere + ASCII
@@ -107,6 +113,27 @@ if os.path.isdir(A):
     for out in (D, os.path.join(D, 'standalone')):
         open(os.path.join(out, 'admin.html'), 'w', encoding='utf8').write(admin)
     print('admin bytes', len(admin.encode()), 'guns', len(guns), 'maps', len(maps), 'chars', len(ach))
+# v6.67: privacy.html and terms.html next to the game: shell.html around each page's two articles (한국어 / English), {{key}} from legal.json,
+# <!--if:key-->…<!--/if--> kept only when that value is set and <!--ifnot:key-->…<!--/if--> only when it is not
+if os.path.isdir(LG):
+    shell = open(os.path.join(LG, 'shell.html'), encoding='utf8').read()
+    lcss = open(os.path.join(LG, 'page.css'), encoding='utf8').read()
+    names = {'privacy': ('개인정보처리방침', 'Privacy Policy'), 'terms': ('이용약관', 'Terms of Service')}
+    for name, other in (('privacy', 'terms'), ('terms', 'privacy')):
+        t = shell.replace('{{content}}', open(os.path.join(LG, name + '.html'), encoding='utf8').read()).replace('{{css}}', lcss)
+        t = t.replace('{{name_ko}}', names[name][0]).replace('{{name_en}}', names[name][1])
+        t = t.replace('{{other_file}}', other + '.html').replace('{{other_ko}}', names[other][0]).replace('{{other_en}}', names[other][1])
+        t = _re.sub(r'<!--if:(\w+)-->(.*?)<!--/if-->', lambda m: m.group(2) if str(LCFG.get(m.group(1), '')).strip() else '', t, flags=_re.S)
+        t = _re.sub(r'<!--ifnot:(\w+)-->(.*?)<!--/if-->', lambda m: '' if str(LCFG.get(m.group(1), '')).strip() else m.group(2), t, flags=_re.S)
+        for k, v in LCFG.items():
+            if not k.startswith('_'):
+                t = t.replace('{{' + k + '}}', _html.escape(str(v)))
+        left = _re.findall(r'\{\{\w+\}\}', t)
+        if left:
+            raise SystemExit('legal/' + name + '.html: no value for ' + ', '.join(sorted(set(left))))
+        for out in (D, os.path.join(D, 'standalone')):
+            open(os.path.join(out, name + '.html'), 'w', encoding='utf8').write(t)
+    print('legal pages', LCFG.get('effective'), 'contact', 'e-mail' if str(LCFG.get('email', '')).strip() else '문의하기 only')
 print('page bytes', len(page.encode()), 'js', len(js.encode()), 'fonts',
       [os.path.getsize(os.path.join(D, 'assets', f)) for f in ('galmuri11.woff', 'galmuri11b.woff')], 'chars', len(chars),
       'standalone', len(standalone.encode()))

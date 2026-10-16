@@ -43,6 +43,8 @@
 --     쓰지 않음, 게임이 처음 한 번 닉네임을 정하라고 물어봄). 켜는 곳: Supabase 대시보드 → Authentication → Sign In / Providers → Google.
 --   * 문의(v6.66): 로비의 「문의하기」로 누구나(게스트도) 운영진에게 글을 남깁니다(inquiries: 계정은 1시간에 5개 · 하루 20개, 게스트는 다 합쳐
 --     1시간에 60개). 답변은 관리자 페이지 「문의」에서 쓰고, 플레이어는 게임의 「내 문의」에서 봅니다(게스트는 쓴 브라우저에서만). 닫힌 문의는 180일 뒤 지워집니다.
+--   * 회원 탈퇴(v6.67): 게임의 내 계정 → 회원 탈퇴(qz_account_delete)가 auth.users 줄을 지우고, 계정에 딸린 모든 테이블이 같이 지워집니다(on delete cascade).
+--     관리 기록 · 보낸 선물 · 오류 기록은 계정과의 연결 없이 남습니다. 관리자 계정은 탈퇴할 수 없습니다(운영진에서 먼저 빼야 함).
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -4148,3 +4150,37 @@ grant execute on function public.qz_admin_inquiries(text, bigint, integer) to au
 grant execute on function public.qz_admin_inquiry_reply(bigint, text, boolean) to authenticated;
 grant execute on function public.qz_admin_inquiry_done(bigint, boolean) to authenticated;
 grant execute on function public.qz_admin_inquiry_del(bigint) to authenticated;
+
+-- ============================================================================================================
+-- 회원 탈퇴 (v6.67): 내 계정 → 회원 탈퇴 removes the account and everything on it
+-- ============================================================================================================
+-- Deleting the auth.users row cascades to every table that holds the player (profile, coins and their log, guns, cards, records,
+-- achievements, missions, play time, friends and messages, gifts received, invites, referrals, mail and coupon claims, rooms, inquiries …).
+-- What stays, no longer tied to anyone: the admin log's lines about the account (with the nickname a rename or a closed room recorded
+-- taken out), the gifts it sent (the friend keeps the gun), error reports (never tied to an account). Its nickname is also taken out of
+-- the gift and invite-reward lines in other players' coin logs. An admin account cannot (take it off the staff first; an owner through
+-- the SQL Editor). p_confirm must be 'delete': the game asks the player to type 탈퇴 (an e-mail account its password too) before it calls.
+create or replace function public.qz_account_delete(p_confirm text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_nick text;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  if coalesce(p_confirm, '') <> 'delete' then raise exception 'confirm_needed'; end if;
+  if not exists (select 1 from auth.users u where u.id = uid) then raise exception 'not_signed_in'; end if;
+  if exists (select 1 from public.admins a where a.user_id = uid) then raise exception 'admin_account'; end if;
+  v_nick := (select t.nickname from public.profiles t where t.id = uid);
+  update public.admin_log set detail = detail - 'old' - 'new' where target = uid and action = 'rename';
+  update public.admin_log set detail = detail - 'host_name' where target = uid and action = 'room_close';
+  if v_nick is not null then
+    update public.coin_log c set detail = c.detail - 'to'
+      where c.reason = 'gift' and c.detail ->> 'to' = v_nick and c.user_id in (select g.from_id from public.gifts g where g.to_id = uid);
+    update public.coin_log c set detail = c.detail - 'from'
+      where c.reason = 'ref_reward' and c.detail ->> 'from' = v_nick and c.user_id in (select f.referrer from public.referrals f where f.referee = uid);
+  end if;
+  delete from auth.users where id = uid;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.qz_account_delete(text) from public, anon;
+grant execute on function public.qz_account_delete(text) to authenticated;

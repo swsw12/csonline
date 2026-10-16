@@ -1749,3 +1749,15 @@ html.touch #inqWin .pwf button,html.touch #inqWin .ikinds button,html.touch #inq
 #srvWin .bnq{margin-top:10px!important;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;color:#b8b4a8}
 #srvWin .bnq button{min-width:0;padding:5px 12px;font-size:12px;border-color:#c8901e;color:#ffe2a0}
 @media (max-height:520px){#inqWin textarea{min-height:84px;height:96px}#inqWin .pwb{gap:7px;padding:10px 12px}}
+/* v6.67: the account window — the sign-up box to tick, the documents' links, 회원 탈퇴 */
+#accWin .anote.small{font-size:11px;color:#8a8f98}#accWin .anote.center{justify-content:center;text-align:center}
+#accWin .anote a,#accWin .achk a,#accWin .afoot a{color:#9ab8e8;text-decoration:underline}
+#accWin .achk{flex-direction:row;align-items:flex-start;gap:8px;font-size:12px;color:#c8c4b8;line-height:1.5;cursor:pointer}
+#accWin .achk input{flex:none;width:16px;height:16px;margin:1px 0 0;padding:0;accent-color:#e8a33a}
+#accWin .afoot{align-items:center;font-size:11px;color:#7a7e86;padding-top:6px;border-top:1px solid #33373e}
+#accWin .alink.dim{color:#8a8f98;font-size:11px}
+#accWin .adel{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px;font-size:12px;color:#e6c8c0}
+#accWin .ago.red{background:linear-gradient(#c8402a,#8a1e10);border-color:#ff8a6a;color:#fff}
+#accWin label b{color:#ff9a8a}
+.lob .foot a{color:#7a786e;text-decoration:underline;margin:0 2px}.lob .foot a:hover{color:#ffd890}
+#inqWin .inote a{color:#9ab8e8;text-decoration:underline}
