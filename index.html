@@ -15924,6 +15924,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.62','2026-10-16',[
+ ['FIX','Ctrl+R로 게임이 새로고침되던 문제 — 앉기(Ctrl)와 재장전(R)을 같이 누르면 페이지가 새로고침돼 판이 끊겼어요. 이제 이 페이지에선 Ctrl+R(맥은 Cmd+R)로 새로고침되지 않아요 (채팅 입력 중에도). 새로고침이 필요하면 F5나 브라우저의 새로고침 버튼','Ctrl+R no longer reloads the game — crouch (Ctrl) and reload (R) together used to reload the page and drop you out of the match. On this page Ctrl+R (Cmd+R on a Mac) does nothing now, in the chat box too; F5 or the browser’s reload button still reload']]],
 ['v6.61','2026-10-15',[
  ['UP','신규 무기 5종 모델 리마스터 — 크리스 벡터 · AN-94 · 바렛 M82A1 · SPAS-12 드래곤브레스 · M32 클러스터의 모델을 처음부터 다시 만들었어요. 실제 총의 실루엣과 비율, 부품 하나하나(레일 슬롯 · 가늠자 · 리벳 · 핀 · 홈 · 손잡이 질감)까지 살리고, 1인칭 · 3인칭 · 아이콘 모두 새 모델로 바뀌어요','The five new guns remastered — the KRISS Vector, AN-94, Barrett M82A1, SPAS-12 Dragon’s Breath and M32 Cluster rebuilt from scratch: the real guns’ silhouettes and proportions down to the parts (rail slots, sights, rivets, pins, grooves, grip texture), in first person, third person and on the icons'],
  ['UP','총마다 전용 재질 — 벡터는 FDE(샌드 브라운) 폴리머에 검은 M4 개머리, AN-94는 플럼(적갈색) AK-74 탄창, 바렛은 파커라이징 강철 상부와 창 너머로 보이는 총열, SPAS-12 드래곤브레스는 금테 두른 용비늘 패널 · 금장 트림 · 타공 방열판, M32 클러스터는 올리브드랍 도장에 위험 표시','Each gun its own finish — the Vector in flat dark earth polymer with a black M4 stock, the AN-94 with a plum AK-74 magazine, the Barrett’s parkerized upper with the barrel showing through its windows, the SPAS-12 Dragon’s Breath with dragon-scale panels framed in gold, gold trim and a perforated heat shield, the M32 Cluster in olive drab with hazard markings']]],
@@ -16392,7 +16394,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.61 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.62 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap();setTimeout(lobFit,0)};
 // (v6.58) the top bar keeps every button in view: past its width the logo gets smaller, then goes, then the main buttons lose
 // their words (a tooltip keeps them); run after every module has put its buttons in, on every resize and when the lobby shows again
@@ -16593,8 +16595,11 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       P.yaw=wrapA(P.yaw-e.movementX*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*e.movementY*k,-1.53,1.53)});
     addEventListener('wheel',e=>{const P=G.player;if(!P||!P.alive||this.paused||this.overlay||G.st==='menu')return;const order=P.team===TZ?['claw','zbomb']:[P.inv[1],P.inv[2],P.inv[3]||'knife',...H_NADES.filter(k=>P.inv[k]>0)].filter(Boolean);
       if(P.team===TZ&&P.bombs<=0)return;const i=order.indexOf(P.cur);const n=order[(i+(e.deltaY>0?1:-1)+order.length)%order.length];equip(P,n)},{passive:true});
+    // v6.62: Ctrl+R (Cmd+R, with or without Shift) never reloads the page — Ctrl is crouch and R reloads, so the two together used to
+    // reload the whole game. Caught first (capture) and everywhere, chat and the other text fields too; F5 and the browser's button still reload
+    addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&(e.code==='KeyR'||e.key==='r'||e.key==='R'))e.preventDefault()},true);
     addEventListener('keydown',e=>{if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;const k=e.code;
-      if(e.altKey&&(k==='Enter'||k==='NumpadEnter')){e.preventDefault();if(!e.repeat)FS.toggle();return}if(['Tab','Space','ArrowUp','ArrowDown','Backquote'].includes(k)||(e.ctrlKey&&k!=='KeyR'))e.preventDefault();AU.init();
+      if(e.altKey&&(k==='Enter'||k==='NumpadEnter')){e.preventDefault();if(!e.repeat)FS.toggle();return}if(['Tab','Space','ArrowUp','ArrowDown','Backquote'].includes(k)||e.ctrlKey)e.preventDefault();AU.init();
       if(e.repeat&&k!=='Tab')return;this.keys[k]=true;const P=G.player;
       if(G.st==='menu'||G.st==='over'){if(k==='Escape'&&UI.open&&UI.open!=='menu'&&UI.open!=='results')UI.act('back');return}
       if(k==='Escape'){if(this.overlay){this.closeOverlay();return}
