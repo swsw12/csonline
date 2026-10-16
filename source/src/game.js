@@ -194,7 +194,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   if(a.alive&&ch.hide!==STUMPS){ch.hide=STUMPS;a.spurts=null}// anything revived is whole again
   rigCompute(ch);ch.grp.position.set(c.x,c.y,c.z);ch.grp.rotation.y=a.yaw;ch.grp.updateMatrixWorld(true);
   // arterial spurts from fresh stumps, pulsing with the last heartbeats
-  if(a.spurts&&!a.alive){for(const S of a.spurts){if(S.t<=0)continue;S.t-=dt;const beat=Math.max(0,Math.sin(G.t*8.5+S.ph));if(Math.random()>dt*55*beat*Math.min(1,S.t/1.4))continue;
+  if(a.spurts&&!a.alive&&GORE.lv>=2){for(const S of a.spurts){if(S.t<=0)continue;S.t-=dt;const beat=Math.max(0,Math.sin(G.t*8.5+S.ph));if(Math.random()>dt*55*beat*Math.min(1,S.t/1.4))continue;
       const D=SPURT_D[S.b-14];_sv.setFromMatrixPosition(ch.M[S.b]).applyMatrix4(ch.grp.matrixWorld);_sd.set(D[0],D[1],D[2]).transformDirection(ch.M[S.b]).transformDirection(ch.grp.matrixWorld);
       const sp=rr(1.6,3.2)*Math.min(1,S.t/1.2+.3);FX.spawn({x:_sv.x+_sd.x*.05,y:_sv.y+_sd.y*.05,z:_sv.z+_sd.z*.05,vx:_sd.x*sp+rr(-.25,.25),vy:_sd.y*sp+rr(0,.5),vz:_sd.z*sp+rr(-.25,.25),life:rr(.5,.9),s0:.05,s1:.03,r:.5,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:Math.random()<.25?rr(.05,.1):0})}}
   // level of detail: rounded fillets up close, chamfered parts further out
@@ -434,11 +434,11 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
   if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills
   HUD.feed(src,o.w,t,{hs:o.hs,perma});nyOnKill(t,src);
   AU.at('zdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1,range:55});
-  // gore: headshot kills burst the head, explosions tear the body; every body leaves a pool
-  if(o.hs&&!o.knife&&o.dir){FX.gib(t.head.x,t.head.y,t.head.z,o.dir[0],o.dir[1],o.dir[2],false);AU.at('gib',t.head.x,t.head.y,t.head.z,{vol:1,range:40})}
-  else if((o.he||o.w==='gl40')&&o.dir){FX.gib(t.c.x,t.c.y+1,t.c.z,o.dir[0],.4,o.dir[2],true);AU.at('gib',t.c.x,t.c.y+1,t.c.z,{vol:1,range:45})}
+  // gore (원본 only, GORE.lv 2): headshot kills burst the head, explosions tear the body; every body leaves a pool
+  if(GORE.lv>=2){if(o.hs&&!o.knife&&o.dir){FX.gib(t.head.x,t.head.y,t.head.z,o.dir[0],o.dir[1],o.dir[2],false);AU.at('gib',t.head.x,t.head.y,t.head.z,{vol:1,range:40})}
+    else if((o.he||o.w==='gl40')&&o.dir){FX.gib(t.c.x,t.c.y+1,t.c.z,o.dir[0],.4,o.dir[2],true);AU.at('gib',t.c.x,t.c.y+1,t.c.z,{vol:1,range:45})}}
   dismember(t,o,perma);
-  t.poolT=.75;t.poolN=0;
+  t.poolT=GORE.lv>=2?.75:0;t.poolN=0;
   if(src&&src.isPlayer){HUD.killConfirm(o.hs);if(o.hs)AU.play('hsding',{vol:.5})}
   if(G.mode==='mut'&&src&&src.team===TH&&!NET.cli){G.moralePts+=perma?2:1;const nl=Math.min(ZBAL.moraleMax,Math.floor(G.moralePts/3));if(nl>G.moraleLvl){G.moraleLvl=nl;HUD.announce(T('moraleUp',nl*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}}
   if(t.isPlayer)onPlayerDeath(src);
@@ -446,7 +446,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
 // dismemberment: only on bodies that stay down (perma kills, or the classic mode where the dead respawn elsewhere).
 // Headshots take the head off (heavy guns may burst it instead), explosions tear off one or two limbs, heavy blades lop off a head or an arm,
 // a close shotgun blast can take an arm.
-function dismember(t,o,perma){if(!t.ch||!o.dir||!(G.mode!=='mut'||perma||o.he))return;const W=WPN[o.w]||{},big=W.kind==='sniper'||W.kind==='shotgun'||(W.dmg||0)>=60;
+function dismember(t,o,perma){if(GORE.lv<2||!t.ch||!o.dir||!(G.mode!=='mut'||perma||o.he))return;const W=WPN[o.w]||{},big=W.kind==='sniper'||W.kind==='shotgun'||(W.dmg||0)>=60;
   const cut=(k,d,sp)=>{if(SEVER[k]&&!(t.ch.hide>>SEVER[k].root&1)){FX.limb(t,k,d,sp);severLimb(t.ch,k);(t.spurts=t.spurts||[]).push({b:SEVER[k].stump,t:2.6,ph:Math.random()*6})}};
   if(o.hs&&!o.knife){if(big&&Math.random()<.55){severLimb(t.ch,'head');(t.spurts=t.spurts||[]).push({b:14,t:2.6,ph:0})}else cut('head',o.dir,rr(3,5.5))}
   else if(o.he||o.w==='gl40'){const ks=shuffle(['armL','armR','legL','legR','head','armL','armR']);const n=Math.random()<.45?2:1;for(let i=0,c=0;i<ks.length&&c<n;i++)if(!(t.ch.hide>>SEVER[ks[i]].root&1)){cut(ks[i],[o.dir[0],.7,o.dir[2]],rr(4.5,7.5));c++}}
@@ -465,8 +465,8 @@ function infect(t,src){if(NET.ghost||(NET.cli&&!NET.ev))return;if(t.team!==TH||!
   if(t.isPlayer){HUD.infected(src);R.PU.uInfect.value=1;FX.shake=Math.max(FX.shake,.8);AU.play('heart',{vol:.9});AU.play('heart',{vol:.7,delay:.75})}
   const n=humansAlive();if(n===1&&G.st==='fight'){const last=G.actors.find(a=>a.alive&&a.team===TH);G.lastHuman=last;HUD.announce(T('lastHuman',last.name),'h',3);AU.play('stingL',{vol:.6})}}
 // someone turns: a burst of blood mist and rising green spores, a red ring on the ground and a red glow; the new zombie roars as it straightens up
-function infectFx(t,big){const c=t.c,x=c.x,y=c.y,z=c.z,s=big?1.4:1;
-  for(let i=0;i<14*s;i++){const an=rr(0,TAU),sp=rr(1,3)*s;FX.spawn({x,y:y+rr(.9,1.6),z,vx:Math.cos(an)*sp,vy:rr(.2,1.4),vz:Math.sin(an)*sp,life:rr(.6,1.1),s0:rr(.2,.35),s1:rr(.8,1.5)*s,r:.32,g:.02,b:.02,a:.6,f:2,drag:2.2,lit:1})}
+function infectFx(t,big){const c=t.c,x=c.x,y=c.y,z=c.z,s=big?1.4:1,mc=GORE.lv>=2?[.32,.02,.02,.6]:GORE.lv>=1?[.2,.08,.08,.45]:[.16,.15,.15,.45];// the mist: blood red · 15세 dark rust · 피 끄기 grey
+  for(let i=0;i<14*s;i++){const an=rr(0,TAU),sp=rr(1,3)*s;FX.spawn({x,y:y+rr(.9,1.6),z,vx:Math.cos(an)*sp,vy:rr(.2,1.4),vz:Math.sin(an)*sp,life:rr(.6,1.1),s0:rr(.2,.35),s1:rr(.8,1.5)*s,r:mc[0],g:mc[1],b:mc[2],a:mc[3],f:2,drag:2.2,lit:1})}
   for(let i=0;i<16*s;i++){const an=rr(0,TAU),sp=rr(.3,1.2);FX.spawn({x:x+Math.cos(an)*rr(0,.5),y:y+rr(.3,1.8),z:z+Math.sin(an)*rr(0,.5),vx:Math.cos(an)*sp,vy:rr(.4,1.6),vz:Math.sin(an)*sp,life:rr(.9,1.8),s0:rr(.05,.1),s1:rr(.12,.22),r:.45,g:1,b:.3,a:.85,f:13,drag:1.2,grav:-.3,add:1})}
   FX.spawn({x,y:y+.08,z,life:.7,s0:.4,s1:3.2*s,r:.9,g:.08,b:.05,a:.7,f:14,add:1});
   DL.add(x,y+1.2,z,'#ff2a18',7*s,2.2,.8);
@@ -566,8 +566,8 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       if(a.bot&&!a.pup)AI.update(a,dt);
       a.frozen=Math.max(0,a.frozen-dt);if(a.holdT>0)a.holdT=Math.max(0,a.holdT-dt);if(a.rootT>0)a.rootT=Math.max(0,a.rootT-dt);a.staggerT=Math.max(0,a.staggerT-dt);a.dizzy=Math.max(0,a.dizzy-dt);a.shriekT=Math.max(0,a.shriekT-dt);a.skillCD=Math.max(0,a.skillCD-dt);a.skillT=Math.max(0,a.skillT-dt);
       if(a.team===TZ&&!NET.cli&&!a.scen&&G.t-a.lastHurt>ZBAL.regenWait&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*ZBAL.regen*dt);// zombies left alone heal
-      // badly hurt zombies leave a trail of blood
-      if(a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
+      // badly hurt zombies leave a trail of blood (원본 only)
+      if(GORE.lv>=2&&a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
       if(a.turning>0){a.turning-=dt;a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=a.cmd.jump=a.cmd.skill=false;a.mvx*=.8;a.mvz*=.8}
       // the get-up timer runs here, not in updateVisual: the local player's own body is never drawn, so it would never count down there
       if(a.reviving>0)a.reviving=Math.max(0,a.reviving-dt);

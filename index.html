@@ -1827,6 +1827,18 @@ const rr=(a,b)=>a+Math.random()*(b-a);
 const rpick=a=>a[Math.floor(Math.random()*a.length)];
 const _rgbCache={};function rgbOf(c){return _rgbCache[c]||(_rgbCache[c]=hexRGB(c))}
 const dk=(c,a)=>mix(c,'#0c0a10',a==null?.3:a),lt=(c,a)=>mix(c,'#fff4dc',a==null?.25:a);
+// ---------- blood & gore level (v6.64, Options → Gameplay; CFG.gore) ----------
+// 2 원본: everything (dismemberment, bursting heads, pools, splats, torn-open zombie skins)
+// 1 15세 (default): no dismemberment and no bursting heads, a small dark spray on hits, no pools or splats, zombie skins bruised
+//   and filthy instead of torn open (no ribs, spine or guts showing), a toned-down infection screen
+// 0 끄기: as 15세, and no blood at all: a hit throws a little grey dust
+// Everything that draws gore reads GORE.lv; GORE.set repaints what was already built (goreApply, fx.js)
+const GORE={lv:1,gen:0,
+  init(){const c=LS.get('cfg',null),v=c?c.gore:null;this.lv=v===0||v===1||v===2?v:1},
+  set(v){v=v===0||v===1||v===2?v:1;if(v===this.lv)return;const was=this.lv;this.lv=v;if(typeof goreApply==='function')goreApply(was)},
+  // a blood-red paint turns to grime at lv < 2 (dark, greyed, a touch of brown); other colours pass through
+  de(c){if(this.lv>=2||!c)return c;const [r,g,b]=rgbOf(c);if(!(r>40&&r>g*1.6&&r>b*1.6))return c;const l=r*.3+g*.59+b*.11;return rgbHex(l*1.12+9,l*1.02+7,l*.94+6)}};
+GORE.init();
 
 // ---- i18n.js ----
 'use strict';
@@ -2172,6 +2184,7 @@ const ARM_DESIGN={
 //     style: 'cloth' 천(기본)  'skin' 사람 피부  'zskin' 좀비 피부(멍·혈관)  'plate' 단단한 판(헬멧·방탄판)
 //            'rubber' 고무  'boot' 군화  'flat' 무늬 없는 단색  'hair' 머리카락  'flesh' 생살  'meat' 내장  'tumor' 종양
 //     goreM (좀비 공통): bone 뼈, guts 내장, tumor 종양, nail 손톱, flesh 생살
+//     (피 표현이 15세·피 끄기면: rib·vert·guts·stump 부품은 빠지고, 생살·뼈·핏자국 그림은 멍·때·긁힌 자국으로 바뀐다 — models.js goreOp)
 //
 //  ③ decor — 부위 표면에 칠하는 그림.  부위이름:{면:[ 그림, 그림 … ]}
 //     면: front 앞  back 뒤  side 양옆  left / right  top 위  bottom 아래  fb 앞+뒤  all 전부
@@ -2327,7 +2340,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
   else if(k==='runner'){// 질주체 — flayed and starved: the back skinned down to the spine, a lipless grin, long bone claws
     o={hipY:.97,thigh:.44,legW:.12,legD:.14,shinW:.11,torsoW:.36,torsoD:.2,torsoH:.48,shX:.22,armW:.095,upper:.31,fore:.31,hand:.12,headW:.21,headH:.25,headD:.24,claw:.07,fingL:.6,curl:.3,curlJ:5,nose:false,ears:[0,0]};
     const sk='#8e8c7c';
-    mats=Object.assign({top:{base:'#5a1e1a'},legs:{base:'#3a3a38'},sleeve:{base:sk,style:'zskin',blot:'#4a2a48'},fore:{base:sk,style:'zskin',blot:'#4a2a48'},shin:{base:sk,style:'zskin',blot:'#4a2a48'},skin:{base:sk,style:'zskin',blot:'#4a2a48'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:dk(sk,.25),style:'zskin'},hair:{base:'#141210',style:'hair'},jaw:{base:sk,style:'zskin',blot:'#4a2a48'}},goreM);
+    mats=Object.assign({top:{base:GORE.lv>=2?'#5a1e1a':'#463a34'},legs:{base:'#3a3a38'},sleeve:{base:sk,style:'zskin',blot:'#4a2a48'},fore:{base:sk,style:'zskin',blot:'#4a2a48'},shin:{base:sk,style:'zskin',blot:'#4a2a48'},skin:{base:sk,style:'zskin',blot:'#4a2a48'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:dk(sk,.25),style:'zskin'},hair:{base:'#141210',style:'hair'},jaw:{base:sk,style:'zskin',blot:'#4a2a48'}},goreM);
     decor={torso:{front:[['tear',3,4,'#6a5a58'],['ribs',.2,.5,.8,.95,6],['soak',.3,.75,'#4a0606',.8],['veins',4,'#4a3a5a']],back:[['flesh',.04,.04,.96,.98,1.57],['drip',.5,.12,5,.9]],side:[['flesh',0,.3,.6,.9,0],['grime',.4]]},
       head:{front:[['face','runner',{skin:sk,eye:eyeH||'#d8e8ff',tears:1,lipless:1}]],back:[['rect',0,.5,1,1,'#141210'],['flesh',.1,0,.9,.5,0]],top:[['rect',0,0,1,1,'#141210'],['wounds',1,12]],side:[['rect',0,.4,.6,1,'#141210'],['gash',.25,.32,.8,.08,3,.08]],bottom:[['teethrow','bottom',.36]]},
       jaw:{top:[['teethrow','top',.4]],front:[['teethrow','top',.55]],side:[['flesh',0,.2,1,.9,0]],bottom:[['soak',0,1,'#4a0606',.7]]},
@@ -2737,7 +2750,8 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
     Object.assign(decor,{stumpN:{top:[['flesh',0,0,1,1,.5],['bonep',.36,.36,.64,.64]],fb:[['flesh',0,.2,1,1,0],['drip',.5,.4,3,.9]],side:[['flesh',0,.2,1,1,0]]},
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
       stumpLL:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]},stumpLR:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]}})}
-  H.parts.push(...ex.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
+  // 15세 / 피 끄기 (GORE.lv < 2): no ribs bursting out, no bare spine, no hanging guts, no stumps (nothing is ever torn off)
+  H.parts.push(...ex.filter(e=>GORE.lv>=2||!/^(rib|vert|guts|stump)/.test(e.n)).map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
   return Object.assign(H,{key:'z_'+(aleph?'aleph':khepri?'khepri':tiamat?tiamat:boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
 
 // ================================================================================================
@@ -3312,7 +3326,7 @@ function matPoints(tex,additive){return new THREE.ShaderMaterial({uniforms:{map:
   transparent:true,depthWrite:false,blending:additive?THREE.CustomBlending:THREE.NormalBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.OneFactor,blendDst:additive?THREE.OneFactor:THREE.OneMinusSrcAlphaFactor})}
 // ---------- post: low-res buffer -> grade, night vision, damage/frost/infection overlays, dither -> screen ----------
 const VS_POST=`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
-const FS_POST=`uniform sampler2D tDiffuse;uniform sampler2D tBloom;uniform sampler2D tBloom2;uniform float uBloom;uniform float uFxaa;uniform vec2 uRes;uniform float uTime;uniform float uNV;uniform float uDmg;uniform float uWhite;uniform float uInfect;uniform float uFrost;uniform float uZ;uniform float uDeath;uniform float uGamma;uniform float uBeam;varying vec2 vUv;
+const FS_POST=`uniform sampler2D tDiffuse;uniform sampler2D tBloom;uniform sampler2D tBloom2;uniform float uBloom;uniform float uFxaa;uniform vec2 uRes;uniform float uTime;uniform float uNV;uniform float uDmg;uniform float uWhite;uniform float uInfect;uniform float uFrost;uniform float uZ;uniform float uDeath;uniform float uGamma;uniform float uBeam;uniform float uGoreK;varying vec2 vUv;
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 const vec3 LW=vec3(.299,.587,.114);
 // FXAA (Lottes, console variant): only used when the scene buffer is close to screen resolution
@@ -3338,14 +3352,15 @@ void main(){vec2 uv=vUv;vec3 c=uFxaa>.5?fxaa(uv,1./uRes):texture2D(tDiffuse,uv).
   vec2 q=uv-.5;float r=dot(q,q);c*=1.-r*.9;
   c=mix(c,vec3(.55,0.,0.),uDmg*smoothstep(.08,.5,r));
   c=mix(c,vec3(.75,.9,1.),uFrost*smoothstep(.05,.45,r)*.8);
-  // infection: a red flash, then the colour drains to blood red while dark veins creep in from the edges, pulsing with the heartbeat
-  if(uInfect>0.){float k=uInfect;vec2 p=q*vec2(uRes.x/uRes.y,1.);float an=atan(p.y,p.x),rd=length(p);
+  // infection: a red flash, then the colour drains to blood red while dark veins creep in from the edges, pulsing with the heartbeat.
+  // uGoreK 0 (15세 / 피 끄기): no veins; the drain goes to a muted red and the edge to a dark red alarm instead of blood
+  if(uInfect>0.){float k=uInfect,g=uGoreK;vec2 p=q*vec2(uRes.x/uRes.y,1.);float an=atan(p.y,p.x),rd=length(p);
     float v1=sin(an*9.+sin(an*23.+rd*14.)*1.4+rd*7.)*.5+.5,v2=sin(an*17.-rd*22.+sin(an*5.+rd*9.)*3.)*.5+.5;
     float vein=smoothstep(.9,.995,v1)+smoothstep(.93,.998,v2)*.75;float reach=smoothstep(.95-.55*k,1.05-.3*k,rd*1.35);float beat=.7+.3*sin(uTime*8.5);
-    c=mix(c,vec3(dot(c,LW))*vec3(1.15,.32,.28),.65*k);
-    c=mix(c,vec3(.22,0.,.02),clamp(vein*reach,0.,1.)*k*beat);
-    c=mix(c,vec3(.42,.01,.01),smoothstep(.12,.55,r)*.75*k*beat);
-    c=mix(c,vec3(.65,.06,.03)+c*.3,smoothstep(.8,1.,k)*.85);}
+    c=mix(c,vec3(dot(c,LW))*mix(vec3(1.08,.5,.45),vec3(1.15,.32,.28),g),mix(.55,.65,g)*k);
+    c=mix(c,vec3(.22,0.,.02),clamp(vein*reach,0.,1.)*k*beat*g);
+    c=mix(c,mix(vec3(.24,.04,.05),vec3(.42,.01,.01),g),smoothstep(.12,.55,r)*mix(.65,.75,g)*k*beat);
+    c=mix(c,mix(vec3(.5,.12,.08),vec3(.65,.06,.03),g)+c*.3,smoothstep(.8,1.,k)*mix(.7,.85,g));}
   c=mix(c,vec3(1.),uWhite);
   c*=1.-uDeath*.75;
   c+=(h(uv*uRes+fract(uTime)*7.)-.5)/80.;
@@ -8804,12 +8819,13 @@ const GLOSS={plate:248,rubber:245,boot:243,flesh:252,meat:253,tumor:250,skin:241
 const FACE_GA={gasmask:246,visor:249,man:241,woman:241,balaclava:255,gaiter:255,m50:245};// the gloss a painted face starts with
 const WET={flesh:252,wounds:252,ribs:251,bonep:247,drip:253,bite:252,soak:250,gash:252,blood:251,rot:250,teethrow:247,tear:242,veins:243,stitch:246};
 // materials: {base, style}; decor ops use face-normalised coords (u right, v up, 0..1)
-function fillMat(P,x0,y0,w,h,M,seed,fk,partN){const st=M.style||'cloth',base=M.base;
+function fillMat(P,x0,y0,w,h,M,seed,fk,partN){let st=M.style||'cloth',base=M.base;const blot=GORE.de(M.blot||'#4a2a28');// (GORE.lv < 2: a blood-red blot turns to grime)
+  if(GORE.lv<2&&(st==='flesh'||st==='meat')){st='zskin';base=GORE.de(base)}// (and raw meat to rotten skin)
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const X=x0+x,Y=y0+y;const v=1-(y+.5)/h;let c=base,t;
     if(st==='cloth'){t=.5+(P.n(X,Y,6*CK,seed,2)-.5)*.6+(hash2(X,Y,seed)-.5)*.16+(((X+Y)&1)?.03:-.03);const fold=Math.sin((x/CK*.9+hash2(Math.floor(y/(4*CK)),1,seed)*3))*.5+.5;t+=(fold-.5)*.12;
       c=t<.33?dk(base,.22):t<.45?dk(base,.1):t>.72?lt(base,.12):t>.6?lt(base,.05):base;if(M.camo){const n=P.n(X,Y,9*CK,seed+5,2);if(n>.62)c=mix(c,M.camo[0],.75);else if(n<.36)c=mix(c,M.camo[1],.7)}}
     else if(st==='skin'){t=(P.n(X,Y,5*CK,seed,2)-.5)*.35+(P.n(X,Y,2,seed+2,1)-.5)*.1+(hash2(X,Y,seed+1)-.5)*.08;c=t>.1?lt(base,.08):t<-.1?dk(base,.1):base}
-    else if(st==='zskin'){t=P.n(X,Y,4*CK,seed,3);const t2=P.n(X,Y,9*CK,seed+3,2);c=t>.62?dk(base,.28):t<.3?lt(base,.1):base;if(t2>.66)c=mix(c,M.blot||'#4a2a28',.55);if(t2>.6&&t2<.62)c=dk(c,.35);if(hash2(X,Y,seed+2)<.03)c=dk(c,.3);else if(hash2(X,Y,seed+4)<.015)c=lt(c,.18)}
+    else if(st==='zskin'){t=P.n(X,Y,4*CK,seed,3);const t2=P.n(X,Y,9*CK,seed+3,2);c=t>.62?dk(base,.28):t<.3?lt(base,.1):base;if(t2>.66)c=mix(c,blot,.55);if(t2>.6&&t2<.62)c=dk(c,.35);if(hash2(X,Y,seed+2)<.03)c=dk(c,.3);else if(hash2(X,Y,seed+4)<.015)c=lt(c,.18)}
     else if(st==='rubber'){t=(hash2(X,Y,seed)-.5)*.14;c=t>.04?lt(base,.06):base;if(y===0)c=lt(base,.18);else if(y===1)c=lt(base,.08)}
     else if(st==='boot'){c=v<.22?dk(base,.35):base;if(hash2(X,Y,seed)<.1)c=lt(c,.07);if(v<.22&&v>.16)c=dk(base,.5);if(v<.14&&(x%(2*CK))===0)c=dk(base,.55)}
     else if(st==='hair'){t=hash2(x,Math.floor(y/(3*CK)),seed);c=t<.3?dk(base,.3):t>.8?lt(base,.15):base;if(hash2(x,y,seed+1)<.08)c=lt(c,.1)}
@@ -8822,8 +8838,17 @@ function fillMat(P,x0,y0,w,h,M,seed,fk,partN){const st=M.style||'cloth',base=M.b
 function decor(P,x0,y0,w,h,ops,seed,M){
   const X=u=>x0+Math.floor(clamp(u,0,.9999)*w),Y=v=>y0+Math.floor(clamp(1-v,0,.9999)*h);
   const R=(u0,v0,u1,v1,f)=>{const a=X(u0),b=X(u1-1e-4),cy0=Y(v1-1e-4),cy1=Y(v0);for(let y=cy0;y<=cy1;y++)for(let x=a;x<=b;x++)f(x,y,x-a,y-cy0,b-a,cy1-cy0)};
-  for(const op of ops){const k=op[0];const ga0=P.ga;if(WET[k])P.ga=WET[k];else if(k==='face')P.ga=FACE_GA[op[1]]||243;
+  for(let op of ops){if(GORE.lv<2){op=goreOp(op);if(!op)continue}const k=op[0];const ga0=P.ga;if(WET[k])P.ga=WET[k];else if(k==='face')P.ga=FACE_GA[op[1]]||243;
     decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R);P.ga=ga0}}
+// 15세 / 피 끄기 (GORE.lv < 2): exposed muscle becomes a bruise, claw gashes dark scratches, blood soaking and spatter turns to grime (dry, not wet);
+// ribs, bone, running blood are left out. Bites and wounds paint through 'flesh', so they bruise too.
+function goreOp(op){const k=op[0];
+  if(k==='ribs'||k==='bonep'||k==='drip')return null;
+  if(k==='flesh')return ['bruise',op[1],op[2],op[3],op[4]];
+  if(k==='gash')return ['scratch',op[1],op[2],op[3],op[4],op[5],op[6]];
+  if(k==='soak')return ['grimes',op[1],op[2],GORE.de(op[3]||'#5a0808'),(op[4]||.85)*.6];
+  if(k==='blood')return ['spots',op[1],op[2],GORE.de(op[3]||'#5a0c0c')];
+  return op}
 function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
     if(k==='rect')R(op[1],op[2],op[3],op[4],(x,y)=>{const t=hash2(x,y,seed+7);P.set(x,y,t<.15?dk(op[5],.15):t>.9?lt(op[5],.08):op[5])});
     else if(k==='pocket')R(op[1],op[2],op[3],op[4],(x,y,i,j,W,H)=>{let c=op[5];if(j===0||j===1&&H>4)c=lt(c,.1);if(i===W||j===H)c=dk(c,.35);if(j===Math.min(2,H))c=dk(c,.25);P.set(x,y,c)});
@@ -8833,7 +8858,7 @@ function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
     else if(k==='glow')R(op[1],op[2],op[3],op[4],(x,y)=>{P.set(x,y,op[5]);P.D[(y*P.w+x)*4+3]=232});
     else if(k==='px'){const x=X(op[1]),y=Y(op[2]);for(let j=0;j<CK;j++)for(let i=0;i<CK;i++){P.set(x+i,y+j,op[3]);if(op[4])P.D[((y+j)*P.w+x+i)*4+3]=232}}
     else if(k==='grime'){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const n=P.n(x0+x,y0+y,5*CK,seed+11,2);if(n>.62)P.mul(x0+x,y0+y,1-op[1]*(n-.62)*2.5);if((1-(y+.5)/h)<.18)P.mul(x0+x,y0+y,1-op[1]*.3)}}
-    else if(k==='blood'){const n=op[1],col=op[3]||'#5a0c0c';for(let i=0;i<n;i++){const cx=hash2(i,seed,op[2])*w,cy=hash2(i,seed+1,op[2])*h,r=1+hash2(i,seed+2,op[2])*Math.max(1.5,w*.14);
+    else if(k==='blood'||k==='spots'){const n=op[1],col=op[3]||'#5a0c0c';for(let i=0;i<n;i++){const cx=hash2(i,seed,op[2])*w,cy=hash2(i,seed+1,op[2])*h,r=1+hash2(i,seed+2,op[2])*Math.max(1.5,w*.14);
         for(let y=-r;y<=r+3*CK;y++)for(let x=-r;x<=r;x++){const d=Math.hypot(x,y*(y>0?.5:1))/r+(hash2(Math.floor(x/CK)+i,Math.floor(y/CK),op[2])-.5)*.5;if(d<1){const px=Math.floor(cx+x),py=Math.floor(cy+y);if(px>=0&&py>=0&&px<w&&py<h)P.set(x0+px,y0+py,d<.5?dk(col,.25):col)}}}}
     else if(k==='tear'){const n=op[1],col=op[3];for(let i=0;i<n;i++){const cx=hash2(i,seed+3,op[2])*w,cy=hash2(i,seed+4,op[2])*h,rx=1+hash2(i,seed+5,op[2])*w*.22,ry=1+hash2(i,seed+6,op[2])*h*.16;
         for(let y=-ry-1;y<=ry+1;y++)for(let x=-rx-1;x<=rx+1;x++){const d=Math.hypot(x/rx,y/ry)+(hash2(x+i*7,y,seed)-.5)*.45;const px=Math.floor(cx+x),py=Math.floor(cy+y);if(px<0||py<0||px>=w||py>=h)continue;
@@ -8881,11 +8906,18 @@ function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
       for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++){const d=Math.hypot(x/rx,y/ry)+(hash2(Math.floor(x/CK)+i,Math.floor(y/CK),62)-.5)*.4;if(d>1)continue;const px=Math.floor(cx+x),py=Math.floor(cy+y);if(px<0||py<0||px>=w||py>=h)continue;
         P.set(x0+px,y0+py,d<.35?'#1a0a14':d<.6?'#3a1a2a':d<.82?'#4a5a24':'#6a7a34',d<.6?1:.7)}
       for(let q=0;q<3;q++){const px=Math.floor(cx+(hash2(i,q,63)-.5)*rx),py=Math.floor(cy+(hash2(i,q,64)-.5)*ry);if(px>=0&&py>=0&&px<w-CK&&py<h-CK){for(let a=0;a<CK;a++)for(let b=0;b<CK;b++)P.set(x0+px+b,y0+py+a,'#d8c860');P.set(x0+px,y0+py,'#f0e8a0')}}}}
-    else if(k==='soak'){const col=op[3]||'#5a0808',al=op[4]||.85;// blood soaking down cloth from v1, fading towards v0
+    else if(k==='soak'||k==='grimes'){const col=op[3]||'#5a0808',al=op[4]||.85;// blood soaking down cloth from v1, fading towards v0 (grimes: the 15세 grime, dry)
       R(0,op[1],1,op[2],(x,y,i,j,W,H)=>{const t=1-j/(H||1);const n=P.n(x,y,6*CK,seed+71,2);const a=al*clamp(t*1.25-(.5-n)*.9,0,1);if(a>.05)P.set(x,y,hash2(x,y,seed+72)<.1?dk(col,.3):col,a)})}
     else if(k==='gash'){const n=op[5]||3;for(let g=0;g<n;g++){const off=(g-(n-1)/2)*(op[6]||.09);const ax=X(op[1]+off),ay=Y(op[2]),bx=X(op[3]+off),by=Y(op[4]);const L=Math.max(1,Math.hypot(bx-ax,by-ay));// parallel claw slashes
       for(let q=0;q<=L;q++){const f=Math.sin(q/L*Math.PI);const x=Math.round(ax+(bx-ax)*q/L),y=Math.round(ay+(by-ay)*q/L);const wd=Math.max(1,Math.round(f*CK*1.5));
         for(let e=-wd;e<=wd;e++){const px=x+e;if(px<x0||px>=x0+w||y<y0||y>=y0+h)continue;P.set(px,y,Math.abs(e)===wd?'#9a2a20':(Math.abs(e)<wd*.5?'#1a0202':'#6a0a08'))}}}}
+    // ---- 15세 (goreOp): a bruise where muscle showed, a dark scratch where a gash was ----
+    else if(k==='bruise'){const base=(M&&M.base)||'#6e7e62';
+      R(op[1],op[2],op[3],op[4],(x,y,i,j,W,H)=>{const cx=(i+.5)/(W+1)*2-1,cy=(j+.5)/(H+1)*2-1;const d=Math.hypot(cx,cy)+(P.n(x,y,3*CK,seed+21,2)-.5)*.55;if(d>1)return;
+        let c=mix(dk(base,.3),'#2e2430',.3+P.n(x,y,4*CK,seed+23,2)*.3);if(d>.8)c=mix(c,base,(d-.8)*3);else if(hash2(x,y,seed+22)<.05)c=dk(c,.25);P.set(x,y,c)})}
+    else if(k==='scratch'){const n=op[5]||3,base=(M&&M.base)||'#6e7e62';for(let g=0;g<n;g++){const off=(g-(n-1)/2)*(op[6]||.09);const ax=X(op[1]+off),ay=Y(op[2]),bx=X(op[3]+off),by=Y(op[4]);const L=Math.max(1,Math.hypot(bx-ax,by-ay));
+      for(let q=0;q<=L;q++){const f=Math.sin(q/L*Math.PI);const x=Math.round(ax+(bx-ax)*q/L),y=Math.round(ay+(by-ay)*q/L);const wd=Math.max(1,Math.round(f*CK*.8));
+        for(let e=-wd;e<=wd;e++){const px=x+e;if(px<x0||px>=x0+w||y<y0||y>=y0+h)continue;P.set(px,y,Math.abs(e)===wd?dk(base,.3):dk(base,.55))}}}}
     else if(k==='teethrow'){const top=op[1]==='top';const d=Math.max(CK*2,Math.round(h*(op[2]||.22)));const tw=Math.max(2,Math.round(CK*2.2));// a row of teeth along one edge, gums and a wet dark mouth behind
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ed=top?y:h-1-y;let c;const ti=Math.floor(x/tw);
         if(ed<d){const gap=x%tw===tw-1,miss=hash2(ti,7,seed)<.18,len=d*(.55+hash2(ti,8,seed)*.45);if(gap||miss||ed>len)c=ed<d*.2?'#2a0606':'#5a1212';else{c=ed<len*.3?'#efe4c4':ed<len*.8?'#d0c4a0':'#8a7a54';if(hash2(ti,9,seed)<.25)c=dk(c,.3)}}
@@ -8937,12 +8969,13 @@ function paintFace(P,x0,y0,w,h,kind,seed,o){const K=CK;
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){const e=Math.min(x,w-1-x)/w;if(e<.14)P.mul(x0+x,y0+y,.82+e*1.2)}
     eyePair(P,x0,y0,w,h,ey,kind==='brute'?.16:.2,(x,y,s)=>{
       for(let j=-K-1;j<2*K+1;j++)for(let i=-K-1;i<2*K+1;i++){const inner=Math.abs(i-K/2)<K&&Math.abs(j-K/2)<K;sp(x+i,y+j,inner?dk(skin,.78):(j>K?mix(dk(skin,.45),'#3a1a2a',.4):dk(skin,.5)))}
+      if(o.oneEye&&s>0&&GORE.lv<2){for(let j=-K;j<2*K;j++)for(let i=-K;i<2*K;i++){const r=Math.hypot(i-K/2+.5,j-K/2+.5)/K;sp(x+i,y+j,r<1?'#0a0808':r<1.45?dk(skin,.62):dk(skin,.45))}return}// (15세: an empty dark socket)
       if(o.oneEye&&s>0){// gouged out: a wet black hole with a torn rim, still bleeding
         for(let j=-K;j<2*K;j++)for(let i=-K;i<2*K;i++){const r=Math.hypot(i-K/2+.5,j-K/2+.5)/K;sp(x+i,y+j,r<1?'#080101':r<1.45?'#5a0606':'#7a1410')}
         let tx=x;for(let j=0;j<h*.42;j++){if(hash2(j,3,seed)<.12)tx+=hash2(j,4,seed)<.5?1:-1;sp(tx,y+2*K+j,j<h*.3?'#7a0c0a':'#4a0606');sp(tx+1,y+2*K+j,'#5a0808')}return}
       B(x,y,glow,1);sp(x+(s<0?0:K-1),y,lt(glow,.55),1);if(kind!=='brute')B(x+(s<0?K:-K),y,glow,1);
       if(o.sewn){const xa=Math.min(x,x+(s<0?K:-K))-K;for(let i=0;i<4*K;i++)sp(xa+i,y+(K>>1),'#1a1210');for(let i=0;i<4*K;i+=K)for(let j=-K;j<2*K;j++)sp(xa+i,y+j,j===-K||j===2*K-1?'#4a2a20':'#2a1a14')}
-      if(o.tears){const L=Math.round(h*(.26+hash2(x,s+2,seed)*.12));let tx=x+(s<0?0:K-1);for(let j=0;j<L;j++){if(hash2(j,s+5,seed+3)<.12)tx+=hash2(j,s+5,seed+4)<.5?1:-1;sp(tx,y+K+j,j<L*.7?'#7a0c0a':'#5a0808');sp(tx+1,y+K+j,'#4a0606')}}});
+      if(o.tears){const L=Math.round(h*(.26+hash2(x,s+2,seed)*.12)),g=GORE.lv>=2;let tx=x+(s<0?0:K-1);for(let j=0;j<L;j++){if(hash2(j,s+5,seed+3)<.12)tx+=hash2(j,s+5,seed+4)<.5?1:-1;sp(tx,y+K+j,g?(j<L*.7?'#7a0c0a':'#5a0808'):(j<L*.7?'#2a2226':'#221c1e'));sp(tx+1,y+K+j,g?'#4a0606':'#1a1618')}}});// (15세: dark tears, not blood)
     const cx2=cx;
     if(kind==='scream'){const my=Math.round(h*.62/K)*K;for(let y=my;y<h;y++){const ww=Math.round(((y-my)/K+2)*.55+1)*K;for(let i=-ww;i<ww;i++){const edge=Math.abs(i)>=ww-K||y<my+K;sp(cx2+i,y0+y,edge?(hash2(Math.floor(i/K),Math.floor(y/K),seed)<.5?'#d8d0b0':'#5a1010'):(y>h-3*K?'#1a0404':'#2a0606'))}}}
     else{const my=y0+Math.round(h*.78/K)*K;
@@ -8951,10 +8984,10 @@ function paintFace(P,x0,y0,w,h,kind,seed,o){const K=CK;
         for(let j=-K;j<2*K;j++){sp(cx2-3*K-1,my+j,'#5a0808');sp(cx2+3*K,my+j,'#5a0808')}}
       else{for(let i=-2;i<=2;i++){B(cx2+i*K,my,'#2a0a08');B(cx2+i*K,my-K,(i&1)?'#c8c0a0':'#2a0a08');if(kind!=='brute')B(cx2+i*K,my+K,(i&1)?'#2a0a08':'#b8b090')}
         if(kind==='brute')for(let i=-2;i<=2;i+=2){B(cx2+i*K,my-K,'#8a8a8a');B(cx2+i*K,my+K,'#8a8a8a')}}
-      if(o.cheek){// a hole torn through the cheek shows the molars
+      if(o.cheek&&GORE.lv>=2){// a hole torn through the cheek shows the molars (not at 15세)
         const qx=cx2-4*K-1,qy=my-2*K;for(let j=0;j<3*K;j++)for(let i=0;i<2*K+1;i++){const e=i===0||j===0||i===2*K||j===3*K-1;sp(qx+i,qy+j,e?'#7a1410':(j<1.5*K?((i>>1)&1?'#c8c0a0':'#2a0606'):'#3a0606'))}}
-      // blood from the mouth down the chin
-      for(let q=0;q<3;q++){let tx=cx2+(q-1)*K;for(let j=0;j<h-(my-y0)-K;j++){if(hash2(j,q,seed+9)<.15)tx+=hash2(j,q,seed+10)<.5?1:-1;sp(tx,my+K+j,'#5a0808')}}}
+      // blood from the mouth down the chin (not at 15세)
+      if(GORE.lv>=2)for(let q=0;q<3;q++){let tx=cx2+(q-1)*K;for(let j=0;j<h-(my-y0)-K;j++){if(hash2(j,q,seed+9)<.15)tx+=hash2(j,q,seed+10)<.5?1:-1;sp(tx,my+K+j,'#5a0808')}}}
     for(let j=0;j<2;j++)B(cx-(j?0:K),row+2*K+j*K,dk(skin,.45))}
 }
 // pack faces of all parts into one atlas; returns uv rects
@@ -9061,6 +9094,14 @@ function charAsset(key){let A=CHAR_ASSETS[key];if(A)return A;
   const [t,k,h]=key.split('_');const def=t==='h'?defHuman(k):defZombie(k,h==='h');const atlas=paintSkin(def);
   const tex=new THREE.CanvasTexture(atlas.cv);tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;tex.generateMipmaps=false;
   A=CHAR_ASSETS[key]={def,geo:buildRigGeo(def,atlas,0),geoLo:buildRigGeo(def,atlas,1),tex,piv:def.piv,la:def.la,lb:def.lb,canvas:atlas.cv,faces:atlas.faces};return A}
+// rebuild a built character in place (the gore level changed, GORE.set): new skin and meshes from its design, every rig of it switched over
+function charRebuild(key){const A=CHAR_ASSETS[key];if(!A)return;const [t,k,h]=key.split('_');const def=t==='h'?defHuman(k):defZombie(k,h==='h');const atlas=paintSkin(def);
+  const g0=A.geo,g1=A.geoLo;Object.assign(A,{def,geo:buildRigGeo(def,atlas,0),geoLo:buildRigGeo(def,atlas,1),piv:def.piv,la:def.la,lb:def.lb,canvas:atlas.cv,faces:atlas.faces});
+  A.tex.image=atlas.cv;A.tex.needsUpdate=true;
+  const sw=m=>{if(m&&(m.geometry===g0||m.geometry===g1))m.geometry=m.geometry===g1?A.geoLo:A.geo};
+  if(typeof G!=='undefined'&&G.actors)for(const a of G.actors)for(const r in a.rigs||{})if(a.rigs[r])sw(a.rigs[r].mesh);
+  if(R.scene)R.scene.traverse(o=>{if(o.isMesh)sw(o)});
+  g0.dispose();g1.dispose();if(typeof PORTRAITS!=='undefined')for(const p in PORTRAITS)if(p.startsWith(key+':'))delete PORTRAITS[p]}
 // ---------- per-character instance ----------
 function makeChar(key){const A=charAsset(key);const uB=[],R=[],M=[];for(let i=0;i<NB;i++){uB.push(new THREE.Matrix4());R.push(new THREE.Matrix4());M.push(new THREE.Matrix4())}
   const mat=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:A.tex},uBones:{value:uB},uProbe:{value:new THREE.Color(.4,.4,.45)},uFlash:{value:0},uTint:{value:new THREE.Vector4(0,0,0,0)},uEmisA:{value:1},
@@ -9428,13 +9469,8 @@ function paintGunAtlas(){const PS=GA.P;
     // sleeve and zombie-arm colours come from ARM_DESIGN (design.js)
     for(const k of ['sl_guard','sl_medic','sl_soldier','sl_hazmat','sl_fmcoat']){const a=ARM_DESIGN[k];sleeve(k,a[0],a.length>2?[a[1],a[2]]:null)}
     patch('skin',(x,y,X,Y)=>{const t=nz(X,Y,14,18);return t>.6?'#d4a684':t<.4?'#b48464':'#c49474'});
-    const zs=(name,base,blot)=>patch(name,(x,y,X,Y)=>{const t=nz(X,Y,15,10),t2=nz(X,Y,16,24);let c=t>.62?dk(base,.25):t<.32?lt(base,.1):base;if(t2>.64)c=mix(c,blot,.5);
-      if(hash2(X,Y,17)<.02)c='#3a0c0a';if(((x*7+y*3)%41===0)&&hash2(x,y,18)<.5)c=dk(base,.45);const v=Math.abs(Math.sin(x*.09+Math.sin(y*.07)*2.5));if(v<.03)c=mix(c,'#3a2a40',.6);
-      // torn skin showing muscle, smeared blood
-      const w=nz(X,Y,46,22);if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55);
-      const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,'#5a0808',clamp((bl-.66)*4,0,.8));return c});
-    for(const k of ['zs_rager','zs_runner','zs_brute','zs_scream','zs_coffin','zs_fireman']){const a=ARM_DESIGN[k];zs(k,a[0],a[1])}
-    patch('claw',(x,y,X,Y)=>{const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=mix(c,'#6a0a08',.7);return c});
+    for(const k of GA_ZARMS){const a=ARM_DESIGN[k];patch(k,(x,y,X,Y)=>gaZArm(a[0],a[1],x,y,X,Y,nz))}
+    patch('claw',(x,y,X,Y)=>gaClaw(x,y,X,Y,nz));
     patch('nail',(x,y)=>mix('#c8bca0','#2a1c14',y/127));
     patch('coffW',(x,y,X,Y)=>{const pl=Math.floor(x/26),g=nz(X,Y,91+pl,14)+Math.sin(y*.35+pl*2.1+nz(X,Y,92,30)*4)*.08;let c=g>.62?'#2e1c10':g<.4?'#4a3020':'#3a2616';if(x%26===0)c='#160c06';if(hash2(X,Y,93)<.01)c='#5a4030';return c});
     patch('coffL',(x,y,X,Y)=>{const g=nz(X,Y,94,12)+Math.sin(y*.5+nz(X,Y,95,24)*5)*.07;let c=g>.6?'#3a1410':g<.4?'#561e16':'#481a12';if(x<3||y<3||x>124||y>124)c='#1a0806';return c});
@@ -9459,6 +9495,24 @@ function paintGunAtlas(){const PS=GA.P;
   GA.canvas=cv;
   GA.tex=new THREE.CanvasTexture(cv);GA.tex.magFilter=THREE.NearestFilter;GA.tex.minFilter=THREE.NearestMipmapLinearFilter;
   GA.texVM=new THREE.CanvasTexture(cv);GA.texVM.magFilter=THREE.NearestFilter;GA.texVM.minFilter=THREE.LinearFilter;GA.texVM.generateMipmaps=false}
+// zombie arms (first person): mottled skin, bruises, veins (ARM_DESIGN gives skin and blot). GORE.lv 2: torn skin showing muscle and smeared
+// blood; below that the same patches are dark bruises and grime
+const GA_ZARMS=['zs_rager','zs_runner','zs_brute','zs_scream','zs_coffin','zs_fireman'];
+function gaZArm(base,blot,x,y,X,Y,nz){const g=GORE.lv>=2,t=nz(X,Y,15,10),t2=nz(X,Y,16,24);let c=t>.62?dk(base,.25):t<.32?lt(base,.1):base;if(t2>.64)c=mix(c,blot,.5);
+  if(hash2(X,Y,17)<.02)c=g?'#3a0c0a':dk(base,.5);if(((x*7+y*3)%41===0)&&hash2(x,y,18)<.5)c=dk(base,.45);const v=Math.abs(Math.sin(x*.09+Math.sin(y*.07)*2.5));if(v<.03)c=mix(c,'#3a2a40',.6);
+  const w=nz(X,Y,46,22);
+  if(g){if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55)}
+  else if(w>.68)c=mix(dk(base,.38),'#2e2430',clamp(.3+(w-.68)*2.5,0,.6));else if(w>.645)c=dk(c,.25);
+  const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,g?'#5a0808':'#2a2420',clamp((bl-.66)*4,0,g?.8:.5));return c}
+// claws: bone yellowing to dark at the root; blood on the tips at GORE.lv 2, dirt below that
+function gaClaw(x,y,X,Y,nz){const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=GORE.lv>=2?mix(c,'#6a0a08',.7):mix(c,'#4a3e32',.45);return c}
+// the gore level changed: repaint those slots in place, with the boot painter's noise (periodic over the atlas width)
+function gaGoreRepaint(){const cv=GA.canvas;if(!cv)return;const x=cv.getContext('2d'),PS=GA.P,nz=(X,Y,s,c)=>{const k=c||16;return fbm(X/k,Y/k,s,2,GA.W/k)};
+  const put=(name,fn)=>{const i=GA.idx[name];if(i==null||i>=GA_SLOTS)return;const x0=(i%8)*PS,y0=Math.floor(i/8)*PS,id=x.getImageData(x0,y0,PS,PS),D=id.data;
+    for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const c=fn(xx,y,x0+xx,y0+y);if(!c)continue;const k=(y*PS+xx)*4,r=rgbOf(c);D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=255}
+    x.putImageData(id,x0,y0)};
+  for(const k of GA_ZARMS){const a=ARM_DESIGN[k];put(k,(xx,y,X,Y)=>gaZArm(a[0],a[1],xx,y,X,Y,nz))}
+  put('claw',(xx,y,X,Y)=>gaClaw(xx,y,X,Y,nz))}
 // part: {c:[x,y,z], s:[w,h,d], m, rx?, ry?, rz?, tag?}
 const GD=560;// pixels per metre inside a patch (view model); world models use fewer
 // part deformations (v6.61): kz [kx front, kx back, ky front, ky back] scales the cross-section along the part's own z (front = -z) about
@@ -9970,7 +10024,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       else if(kind==='hammer'){m.gun.localToWorld(_vv.set(0,-.13,-.81));m.gun.localToWorld(_vw.set(0,.13,-.81));this.trailPush(_vv,_vw)}
       else if(kind==='skull9'){const q=GUNS.skull9.trail;m.gun.localToWorld(_vv.set(q[0],q[1],q[2]));m.gun.localToWorld(_vw.set(q[3],q[4],q[5]));this.trailPush(_vv,_vw)}
       else{const q=GUNS[this.id]&&GUNS[this.id].trail;if(q){m.gun.localToWorld(_vv.set(q[0],q[1],q[2]));m.gun.localToWorld(_vw.set(q[3],q[4],q[5]))}else{m.gun.localToWorld(_vv.set(0,.006,-.1));m.gun.localToWorld(_vw.set(0,.006,-.28))}this.trailPush(_vv,_vw)}}
-    const T=this.trail;T.mat.uniforms.uCol.value.set(kind==='claw'?'#7a0a08':'#e8eef4');T.mat.uniforms.uOp.value=kind==='claw'?.6:.42;this.trailUpdate(dt,.11);
+    const T=this.trail;T.mat.uniforms.uCol.value.set(kind==='claw'?(GORE.lv>=2?'#7a0a08':'#4a3a36'):'#e8eef4');T.mat.uniforms.uOp.value=kind==='claw'?.6:.42;this.trailUpdate(dt,.11);
     // muzzle flash + lights
     this.flashT-=dt;this.flash.visible=this.flashT>0&&this.vis;const mu=this.U.uMuzzle.value;mu.multiplyScalar(Math.exp(-dt*30));
     sampleProbe(a.c.x,a.c.y+1.4,a.c.z,this.U.uProbe.value);this.U.uProbe.value.multiplyScalar(1.15).addScalar(.04);
@@ -11154,7 +11208,7 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
       for(let i=0;i<P.length;i++){const p=P[i];p.t+=dt;if(p.t>=p.life)continue;
         p.vy-=p.grav*dt;if(p.drag){const k=Math.exp(-p.drag*dt);p.vx*=k;p.vy*=k;p.vz*=k}
         const nx=p.x+p.vx*dt,ny=p.y+p.vy*dt,nz=p.z+p.vz*dt;
-        if(p.col&&p.vy<0){const fl=floorBelow(nx,p.y+.05,nz,.02);if(ny<fl){p.y=fl+.01;if(p.splat){this.decal(nx,fl,nz,0,1,0,p.splat,4+((Math.random()*3)|0),[.6,.05,.04],.92);p.splat=0}p.vy*=-p.col;p.vx*=.6;p.vz*=.6;if(Math.abs(p.vy)<.4){p.vy=0;p.grav=0;p.vx*=.3;p.vz*=.3}p.x=nx;p.z=nz;P[w++]=p;continue}}
+        if(p.col&&p.vy<0){const fl=floorBelow(nx,p.y+.05,nz,.02);if(ny<fl){p.y=fl+.01;if(p.splat){if(GORE.lv>=2)this.decal(nx,fl,nz,0,1,0,p.splat,4+((Math.random()*3)|0),[.6,.05,.04],.92);p.splat=0}p.vy*=-p.col;p.vx*=.6;p.vz*=.6;if(Math.abs(p.vy)<.4){p.vy=0;p.grav=0;p.vx*=.3;p.vz*=.3}p.x=nx;p.z=nz;P[w++]=p;continue}}
         p.x=nx;p.y=ny;p.z=nz;P[w++]=p}
       P.length=w;
       const n=Math.min(P.length,S.n);for(let i=0;i<n;i++){const p=P[i],k=p.t/p.life;S.pos[i*3]=p.x;S.pos[i*3+1]=p.y;S.pos[i*3+2]=p.z;S.sz[i]=lerp(p.s0,p.s1,k);
@@ -11205,9 +11259,9 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     const m=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex}},LU),vertexShader:`attribute vec4 aC;varying vec2 vUv;varying vec4 vC;varying vec3 vPos;void main(){vUv=uv;vC=aC;vec4 wp=modelMatrix*vec4(position,1.);vPos=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`,
       fragmentShader:GLSL_DYN+`uniform sampler2D map;varying vec2 vUv;varying vec4 vC;varying vec3 vPos;void main(){vec4 t=texture2D(map,vUv);float a=t.a*vC.a;if(a<.03)discard;vec3 c=t.rgb*vC.rgb*(uAmb*.6+dynLight(vPos,vec3(0.,1.,0.))*.6+.25);gl_FragColor=vec4(applyFog(c,vPos),a);}`,
       transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
-    const mesh=new THREE.Mesh(g,m);mesh.frustumCulled=false;mesh.renderOrder=2;scene.add(mesh);this.dec={n,g,pos,uv,col,i:0}},
+    const mesh=new THREE.Mesh(g,m);mesh.frustumCulled=false;mesh.renderOrder=2;scene.add(mesh);this.dec={n,g,pos,uv,col,i:0,fr:new Uint8Array(n)}},
   // frame: 0..3 holes, 4..7 blood, 8 scorch, 9 frost, 10 spore
-  decal(x,y,z,nx,ny,nz,size,frame,c,a){const D=this.dec;const i=D.i;D.i=(D.i+1)%D.n;
+  decal(x,y,z,nx,ny,nz,size,frame,c,a){const D=this.dec;const i=D.i;D.i=(D.i+1)%D.n;D.fr[i]=frame;
     let ux,uy,uz;if(Math.abs(ny)>.9){ux=1;uy=0;uz=0}else{ux=-nz;uy=0;uz=nx;const l=Math.hypot(ux,uz);ux/=l;uz/=l}
     const vx=ny*uz-nz*uy,vy=nz*ux-nx*uz,vz=nx*uy-ny*ux;const r=Math.random()*TAU,cr=Math.cos(r),sr=Math.sin(r);
     const ax=(ux*cr+vx*sr)*size,ay=(uy*cr+vy*sr)*size,az=(uz*cr+vz*sr)*size,bx=(vx*cr-ux*sr)*size,by=(vy*cr-uy*sr)*size,bz=(vz*cr-uz*sr)*size;
@@ -11217,6 +11271,8 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     c=c||[1,1,1];for(let k=0;k<4;k++)D.col.set([c[0],c[1],c[2],a==null?1:a],i*16+k*4);
     D.g.attributes.position.needsUpdate=true;D.g.attributes.uv.needsUpdate=true;D.g.attributes.aC.needsUpdate=true},
   clearDecals(){const D=this.dec;D.col.fill(0);D.g.attributes.aC.needsUpdate=true},
+  // only the blood (frames 4..7): the gore level went below 원본
+  clearBlood(){const D=this.dec;if(!D)return;for(let i=0;i<D.n;i++)if(D.fr[i]>=4&&D.fr[i]<=7){D.col.fill(0,i*16,i*16+16);D.fr[i]=0}D.g.attributes.aC.needsUpdate=true},
   // ---- rain: streaks that stop at the first roof/ground below them ----
   initRain(scene){const n=700;const g=new THREE.BufferGeometry();const pos=new Float32Array(n*6),col=new Float32Array(n*6);
     g.setAttribute('position',new THREE.BufferAttribute(pos,3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('color',new THREE.BufferAttribute(col,3));
@@ -11266,7 +11322,15 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     for(let i=0;i<(stone?4:soft?3:2);i++)this.spawn({x,y,z,vx:nx*rr(1,3.5)+rr(-1.2,1.2),vy:ny*rr(1,3)+rr(.5,2.5),vz:nz*rr(1,3.5)+rr(-1.2,1.2),life:rr(.4,.8),s0:.025,s1:.025,r:dc[0]*.75,g:dc[1]*.75,b:dc[2]*.75,f:7,grav:12,col:.3});
     if(ny>.6&&this.rain&&this.rain.on&&!metal){for(let i=0;i<6;i++){const a=Math.random()*TAU,sp=rr(.6,1.8);this.spawn({x,y:y+.02,z,vx:Math.cos(a)*sp,vy:rr(1.6,3),vz:Math.sin(a)*sp,life:rr(.3,.5),s0:.03,s1:.02,r:.62,g:.68,b:.78,a:.8,f:13,grav:10,lit:1})}
       this.spawn({x,y:y+.03,z,life:.25,s0:.06,s1:.22,r:.6,g:.66,b:.75,a:.6,f:12,lit:1})}},
-  blood(x,y,z,dx,dy,dz,amt,green){const c=green?[.32,.42,.1]:[.42,.03,.02];amt=amt||1;
+  blood(x,y,z,dx,dy,dz,amt,green){amt=amt||1;const lv=GORE.lv;
+    // 피 끄기: a puff of grey dust and a few grains, no blood
+    if(lv<1){for(let i=0;i<2+amt*2;i++)this.spawn({x,y,z,vx:dx*rr(.4,1.6)+rr(-.6,.6),vy:rr(-.1,.8),vz:dz*rr(.4,1.6)+rr(-.6,.6),life:rr(.25,.5),s0:.06,s1:rr(.2,.32),r:.38,g:.37,b:.35,a:.5,f:Math.random()<.5?2:6,drag:4,lit:1});
+      for(let i=0;i<amt*2;i++)this.spawn({x,y,z,vx:dx*rr(.8,2.4)+rr(-1,1),vy:rr(.2,1.8),vz:dz*rr(.8,2.4)+rr(-1,1),life:rr(.3,.6),s0:.025,s1:.02,r:.3,g:.29,b:.28,f:7,grav:11,col:.2});return}
+    // 15세: fewer, smaller, darker drops and a thin spray; nothing lands as a splat, no scraps, no stain on the wall behind
+    if(lv<2){const c=green?[.26,.34,.1]:[.3,.05,.04];
+      for(let i=0;i<3*amt;i++)this.spawn({x,y,z,vx:dx*rr(.6,2.4)+rr(-.9,.9),vy:rr(-.2,1.6),vz:dz*rr(.6,2.4)+rr(-.9,.9),life:rr(.3,.6),s0:rr(.03,.05),s1:.025,r:c[0],g:c[1],b:c[2],f:4,grav:9.8});
+      for(let i=0;i<2*amt;i++)this.spawn({x,y,z,vx:dx*rr(.3,1.2)+rr(-.4,.4),vy:rr(-.2,.5),vz:dz*rr(.3,1.2)+rr(-.4,.4),life:rr(.2,.45),s0:.1,s1:.3,r:c[0]*1.2,g:c[1]*1.1,b:c[2]*1.1,a:.5,f:5,drag:4,lit:1});return}
+    const c=green?[.32,.42,.1]:[.42,.03,.02];
     // droplets (some land as small splats), a spray of mist, and with heavier hits chunks of flesh
     for(let i=0;i<5*amt;i++)this.spawn({x,y,z,vx:dx*rr(.8,3.2)+rr(-1.2,1.2),vy:rr(-.3,2.2),vz:dz*rr(.8,3.2)+rr(-1.2,1.2),life:rr(.45,.9),s0:rr(.04,.07),s1:.03,r:c[0],g:c[1],b:c[2],f:4,grav:9.8,col:.05,splat:Math.random()<.3?rr(.05,.1):0});
     for(let i=0;i<3*amt;i++)this.spawn({x,y,z,vx:dx*rr(.3,1.4)+rr(-.5,.5),vy:rr(-.2,.6),vz:dz*rr(.3,1.4)+rr(-.5,.5),life:rr(.3,.65),s0:.12,s1:.5,r:c[0]*1.3,g:c[1]*1.2,b:c[2]*1.2,a:.75,f:5,drag:4,lit:1});
@@ -11301,7 +11365,7 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
       if(e.grav){const fl=floorBelow(e.x,e.y+.05,e.z,.02);if(ny<fl){e.y=fl+.02;e.vy*=-.25;e.vx*=.5;e.vz*=.5}else e.y=ny}else e.y=ny;e.x+=e.vx*dt;e.z+=e.vz*dt;
       e.acc+=dt*e.rate;while(e.acc>=1){e.acc-=1;e.fn(e,1-e.t/e.life)}E[w++]=e}E.length=w},
   // a head (or body) bursting: flesh chunks that splatter where they land, bone shards, a red mist, a big splash on the wall behind
-  gib(x,y,z,dx,dy,dz,big){const n=big?1.6:1;
+  gib(x,y,z,dx,dy,dz,big){if(GORE.lv<2)return;const n=big?1.6:1;
     for(let i=0;i<14*n;i++){const a=Math.random()*TAU,s=rr(1.5,5);this.spawn({x,y,z,vx:Math.cos(a)*s+dx*2.5,vy:rr(1,4.5),vz:Math.sin(a)*s+dz*2.5,life:rr(.7,1.4),s0:rr(.05,.11),s1:.06,r:rr(.32,.55),g:.04,b:.03,f:7,grav:12,col:.3,splat:rr(.1,.24)})}
     for(let i=0;i<7*n;i++){const a=Math.random()*TAU,s=rr(2,6);this.spawn({x,y,z,vx:Math.cos(a)*s+dx*2,vy:rr(1.5,5),vz:Math.sin(a)*s+dz*2,life:rr(.6,1.1),s0:.05,s1:.04,r:.85,g:.8,b:.68,f:10,grav:13,col:.3})}
     for(let i=0;i<12*n;i++)this.spawn({x:x+rr(-.1,.1),y:y+rr(-.1,.1),z:z+rr(-.1,.1),vx:dx*rr(.5,2)+rr(-1.2,1.2),vy:rr(-.2,1.5),vz:dz*rr(.5,2)+rr(-1.2,1.2),life:rr(.5,1.1),s0:.2,s1:rr(.7,1.2),r:.5,g:.03,b:.03,a:.7,f:5,drag:3,lit:1});
@@ -11311,7 +11375,7 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
   // blood pooling under a body
   // ---- torn-off limbs: the rig's own mesh drawn with only the severed bones, thrown as a tumbling rigid body ----
   limbs:[],
-  limb(a,key,dir,speed){const ch=a.ch,S=SEVER[key];if(!ch||!S||(ch.hide>>S.root&1))return null;
+  limb(a,key,dir,speed){if(GORE.lv<2)return null;const ch=a.ch,S=SEVER[key];if(!ch||!S||(ch.hide>>S.root&1))return null;
     const P=ch.A.piv,def=ch.A.def,W=ch.grp.matrixWorld;const com=key==='head'?def.headC:P[S.bones[1]];
     const R0=new THREE.Matrix4().multiplyMatrices(W,ch.M[S.root]).multiply(_gbT.makeTranslation(com[0]-P[S.root][0],com[1]-P[S.root][1],com[2]-P[S.root][2]));
     const inv=R0.clone().invert(),uB=[];
@@ -11348,11 +11412,24 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
         if(L.bleed>0){L.bleed-=dt;if(Math.random()<dt*30)this.spawn({x:p.x,y:p.y,z:p.z,vx:v.x*.2+rr(-.3,.3),vy:rr(-.2,.6),vz:v.z*.2+rr(-.3,.3),life:rr(.4,.8),s0:.04,s1:.025,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:Math.random()<.3?rr(.05,.1):0})}}
       if((L.probeT-=dt)<=0){L.probeT=.3;sampleProbe(L.pos.x,L.pos.y+.2,L.pos.z,L.mat.uniforms.uProbe.value);L.mat.uniforms.uProbe.value.multiplyScalar(1.25)}
       L.mesh.matrix.compose(L.pos,L.q,_gb1);L.mesh.matrixWorldNeedsUpdate=true}},
-  pool(x,y,z,s){const fl=floorBelow(x,y+.6,z,.05);if(fl<-50||y-fl>1.2)return;this.decal(x,fl,z,0,1,0,s||rr(.7,1.05),4+((Math.random()*3)|0),[.45,.03,.025],.93)},
+  pool(x,y,z,s){if(GORE.lv<2)return;const fl=floorBelow(x,y+.6,z,.05);if(fl<-50||y-fl>1.2)return;this.decal(x,fl,z,0,1,0,s||rr(.7,1.05),4+((Math.random()*3)|0),[.45,.03,.025],.93)},
   spore(x,y,z){for(let i=0;i<30;i++){const a=Math.random()*TAU,s=rr(1,6);this.spawn({x,y:y+.3,z,vx:Math.cos(a)*s,vy:rr(0,3),vz:Math.sin(a)*s,life:rr(.8,1.6),s0:.4,s1:1.6,r:.45,g:.55,b:.2,a:.55,f:3,drag:2})}
     this.spawn({x,y:y+.3,z,life:.3,s0:1,s1:6,r:.6,g:.8,b:.3,f:14,add:1});DL.add(x,y+.8,z,'#a0ff60',9,2,.5)},
   shell(x,y,z,dx,dz,big){this.spawn({x,y,z,vx:dx*rr(1.2,2)+rr(-.3,.3),vy:rr(1.4,2.4),vz:dz*rr(1.2,2)+rr(-.3,.3),life:1.4,s0:big?.035:.025,s1:big?.035:.025,r:.75,g:.6,b:.25,f:7,grav:11,col:.35})},
 };
+// ---- the gore level changed (Options, GORE.set): clear what the old level left lying about, then repaint what shows it ----
+function goreApply(was){const lv=GORE.lv;if(R.PU&&R.PU.uGoreK)R.PU.uGoreK.value=lv>=2?1:0;
+  if(lv<2&&FX.dec){for(const L of FX.limbs)FX.killLimb(L);FX.limbs.length=0;FX.clearBlood();
+    // severed bodies are whole again (their stumps were never painted at this level)
+    if(typeof G!=='undefined'&&G.actors)for(const a of G.actors){a.spurts=null;a.poolT=0;for(const k in a.rigs||{}){const ch=a.rigs[k];if(ch&&ch.hide!==STUMPS)ch.hide=STUMPS}}}
+  if((was>=2)!==(lv>=2))goreRepaint()}
+// zombie skins (rebuilt from their designs, one a tick so the frame does not hitch), the zombie arms and claws, the knives' stained steel
+function goreRepaint(){const gen=++GORE.gen;
+  if(GA.canvas){gaGoreRepaint();if(typeof paintKkAtlas==='function')paintKkAtlas();if(typeof paintSkAtlas==='function')paintSkAtlas();GA.tex.needsUpdate=true;GA.texVM.needsUpdate=true;if(typeof ICONS!=='undefined')for(const k in ICONS)delete ICONS[k]}
+  // the skins on screen first (the bodies around the player), then the rest
+  const use=new Set();if(typeof G!=='undefined'&&G.actors)for(const a of G.actors)if(a.ch)use.add(a.ch.key);
+  const keys=Object.keys(CHAR_ASSETS).filter(k=>k[0]==='z').sort((a,b)=>(use.has(b)?1:0)-(use.has(a)?1:0));let i=0;
+  const step=()=>{if(gen!==GORE.gen||i>=keys.length)return;try{charRebuild(keys[i])}catch(e){console.warn('gore repaint',keys[i],e)}i++;setTimeout(step,0)};step()}
 function texDecals(){return paint(128,128,P=>{
   for(let i=0;i<128*128*4;i+=4)P.D[i+3]=0;
   const F=(f,fn)=>{const ox=(f%4)*32,oy=Math.floor(f/4)*32;for(let y=0;y<32;y++)for(let x=0;x<32;x++){const r=fn((x-15.5)/2,(y-15.5)/2,x/2,y/2);if(!r)continue;const i=((oy+y)*128+ox+x)*4;P.D[i]=r[0];P.D[i+1]=r[1];P.D[i+2]=r[2];P.D[i+3]=r[3]}};
@@ -12110,7 +12187,7 @@ function paintSkAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getC
   patch('skSteel',(xx,y,X,Y)=>{const t=nz(X,Y,111,14)+(hash2(X,Y,112)-.5)*.06;let c=mix('#1f2125','#3a3d42',clamp((t-.3)*1.6,0,1));
     const d=Math.hypot(((xx+5)%13)-6.5,((y+(Math.floor(xx/13)%2)*6)%13)-6.5);if(d<3.2)c=d<2?dk(c,.18):lt(c,.05);
     const v=Math.abs(Math.sin(xx*.09+Math.sin(y*.07)*2.6+nz(X,Y,113,30)*3));if(v<.045)c='#5a5e64';else if(v<.09)c=dk(c,.2);
-    if(nz(X,Y,114,9)>.7)c=mix(c,'#3a0d0a',.55);return c},250);
+    if(nz(X,Y,114,9)>.7)c=GORE.lv>=2?mix(c,'#3a0d0a',.55):mix(c,'#141518',.4);return c},250);// (15세 / 피 끄기: dark pits, no blood)
   // haft: near-black wood under a tight leather binding
   patch('skHaft',(xx,y,X,Y)=>{const g=Math.sin(y*.4+nz(X,Y,116,20)*5)*.5+.5;let c=mix('#100e0d','#221c18',g*.6+nz(X,Y,117,8)*.4);
     const w=(xx+y*.55)%16;if(w<1)c='#080707';else if(w<2)c=lt(c,.04);if(hash2(X,Y,118)<.015)c='#2e2520';return c},244);
@@ -12658,7 +12735,7 @@ function paintKkAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getC
     for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const X=x0+xx,Y=y0+y,t=hash2(Math.floor(xx/10),y,3)*.55+fbm(X/12,Y/12,4,2,0)*.45;
       let c=t>.62?'#71767b':t<.35?'#45494e':'#5a5f64';
       const b=fbm(X/22,Y/22,90+lv,2,0)+(hash2(X,Y,91)-.5)*.08,amt=[.3,.48,.64][lv]*Math.max(.35,Math.min(1,(b-.15)*2));
-      c=mix(c,lv>1?'#5a2420':'#6e3a32',amt);const r=rgbOf(c),k=(y*PS+xx)*4;D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=255}
+      c=GORE.lv>=2?mix(c,lv>1?'#5a2420':'#6e3a32',amt):mix(c,'#34363a',amt*.6);const r=rgbOf(c),k=(y*PS+xx)*4;D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=255}// (15세 / 피 끄기: dark weathering, no blood)
     x.putImageData(id,x0,y0)})}
 function kkParts(){const P=[],N=26,z0=-.045,z1=-.37;
   const ys=t=>.036-.07*Math.pow(t,2.2),ye=t=>-.03+.02*t-.02*t*t*t;// spine and edge heights, t 0 at the bolster .. 1 at the point
@@ -13311,7 +13388,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   if(a.alive&&ch.hide!==STUMPS){ch.hide=STUMPS;a.spurts=null}// anything revived is whole again
   rigCompute(ch);ch.grp.position.set(c.x,c.y,c.z);ch.grp.rotation.y=a.yaw;ch.grp.updateMatrixWorld(true);
   // arterial spurts from fresh stumps, pulsing with the last heartbeats
-  if(a.spurts&&!a.alive){for(const S of a.spurts){if(S.t<=0)continue;S.t-=dt;const beat=Math.max(0,Math.sin(G.t*8.5+S.ph));if(Math.random()>dt*55*beat*Math.min(1,S.t/1.4))continue;
+  if(a.spurts&&!a.alive&&GORE.lv>=2){for(const S of a.spurts){if(S.t<=0)continue;S.t-=dt;const beat=Math.max(0,Math.sin(G.t*8.5+S.ph));if(Math.random()>dt*55*beat*Math.min(1,S.t/1.4))continue;
       const D=SPURT_D[S.b-14];_sv.setFromMatrixPosition(ch.M[S.b]).applyMatrix4(ch.grp.matrixWorld);_sd.set(D[0],D[1],D[2]).transformDirection(ch.M[S.b]).transformDirection(ch.grp.matrixWorld);
       const sp=rr(1.6,3.2)*Math.min(1,S.t/1.2+.3);FX.spawn({x:_sv.x+_sd.x*.05,y:_sv.y+_sd.y*.05,z:_sv.z+_sd.z*.05,vx:_sd.x*sp+rr(-.25,.25),vy:_sd.y*sp+rr(0,.5),vz:_sd.z*sp+rr(-.25,.25),life:rr(.5,.9),s0:.05,s1:.03,r:.5,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:Math.random()<.25?rr(.05,.1):0})}}
   // level of detail: rounded fillets up close, chamfered parts further out
@@ -13551,11 +13628,11 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
   if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills
   HUD.feed(src,o.w,t,{hs:o.hs,perma});nyOnKill(t,src);
   AU.at('zdie',t.c.x,t.c.y+1.4,t.c.z,{vol:1,range:55});
-  // gore: headshot kills burst the head, explosions tear the body; every body leaves a pool
-  if(o.hs&&!o.knife&&o.dir){FX.gib(t.head.x,t.head.y,t.head.z,o.dir[0],o.dir[1],o.dir[2],false);AU.at('gib',t.head.x,t.head.y,t.head.z,{vol:1,range:40})}
-  else if((o.he||o.w==='gl40')&&o.dir){FX.gib(t.c.x,t.c.y+1,t.c.z,o.dir[0],.4,o.dir[2],true);AU.at('gib',t.c.x,t.c.y+1,t.c.z,{vol:1,range:45})}
+  // gore (원본 only, GORE.lv 2): headshot kills burst the head, explosions tear the body; every body leaves a pool
+  if(GORE.lv>=2){if(o.hs&&!o.knife&&o.dir){FX.gib(t.head.x,t.head.y,t.head.z,o.dir[0],o.dir[1],o.dir[2],false);AU.at('gib',t.head.x,t.head.y,t.head.z,{vol:1,range:40})}
+    else if((o.he||o.w==='gl40')&&o.dir){FX.gib(t.c.x,t.c.y+1,t.c.z,o.dir[0],.4,o.dir[2],true);AU.at('gib',t.c.x,t.c.y+1,t.c.z,{vol:1,range:45})}}
   dismember(t,o,perma);
-  t.poolT=.75;t.poolN=0;
+  t.poolT=GORE.lv>=2?.75:0;t.poolN=0;
   if(src&&src.isPlayer){HUD.killConfirm(o.hs);if(o.hs)AU.play('hsding',{vol:.5})}
   if(G.mode==='mut'&&src&&src.team===TH&&!NET.cli){G.moralePts+=perma?2:1;const nl=Math.min(ZBAL.moraleMax,Math.floor(G.moralePts/3));if(nl>G.moraleLvl){G.moraleLvl=nl;HUD.announce(T('moraleUp',nl*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}}
   if(t.isPlayer)onPlayerDeath(src);
@@ -13563,7 +13640,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
 // dismemberment: only on bodies that stay down (perma kills, or the classic mode where the dead respawn elsewhere).
 // Headshots take the head off (heavy guns may burst it instead), explosions tear off one or two limbs, heavy blades lop off a head or an arm,
 // a close shotgun blast can take an arm.
-function dismember(t,o,perma){if(!t.ch||!o.dir||!(G.mode!=='mut'||perma||o.he))return;const W=WPN[o.w]||{},big=W.kind==='sniper'||W.kind==='shotgun'||(W.dmg||0)>=60;
+function dismember(t,o,perma){if(GORE.lv<2||!t.ch||!o.dir||!(G.mode!=='mut'||perma||o.he))return;const W=WPN[o.w]||{},big=W.kind==='sniper'||W.kind==='shotgun'||(W.dmg||0)>=60;
   const cut=(k,d,sp)=>{if(SEVER[k]&&!(t.ch.hide>>SEVER[k].root&1)){FX.limb(t,k,d,sp);severLimb(t.ch,k);(t.spurts=t.spurts||[]).push({b:SEVER[k].stump,t:2.6,ph:Math.random()*6})}};
   if(o.hs&&!o.knife){if(big&&Math.random()<.55){severLimb(t.ch,'head');(t.spurts=t.spurts||[]).push({b:14,t:2.6,ph:0})}else cut('head',o.dir,rr(3,5.5))}
   else if(o.he||o.w==='gl40'){const ks=shuffle(['armL','armR','legL','legR','head','armL','armR']);const n=Math.random()<.45?2:1;for(let i=0,c=0;i<ks.length&&c<n;i++)if(!(t.ch.hide>>SEVER[ks[i]].root&1)){cut(ks[i],[o.dir[0],.7,o.dir[2]],rr(4.5,7.5));c++}}
@@ -13582,8 +13659,8 @@ function infect(t,src){if(NET.ghost||(NET.cli&&!NET.ev))return;if(t.team!==TH||!
   if(t.isPlayer){HUD.infected(src);R.PU.uInfect.value=1;FX.shake=Math.max(FX.shake,.8);AU.play('heart',{vol:.9});AU.play('heart',{vol:.7,delay:.75})}
   const n=humansAlive();if(n===1&&G.st==='fight'){const last=G.actors.find(a=>a.alive&&a.team===TH);G.lastHuman=last;HUD.announce(T('lastHuman',last.name),'h',3);AU.play('stingL',{vol:.6})}}
 // someone turns: a burst of blood mist and rising green spores, a red ring on the ground and a red glow; the new zombie roars as it straightens up
-function infectFx(t,big){const c=t.c,x=c.x,y=c.y,z=c.z,s=big?1.4:1;
-  for(let i=0;i<14*s;i++){const an=rr(0,TAU),sp=rr(1,3)*s;FX.spawn({x,y:y+rr(.9,1.6),z,vx:Math.cos(an)*sp,vy:rr(.2,1.4),vz:Math.sin(an)*sp,life:rr(.6,1.1),s0:rr(.2,.35),s1:rr(.8,1.5)*s,r:.32,g:.02,b:.02,a:.6,f:2,drag:2.2,lit:1})}
+function infectFx(t,big){const c=t.c,x=c.x,y=c.y,z=c.z,s=big?1.4:1,mc=GORE.lv>=2?[.32,.02,.02,.6]:GORE.lv>=1?[.2,.08,.08,.45]:[.16,.15,.15,.45];// the mist: blood red · 15세 dark rust · 피 끄기 grey
+  for(let i=0;i<14*s;i++){const an=rr(0,TAU),sp=rr(1,3)*s;FX.spawn({x,y:y+rr(.9,1.6),z,vx:Math.cos(an)*sp,vy:rr(.2,1.4),vz:Math.sin(an)*sp,life:rr(.6,1.1),s0:rr(.2,.35),s1:rr(.8,1.5)*s,r:mc[0],g:mc[1],b:mc[2],a:mc[3],f:2,drag:2.2,lit:1})}
   for(let i=0;i<16*s;i++){const an=rr(0,TAU),sp=rr(.3,1.2);FX.spawn({x:x+Math.cos(an)*rr(0,.5),y:y+rr(.3,1.8),z:z+Math.sin(an)*rr(0,.5),vx:Math.cos(an)*sp,vy:rr(.4,1.6),vz:Math.sin(an)*sp,life:rr(.9,1.8),s0:rr(.05,.1),s1:rr(.12,.22),r:.45,g:1,b:.3,a:.85,f:13,drag:1.2,grav:-.3,add:1})}
   FX.spawn({x,y:y+.08,z,life:.7,s0:.4,s1:3.2*s,r:.9,g:.08,b:.05,a:.7,f:14,add:1});
   DL.add(x,y+1.2,z,'#ff2a18',7*s,2.2,.8);
@@ -13683,8 +13760,8 @@ function gameUpdate(dt){if(G.st==='menu'||G.st==='over'){for(const a of G.actors
       if(a.bot&&!a.pup)AI.update(a,dt);
       a.frozen=Math.max(0,a.frozen-dt);if(a.holdT>0)a.holdT=Math.max(0,a.holdT-dt);if(a.rootT>0)a.rootT=Math.max(0,a.rootT-dt);a.staggerT=Math.max(0,a.staggerT-dt);a.dizzy=Math.max(0,a.dizzy-dt);a.shriekT=Math.max(0,a.shriekT-dt);a.skillCD=Math.max(0,a.skillCD-dt);a.skillT=Math.max(0,a.skillT-dt);
       if(a.team===TZ&&!NET.cli&&!a.scen&&G.t-a.lastHurt>ZBAL.regenWait&&a.hp<a.maxHp)a.hp=Math.min(a.maxHp,a.hp+a.maxHp*ZBAL.regen*dt);// zombies left alone heal
-      // badly hurt zombies leave a trail of blood
-      if(a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
+      // badly hurt zombies leave a trail of blood (원본 only)
+      if(GORE.lv>=2&&a.team===TZ&&a.hp<a.maxHp*.45&&Math.random()<dt*2.2)FX.spawn({x:a.c.x+rr(-.15,.15),y:a.c.y+rr(.7,1.2),z:a.c.z+rr(-.15,.15),vx:rr(-.2,.2),vy:-.5,vz:rr(-.2,.2),life:1.2,s0:.04,s1:.03,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:rr(.05,.11)});
       if(a.turning>0){a.turning-=dt;a.cmd.f=a.cmd.s=0;a.cmd.fire=a.cmd.alt=a.cmd.jump=a.cmd.skill=false;a.mvx*=.8;a.mvz*=.8}
       // the get-up timer runs here, not in updateVisual: the local player's own body is never drawn, so it would never count down there
       if(a.reviving>0)a.reviving=Math.max(0,a.reviving-dt);
@@ -14095,7 +14172,7 @@ const R={renderer:null,scene:null,cam:null,vmScene:null,vmCam:null,rt:null,post:
     this.vmScene=new THREE.Scene();this.vmCam=new THREE.PerspectiveCamera(56,16/9,.01,10);
     const lin={minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false,stencilBuffer:false,generateMipmaps:false};
     this.bA=new THREE.WebGLRenderTarget(4,4,lin);this.bB=new THREE.WebGLRenderTarget(4,4,lin);this.bC=new THREE.WebGLRenderTarget(4,4,lin);this.bD=new THREE.WebGLRenderTarget(4,4,lin);
-    const PU=this.PU={tDiffuse:{value:null},tBloom:{value:this.bA.texture},tBloom2:{value:this.bC.texture},uBloom:{value:1},uFxaa:{value:1},uRes:{value:new THREE.Vector2(4,4)},uTime:LU.uTime,uNV:{value:0},uDmg:{value:0},uWhite:{value:0},uInfect:{value:0},uFrost:{value:0},uZ:{value:0},uDeath:{value:0},uGamma:{value:1},uBeam:{value:0}};
+    const PU=this.PU={tDiffuse:{value:null},tBloom:{value:this.bA.texture},tBloom2:{value:this.bC.texture},uBloom:{value:1},uFxaa:{value:1},uRes:{value:new THREE.Vector2(4,4)},uTime:LU.uTime,uNV:{value:0},uDmg:{value:0},uWhite:{value:0},uInfect:{value:0},uFrost:{value:0},uZ:{value:0},uDeath:{value:0},uGamma:{value:1},uBeam:{value:0},uGoreK:{value:GORE.lv>=2?1:0}};
     this.postMat=new THREE.ShaderMaterial({uniforms:PU,vertexShader:VS_POST,fragmentShader:FS_POST,depthTest:false,depthWrite:false});
     this.post=new THREE.Scene();const q=new THREE.Mesh(new THREE.PlaneGeometry(2,2),this.postMat);q.frustumCulled=false;this.post.add(q);
     this.mBright=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:null},uTexel:{value:new THREE.Vector2()},uThr:{value:.74}},vertexShader:VS_POST,fragmentShader:FS_BRIGHT,depthTest:false,depthWrite:false});
@@ -14312,7 +14389,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
 // ---------------- menus ----------------
 // n small skulls (difficulty rank)
 function skulls(n){const s='<svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 1C4.1 1 1.5 3.6 1.5 7c0 2.1 1 3.6 2.5 4.4V14h2v-1.5h1V14h2v-1.5h1V14h2v-2.6c1.5-.8 2.5-2.3 2.5-4.4C14.5 3.6 11.9 1 8 1zM5.3 9.2a1.6 1.6 0 110-3.2 1.6 1.6 0 010 3.2zm5.4 0a1.6 1.6 0 110-3.2 1.6 1.6 0 010 3.2z"/></svg>';return s.repeat(n)}
-const CFG=Object.assign({mode:'mut',map:'q7',minimap:true,bots:15,diff:1,rounds:7,time:180,skin:'guard',zclass:'rager',sens:1.6,fov:74,scale:'auto',bloom:true,shadow:true,vol:.7,music:true,gamma:1,invert:false},LS.get('cfg',{}));
+const CFG=Object.assign({mode:'mut',map:'q7',minimap:true,bots:15,diff:1,rounds:7,time:180,skin:'guard',zclass:'rager',sens:1.6,fov:74,scale:'auto',bloom:true,shadow:true,vol:.7,music:true,gamma:1,invert:false,gore:1},LS.get('cfg',{}));
 function saveCfg(){LS.set('cfg',CFG)}
 // v3 renders at full resolution by default: reset the old half-resolution default once
 if(CFG.ver!==3){CFG.ver=3;CFG.scale='auto';saveCfg()}
@@ -15924,6 +16001,11 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.64','2026-10-16',[
+ ['NEW','피 표현 설정 — 옵션 → 게임플레이 → 피 표현에서 원본 · 15세(순화) · 피 끄기 중에 고를 수 있어요. 기본은 15세(순화)이고, 게임 중에 바꿔도 바로 적용돼요','Blood & gore setting — Options → Gameplay → Blood & gore: Original, 15+ (toned down) or No blood. 15+ is the default, and a change applies at once, mid-match too'],
+ ['UP','15세(순화) — 팔다리 절단 · 머리 터짐 · 살점 · 피 분출이 없어요. 맞으면 어두운 피가 조금만 튀고, 바닥 · 벽 핏자국과 피 웅덩이도 남지 않아요','15+ (toned down) — no severed limbs, bursting heads, flesh scraps or spurting blood; a hit throws a small dark spray, and nothing stains the floor or walls'],
+ ['UP','15세(순화) — 좀비의 드러난 갈비뼈 · 척추 · 내장, 찢긴 살과 피 얼룩이 멍 · 때 · 꿰맨 자국으로 바뀌어요. 1인칭 좀비 팔 · 손톱과 칼날의 핏자국도 없어지고, 감염 화면은 핏줄 없이 붉게만 물들어요','15+ (toned down) — the zombies’ exposed ribs, spine and guts, torn skin and blood become bruises, grime and stitches; the first-person zombie arms, claws and blades lose their blood, and the infection screen turns red without the veins'],
+ ['UP','피 끄기 — 15세(순화)에 더해 피가 아예 안 나와요. 맞으면 회색 먼지만 튀어요','No blood — everything in 15+, and no blood at all: a hit throws a little grey dust']]],
 ['v6.63','2026-10-16',[
  ['FIX','마우스를 옆으로 빠르게 돌리면 시점이 빙빙 돌던 문제 — 지원되는 브라우저(크롬 · 엣지, 윈도우 · 맥)에선 마우스 원시 입력을 써서 윈도우 마우스 가속 없이 움직인 만큼만 돌고, 빠르게 휘두를 때 브라우저가 끼워 넣던 튀는 값도 걸러요 (감도가 조금 다르게 느껴지면 설정에서 조절)','A quick sideways flick no longer spins the view — where the browser offers it (Chrome and Edge on Windows and Mac) the mouse is read raw: no Windows pointer acceleration, the view turns exactly as far as the mouse moves, and the jumps a browser could throw in on a fast flick are filtered out (if the sensitivity feels a little different, set it in the options)'],
  ['FIX','마우스 고정이 한 번 거절되면(Esc를 누르고 바로 클릭 등) 그 뒤로 계속 화면 가장자리에 커서를 대면 도는 모드가 되던 문제 — 이제 화면을 다시 클릭하면 마우스가 다시 고정돼요','A refused mouse lock (a click right after Esc, say) no longer switches the game to turning at the screen edge for good — click the screen again and the mouse locks again']]],
@@ -16381,8 +16463,8 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       art:`<img class="a1" src="${portrait('h_'+(HSKINS[1]||skin),140)}"><img class="a3" src="${portrait('h_'+(HSKINS[2]||skin),110)}">`},
     {act:'range',cls:'c3',t:L?'SHOOTING RANGE':'사격장',s:L?'Dummies at 10–50 m, moving targets, free weapons':'10–50 m 더미 · 이동 표적 · 무기 무료',tag:L?'Practice':'연습',
       art:`<img class="gun g1" src="${gunIcon('sr8',40)}"><img class="gun g2" src="${gunIcon('kv47',48)}"><img class="gun g3" src="${gunIcon('d50',34)}">`}];
-  const news=L?[['UP','The five new guns remastered — new models, each its own finish (Vector, AN-94, Barrett, SPAS-12 Dragon’s Breath, M32 Cluster)'],['NEW','New guns in the shop: KRISS Vector · AN-94 (hyperburst) · Barrett M82A1 (through 4 zombies)'],['NEW','New crate weapons: SPAS-12 Dragon’s Breath (shells that set zombies alight) · M32 Cluster (cluster grenades)'],['NEW','New pistol: Glock (shop · RMB 3-round burst) · new crate weapon: Double Glock (akimbo machine pistols)'],['UP','A UI pass — a tidy top bar, a lobby that fits the screen, missions\' progress bars, phone menus (more under + patch notes)'],['NEW','Achievements and titles — 76 tiers of rewards and 48 titles to wear (your record so far counts)'],['NEW','New crate weapons: Sentinel (a gun that sets itself up as a sentry) · Q7 Vaccine Launcher (cures zombies back to your side) · Bloodhound (marks zombies through walls)'],['NEW','New pistol: Lee Tae-hoon Dick Gun — a holy sawed-off grenade pistol, from the Sidearm decoder'],['NEW','New zombie map: Saebyeok General Hospital — atrium lobby, operating suite, rooftop helipad, parking tower'],['NEW','New PvP map: Desert Bazaar — the caravanserai (A), the covered bazaar (B), the well square'],['NEW','Smoke grenade in every mode — 18 s of cover nobody sees through, bots included'],['NEW','Arms Race — every kill brings the next gun, a knife kill on the last step wins'],['NEW','Bomb Defusal — plant on A or B, defuse with E (Harbor Terminal)'],['NEW','New PvP map: Harbor Terminal — a container port, three ways across'],['NEW','PvP — Team Deathmatch (BLUE vs RED) · Free-for-all'],['UP','THANATOS-9: the barrage lasts 3 s (was 5 s)'],['NEW','New weapons you receive (admin grant, letter, coupon) show in a window'],['UP','Survivors named for their units — KNP SOU · PJ · LEGION · CBIRF'],['UP','Survivors in masks — a ballistic visor, a half-mask, a shemagh and a CBRN mask'],['NEW','Mailbox and coupons — the letter button next to your coins: rewards from the admins, coupon codes'],['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
-    :[['UP','신규 무기 5종 모델 리마스터 — 실루엣 · 디테일 · 전용 재질 전면 재작업'],['NEW','신규 총기 「크리스 벡터」 · 「AN-94」(하이퍼버스트) · 「바렛 M82A1」(4마리 관통) — 상점'],['NEW','보급 무기 「SPAS-12 드래곤브레스」(불타는 산탄) · 「M32 클러스터」(집속 유탄)'],['NEW','신규 권총 「글록」(상점 · 우클릭 3점사) · 보급 무기 「더블 글록」(양손 기관권총)'],['UP','UI 정리 — 로비 상단바 · 한 화면 로비 · 미션 진행 막대 · 폰 메뉴 (자세한 건 + 패치노트)'],['NEW','업적 · 칭호 — 76단계 업적 보상 · 이름 옆에 다는 칭호 48가지 (지금까지의 기록도 인정)'],['NEW','신규 보급 무기 「센티넬」(포탑 변신 기관총) · 「Q7 백신 발사기」(좀비를 아군으로 치료) · 「블러드하운드」(벽 너머 표식 저격총)'],['NEW','신규 권총 「이태훈 딕건」 — 성유물 소드오프 유탄 권총 · 보조무기 해독기'],['NEW','좀비모드 신규 맵 「새벽 종합병원」 — 아트리움 로비 · 수술실 · 옥상 헬기장 · 주차타워'],['NEW','대인전 전용맵 「사막 바자르」 — 대상 숙소 A · 시장 B · 우물 광장'],['NEW','연막탄 추가 — 모든 모드 · 18초 동안 시야 차단 (봇도 못 봐요)'],['NEW','무기 레이스 — 처치할 때마다 다음 무기 · 마지막 칼 단계에서 칼로 처치하면 우승'],['NEW','폭파미션 — A·B 사이트에 폭탄 설치 · E로 해체 (항만 터미널)'],['NEW','대인전 전용맵 「항만 터미널」 — 컨테이너 부두 · 세 갈래 길'],['NEW','대인전 — 팀 데스매치 (블루 대 레드) · 개인전'],['UP','THANATOS-9 연속 찌르기 5초 → 3초'],['NEW','무기 지급 알림 — 운영자 지급 · 우편 · 쿠폰으로 받은 무기가 창으로 떠요'],['UP','생존자 이름 변경 — KNP SOU · PJ · LEGION · CBIRF (출신 특수부대)'],['UP','생존자 4명 마스크 착용 — 방탄 바이저 · 반면 마스크 · 시마그 · 방독면'],['NEW','우편함 · 쿠폰 — 코인 옆 편지 버튼에서 운영자가 보낸 보상과 쿠폰을 받아요'],['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
+  const news=L?[['NEW','Blood & gore setting — Original · 15+ (toned down, the default) · No blood (Options → Gameplay)'],['UP','The five new guns remastered — new models, each its own finish (Vector, AN-94, Barrett, SPAS-12 Dragon’s Breath, M32 Cluster)'],['NEW','New guns in the shop: KRISS Vector · AN-94 (hyperburst) · Barrett M82A1 (through 4 zombies)'],['NEW','New crate weapons: SPAS-12 Dragon’s Breath (shells that set zombies alight) · M32 Cluster (cluster grenades)'],['NEW','New pistol: Glock (shop · RMB 3-round burst) · new crate weapon: Double Glock (akimbo machine pistols)'],['UP','A UI pass — a tidy top bar, a lobby that fits the screen, missions\' progress bars, phone menus (more under + patch notes)'],['NEW','Achievements and titles — 76 tiers of rewards and 48 titles to wear (your record so far counts)'],['NEW','New crate weapons: Sentinel (a gun that sets itself up as a sentry) · Q7 Vaccine Launcher (cures zombies back to your side) · Bloodhound (marks zombies through walls)'],['NEW','New pistol: Lee Tae-hoon Dick Gun — a holy sawed-off grenade pistol, from the Sidearm decoder'],['NEW','New zombie map: Saebyeok General Hospital — atrium lobby, operating suite, rooftop helipad, parking tower'],['NEW','New PvP map: Desert Bazaar — the caravanserai (A), the covered bazaar (B), the well square'],['NEW','Smoke grenade in every mode — 18 s of cover nobody sees through, bots included'],['NEW','Arms Race — every kill brings the next gun, a knife kill on the last step wins'],['NEW','Bomb Defusal — plant on A or B, defuse with E (Harbor Terminal)'],['NEW','New PvP map: Harbor Terminal — a container port, three ways across'],['NEW','PvP — Team Deathmatch (BLUE vs RED) · Free-for-all'],['UP','THANATOS-9: the barrage lasts 3 s (was 5 s)'],['NEW','New weapons you receive (admin grant, letter, coupon) show in a window'],['UP','Survivors named for their units — KNP SOU · PJ · LEGION · CBIRF'],['UP','Survivors in masks — a ballistic visor, a half-mask, a shemagh and a CBRN mask'],['NEW','Mailbox and coupons — the letter button next to your coins: rewards from the admins, coupon codes'],['NEW','New weapons: THANATOS-9 (a 360° scythe that turns into a drill of blades) · the transcendence M4A1 Dark Knight (piercing B mode)'],['NEW','Transcendence fragments from every decoder — 888 trade for a transcendence gun'],['NEW','New weapons: JANUS-1 (a five-shot grenade pistol, full-auto in the JANUS form) · Crowbar Maverick (a 3 s electric shock)'],['NEW','New zombie: the Firefighter Zombie — the oxygen-tank charge · shoot the tank mid-charge for a smoke burst'],['NEW','The room goes on when the host leaves — the next player takes over · hand the room over from the waiting room'],['NEW','Invite friends: room invites from the waiting room · invite links that reward you both'],['NEW','Shop: the Sidearm decoder — a 1–80 bingo card with the Event Horizon Mini and the Crimson Peacemaker'],['NEW','New pistols out now: Dual Desert Eagle — .50 AE in both hands'],['NEW','New shotgun out now: Jackhammer — a 10-shell rotating cassette, full auto'],['NEW','New melee weapon out now: Katana — alternating diagonal cuts, a sweep through three'],['NEW','New pistols out now: Crimson Peacemaker (fan the hammer) · Event Horizon Mini (pull only)'],['NEW','Zombie scenario Chapter 5 「TIAMAT」 — the season 1 finale: the flooded tunnel, the giant centipede, the escape'],['NEW','New guns: Balrog-XI, Plasma Gun, Thunderbolt'],['NEW','New rifle: Balrog-5 — hits fill a gauge, then an explosive round'],['UP','Balance patch — Gae Bolg parts, Blood Dripper head-grind, hold-to-throw grenades, bunny hop, random spawns'],['NEW','Friend chat and a real last-seen time in the friends window'],['NEW','Hall of fame — first-clear teams wear a gold title'],['NEW','Zombie scenario Chapter 4 「LYREBIRD」 — fake radio calls, the fog, alarm sirens'],['NEW','Pings — Z marks a spot for your side'],['NEW','Zombie scenario Chapter 3 「KHEPRI」 — the scrap ball, the ladle, the steel works'],['NEW','Zombie scenario Chapter 2 「ARGUS」 — a sniper boss, floodlights, lenses'],['NEW','Zombie scenario Chapter 1 「ALEPH」 — the boss, records and medals'],['NEW','In-game chat — Enter: everyone, U: your side'],['NEW','Friends and gifts — send a gun to a friend'],['NEW','Coins and xp after every round, bigger match rewards'],['NEW','AK-47 60R · Dual MP7A1 — supply crates only'],['NEW','Inventory · New-Year letters saved, trade a set for decoders'],['NEW','Blaze-8 · Winchester M1887 · Nata Knife'],['NEW','Salamander flamethrower — season decoder'],['NEW','Public room list, daily missions, ranking'],['UP','Skull-9 is now a season decoder prize, next to Event Horizon'],['NEW','Skull-9, human skills (5 Sprint · 6 Deadshot), season decoder'],['UP','Free weapons, loadouts carry over, 3 loadout sets'],['NEW','근하신년 decoder bingo: 5×5 card, a gun on every line'],['NEW','Accounts, coins and a gun shop: earn coins, buy guns for good'],['NEW','Shooting range: dummies at 10–50 m, moving targets, live DPS'],['UP','Reloads and knife swings rebuilt: real hands, hit-stop'],['NEW','Zombie Scenario: co-op PvE, 5 stages, a giant boss'],['NEW','Coffin Zombie: raises a coffin wall that bursts'],['NEW','Sledgehammer: two-handed, huge knockback'],['NEW','Quick switch: fire, then swap to cut the delay'],['NEW','Draw cut: swap to a blade right after a shot'],['UP','Expert difficulty, add-money button'],['UP','Italy rebuilt: two levels, a house and a wine cellar']]
+    :[['NEW','피 표현 설정 — 원본 · 15세(순화, 기본) · 피 끄기 (옵션 → 게임플레이)'],['UP','신규 무기 5종 모델 리마스터 — 실루엣 · 디테일 · 전용 재질 전면 재작업'],['NEW','신규 총기 「크리스 벡터」 · 「AN-94」(하이퍼버스트) · 「바렛 M82A1」(4마리 관통) — 상점'],['NEW','보급 무기 「SPAS-12 드래곤브레스」(불타는 산탄) · 「M32 클러스터」(집속 유탄)'],['NEW','신규 권총 「글록」(상점 · 우클릭 3점사) · 보급 무기 「더블 글록」(양손 기관권총)'],['UP','UI 정리 — 로비 상단바 · 한 화면 로비 · 미션 진행 막대 · 폰 메뉴 (자세한 건 + 패치노트)'],['NEW','업적 · 칭호 — 76단계 업적 보상 · 이름 옆에 다는 칭호 48가지 (지금까지의 기록도 인정)'],['NEW','신규 보급 무기 「센티넬」(포탑 변신 기관총) · 「Q7 백신 발사기」(좀비를 아군으로 치료) · 「블러드하운드」(벽 너머 표식 저격총)'],['NEW','신규 권총 「이태훈 딕건」 — 성유물 소드오프 유탄 권총 · 보조무기 해독기'],['NEW','좀비모드 신규 맵 「새벽 종합병원」 — 아트리움 로비 · 수술실 · 옥상 헬기장 · 주차타워'],['NEW','대인전 전용맵 「사막 바자르」 — 대상 숙소 A · 시장 B · 우물 광장'],['NEW','연막탄 추가 — 모든 모드 · 18초 동안 시야 차단 (봇도 못 봐요)'],['NEW','무기 레이스 — 처치할 때마다 다음 무기 · 마지막 칼 단계에서 칼로 처치하면 우승'],['NEW','폭파미션 — A·B 사이트에 폭탄 설치 · E로 해체 (항만 터미널)'],['NEW','대인전 전용맵 「항만 터미널」 — 컨테이너 부두 · 세 갈래 길'],['NEW','대인전 — 팀 데스매치 (블루 대 레드) · 개인전'],['UP','THANATOS-9 연속 찌르기 5초 → 3초'],['NEW','무기 지급 알림 — 운영자 지급 · 우편 · 쿠폰으로 받은 무기가 창으로 떠요'],['UP','생존자 이름 변경 — KNP SOU · PJ · LEGION · CBIRF (출신 특수부대)'],['UP','생존자 4명 마스크 착용 — 방탄 바이저 · 반면 마스크 · 시마그 · 방독면'],['NEW','우편함 · 쿠폰 — 코인 옆 편지 버튼에서 운영자가 보낸 보상과 쿠폰을 받아요'],['NEW','신무기 THANATOS-9 (360도 낫 · 칼날 드릴 연속 찌르기) · 초월 무기 M4A1 다크나이트 (관통 B모드)'],['NEW','초월 조각 — 모든 해독기에서 나와요 · 888개로 초월 무기 교환'],['NEW','신무기 JANUS-1 (5발 유탄 권총 · JANUS 모드 무한 연사) · 크로우바 매버릭 (전기충격 3초)'],['NEW','신규 좀비 「소방관 좀비」 — 산소통 돌진 · 돌진 중 산소통을 쏘면 펑, 연막'],['NEW','방장이 나가도 방이 이어져요 — 다음 플레이어가 방장 · 대기실에서 방장 넘기기'],['NEW','친구 초대 — 대기실에서 바로 방 초대 · 초대 링크로 가입하면 둘 다 보상'],['NEW','상점 「보조무기 해독기」 오픈 — 1~80 빙고에서 이벤트 호라이즌 미니 · 크림슨 피스메이커'],['NEW','신규 권총 출시 — 듀얼 데저트 이글 (.50AE 쌍권총)'],['NEW','신규 산탄총 출시 — 잭해머 (10발 회전 카세트 자동 샷건)'],['NEW','신규 근접 무기 출시 — 카타나 (번갈아 사선베기 · 3마리 가로베기)'],['NEW','신규 권총 출시 — 크림슨 피스메이커(해머 연타) · 이벤트 호라이즌 미니(빨아들이기 전용)'],['NEW','좀비 시나리오 5챕터 「티아마트」 — 시즌 1 마지막: 잠긴 방수로 · 거대 지네 · 수직갱 탈출'],['NEW','신무기 발록-XI · 플라즈마 건 · 썬더볼트'],['NEW','신무기 발록-5 — 맞출수록 게이지가 차고 다음 한 발은 폭발탄'],['UP','밸런스 패치 — 게이볼그 부위 · 혈적자 머리 갈기 · 수류탄 홀드 · 연속 점프 가속 · 랜덤 스폰'],['NEW','친구창 채팅 · 최근 접속 시간이 제대로 갱신'],['NEW','명예의 전당 — 챕터 × 난이도 최초 클리어 팀에게 금색 칭호'],['NEW','좀비 시나리오 4챕터 「라이어버드」 — 가짜 무전 · 안개 · 경보 사이렌'],['NEW','핑 — Z 키로 같은 편에게 위치 표시'],['NEW','좀비 시나리오 3챕터 「케프리」 — 고철 공 · 래들 쇳물 · 제철소'],['NEW','좀비 시나리오 2챕터 「아르고스」 — 저격수 보스 · 투광등 · 렌즈'],['NEW','좀비 시나리오 1챕터 「알레프」 — 보스전 · 기록 · 메달'],['NEW','인게임 채팅 — Enter 전체 · U 우리 편'],['NEW','친구 · 선물 — 친구에게 총 선물하기'],['NEW','라운드마다 코인 · 경험치, 매치 보상 증가'],['NEW','AK-47 60R · 듀얼 MP7A1 — 보급상자 전용'],['NEW','인벤토리 · 근하신년 글자 저장, 한 세트로 해독기 교환'],['NEW','블레이즈-8 · 윈체스터 M1887 · 나타나이프'],['NEW','샐러맨더 화염방사기 — 시즌 해독기'],['NEW','공개 방 목록 · 일일 미션 · 랭킹'],['UP','스컬-9 — 시즌 해독기 줄 보상으로 (이벤트 호라이즌과 함께)'],['NEW','스컬-9 · 인간 스킬(5 전력질주 · 6 확인사살) · 시즌 해독기'],['UP','무기 무료 · 장비 이어가기 · 장비 세트 3개'],['NEW','근하신년 해독기 빙고 — 줄마다 근하신년 무기, 최대 50개면 판 완성'],['NEW','계정 · 코인 · 상점 — 매치로 코인 모아 총 영구 구매'],['NEW','사격장 — 거리별 더미 · 이동 표적 · 실시간 DPS'],['UP','재장전 · 칼 휘두르기 모션 재제작 — 진짜 손 동작 · 타격감'],['NEW','좀비 시나리오 — 협동 PvE, 5스테이지 + 거대 좀비'],['NEW','관짝 좀비 — 관 방패를 세우고, 부서지면 폭발'],['NEW','해머 추가 — 양손 롱해머, 넉백 최강'],['NEW','챈샷 — 쏘고 바로 무기 교체로 딜레이 단축'],['NEW','칼 챈샷 — 사격 직후 칼로 바꾸면 근접 타격'],['UP','난이도 전문가 추가 · 돈 추가 버튼'],['UP','이탈리아 맵 개편 — 2층 구조, 저택, 와인 저장고']];
   $('menu').innerHTML=`<div class="lob">
     <div class="lobTop"><div class="lobLogo">QUARANTINE<b>Z</b></div>
       <div class="prof${acc?' pa':''}"${acc?` data-act="acc" title="${L?'My account':'내 계정'}"`:''}><img src="${portrait('h_'+skin,40)}"><div><b>${esc(myName())}</b><span class="lv">Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i></div></div>
@@ -16397,7 +16479,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.63 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.64 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap();setTimeout(lobFit,0)};
 // (v6.58) the top bar keeps every button in view: past its width the logo gets smaller, then goes, then the main buttons lose
 // their words (a tooltip keeps them); run after every module has put its buttons in, on every resize and when the lobby shows again
@@ -16475,7 +16557,9 @@ UI.buildOpts=function(){const L=LI(),t=UI.optTab;
   if(t==='game')body=`<div class="og2"><div>${sel('lang',L?'Language':'언어',[['ko','한국어'],['en','English']])}
       <div class="osel"><span>${L?'Nickname':'닉네임'}</span><input id="optName" class="tin" maxlength="14" value="${esc(CFG.mpName||'')}" placeholder="${esc(myName())}" autocomplete="off" spellcheck="false"></div>
       ${sel('touch',L?'Touch controls':'터치 조작 (모바일)',[['auto',L?'Auto':'자동'],['on',L?'On':'켜기'],['off',L?'Off':'끄기']])}
-      ${sel('xc',L?'Crosshair colour':'조준점 색상',[['green',L?'Green':'초록'],['yellow',L?'Yellow':'노랑'],['cyan',L?'Cyan':'하늘'],['white',L?'White':'흰색'],['pink',L?'Pink':'분홍']])}</div>
+      ${sel('xc',L?'Crosshair colour':'조준점 색상',[['green',L?'Green':'초록'],['yellow',L?'Yellow':'노랑'],['cyan',L?'Cyan':'하늘'],['white',L?'White':'흰색'],['pink',L?'Pink':'분홍']])}
+      ${sel('gore',L?'Blood & gore':'피 표현',[[2,L?'Original':'원본'],[1,L?'15+ (toned down)':'15세 (순화)'],[0,L?'No blood':'피 끄기']])}
+      <p class="onote">${L?'15+: no severed limbs or bursting heads, a small dark spray on hits, no pools, zombies bruised instead of torn open. No blood: grey dust on hits.':'15세: 팔다리 절단·머리 터짐 없음, 맞으면 어두운 피가 조금만 튐, 피 웅덩이 없음, 좀비는 찢긴 살 대신 멍·때. 피 끄기: 맞으면 회색 먼지만.'}</p></div>
     <div>${ck('minimap',L?'Show radar':'레이더(미니맵) 표시')}${ck('autoFire',L?'Auto-fire on target (touch)':'자동 사격 (조준점에 적이 오면 발사)')}${ck('aimAssist',L?'Aim assist (touch)':'조준 보정 (적 쪽으로 살짝 끌림)')}${ck('leftFire',L?'Left fire button':'왼쪽 사격 버튼')}${ck('invert',L?'Invert look (Y)':'시점 상하 반전')}${ck('haptic',L?'Vibration':'진동')}${sl('tsens',L?'Touch look speed':'터치 시점 감도',.4,2.5,.1,v=>(+v).toFixed(1),L?'slow':'느리게',L?'fast':'빠르게')}${sl('tal',L?'Button opacity':'버튼 투명도',.25,1,.05,v=>Math.round(v*100)+'%','25%','100%')}${sl('tsz',L?'Button size':'버튼 크기',.75,1.35,.05,v=>Math.round(v*100)+'%','75%','135%')}${sl('xg',L?'Crosshair gap':'조준점 간격',2,14,1,v=>v+'px',L?'tight':'좁게',L?'wide':'넓게')}
       <div class="xprev" style="--xc:${XC[CFG.xc]||XC.green};--g:${CFG.xg||6}px"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div></div></div>`;
   else if(t==='keys'&&typeof TOUCH!=='undefined'&&TOUCH.on){const g=L?[['Left thumb','Move — the stick starts wherever you touch; push past half for full speed'],['Right drag','Look around — slow drags are precise, flicks turn far'],['◎ big button','Fire. Hold it and drag to aim while shooting'],['Auto','Aim near an enemy: the sight is pulled in and it fires for you (Options)'],['Aim','Scope / alt attack / hammer stance / soft bomb lob'],['↑ ↓','Jump · crouch (toggle)'],['↻','Reload'],['Bottom bar','Tap a weapon to equip · tap the one in hand to swap back (quick switch) · hold it to drop it; walk over a gun to pick it up into an empty slot'],['Buy','Shop · Quick buy = best rifle + armour + grenade in one tap'],['⚡','Zombie skill · CLASS picks the zombie class · NV night vision'],['≡ / Ⅱ','Hold for the scoreboard · pause'],['Dead','Tap fire to watch the next player']]
@@ -16528,7 +16612,7 @@ UI.optLive=function(){applyCfg();applyXhair();if(typeof TOUCH!=='undefined'){doc
 // ---- main.js ----
 'use strict';
 // ============ Boot, input, camera and the frame loop ============
-function applyCfg(){if(R.ok){R.setScale(CFG.scale);R.setFov(CFG.fov);R.bloom=CFG.bloom!==false;R.shadowsOn=CFG.shadow!==false}R.PU&&(R.PU.uGamma.value=CFG.gamma);AU.vol=CFG.vol;AU.musicOn=CFG.music;AU.apply()}
+function applyCfg(){if(R.ok){R.setScale(CFG.scale);R.setFov(CFG.fov);R.bloom=CFG.bloom!==false;R.shadowsOn=CFG.shadow!==false}R.PU&&(R.PU.uGamma.value=CFG.gamma);AU.vol=CFG.vol;AU.musicOn=CFG.music;AU.apply();GORE.set(CFG.gore)}
 const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,overlay:null,paused:false,last:0,dtAvg:16,mx:0,my:0,boardOn:false,demo:[],shakeP:0,shakeY:0,camT:0,specCam:new THREE.Vector3(),fpsT:0,
   async boot(){const step=async(t,p)=>{$('loadT').textContent=t;$('loadFill').style.width=(p*100)+'%';await new Promise(r=>setTimeout(r,16))};
     try{

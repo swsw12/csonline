@@ -19,7 +19,7 @@ function paintSkAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getC
   patch('skSteel',(xx,y,X,Y)=>{const t=nz(X,Y,111,14)+(hash2(X,Y,112)-.5)*.06;let c=mix('#1f2125','#3a3d42',clamp((t-.3)*1.6,0,1));
     const d=Math.hypot(((xx+5)%13)-6.5,((y+(Math.floor(xx/13)%2)*6)%13)-6.5);if(d<3.2)c=d<2?dk(c,.18):lt(c,.05);
     const v=Math.abs(Math.sin(xx*.09+Math.sin(y*.07)*2.6+nz(X,Y,113,30)*3));if(v<.045)c='#5a5e64';else if(v<.09)c=dk(c,.2);
-    if(nz(X,Y,114,9)>.7)c=mix(c,'#3a0d0a',.55);return c},250);
+    if(nz(X,Y,114,9)>.7)c=GORE.lv>=2?mix(c,'#3a0d0a',.55):mix(c,'#141518',.4);return c},250);// (15세 / 피 끄기: dark pits, no blood)
   // haft: near-black wood under a tight leather binding
   patch('skHaft',(xx,y,X,Y)=>{const g=Math.sin(y*.4+nz(X,Y,116,20)*5)*.5+.5;let c=mix('#100e0d','#221c18',g*.6+nz(X,Y,117,8)*.4);
     const w=(xx+y*.55)%16;if(w<1)c='#080707';else if(w<2)c=lt(c,.04);if(hash2(X,Y,118)<.015)c='#2e2520';return c},244);

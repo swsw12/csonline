@@ -66,12 +66,13 @@ const GLOSS={plate:248,rubber:245,boot:243,flesh:252,meat:253,tumor:250,skin:241
 const FACE_GA={gasmask:246,visor:249,man:241,woman:241,balaclava:255,gaiter:255,m50:245};// the gloss a painted face starts with
 const WET={flesh:252,wounds:252,ribs:251,bonep:247,drip:253,bite:252,soak:250,gash:252,blood:251,rot:250,teethrow:247,tear:242,veins:243,stitch:246};
 // materials: {base, style}; decor ops use face-normalised coords (u right, v up, 0..1)
-function fillMat(P,x0,y0,w,h,M,seed,fk,partN){const st=M.style||'cloth',base=M.base;
+function fillMat(P,x0,y0,w,h,M,seed,fk,partN){let st=M.style||'cloth',base=M.base;const blot=GORE.de(M.blot||'#4a2a28');// (GORE.lv < 2: a blood-red blot turns to grime)
+  if(GORE.lv<2&&(st==='flesh'||st==='meat')){st='zskin';base=GORE.de(base)}// (and raw meat to rotten skin)
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const X=x0+x,Y=y0+y;const v=1-(y+.5)/h;let c=base,t;
     if(st==='cloth'){t=.5+(P.n(X,Y,6*CK,seed,2)-.5)*.6+(hash2(X,Y,seed)-.5)*.16+(((X+Y)&1)?.03:-.03);const fold=Math.sin((x/CK*.9+hash2(Math.floor(y/(4*CK)),1,seed)*3))*.5+.5;t+=(fold-.5)*.12;
       c=t<.33?dk(base,.22):t<.45?dk(base,.1):t>.72?lt(base,.12):t>.6?lt(base,.05):base;if(M.camo){const n=P.n(X,Y,9*CK,seed+5,2);if(n>.62)c=mix(c,M.camo[0],.75);else if(n<.36)c=mix(c,M.camo[1],.7)}}
     else if(st==='skin'){t=(P.n(X,Y,5*CK,seed,2)-.5)*.35+(P.n(X,Y,2,seed+2,1)-.5)*.1+(hash2(X,Y,seed+1)-.5)*.08;c=t>.1?lt(base,.08):t<-.1?dk(base,.1):base}
-    else if(st==='zskin'){t=P.n(X,Y,4*CK,seed,3);const t2=P.n(X,Y,9*CK,seed+3,2);c=t>.62?dk(base,.28):t<.3?lt(base,.1):base;if(t2>.66)c=mix(c,M.blot||'#4a2a28',.55);if(t2>.6&&t2<.62)c=dk(c,.35);if(hash2(X,Y,seed+2)<.03)c=dk(c,.3);else if(hash2(X,Y,seed+4)<.015)c=lt(c,.18)}
+    else if(st==='zskin'){t=P.n(X,Y,4*CK,seed,3);const t2=P.n(X,Y,9*CK,seed+3,2);c=t>.62?dk(base,.28):t<.3?lt(base,.1):base;if(t2>.66)c=mix(c,blot,.55);if(t2>.6&&t2<.62)c=dk(c,.35);if(hash2(X,Y,seed+2)<.03)c=dk(c,.3);else if(hash2(X,Y,seed+4)<.015)c=lt(c,.18)}
     else if(st==='rubber'){t=(hash2(X,Y,seed)-.5)*.14;c=t>.04?lt(base,.06):base;if(y===0)c=lt(base,.18);else if(y===1)c=lt(base,.08)}
     else if(st==='boot'){c=v<.22?dk(base,.35):base;if(hash2(X,Y,seed)<.1)c=lt(c,.07);if(v<.22&&v>.16)c=dk(base,.5);if(v<.14&&(x%(2*CK))===0)c=dk(base,.55)}
     else if(st==='hair'){t=hash2(x,Math.floor(y/(3*CK)),seed);c=t<.3?dk(base,.3):t>.8?lt(base,.15):base;if(hash2(x,y,seed+1)<.08)c=lt(c,.1)}
@@ -84,8 +85,17 @@ function fillMat(P,x0,y0,w,h,M,seed,fk,partN){const st=M.style||'cloth',base=M.b
 function decor(P,x0,y0,w,h,ops,seed,M){
   const X=u=>x0+Math.floor(clamp(u,0,.9999)*w),Y=v=>y0+Math.floor(clamp(1-v,0,.9999)*h);
   const R=(u0,v0,u1,v1,f)=>{const a=X(u0),b=X(u1-1e-4),cy0=Y(v1-1e-4),cy1=Y(v0);for(let y=cy0;y<=cy1;y++)for(let x=a;x<=b;x++)f(x,y,x-a,y-cy0,b-a,cy1-cy0)};
-  for(const op of ops){const k=op[0];const ga0=P.ga;if(WET[k])P.ga=WET[k];else if(k==='face')P.ga=FACE_GA[op[1]]||243;
+  for(let op of ops){if(GORE.lv<2){op=goreOp(op);if(!op)continue}const k=op[0];const ga0=P.ga;if(WET[k])P.ga=WET[k];else if(k==='face')P.ga=FACE_GA[op[1]]||243;
     decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R);P.ga=ga0}}
+// 15세 / 피 끄기 (GORE.lv < 2): exposed muscle becomes a bruise, claw gashes dark scratches, blood soaking and spatter turns to grime (dry, not wet);
+// ribs, bone, running blood are left out. Bites and wounds paint through 'flesh', so they bruise too.
+function goreOp(op){const k=op[0];
+  if(k==='ribs'||k==='bonep'||k==='drip')return null;
+  if(k==='flesh')return ['bruise',op[1],op[2],op[3],op[4]];
+  if(k==='gash')return ['scratch',op[1],op[2],op[3],op[4],op[5],op[6]];
+  if(k==='soak')return ['grimes',op[1],op[2],GORE.de(op[3]||'#5a0808'),(op[4]||.85)*.6];
+  if(k==='blood')return ['spots',op[1],op[2],GORE.de(op[3]||'#5a0c0c')];
+  return op}
 function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
     if(k==='rect')R(op[1],op[2],op[3],op[4],(x,y)=>{const t=hash2(x,y,seed+7);P.set(x,y,t<.15?dk(op[5],.15):t>.9?lt(op[5],.08):op[5])});
     else if(k==='pocket')R(op[1],op[2],op[3],op[4],(x,y,i,j,W,H)=>{let c=op[5];if(j===0||j===1&&H>4)c=lt(c,.1);if(i===W||j===H)c=dk(c,.35);if(j===Math.min(2,H))c=dk(c,.25);P.set(x,y,c)});
@@ -95,7 +105,7 @@ function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
     else if(k==='glow')R(op[1],op[2],op[3],op[4],(x,y)=>{P.set(x,y,op[5]);P.D[(y*P.w+x)*4+3]=232});
     else if(k==='px'){const x=X(op[1]),y=Y(op[2]);for(let j=0;j<CK;j++)for(let i=0;i<CK;i++){P.set(x+i,y+j,op[3]);if(op[4])P.D[((y+j)*P.w+x+i)*4+3]=232}}
     else if(k==='grime'){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const n=P.n(x0+x,y0+y,5*CK,seed+11,2);if(n>.62)P.mul(x0+x,y0+y,1-op[1]*(n-.62)*2.5);if((1-(y+.5)/h)<.18)P.mul(x0+x,y0+y,1-op[1]*.3)}}
-    else if(k==='blood'){const n=op[1],col=op[3]||'#5a0c0c';for(let i=0;i<n;i++){const cx=hash2(i,seed,op[2])*w,cy=hash2(i,seed+1,op[2])*h,r=1+hash2(i,seed+2,op[2])*Math.max(1.5,w*.14);
+    else if(k==='blood'||k==='spots'){const n=op[1],col=op[3]||'#5a0c0c';for(let i=0;i<n;i++){const cx=hash2(i,seed,op[2])*w,cy=hash2(i,seed+1,op[2])*h,r=1+hash2(i,seed+2,op[2])*Math.max(1.5,w*.14);
         for(let y=-r;y<=r+3*CK;y++)for(let x=-r;x<=r;x++){const d=Math.hypot(x,y*(y>0?.5:1))/r+(hash2(Math.floor(x/CK)+i,Math.floor(y/CK),op[2])-.5)*.5;if(d<1){const px=Math.floor(cx+x),py=Math.floor(cy+y);if(px>=0&&py>=0&&px<w&&py<h)P.set(x0+px,y0+py,d<.5?dk(col,.25):col)}}}}
     else if(k==='tear'){const n=op[1],col=op[3];for(let i=0;i<n;i++){const cx=hash2(i,seed+3,op[2])*w,cy=hash2(i,seed+4,op[2])*h,rx=1+hash2(i,seed+5,op[2])*w*.22,ry=1+hash2(i,seed+6,op[2])*h*.16;
         for(let y=-ry-1;y<=ry+1;y++)for(let x=-rx-1;x<=rx+1;x++){const d=Math.hypot(x/rx,y/ry)+(hash2(x+i*7,y,seed)-.5)*.45;const px=Math.floor(cx+x),py=Math.floor(cy+y);if(px<0||py<0||px>=w||py>=h)continue;
@@ -143,11 +153,18 @@ function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
       for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++){const d=Math.hypot(x/rx,y/ry)+(hash2(Math.floor(x/CK)+i,Math.floor(y/CK),62)-.5)*.4;if(d>1)continue;const px=Math.floor(cx+x),py=Math.floor(cy+y);if(px<0||py<0||px>=w||py>=h)continue;
         P.set(x0+px,y0+py,d<.35?'#1a0a14':d<.6?'#3a1a2a':d<.82?'#4a5a24':'#6a7a34',d<.6?1:.7)}
       for(let q=0;q<3;q++){const px=Math.floor(cx+(hash2(i,q,63)-.5)*rx),py=Math.floor(cy+(hash2(i,q,64)-.5)*ry);if(px>=0&&py>=0&&px<w-CK&&py<h-CK){for(let a=0;a<CK;a++)for(let b=0;b<CK;b++)P.set(x0+px+b,y0+py+a,'#d8c860');P.set(x0+px,y0+py,'#f0e8a0')}}}}
-    else if(k==='soak'){const col=op[3]||'#5a0808',al=op[4]||.85;// blood soaking down cloth from v1, fading towards v0
+    else if(k==='soak'||k==='grimes'){const col=op[3]||'#5a0808',al=op[4]||.85;// blood soaking down cloth from v1, fading towards v0 (grimes: the 15세 grime, dry)
       R(0,op[1],1,op[2],(x,y,i,j,W,H)=>{const t=1-j/(H||1);const n=P.n(x,y,6*CK,seed+71,2);const a=al*clamp(t*1.25-(.5-n)*.9,0,1);if(a>.05)P.set(x,y,hash2(x,y,seed+72)<.1?dk(col,.3):col,a)})}
     else if(k==='gash'){const n=op[5]||3;for(let g=0;g<n;g++){const off=(g-(n-1)/2)*(op[6]||.09);const ax=X(op[1]+off),ay=Y(op[2]),bx=X(op[3]+off),by=Y(op[4]);const L=Math.max(1,Math.hypot(bx-ax,by-ay));// parallel claw slashes
       for(let q=0;q<=L;q++){const f=Math.sin(q/L*Math.PI);const x=Math.round(ax+(bx-ax)*q/L),y=Math.round(ay+(by-ay)*q/L);const wd=Math.max(1,Math.round(f*CK*1.5));
         for(let e=-wd;e<=wd;e++){const px=x+e;if(px<x0||px>=x0+w||y<y0||y>=y0+h)continue;P.set(px,y,Math.abs(e)===wd?'#9a2a20':(Math.abs(e)<wd*.5?'#1a0202':'#6a0a08'))}}}}
+    // ---- 15세 (goreOp): a bruise where muscle showed, a dark scratch where a gash was ----
+    else if(k==='bruise'){const base=(M&&M.base)||'#6e7e62';
+      R(op[1],op[2],op[3],op[4],(x,y,i,j,W,H)=>{const cx=(i+.5)/(W+1)*2-1,cy=(j+.5)/(H+1)*2-1;const d=Math.hypot(cx,cy)+(P.n(x,y,3*CK,seed+21,2)-.5)*.55;if(d>1)return;
+        let c=mix(dk(base,.3),'#2e2430',.3+P.n(x,y,4*CK,seed+23,2)*.3);if(d>.8)c=mix(c,base,(d-.8)*3);else if(hash2(x,y,seed+22)<.05)c=dk(c,.25);P.set(x,y,c)})}
+    else if(k==='scratch'){const n=op[5]||3,base=(M&&M.base)||'#6e7e62';for(let g=0;g<n;g++){const off=(g-(n-1)/2)*(op[6]||.09);const ax=X(op[1]+off),ay=Y(op[2]),bx=X(op[3]+off),by=Y(op[4]);const L=Math.max(1,Math.hypot(bx-ax,by-ay));
+      for(let q=0;q<=L;q++){const f=Math.sin(q/L*Math.PI);const x=Math.round(ax+(bx-ax)*q/L),y=Math.round(ay+(by-ay)*q/L);const wd=Math.max(1,Math.round(f*CK*.8));
+        for(let e=-wd;e<=wd;e++){const px=x+e;if(px<x0||px>=x0+w||y<y0||y>=y0+h)continue;P.set(px,y,Math.abs(e)===wd?dk(base,.3):dk(base,.55))}}}}
     else if(k==='teethrow'){const top=op[1]==='top';const d=Math.max(CK*2,Math.round(h*(op[2]||.22)));const tw=Math.max(2,Math.round(CK*2.2));// a row of teeth along one edge, gums and a wet dark mouth behind
       for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ed=top?y:h-1-y;let c;const ti=Math.floor(x/tw);
         if(ed<d){const gap=x%tw===tw-1,miss=hash2(ti,7,seed)<.18,len=d*(.55+hash2(ti,8,seed)*.45);if(gap||miss||ed>len)c=ed<d*.2?'#2a0606':'#5a1212';else{c=ed<len*.3?'#efe4c4':ed<len*.8?'#d0c4a0':'#8a7a54';if(hash2(ti,9,seed)<.25)c=dk(c,.3)}}
@@ -199,12 +216,13 @@ function paintFace(P,x0,y0,w,h,kind,seed,o){const K=CK;
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){const e=Math.min(x,w-1-x)/w;if(e<.14)P.mul(x0+x,y0+y,.82+e*1.2)}
     eyePair(P,x0,y0,w,h,ey,kind==='brute'?.16:.2,(x,y,s)=>{
       for(let j=-K-1;j<2*K+1;j++)for(let i=-K-1;i<2*K+1;i++){const inner=Math.abs(i-K/2)<K&&Math.abs(j-K/2)<K;sp(x+i,y+j,inner?dk(skin,.78):(j>K?mix(dk(skin,.45),'#3a1a2a',.4):dk(skin,.5)))}
+      if(o.oneEye&&s>0&&GORE.lv<2){for(let j=-K;j<2*K;j++)for(let i=-K;i<2*K;i++){const r=Math.hypot(i-K/2+.5,j-K/2+.5)/K;sp(x+i,y+j,r<1?'#0a0808':r<1.45?dk(skin,.62):dk(skin,.45))}return}// (15세: an empty dark socket)
       if(o.oneEye&&s>0){// gouged out: a wet black hole with a torn rim, still bleeding
         for(let j=-K;j<2*K;j++)for(let i=-K;i<2*K;i++){const r=Math.hypot(i-K/2+.5,j-K/2+.5)/K;sp(x+i,y+j,r<1?'#080101':r<1.45?'#5a0606':'#7a1410')}
         let tx=x;for(let j=0;j<h*.42;j++){if(hash2(j,3,seed)<.12)tx+=hash2(j,4,seed)<.5?1:-1;sp(tx,y+2*K+j,j<h*.3?'#7a0c0a':'#4a0606');sp(tx+1,y+2*K+j,'#5a0808')}return}
       B(x,y,glow,1);sp(x+(s<0?0:K-1),y,lt(glow,.55),1);if(kind!=='brute')B(x+(s<0?K:-K),y,glow,1);
       if(o.sewn){const xa=Math.min(x,x+(s<0?K:-K))-K;for(let i=0;i<4*K;i++)sp(xa+i,y+(K>>1),'#1a1210');for(let i=0;i<4*K;i+=K)for(let j=-K;j<2*K;j++)sp(xa+i,y+j,j===-K||j===2*K-1?'#4a2a20':'#2a1a14')}
-      if(o.tears){const L=Math.round(h*(.26+hash2(x,s+2,seed)*.12));let tx=x+(s<0?0:K-1);for(let j=0;j<L;j++){if(hash2(j,s+5,seed+3)<.12)tx+=hash2(j,s+5,seed+4)<.5?1:-1;sp(tx,y+K+j,j<L*.7?'#7a0c0a':'#5a0808');sp(tx+1,y+K+j,'#4a0606')}}});
+      if(o.tears){const L=Math.round(h*(.26+hash2(x,s+2,seed)*.12)),g=GORE.lv>=2;let tx=x+(s<0?0:K-1);for(let j=0;j<L;j++){if(hash2(j,s+5,seed+3)<.12)tx+=hash2(j,s+5,seed+4)<.5?1:-1;sp(tx,y+K+j,g?(j<L*.7?'#7a0c0a':'#5a0808'):(j<L*.7?'#2a2226':'#221c1e'));sp(tx+1,y+K+j,g?'#4a0606':'#1a1618')}}});// (15세: dark tears, not blood)
     const cx2=cx;
     if(kind==='scream'){const my=Math.round(h*.62/K)*K;for(let y=my;y<h;y++){const ww=Math.round(((y-my)/K+2)*.55+1)*K;for(let i=-ww;i<ww;i++){const edge=Math.abs(i)>=ww-K||y<my+K;sp(cx2+i,y0+y,edge?(hash2(Math.floor(i/K),Math.floor(y/K),seed)<.5?'#d8d0b0':'#5a1010'):(y>h-3*K?'#1a0404':'#2a0606'))}}}
     else{const my=y0+Math.round(h*.78/K)*K;
@@ -213,10 +231,10 @@ function paintFace(P,x0,y0,w,h,kind,seed,o){const K=CK;
         for(let j=-K;j<2*K;j++){sp(cx2-3*K-1,my+j,'#5a0808');sp(cx2+3*K,my+j,'#5a0808')}}
       else{for(let i=-2;i<=2;i++){B(cx2+i*K,my,'#2a0a08');B(cx2+i*K,my-K,(i&1)?'#c8c0a0':'#2a0a08');if(kind!=='brute')B(cx2+i*K,my+K,(i&1)?'#2a0a08':'#b8b090')}
         if(kind==='brute')for(let i=-2;i<=2;i+=2){B(cx2+i*K,my-K,'#8a8a8a');B(cx2+i*K,my+K,'#8a8a8a')}}
-      if(o.cheek){// a hole torn through the cheek shows the molars
+      if(o.cheek&&GORE.lv>=2){// a hole torn through the cheek shows the molars (not at 15세)
         const qx=cx2-4*K-1,qy=my-2*K;for(let j=0;j<3*K;j++)for(let i=0;i<2*K+1;i++){const e=i===0||j===0||i===2*K||j===3*K-1;sp(qx+i,qy+j,e?'#7a1410':(j<1.5*K?((i>>1)&1?'#c8c0a0':'#2a0606'):'#3a0606'))}}
-      // blood from the mouth down the chin
-      for(let q=0;q<3;q++){let tx=cx2+(q-1)*K;for(let j=0;j<h-(my-y0)-K;j++){if(hash2(j,q,seed+9)<.15)tx+=hash2(j,q,seed+10)<.5?1:-1;sp(tx,my+K+j,'#5a0808')}}}
+      // blood from the mouth down the chin (not at 15세)
+      if(GORE.lv>=2)for(let q=0;q<3;q++){let tx=cx2+(q-1)*K;for(let j=0;j<h-(my-y0)-K;j++){if(hash2(j,q,seed+9)<.15)tx+=hash2(j,q,seed+10)<.5?1:-1;sp(tx,my+K+j,'#5a0808')}}}
     for(let j=0;j<2;j++)B(cx-(j?0:K),row+2*K+j*K,dk(skin,.45))}
 }
 // pack faces of all parts into one atlas; returns uv rects
@@ -323,6 +341,14 @@ function charAsset(key){let A=CHAR_ASSETS[key];if(A)return A;
   const [t,k,h]=key.split('_');const def=t==='h'?defHuman(k):defZombie(k,h==='h');const atlas=paintSkin(def);
   const tex=new THREE.CanvasTexture(atlas.cv);tex.magFilter=THREE.NearestFilter;tex.minFilter=THREE.NearestFilter;tex.generateMipmaps=false;
   A=CHAR_ASSETS[key]={def,geo:buildRigGeo(def,atlas,0),geoLo:buildRigGeo(def,atlas,1),tex,piv:def.piv,la:def.la,lb:def.lb,canvas:atlas.cv,faces:atlas.faces};return A}
+// rebuild a built character in place (the gore level changed, GORE.set): new skin and meshes from its design, every rig of it switched over
+function charRebuild(key){const A=CHAR_ASSETS[key];if(!A)return;const [t,k,h]=key.split('_');const def=t==='h'?defHuman(k):defZombie(k,h==='h');const atlas=paintSkin(def);
+  const g0=A.geo,g1=A.geoLo;Object.assign(A,{def,geo:buildRigGeo(def,atlas,0),geoLo:buildRigGeo(def,atlas,1),piv:def.piv,la:def.la,lb:def.lb,canvas:atlas.cv,faces:atlas.faces});
+  A.tex.image=atlas.cv;A.tex.needsUpdate=true;
+  const sw=m=>{if(m&&(m.geometry===g0||m.geometry===g1))m.geometry=m.geometry===g1?A.geoLo:A.geo};
+  if(typeof G!=='undefined'&&G.actors)for(const a of G.actors)for(const r in a.rigs||{})if(a.rigs[r])sw(a.rigs[r].mesh);
+  if(R.scene)R.scene.traverse(o=>{if(o.isMesh)sw(o)});
+  g0.dispose();g1.dispose();if(typeof PORTRAITS!=='undefined')for(const p in PORTRAITS)if(p.startsWith(key+':'))delete PORTRAITS[p]}
 // ---------- per-character instance ----------
 function makeChar(key){const A=charAsset(key);const uB=[],R=[],M=[];for(let i=0;i<NB;i++){uB.push(new THREE.Matrix4());R.push(new THREE.Matrix4());M.push(new THREE.Matrix4())}
   const mat=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:A.tex},uBones:{value:uB},uProbe:{value:new THREE.Color(.4,.4,.45)},uFlash:{value:0},uTint:{value:new THREE.Vector4(0,0,0,0)},uEmisA:{value:1},

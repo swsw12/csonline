@@ -60,7 +60,7 @@ function paintKkAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getC
     for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const X=x0+xx,Y=y0+y,t=hash2(Math.floor(xx/10),y,3)*.55+fbm(X/12,Y/12,4,2,0)*.45;
       let c=t>.62?'#71767b':t<.35?'#45494e':'#5a5f64';
       const b=fbm(X/22,Y/22,90+lv,2,0)+(hash2(X,Y,91)-.5)*.08,amt=[.3,.48,.64][lv]*Math.max(.35,Math.min(1,(b-.15)*2));
-      c=mix(c,lv>1?'#5a2420':'#6e3a32',amt);const r=rgbOf(c),k=(y*PS+xx)*4;D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=255}
+      c=GORE.lv>=2?mix(c,lv>1?'#5a2420':'#6e3a32',amt):mix(c,'#34363a',amt*.6);const r=rgbOf(c),k=(y*PS+xx)*4;D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=255}// (15세 / 피 끄기: dark weathering, no blood)
     x.putImageData(id,x0,y0)})}
 function kkParts(){const P=[],N=26,z0=-.045,z1=-.37;
   const ys=t=>.036-.07*Math.pow(t,2.2),ye=t=>-.03+.02*t-.02*t*t*t;// spine and edge heights, t 0 at the bolster .. 1 at the point

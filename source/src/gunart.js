@@ -48,13 +48,8 @@ function paintGunAtlas(){const PS=GA.P;
     // sleeve and zombie-arm colours come from ARM_DESIGN (design.js)
     for(const k of ['sl_guard','sl_medic','sl_soldier','sl_hazmat','sl_fmcoat']){const a=ARM_DESIGN[k];sleeve(k,a[0],a.length>2?[a[1],a[2]]:null)}
     patch('skin',(x,y,X,Y)=>{const t=nz(X,Y,14,18);return t>.6?'#d4a684':t<.4?'#b48464':'#c49474'});
-    const zs=(name,base,blot)=>patch(name,(x,y,X,Y)=>{const t=nz(X,Y,15,10),t2=nz(X,Y,16,24);let c=t>.62?dk(base,.25):t<.32?lt(base,.1):base;if(t2>.64)c=mix(c,blot,.5);
-      if(hash2(X,Y,17)<.02)c='#3a0c0a';if(((x*7+y*3)%41===0)&&hash2(x,y,18)<.5)c=dk(base,.45);const v=Math.abs(Math.sin(x*.09+Math.sin(y*.07)*2.5));if(v<.03)c=mix(c,'#3a2a40',.6);
-      // torn skin showing muscle, smeared blood
-      const w=nz(X,Y,46,22);if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55);
-      const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,'#5a0808',clamp((bl-.66)*4,0,.8));return c});
-    for(const k of ['zs_rager','zs_runner','zs_brute','zs_scream','zs_coffin','zs_fireman']){const a=ARM_DESIGN[k];zs(k,a[0],a[1])}
-    patch('claw',(x,y,X,Y)=>{const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=mix(c,'#6a0a08',.7);return c});
+    for(const k of GA_ZARMS){const a=ARM_DESIGN[k];patch(k,(x,y,X,Y)=>gaZArm(a[0],a[1],x,y,X,Y,nz))}
+    patch('claw',(x,y,X,Y)=>gaClaw(x,y,X,Y,nz));
     patch('nail',(x,y)=>mix('#c8bca0','#2a1c14',y/127));
     patch('coffW',(x,y,X,Y)=>{const pl=Math.floor(x/26),g=nz(X,Y,91+pl,14)+Math.sin(y*.35+pl*2.1+nz(X,Y,92,30)*4)*.08;let c=g>.62?'#2e1c10':g<.4?'#4a3020':'#3a2616';if(x%26===0)c='#160c06';if(hash2(X,Y,93)<.01)c='#5a4030';return c});
     patch('coffL',(x,y,X,Y)=>{const g=nz(X,Y,94,12)+Math.sin(y*.5+nz(X,Y,95,24)*5)*.07;let c=g>.6?'#3a1410':g<.4?'#561e16':'#481a12';if(x<3||y<3||x>124||y>124)c='#1a0806';return c});
@@ -79,6 +74,24 @@ function paintGunAtlas(){const PS=GA.P;
   GA.canvas=cv;
   GA.tex=new THREE.CanvasTexture(cv);GA.tex.magFilter=THREE.NearestFilter;GA.tex.minFilter=THREE.NearestMipmapLinearFilter;
   GA.texVM=new THREE.CanvasTexture(cv);GA.texVM.magFilter=THREE.NearestFilter;GA.texVM.minFilter=THREE.LinearFilter;GA.texVM.generateMipmaps=false}
+// zombie arms (first person): mottled skin, bruises, veins (ARM_DESIGN gives skin and blot). GORE.lv 2: torn skin showing muscle and smeared
+// blood; below that the same patches are dark bruises and grime
+const GA_ZARMS=['zs_rager','zs_runner','zs_brute','zs_scream','zs_coffin','zs_fireman'];
+function gaZArm(base,blot,x,y,X,Y,nz){const g=GORE.lv>=2,t=nz(X,Y,15,10),t2=nz(X,Y,16,24);let c=t>.62?dk(base,.25):t<.32?lt(base,.1):base;if(t2>.64)c=mix(c,blot,.5);
+  if(hash2(X,Y,17)<.02)c=g?'#3a0c0a':dk(base,.5);if(((x*7+y*3)%41===0)&&hash2(x,y,18)<.5)c=dk(base,.45);const v=Math.abs(Math.sin(x*.09+Math.sin(y*.07)*2.5));if(v<.03)c=mix(c,'#3a2a40',.6);
+  const w=nz(X,Y,46,22);
+  if(g){if(w>.68){const fib=Math.sin(x*.5+y*.15)*.5+.5;c=mix('#4a0606','#a02a1e',fib);if(w>.75&&hash2(X,Y,47)<.12)c='#d8c8a0'}else if(w>.645)c=dk(c,.55)}
+  else if(w>.68)c=mix(dk(base,.38),'#2e2430',clamp(.3+(w-.68)*2.5,0,.6));else if(w>.645)c=dk(c,.25);
+  const bl=nz(X,Y,48,16);if(bl>.66)c=mix(c,g?'#5a0808':'#2a2420',clamp((bl-.66)*4,0,g?.8:.5));return c}
+// claws: bone yellowing to dark at the root; blood on the tips at GORE.lv 2, dirt below that
+function gaClaw(x,y,X,Y,nz){const t=y/127;let c=mix('#d8d0b0','#3a2a20',Math.pow(t,1.6));if(x%16===0)c=dk(c,.2);if(t<.45&&nz(X,Y,49,12)>.45)c=GORE.lv>=2?mix(c,'#6a0a08',.7):mix(c,'#4a3e32',.45);return c}
+// the gore level changed: repaint those slots in place, with the boot painter's noise (periodic over the atlas width)
+function gaGoreRepaint(){const cv=GA.canvas;if(!cv)return;const x=cv.getContext('2d'),PS=GA.P,nz=(X,Y,s,c)=>{const k=c||16;return fbm(X/k,Y/k,s,2,GA.W/k)};
+  const put=(name,fn)=>{const i=GA.idx[name];if(i==null||i>=GA_SLOTS)return;const x0=(i%8)*PS,y0=Math.floor(i/8)*PS,id=x.getImageData(x0,y0,PS,PS),D=id.data;
+    for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const c=fn(xx,y,x0+xx,y0+y);if(!c)continue;const k=(y*PS+xx)*4,r=rgbOf(c);D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=255}
+    x.putImageData(id,x0,y0)};
+  for(const k of GA_ZARMS){const a=ARM_DESIGN[k];put(k,(xx,y,X,Y)=>gaZArm(a[0],a[1],xx,y,X,Y,nz))}
+  put('claw',(xx,y,X,Y)=>gaClaw(xx,y,X,Y,nz))}
 // part: {c:[x,y,z], s:[w,h,d], m, rx?, ry?, rz?, tag?}
 const GD=560;// pixels per metre inside a patch (view model); world models use fewer
 // part deformations (v6.61): kz [kx front, kx back, ky front, ky back] scales the cross-section along the part's own z (front = -z) about

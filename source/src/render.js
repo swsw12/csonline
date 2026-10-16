@@ -12,7 +12,7 @@ const R={renderer:null,scene:null,cam:null,vmScene:null,vmCam:null,rt:null,post:
     this.vmScene=new THREE.Scene();this.vmCam=new THREE.PerspectiveCamera(56,16/9,.01,10);
     const lin={minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false,stencilBuffer:false,generateMipmaps:false};
     this.bA=new THREE.WebGLRenderTarget(4,4,lin);this.bB=new THREE.WebGLRenderTarget(4,4,lin);this.bC=new THREE.WebGLRenderTarget(4,4,lin);this.bD=new THREE.WebGLRenderTarget(4,4,lin);
-    const PU=this.PU={tDiffuse:{value:null},tBloom:{value:this.bA.texture},tBloom2:{value:this.bC.texture},uBloom:{value:1},uFxaa:{value:1},uRes:{value:new THREE.Vector2(4,4)},uTime:LU.uTime,uNV:{value:0},uDmg:{value:0},uWhite:{value:0},uInfect:{value:0},uFrost:{value:0},uZ:{value:0},uDeath:{value:0},uGamma:{value:1},uBeam:{value:0}};
+    const PU=this.PU={tDiffuse:{value:null},tBloom:{value:this.bA.texture},tBloom2:{value:this.bC.texture},uBloom:{value:1},uFxaa:{value:1},uRes:{value:new THREE.Vector2(4,4)},uTime:LU.uTime,uNV:{value:0},uDmg:{value:0},uWhite:{value:0},uInfect:{value:0},uFrost:{value:0},uZ:{value:0},uDeath:{value:0},uGamma:{value:1},uBeam:{value:0},uGoreK:{value:GORE.lv>=2?1:0}};
     this.postMat=new THREE.ShaderMaterial({uniforms:PU,vertexShader:VS_POST,fragmentShader:FS_POST,depthTest:false,depthWrite:false});
     this.post=new THREE.Scene();const q=new THREE.Mesh(new THREE.PlaneGeometry(2,2),this.postMat);q.frustumCulled=false;this.post.add(q);
     this.mBright=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:null},uTexel:{value:new THREE.Vector2()},uThr:{value:.74}},vertexShader:VS_POST,fragmentShader:FS_BRIGHT,depthTest:false,depthWrite:false});

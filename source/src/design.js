@@ -291,6 +291,7 @@ const ARM_DESIGN={
 //     style: 'cloth' 천(기본)  'skin' 사람 피부  'zskin' 좀비 피부(멍·혈관)  'plate' 단단한 판(헬멧·방탄판)
 //            'rubber' 고무  'boot' 군화  'flat' 무늬 없는 단색  'hair' 머리카락  'flesh' 생살  'meat' 내장  'tumor' 종양
 //     goreM (좀비 공통): bone 뼈, guts 내장, tumor 종양, nail 손톱, flesh 생살
+//     (피 표현이 15세·피 끄기면: rib·vert·guts·stump 부품은 빠지고, 생살·뼈·핏자국 그림은 멍·때·긁힌 자국으로 바뀐다 — models.js goreOp)
 //
 //  ③ decor — 부위 표면에 칠하는 그림.  부위이름:{면:[ 그림, 그림 … ]}
 //     면: front 앞  back 뒤  side 양옆  left / right  top 위  bottom 아래  fb 앞+뒤  all 전부
@@ -446,7 +447,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
   else if(k==='runner'){// 질주체 — flayed and starved: the back skinned down to the spine, a lipless grin, long bone claws
     o={hipY:.97,thigh:.44,legW:.12,legD:.14,shinW:.11,torsoW:.36,torsoD:.2,torsoH:.48,shX:.22,armW:.095,upper:.31,fore:.31,hand:.12,headW:.21,headH:.25,headD:.24,claw:.07,fingL:.6,curl:.3,curlJ:5,nose:false,ears:[0,0]};
     const sk='#8e8c7c';
-    mats=Object.assign({top:{base:'#5a1e1a'},legs:{base:'#3a3a38'},sleeve:{base:sk,style:'zskin',blot:'#4a2a48'},fore:{base:sk,style:'zskin',blot:'#4a2a48'},shin:{base:sk,style:'zskin',blot:'#4a2a48'},skin:{base:sk,style:'zskin',blot:'#4a2a48'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:dk(sk,.25),style:'zskin'},hair:{base:'#141210',style:'hair'},jaw:{base:sk,style:'zskin',blot:'#4a2a48'}},goreM);
+    mats=Object.assign({top:{base:GORE.lv>=2?'#5a1e1a':'#463a34'},legs:{base:'#3a3a38'},sleeve:{base:sk,style:'zskin',blot:'#4a2a48'},fore:{base:sk,style:'zskin',blot:'#4a2a48'},shin:{base:sk,style:'zskin',blot:'#4a2a48'},skin:{base:sk,style:'zskin',blot:'#4a2a48'},hand:{base:dk(sk,.2),style:'zskin',blot:'#5a1010'},boot:{base:dk(sk,.25),style:'zskin'},hair:{base:'#141210',style:'hair'},jaw:{base:sk,style:'zskin',blot:'#4a2a48'}},goreM);
     decor={torso:{front:[['tear',3,4,'#6a5a58'],['ribs',.2,.5,.8,.95,6],['soak',.3,.75,'#4a0606',.8],['veins',4,'#4a3a5a']],back:[['flesh',.04,.04,.96,.98,1.57],['drip',.5,.12,5,.9]],side:[['flesh',0,.3,.6,.9,0],['grime',.4]]},
       head:{front:[['face','runner',{skin:sk,eye:eyeH||'#d8e8ff',tears:1,lipless:1}]],back:[['rect',0,.5,1,1,'#141210'],['flesh',.1,0,.9,.5,0]],top:[['rect',0,0,1,1,'#141210'],['wounds',1,12]],side:[['rect',0,.4,.6,1,'#141210'],['gash',.25,.32,.8,.08,3,.08]],bottom:[['teethrow','bottom',.36]]},
       jaw:{top:[['teethrow','top',.4]],front:[['teethrow','top',.55]],side:[['flesh',0,.2,1,.9,0]],bottom:[['soak',0,1,'#4a0606',.7]]},
@@ -856,7 +857,8 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
     Object.assign(decor,{stumpN:{top:[['flesh',0,0,1,1,.5],['bonep',.36,.36,.64,.64]],fb:[['flesh',0,.2,1,1,0],['drip',.5,.4,3,.9]],side:[['flesh',0,.2,1,1,0]]},
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
       stumpLL:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]},stumpLR:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]}})}
-  H.parts.push(...ex.map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
+  // 15세 / 피 끄기 (GORE.lv < 2): no ribs bursting out, no bare spine, no hanging guts, no stumps (nothing is ever torn off)
+  H.parts.push(...ex.filter(e=>GORE.lv>=2||!/^(rib|vert|guts|stump)/.test(e.n)).map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
   return Object.assign(H,{key:'z_'+(aleph?'aleph':khepri?'khepri':tiamat?tiamat:boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
 
 // ================================================================================================

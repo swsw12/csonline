@@ -220,7 +220,7 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       else if(kind==='hammer'){m.gun.localToWorld(_vv.set(0,-.13,-.81));m.gun.localToWorld(_vw.set(0,.13,-.81));this.trailPush(_vv,_vw)}
       else if(kind==='skull9'){const q=GUNS.skull9.trail;m.gun.localToWorld(_vv.set(q[0],q[1],q[2]));m.gun.localToWorld(_vw.set(q[3],q[4],q[5]));this.trailPush(_vv,_vw)}
       else{const q=GUNS[this.id]&&GUNS[this.id].trail;if(q){m.gun.localToWorld(_vv.set(q[0],q[1],q[2]));m.gun.localToWorld(_vw.set(q[3],q[4],q[5]))}else{m.gun.localToWorld(_vv.set(0,.006,-.1));m.gun.localToWorld(_vw.set(0,.006,-.28))}this.trailPush(_vv,_vw)}}
-    const T=this.trail;T.mat.uniforms.uCol.value.set(kind==='claw'?'#7a0a08':'#e8eef4');T.mat.uniforms.uOp.value=kind==='claw'?.6:.42;this.trailUpdate(dt,.11);
+    const T=this.trail;T.mat.uniforms.uCol.value.set(kind==='claw'?(GORE.lv>=2?'#7a0a08':'#4a3a36'):'#e8eef4');T.mat.uniforms.uOp.value=kind==='claw'?.6:.42;this.trailUpdate(dt,.11);
     // muzzle flash + lights
     this.flashT-=dt;this.flash.visible=this.flashT>0&&this.vis;const mu=this.U.uMuzzle.value;mu.multiplyScalar(Math.exp(-dt*30));
     sampleProbe(a.c.x,a.c.y+1.4,a.c.z,this.U.uProbe.value);this.U.uProbe.value.multiplyScalar(1.15).addScalar(.04);

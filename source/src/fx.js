@@ -54,7 +54,7 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
       for(let i=0;i<P.length;i++){const p=P[i];p.t+=dt;if(p.t>=p.life)continue;
         p.vy-=p.grav*dt;if(p.drag){const k=Math.exp(-p.drag*dt);p.vx*=k;p.vy*=k;p.vz*=k}
         const nx=p.x+p.vx*dt,ny=p.y+p.vy*dt,nz=p.z+p.vz*dt;
-        if(p.col&&p.vy<0){const fl=floorBelow(nx,p.y+.05,nz,.02);if(ny<fl){p.y=fl+.01;if(p.splat){this.decal(nx,fl,nz,0,1,0,p.splat,4+((Math.random()*3)|0),[.6,.05,.04],.92);p.splat=0}p.vy*=-p.col;p.vx*=.6;p.vz*=.6;if(Math.abs(p.vy)<.4){p.vy=0;p.grav=0;p.vx*=.3;p.vz*=.3}p.x=nx;p.z=nz;P[w++]=p;continue}}
+        if(p.col&&p.vy<0){const fl=floorBelow(nx,p.y+.05,nz,.02);if(ny<fl){p.y=fl+.01;if(p.splat){if(GORE.lv>=2)this.decal(nx,fl,nz,0,1,0,p.splat,4+((Math.random()*3)|0),[.6,.05,.04],.92);p.splat=0}p.vy*=-p.col;p.vx*=.6;p.vz*=.6;if(Math.abs(p.vy)<.4){p.vy=0;p.grav=0;p.vx*=.3;p.vz*=.3}p.x=nx;p.z=nz;P[w++]=p;continue}}
         p.x=nx;p.y=ny;p.z=nz;P[w++]=p}
       P.length=w;
       const n=Math.min(P.length,S.n);for(let i=0;i<n;i++){const p=P[i],k=p.t/p.life;S.pos[i*3]=p.x;S.pos[i*3+1]=p.y;S.pos[i*3+2]=p.z;S.sz[i]=lerp(p.s0,p.s1,k);
@@ -105,9 +105,9 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     const m=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex}},LU),vertexShader:`attribute vec4 aC;varying vec2 vUv;varying vec4 vC;varying vec3 vPos;void main(){vUv=uv;vC=aC;vec4 wp=modelMatrix*vec4(position,1.);vPos=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}`,
       fragmentShader:GLSL_DYN+`uniform sampler2D map;varying vec2 vUv;varying vec4 vC;varying vec3 vPos;void main(){vec4 t=texture2D(map,vUv);float a=t.a*vC.a;if(a<.03)discard;vec3 c=t.rgb*vC.rgb*(uAmb*.6+dynLight(vPos,vec3(0.,1.,0.))*.6+.25);gl_FragColor=vec4(applyFog(c,vPos),a);}`,
       transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
-    const mesh=new THREE.Mesh(g,m);mesh.frustumCulled=false;mesh.renderOrder=2;scene.add(mesh);this.dec={n,g,pos,uv,col,i:0}},
+    const mesh=new THREE.Mesh(g,m);mesh.frustumCulled=false;mesh.renderOrder=2;scene.add(mesh);this.dec={n,g,pos,uv,col,i:0,fr:new Uint8Array(n)}},
   // frame: 0..3 holes, 4..7 blood, 8 scorch, 9 frost, 10 spore
-  decal(x,y,z,nx,ny,nz,size,frame,c,a){const D=this.dec;const i=D.i;D.i=(D.i+1)%D.n;
+  decal(x,y,z,nx,ny,nz,size,frame,c,a){const D=this.dec;const i=D.i;D.i=(D.i+1)%D.n;D.fr[i]=frame;
     let ux,uy,uz;if(Math.abs(ny)>.9){ux=1;uy=0;uz=0}else{ux=-nz;uy=0;uz=nx;const l=Math.hypot(ux,uz);ux/=l;uz/=l}
     const vx=ny*uz-nz*uy,vy=nz*ux-nx*uz,vz=nx*uy-ny*ux;const r=Math.random()*TAU,cr=Math.cos(r),sr=Math.sin(r);
     const ax=(ux*cr+vx*sr)*size,ay=(uy*cr+vy*sr)*size,az=(uz*cr+vz*sr)*size,bx=(vx*cr-ux*sr)*size,by=(vy*cr-uy*sr)*size,bz=(vz*cr-uz*sr)*size;
@@ -117,6 +117,8 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     c=c||[1,1,1];for(let k=0;k<4;k++)D.col.set([c[0],c[1],c[2],a==null?1:a],i*16+k*4);
     D.g.attributes.position.needsUpdate=true;D.g.attributes.uv.needsUpdate=true;D.g.attributes.aC.needsUpdate=true},
   clearDecals(){const D=this.dec;D.col.fill(0);D.g.attributes.aC.needsUpdate=true},
+  // only the blood (frames 4..7): the gore level went below 원본
+  clearBlood(){const D=this.dec;if(!D)return;for(let i=0;i<D.n;i++)if(D.fr[i]>=4&&D.fr[i]<=7){D.col.fill(0,i*16,i*16+16);D.fr[i]=0}D.g.attributes.aC.needsUpdate=true},
   // ---- rain: streaks that stop at the first roof/ground below them ----
   initRain(scene){const n=700;const g=new THREE.BufferGeometry();const pos=new Float32Array(n*6),col=new Float32Array(n*6);
     g.setAttribute('position',new THREE.BufferAttribute(pos,3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('color',new THREE.BufferAttribute(col,3));
@@ -166,7 +168,15 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
     for(let i=0;i<(stone?4:soft?3:2);i++)this.spawn({x,y,z,vx:nx*rr(1,3.5)+rr(-1.2,1.2),vy:ny*rr(1,3)+rr(.5,2.5),vz:nz*rr(1,3.5)+rr(-1.2,1.2),life:rr(.4,.8),s0:.025,s1:.025,r:dc[0]*.75,g:dc[1]*.75,b:dc[2]*.75,f:7,grav:12,col:.3});
     if(ny>.6&&this.rain&&this.rain.on&&!metal){for(let i=0;i<6;i++){const a=Math.random()*TAU,sp=rr(.6,1.8);this.spawn({x,y:y+.02,z,vx:Math.cos(a)*sp,vy:rr(1.6,3),vz:Math.sin(a)*sp,life:rr(.3,.5),s0:.03,s1:.02,r:.62,g:.68,b:.78,a:.8,f:13,grav:10,lit:1})}
       this.spawn({x,y:y+.03,z,life:.25,s0:.06,s1:.22,r:.6,g:.66,b:.75,a:.6,f:12,lit:1})}},
-  blood(x,y,z,dx,dy,dz,amt,green){const c=green?[.32,.42,.1]:[.42,.03,.02];amt=amt||1;
+  blood(x,y,z,dx,dy,dz,amt,green){amt=amt||1;const lv=GORE.lv;
+    // 피 끄기: a puff of grey dust and a few grains, no blood
+    if(lv<1){for(let i=0;i<2+amt*2;i++)this.spawn({x,y,z,vx:dx*rr(.4,1.6)+rr(-.6,.6),vy:rr(-.1,.8),vz:dz*rr(.4,1.6)+rr(-.6,.6),life:rr(.25,.5),s0:.06,s1:rr(.2,.32),r:.38,g:.37,b:.35,a:.5,f:Math.random()<.5?2:6,drag:4,lit:1});
+      for(let i=0;i<amt*2;i++)this.spawn({x,y,z,vx:dx*rr(.8,2.4)+rr(-1,1),vy:rr(.2,1.8),vz:dz*rr(.8,2.4)+rr(-1,1),life:rr(.3,.6),s0:.025,s1:.02,r:.3,g:.29,b:.28,f:7,grav:11,col:.2});return}
+    // 15세: fewer, smaller, darker drops and a thin spray; nothing lands as a splat, no scraps, no stain on the wall behind
+    if(lv<2){const c=green?[.26,.34,.1]:[.3,.05,.04];
+      for(let i=0;i<3*amt;i++)this.spawn({x,y,z,vx:dx*rr(.6,2.4)+rr(-.9,.9),vy:rr(-.2,1.6),vz:dz*rr(.6,2.4)+rr(-.9,.9),life:rr(.3,.6),s0:rr(.03,.05),s1:.025,r:c[0],g:c[1],b:c[2],f:4,grav:9.8});
+      for(let i=0;i<2*amt;i++)this.spawn({x,y,z,vx:dx*rr(.3,1.2)+rr(-.4,.4),vy:rr(-.2,.5),vz:dz*rr(.3,1.2)+rr(-.4,.4),life:rr(.2,.45),s0:.1,s1:.3,r:c[0]*1.2,g:c[1]*1.1,b:c[2]*1.1,a:.5,f:5,drag:4,lit:1});return}
+    const c=green?[.32,.42,.1]:[.42,.03,.02];
     // droplets (some land as small splats), a spray of mist, and with heavier hits chunks of flesh
     for(let i=0;i<5*amt;i++)this.spawn({x,y,z,vx:dx*rr(.8,3.2)+rr(-1.2,1.2),vy:rr(-.3,2.2),vz:dz*rr(.8,3.2)+rr(-1.2,1.2),life:rr(.45,.9),s0:rr(.04,.07),s1:.03,r:c[0],g:c[1],b:c[2],f:4,grav:9.8,col:.05,splat:Math.random()<.3?rr(.05,.1):0});
     for(let i=0;i<3*amt;i++)this.spawn({x,y,z,vx:dx*rr(.3,1.4)+rr(-.5,.5),vy:rr(-.2,.6),vz:dz*rr(.3,1.4)+rr(-.5,.5),life:rr(.3,.65),s0:.12,s1:.5,r:c[0]*1.3,g:c[1]*1.2,b:c[2]*1.2,a:.75,f:5,drag:4,lit:1});
@@ -201,7 +211,7 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
       if(e.grav){const fl=floorBelow(e.x,e.y+.05,e.z,.02);if(ny<fl){e.y=fl+.02;e.vy*=-.25;e.vx*=.5;e.vz*=.5}else e.y=ny}else e.y=ny;e.x+=e.vx*dt;e.z+=e.vz*dt;
       e.acc+=dt*e.rate;while(e.acc>=1){e.acc-=1;e.fn(e,1-e.t/e.life)}E[w++]=e}E.length=w},
   // a head (or body) bursting: flesh chunks that splatter where they land, bone shards, a red mist, a big splash on the wall behind
-  gib(x,y,z,dx,dy,dz,big){const n=big?1.6:1;
+  gib(x,y,z,dx,dy,dz,big){if(GORE.lv<2)return;const n=big?1.6:1;
     for(let i=0;i<14*n;i++){const a=Math.random()*TAU,s=rr(1.5,5);this.spawn({x,y,z,vx:Math.cos(a)*s+dx*2.5,vy:rr(1,4.5),vz:Math.sin(a)*s+dz*2.5,life:rr(.7,1.4),s0:rr(.05,.11),s1:.06,r:rr(.32,.55),g:.04,b:.03,f:7,grav:12,col:.3,splat:rr(.1,.24)})}
     for(let i=0;i<7*n;i++){const a=Math.random()*TAU,s=rr(2,6);this.spawn({x,y,z,vx:Math.cos(a)*s+dx*2,vy:rr(1.5,5),vz:Math.sin(a)*s+dz*2,life:rr(.6,1.1),s0:.05,s1:.04,r:.85,g:.8,b:.68,f:10,grav:13,col:.3})}
     for(let i=0;i<12*n;i++)this.spawn({x:x+rr(-.1,.1),y:y+rr(-.1,.1),z:z+rr(-.1,.1),vx:dx*rr(.5,2)+rr(-1.2,1.2),vy:rr(-.2,1.5),vz:dz*rr(.5,2)+rr(-1.2,1.2),life:rr(.5,1.1),s0:.2,s1:rr(.7,1.2),r:.5,g:.03,b:.03,a:.7,f:5,drag:3,lit:1});
@@ -211,7 +221,7 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
   // blood pooling under a body
   // ---- torn-off limbs: the rig's own mesh drawn with only the severed bones, thrown as a tumbling rigid body ----
   limbs:[],
-  limb(a,key,dir,speed){const ch=a.ch,S=SEVER[key];if(!ch||!S||(ch.hide>>S.root&1))return null;
+  limb(a,key,dir,speed){if(GORE.lv<2)return null;const ch=a.ch,S=SEVER[key];if(!ch||!S||(ch.hide>>S.root&1))return null;
     const P=ch.A.piv,def=ch.A.def,W=ch.grp.matrixWorld;const com=key==='head'?def.headC:P[S.bones[1]];
     const R0=new THREE.Matrix4().multiplyMatrices(W,ch.M[S.root]).multiply(_gbT.makeTranslation(com[0]-P[S.root][0],com[1]-P[S.root][1],com[2]-P[S.root][2]));
     const inv=R0.clone().invert(),uB=[];
@@ -248,11 +258,24 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
         if(L.bleed>0){L.bleed-=dt;if(Math.random()<dt*30)this.spawn({x:p.x,y:p.y,z:p.z,vx:v.x*.2+rr(-.3,.3),vy:rr(-.2,.6),vz:v.z*.2+rr(-.3,.3),life:rr(.4,.8),s0:.04,s1:.025,r:.42,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:Math.random()<.3?rr(.05,.1):0})}}
       if((L.probeT-=dt)<=0){L.probeT=.3;sampleProbe(L.pos.x,L.pos.y+.2,L.pos.z,L.mat.uniforms.uProbe.value);L.mat.uniforms.uProbe.value.multiplyScalar(1.25)}
       L.mesh.matrix.compose(L.pos,L.q,_gb1);L.mesh.matrixWorldNeedsUpdate=true}},
-  pool(x,y,z,s){const fl=floorBelow(x,y+.6,z,.05);if(fl<-50||y-fl>1.2)return;this.decal(x,fl,z,0,1,0,s||rr(.7,1.05),4+((Math.random()*3)|0),[.45,.03,.025],.93)},
+  pool(x,y,z,s){if(GORE.lv<2)return;const fl=floorBelow(x,y+.6,z,.05);if(fl<-50||y-fl>1.2)return;this.decal(x,fl,z,0,1,0,s||rr(.7,1.05),4+((Math.random()*3)|0),[.45,.03,.025],.93)},
   spore(x,y,z){for(let i=0;i<30;i++){const a=Math.random()*TAU,s=rr(1,6);this.spawn({x,y:y+.3,z,vx:Math.cos(a)*s,vy:rr(0,3),vz:Math.sin(a)*s,life:rr(.8,1.6),s0:.4,s1:1.6,r:.45,g:.55,b:.2,a:.55,f:3,drag:2})}
     this.spawn({x,y:y+.3,z,life:.3,s0:1,s1:6,r:.6,g:.8,b:.3,f:14,add:1});DL.add(x,y+.8,z,'#a0ff60',9,2,.5)},
   shell(x,y,z,dx,dz,big){this.spawn({x,y,z,vx:dx*rr(1.2,2)+rr(-.3,.3),vy:rr(1.4,2.4),vz:dz*rr(1.2,2)+rr(-.3,.3),life:1.4,s0:big?.035:.025,s1:big?.035:.025,r:.75,g:.6,b:.25,f:7,grav:11,col:.35})},
 };
+// ---- the gore level changed (Options, GORE.set): clear what the old level left lying about, then repaint what shows it ----
+function goreApply(was){const lv=GORE.lv;if(R.PU&&R.PU.uGoreK)R.PU.uGoreK.value=lv>=2?1:0;
+  if(lv<2&&FX.dec){for(const L of FX.limbs)FX.killLimb(L);FX.limbs.length=0;FX.clearBlood();
+    // severed bodies are whole again (their stumps were never painted at this level)
+    if(typeof G!=='undefined'&&G.actors)for(const a of G.actors){a.spurts=null;a.poolT=0;for(const k in a.rigs||{}){const ch=a.rigs[k];if(ch&&ch.hide!==STUMPS)ch.hide=STUMPS}}}
+  if((was>=2)!==(lv>=2))goreRepaint()}
+// zombie skins (rebuilt from their designs, one a tick so the frame does not hitch), the zombie arms and claws, the knives' stained steel
+function goreRepaint(){const gen=++GORE.gen;
+  if(GA.canvas){gaGoreRepaint();if(typeof paintKkAtlas==='function')paintKkAtlas();if(typeof paintSkAtlas==='function')paintSkAtlas();GA.tex.needsUpdate=true;GA.texVM.needsUpdate=true;if(typeof ICONS!=='undefined')for(const k in ICONS)delete ICONS[k]}
+  // the skins on screen first (the bodies around the player), then the rest
+  const use=new Set();if(typeof G!=='undefined'&&G.actors)for(const a of G.actors)if(a.ch)use.add(a.ch.key);
+  const keys=Object.keys(CHAR_ASSETS).filter(k=>k[0]==='z').sort((a,b)=>(use.has(b)?1:0)-(use.has(a)?1:0));let i=0;
+  const step=()=>{if(gen!==GORE.gen||i>=keys.length)return;try{charRebuild(keys[i])}catch(e){console.warn('gore repaint',keys[i],e)}i++;setTimeout(step,0)};step()}
 function texDecals(){return paint(128,128,P=>{
   for(let i=0;i<128*128*4;i+=4)P.D[i+3]=0;
   const F=(f,fn)=>{const ox=(f%4)*32,oy=Math.floor(f/4)*32;for(let y=0;y<32;y++)for(let x=0;x<32;x++){const r=fn((x-15.5)/2,(y-15.5)/2,x/2,y/2);if(!r)continue;const i=((oy+y)*128+ox+x)*4;P.D[i]=r[0];P.D[i+1]=r[1];P.D[i+2]=r[2];P.D[i+3]=r[3]}};

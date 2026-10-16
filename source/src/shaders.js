@@ -103,7 +103,7 @@ function matPoints(tex,additive){return new THREE.ShaderMaterial({uniforms:{map:
   transparent:true,depthWrite:false,blending:additive?THREE.CustomBlending:THREE.NormalBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.OneFactor,blendDst:additive?THREE.OneFactor:THREE.OneMinusSrcAlphaFactor})}
 // ---------- post: low-res buffer -> grade, night vision, damage/frost/infection overlays, dither -> screen ----------
 const VS_POST=`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
-const FS_POST=`uniform sampler2D tDiffuse;uniform sampler2D tBloom;uniform sampler2D tBloom2;uniform float uBloom;uniform float uFxaa;uniform vec2 uRes;uniform float uTime;uniform float uNV;uniform float uDmg;uniform float uWhite;uniform float uInfect;uniform float uFrost;uniform float uZ;uniform float uDeath;uniform float uGamma;uniform float uBeam;varying vec2 vUv;
+const FS_POST=`uniform sampler2D tDiffuse;uniform sampler2D tBloom;uniform sampler2D tBloom2;uniform float uBloom;uniform float uFxaa;uniform vec2 uRes;uniform float uTime;uniform float uNV;uniform float uDmg;uniform float uWhite;uniform float uInfect;uniform float uFrost;uniform float uZ;uniform float uDeath;uniform float uGamma;uniform float uBeam;uniform float uGoreK;varying vec2 vUv;
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 const vec3 LW=vec3(.299,.587,.114);
 // FXAA (Lottes, console variant): only used when the scene buffer is close to screen resolution
@@ -129,14 +129,15 @@ void main(){vec2 uv=vUv;vec3 c=uFxaa>.5?fxaa(uv,1./uRes):texture2D(tDiffuse,uv).
   vec2 q=uv-.5;float r=dot(q,q);c*=1.-r*.9;
   c=mix(c,vec3(.55,0.,0.),uDmg*smoothstep(.08,.5,r));
   c=mix(c,vec3(.75,.9,1.),uFrost*smoothstep(.05,.45,r)*.8);
-  // infection: a red flash, then the colour drains to blood red while dark veins creep in from the edges, pulsing with the heartbeat
-  if(uInfect>0.){float k=uInfect;vec2 p=q*vec2(uRes.x/uRes.y,1.);float an=atan(p.y,p.x),rd=length(p);
+  // infection: a red flash, then the colour drains to blood red while dark veins creep in from the edges, pulsing with the heartbeat.
+  // uGoreK 0 (15세 / 피 끄기): no veins; the drain goes to a muted red and the edge to a dark red alarm instead of blood
+  if(uInfect>0.){float k=uInfect,g=uGoreK;vec2 p=q*vec2(uRes.x/uRes.y,1.);float an=atan(p.y,p.x),rd=length(p);
     float v1=sin(an*9.+sin(an*23.+rd*14.)*1.4+rd*7.)*.5+.5,v2=sin(an*17.-rd*22.+sin(an*5.+rd*9.)*3.)*.5+.5;
     float vein=smoothstep(.9,.995,v1)+smoothstep(.93,.998,v2)*.75;float reach=smoothstep(.95-.55*k,1.05-.3*k,rd*1.35);float beat=.7+.3*sin(uTime*8.5);
-    c=mix(c,vec3(dot(c,LW))*vec3(1.15,.32,.28),.65*k);
-    c=mix(c,vec3(.22,0.,.02),clamp(vein*reach,0.,1.)*k*beat);
-    c=mix(c,vec3(.42,.01,.01),smoothstep(.12,.55,r)*.75*k*beat);
-    c=mix(c,vec3(.65,.06,.03)+c*.3,smoothstep(.8,1.,k)*.85);}
+    c=mix(c,vec3(dot(c,LW))*mix(vec3(1.08,.5,.45),vec3(1.15,.32,.28),g),mix(.55,.65,g)*k);
+    c=mix(c,vec3(.22,0.,.02),clamp(vein*reach,0.,1.)*k*beat*g);
+    c=mix(c,mix(vec3(.24,.04,.05),vec3(.42,.01,.01),g),smoothstep(.12,.55,r)*mix(.65,.75,g)*k*beat);
+    c=mix(c,mix(vec3(.5,.12,.08),vec3(.65,.06,.03),g)+c*.3,smoothstep(.8,1.,k)*mix(.7,.85,g));}
   c=mix(c,vec3(1.),uWhite);
   c*=1.-uDeath*.75;
   c+=(h(uv*uRes+fract(uTime)*7.)-.5)/80.;
