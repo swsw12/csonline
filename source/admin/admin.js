@@ -75,7 +75,7 @@ const ST={me:null,r:{v:'dash'},dash:null,dashT:0,clkT:0,
   users:{q:'',sort:'new',rows:[],total:0,loaded:false,busy:false},user:null,utab:'coin',
   prices:null,pf:'all',pq:'',cfg:null,cfgDraft:{},missions:null,mNew:false,notices:null,nEdit:null,nLevel:'info',
   logs:{rows:[],target:null,done:false,busy:false},
-  sus:{kind:'cap',data:{}},mails:null,coupons:null,cpUses:{},staff:null,
+  sus:{kind:'cap',data:{}},errs:{data:null,open:null},mails:null,coupons:null,cpUses:{},staff:null,
   md:{to_all:true,for_new:false,who:'',title:'',body:'',rw:{guns:[]},days:14},cd:{code:'',rw:{guns:[]},max:'',starts:'',ends:'',note:''}};
 const isOwner=()=>!!(ST.me&&ST.me.role==='owner');
 const VIEWS={
@@ -83,6 +83,7 @@ const VIEWS={
   players:{t:'플레이어',ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.5a3.2 3.2 0 110 6.4 3.2 3.2 0 010-6.4zM2 14.5c0-3 2.7-5 6-5s6 2 6 5V15H2z"/></svg>'},
   settings:{t:'게임 설정',own:1,ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 3h7v1.6H2zm10 0h2v1.6h-2zM9.5 1.8h2v4h-2zM2 7.2h2v1.6H2zm5 0h7v1.6H7zM4.5 6h2v4h-2zM2 11.4h5V13H2zm8 0h4V13h-4zM7.5 10.2h2v4h-2z"/></svg>'},
   suspects:{t:'의심 유저',ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.5 1a5.5 5.5 0 014.4 8.8l4 4-1.2 1.2-4-4A5.5 5.5 0 116.5 1zm0 1.7a3.8 3.8 0 100 7.6 3.8 3.8 0 000-7.6zM5.8 4h1.4v2.6H5.8zm0 3.4h1.4v1.3H5.8z"/></svg>'},
+  errors:{t:'오류 기록',ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 1l7.5 13H.5zm0 3.2L3.3 12.4h9.4zM7.2 6.5h1.6v3.4H7.2zm0 4.3h1.6v1.4H7.2z"/></svg>'},
   mail:{t:'우편 · 쿠폰',own:1,ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1 3h14v10H1zm2.2 1.6L8 8.1l4.8-3.5zM2.6 6v5.4h10.8V6L8 9.9z"/></svg>'},
   notices:{t:'공지',own:1,ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 6h3l6-3.5v11L5 10H4l1 4H3l-1-4zm11-.5h1.5v5H13z"/></svg>'},
   staff:{t:'운영진',own:1,ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M5.5 2a2.6 2.6 0 110 5.2 2.6 2.6 0 010-5.2zM1 13.5c.3-2.6 2.2-4.2 4.5-4.2s4.2 1.6 4.5 4.2zM11.5 3a2.2 2.2 0 110 4.4 2.2 2.2 0 010-4.4zm-.2 5.3c2 0 3.5 1.4 3.7 3.6h-3.6a5.8 5.8 0 00-1.6-3.4z"/></svg>'},
@@ -138,6 +139,7 @@ async function route(){if(!$('main'))return;const r=parse(),was=ST.r||{};ST.r=r;
   if(VIEWS[r.v].own&&!isOwner()){$('main').innerHTML=head(VIEWS[r.v].t)+'<div class="panel"><div class="empty">주인 계정만 쓸 수 있는 메뉴예요.</div></div>';return}
   if(r.v==='dash')return vDash();
   if(r.v==='suspects')return vSuspects(r.a||ST.sus.kind);
+  if(r.v==='errors')return vErrors();
   if(r.v==='mail')return vMail(r.a,r.b);
   if(r.v==='staff')return vStaff();
   if(r.v==='players'){if(was.v!=='players'||!$('plist'))await vPlayers();if(r.a)vPlayer(r.a);return}
@@ -364,7 +366,7 @@ function renderNList(){const B=$('nList');if(!B)return;const L=ST.notices||[];
     :'<div class="empty">아직 올린 공지가 없어요. 왼쪽에서 첫 공지를 써 보세요.</div>'}`}
 
 // ---------- 기록 (the admin log) ----------
-const ACT={mail_send:'우편 보냄',mail_on:'우편 켬',mail_off:'우편 끔',coupon_add:'쿠폰 만듦',coupon_edit:'쿠폰 고침',room_close:'방 내림',staff_add:'부운영자 추가',staff_remove:'부운영자 해제',grant:'지급',gun_give:'무기 지급',gun_take:'무기 회수',rename:'닉네임 변경',ban:'이용 정지',unban:'정지 해제',price:'가격 변경',price_reset:'가격 되돌림',config:'설정 변경',mission:'미션 저장',notice_add:'공지 올림',notice_edit:'공지 고침',notice_delete:'공지 삭제'};
+const ACT={mail_send:'우편 보냄',mail_on:'우편 켬',mail_off:'우편 끔',coupon_add:'쿠폰 만듦',coupon_edit:'쿠폰 고침',room_close:'방 내림',staff_add:'부운영자 추가',staff_remove:'부운영자 해제',grant:'지급',gun_give:'무기 지급',gun_take:'무기 회수',rename:'닉네임 변경',ban:'이용 정지',unban:'정지 해제',price:'가격 변경',price_reset:'가격 되돌림',config:'설정 변경',mission:'미션 저장',notice_add:'공지 올림',notice_edit:'공지 고침',notice_delete:'공지 삭제',err_clear:'오류 기록 지움'};
 const CFGL=k=>{for(const g of CFG_G)for(const f of g[1])if(f[0]===k)return f[1];return k};
 const short=v=>{const s=typeof v==='string'?v:JSON.stringify(v);return s.length>60?s.slice(0,57)+'…':s};
 function logWhat(l){const d=l.detail||{};let a=ACT[l.action]||l.action,x='';
@@ -380,6 +382,7 @@ function logWhat(l){const d=l.detail||{};let a=ACT[l.action]||l.action,x='';
   else if(l.action==='mail_on'||l.action==='mail_off')x=d.title||'';
   else if(l.action==='coupon_add')x=`${d.code} — ${rwText(d.rewards)}${d.max_uses?', '+N(d.max_uses)+'번':''}`;
   else if(l.action==='coupon_edit')x=`${d.code}${d.active===false?' (끔)':''}`;
+  else if(l.action==='err_clear')x=d.fp?`한 가지 (${N(d.n)}개)`:`전부 (${N(d.n)}가지)`;
   else if(l.action==='room_close')x=`${d.code} (${d.host_name||''}) ${d.minutes>=60?Math.round(d.minutes/60)+'시간':d.minutes+'분'}`;
   return `<b style="font-weight:600">${esc(a)}</b>${x?` <span class="dim">${esc(x)}</span>`:''}`}
 async function vLogs(target){const M=$('main'),G=ST.logs;if(G.target!==target){G.rows=[];G.done=false;G.target=target}
@@ -392,6 +395,22 @@ function renderLogs(){const B=$('logB'),G=ST.logs;if(!B)return;if(!G.rows.length
   B.innerHTML=`${G.target?`<h2><span>${esc(who||'이 플레이어')}에게 한 일</span></h2>`:''}<div class="tw"><table class="tbl"><thead><tr><th>시각</th><th>관리자</th><th>대상</th><th>작업</th><th class="hm">사유</th></tr></thead><tbody>
     ${G.rows.map(l=>`<tr><td class="mute" style="white-space:nowrap">${esc(dt(l.at))}</td><td style="white-space:nowrap">${esc(l.by||'-')}</td><td style="white-space:nowrap">${l.target?`<a href="#/players/${esc(l.target)}">${esc(l.target_name||'(지워진 계정)')}</a>`:`<span class="mute">${/^mail_/.test(l.action)?'우편':/^coupon_/.test(l.action)?'쿠폰':/^notice_/.test(l.action)?'공지':'게임 설정'}</span>`}</td><td>${logWhat(l)}</td><td class="hm">${esc(l.reason||'')}</td></tr>`).join('')}
     </tbody></table></div><div class="more"><span>${N(G.rows.length)}개</span>${G.done?'':'<button class="btn sm" data-a="morelogs">더 보기</button>'}</div>`}
+
+// ---------- 오류 기록 (staff too; the owner may clear all) ----------
+const ESRC={window:'잡히지 않은 오류',promise:'처리 안 된 promise',frame:'게임 화면 갱신',boot:'게임 시작',log:'게임이 잡은 오류'};
+async function vErrors(){const M=$('main');
+  M.innerHTML=head('오류 기록','플레이어 화면에서 난 오류예요. 같은 오류는 한 줄로 모여 횟수만 늘어요. 플레이어 정보(닉네임 · 계정)는 들어 있지 않아요.',
+    '<button class="btn" data-a="reerrs">새로 고침</button>'+(isOwner()?'<button class="btn kill" data-a="errclear">전부 지우기</button>':''))+`<div class="panel" id="errB">${ST.errs.data?'':'<div class="empty">불러오는 중…</div>'}</div>`;
+  if(ST.errs.data)renderErrs();
+  try{ST.errs.data=await API.rpc('qz_admin_errors',{p_limit:200});if(parse().v==='errors')renderErrs()}catch(e){if($('errB'))$('errB').innerHTML=errBox(e,'reerrs')}}
+function renderErrs(){const B=$('errB');if(!B)return;const D=ST.errs.data||{},L=D.rows||[];
+  if(!L.length){B.innerHTML='<div class="empty">들어온 오류가 없어요.</div>';return}
+  const ctxT=c=>c&&typeof c==='object'?Object.entries(c).filter(([k,v])=>v!=null&&v!=='').map(([k,v])=>`${k} ${v}`).join(' · '):'-';
+  B.innerHTML=`<div class="more" style="border-top:0;border-bottom:1px solid var(--line)"><span>${N(D.kinds)}가지 · 모두 ${N(D.reports)}번 · 오늘 들어온 것 ${N(D.today)}가지</span></div>
+    <div class="tw"><table class="tbl"><thead><tr><th>마지막</th><th class="num">횟수</th><th class="hm">버전</th><th class="hm">어디서</th><th>내용</th><th></th></tr></thead><tbody>
+    ${L.map(e=>`<tr class="click" data-a="errx" data-v="${esc(e.fp)}" tabindex="0" aria-expanded="${ST.errs.open===e.fp}"><td class="mute" style="white-space:nowrap">${esc(ago(e.last_at))}</td><td class="num">${N(e.n)}</td><td class="hm"><code>${esc(e.ver||'-')}</code></td><td class="hm" style="white-space:nowrap">${esc(ESRC[e.src]||e.src||'-')}</td><td style="word-break:break-all">${esc(e.msg)}</td><td><button class="btn sm ghost" data-a="errdel" data-v="${esc(e.fp)}">지우기</button></td></tr>
+      ${ST.errs.open===e.fp?`<tr class="errd"><td colspan="6"><div class="mute" style="font-size:12px;margin-bottom:6px">처음 ${esc(dt(e.first_at))} · 마지막 ${esc(dt(e.last_at))} · ${esc(ctxT(e.ctx))}</div><pre>${esc(e.stack||'(스택 없음)')}</pre><div class="mute" style="font-size:12px;margin-top:6px;word-break:break-all">${esc(e.ua||'')}</div></td></tr>`:''}`).join('')}
+    </tbody></table></div>`}
 
 // ---------- reward bundles (mail and coupons): coins and the rest, and up to 10 guns ----------
 const RWK=[['coins','코인',10000000],['frags','해독 조각',100000],['tfrags','초월 조각',10000],['tickets','근하신년 해독기',1000],['season_tickets','시즌 해독기',1000]];
@@ -458,22 +477,27 @@ function couponListHtml(){const L=ST.coupons||[];if(!L.length)return '<div class
       ${U?`<div class="m" style="grid-column:1/-1">${U.length?U.map(x=>`<a href="#/players/${esc(x.id)}">${esc(x.nickname)}</a>`).join(', '):'아직 쓴 사람이 없어요.'}</div>`:''}</div>`}).join('')}</div>`}
 
 // ---------- 의심 유저 (staff too) ----------
-const SUS=[['cap','보상 상한','최근 14일 동안 판 · 라운드 보상이 하루 상한(20,000)에 닿은 날이 많은 계정이에요.'],['kills','한 판 처치','최근 14일 동안 한 판에 처치가 가장 많았던 판이에요.'],
+const SUS=[['cut','잘린 기록','최근 14일 동안 판 · 라운드 결과로 플레이 시간에 비해 너무 큰 숫자(처치 · 감염 · 점수 · 하루 경험치)를 보내서 서버가 잘라낸 계정이에요. 보낸 값 → 남긴 값.'],
+  ['score','한 판 점수','최근 14일 동안 한 판 점수(보낸 그대로)가 가장 높았던 판이에요. 지난 판 보상 뒤 지난 시간도 같이 봐 주세요.'],['cap','보상 상한','최근 14일 동안 판 · 라운드 보상이 하루 상한(20,000)에 닿은 날이 많은 계정이에요.'],['kills','한 판 처치','최근 14일 동안 한 판에 처치가 가장 많았던 판이에요.'],
   ['damage','한 라운드 피해량','최근 14일 동안 한 라운드에 피해량이 가장 컸던 라운드예요.'],['rate','시간당 코인','최근 14일 동안 판 플레이 1시간에 번 코인이에요 (1시간 넘게 플레이한 계정만).'],
   ['refs','초대 링크','최근 30일 동안 다른 계정을 많이 데려온 플레이어예요. 데려온 계정이 판을 거의 안 했다면 부계정일 수 있어요.']];
-async function vSuspects(kind){if(!SUS.some(x=>x[0]===kind))kind='cap';ST.sus.kind=kind;const M=$('main'),S=SUS.find(x=>x[0]===kind);
+async function vSuspects(kind){if(!SUS.some(x=>x[0]===kind))kind='cut';ST.sus.kind=kind;const M=$('main'),S=SUS.find(x=>x[0]===kind);
   M.innerHTML=head('의심 유저','수치가 튀는 계정을 모아 봐요. 여기 뜬다고 모두 부정은 아니니까 기록을 열어 보고 판단해 주세요.')+
     `<div class="sub">${SUS.map(([k,t])=>`<a class="chip${k===kind?' on':''}" href="#/suspects/${k}"${k===kind?' aria-current="page"':''}>${t}</a>`).join('')}</div><p class="mute" style="font-size:13px;margin:-4px 0 12px">${S[2]}</p>
     <div class="panel" id="susB">${ST.sus.data[kind]?'':'<div class="empty">불러오는 중…</div>'}</div>`;
   if(ST.sus.data[kind])renderSus(kind);
   try{const r=await API.rpc('qz_admin_suspects',{p_kind:kind});ST.sus.data[kind]=r;if(parse().v==='suspects'&&ST.sus.kind===kind)renderSus(kind)}catch(e){if($('susB'))$('susB').innerHTML=errBox(e,'resus')}}
 function renderSus(kind){const B=$('susB');if(!B)return;const r=ST.sus.data[kind]||{},L=r.rows||[];if(!L.length){B.innerHTML='<div class="empty">걸리는 계정이 없어요.</div>';return}
-  const cols={cap:[['상한 닿은 날','num',x=>N(x.days)+'일'],['14일 보상','num',x=>N(x.earned)],['하루 최고','num hm',x=>N(x.best)]],
+  const CUTN={kills:'처치',infects:'감염',score:'점수',day_kills:'하루 처치',day_infects:'하루 감염',day_xp:'하루 경험치'};
+  const cutTxt=c=>Object.entries(c||{}).map(([k,v])=>`${CUTN[k]||k} ${N(v[0])} → ${N(v[1])}`).join(', ')||'-';
+  const cols={cut:[['잘린 횟수','num',x=>N(x.n)+'번'],['마지막','',x=>esc(dt(x.at))],['마지막에 잘린 것','hm',x=>esc(cutTxt(x.cut))]],
+    score:[['시각','',x=>esc(dt(x.at))],['모드','hm',x=>esc(MODE[x.mode]||x.mode||'-')],['점수','num',x=>N(x.score)+(x.cut?' <span class="tag ban">잘림</span>':'')],['처치','num hm',x=>N(x.kills)],['피해량','num hm',x=>N(x.damage)],['지난 판 뒤','num hm',x=>x.mins==null?'-':N(x.mins)+'분']],
+    cap:[['상한 닿은 날','num',x=>N(x.days)+'일'],['14일 보상','num',x=>N(x.earned)],['하루 최고','num hm',x=>N(x.best)]],
     kills:[['시각','',x=>esc(dt(x.at))],['모드','hm',x=>esc(MODE[x.mode]||x.mode||'-')],['처치','num',x=>N(x.kills)],['피해량','num hm',x=>N(x.damage)],['라운드','num hm',x=>N(x.rounds)],['보상','num hm',x=>N(x.coins)]],
     damage:[['시각','',x=>esc(dt(x.at))],['모드','hm',x=>esc(MODE[x.mode]||x.mode||'-')],['피해량','num',x=>N(x.damage)],['처치','num',x=>N(x.kills)],['라운드','num hm',x=>N(x.rounds)]],
     rate:[['시간당 코인','num',x=>N(x.rate)],['14일 보상','num',x=>N(x.earned)],['판 플레이','num hm',x=>dur(x.play)]],
     refs:[['데려온 계정','num',x=>N(x.n)+'명'],[`${r.ref_matches||3}판 이하`,'num',x=>N(x.thin)+'명'],['보상 받은 수','num hm',x=>N(x.paid)+'명']]}[kind]||[];
-  B.innerHTML=`${r.avg!=null?`<div class="more" style="border-top:0;border-bottom:1px solid var(--line)"><span>최근 14일 평균 ${kind==='kills'?'처치':'피해량'} ${N(r.avg)} (${N(r.n)}${kind==='kills'?'판':'라운드'})</span></div>`:''}
+  B.innerHTML=`${r.avg!=null?`<div class="more" style="border-top:0;border-bottom:1px solid var(--line)"><span>최근 14일 평균 ${kind==='kills'?'처치':kind==='score'?'점수':'피해량'} ${N(r.avg)} (${N(r.n)}${kind==='damage'?'라운드':'판'})</span></div>`:''}
     <div class="tw"><table class="tbl"><thead><tr><th>플레이어</th><th class="hm">친구 코드</th>${cols.map(([t,c])=>`<th class="${c}">${t}</th>`).join('')}</tr></thead><tbody>
     ${L.map(x=>`<tr class="click" data-a="user" data-v="${esc(x.id)}" tabindex="0"><td><div class="nick"><b>${esc(x.nickname)}</b>${x.banned?'<span class="tag ban">정지</span>':''}</div></td><td class="hm"><code>${esc(x.fcode||'')}</code></td>${cols.map(([t,c,f])=>`<td class="${c}">${f(x)}</td>`).join('')}</tr>`).join('')}
     </tbody></table></div>`}
@@ -530,6 +554,12 @@ async function onClick2(t,a,v,e){
     try{ST.staff=await API.rpc('qz_admin_staff_remove',{p_id:v});renderStaff();toast('부운영자에서 뺐어요','ok')}catch(x){toast(errText(x),'bad')}return}
   case 'remail':{const r=parse();vMail(r.a,r.b);return}
   case 'resus':vSuspects(ST.sus.kind);return;
+  case 'reerrs':vErrors();return;
+  case 'errx':{ST.errs.open=ST.errs.open===v?null:v;renderErrs();return}
+  case 'errdel':{const e=((ST.errs.data||{}).rows||[]).find(x=>x.fp===v);if(!e)return;
+    try{await API.rpc('qz_admin_err_clear',{p_fp:v});ST.errs.data.rows=ST.errs.data.rows.filter(x=>x.fp!==v);ST.errs.data.kinds=Math.max(0,(ST.errs.data.kinds|0)-1);renderErrs();toast('그 오류를 지웠어요','ok')}catch(x){toast(errText(x),'bad')}return}
+  case 'errclear':{if(!await ask({title:'오류 기록 전부 지우기',eff:`${N((ST.errs.data||{}).kinds|0)}가지`,body:'모든 오류 기록이 지워져요. 고친 다음 새로 들어오는 것만 보고 싶을 때 쓰세요.',ok:'전부 지우기',danger:true}))return;
+    try{const r=await API.rpc('qz_admin_err_clear',{p_fp:null});toast(`오류 기록 ${N(r.n)}가지를 지웠어요`,'ok');vErrors()}catch(x){toast(errText(x),'bad')}return}
   case 'restaff':vStaff();return}}
 
 // ---------- what the buttons do ----------

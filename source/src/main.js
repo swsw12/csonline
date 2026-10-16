@@ -20,7 +20,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       window.__ready=true;
       AU.prepare().catch(e=>console.warn(e));
       requestAnimationFrame(t=>{this.last=t;this.frame(t)})
-    }catch(e){console.error(e);$('loadT').textContent='Error: '+e.message;window.__err=String(e.stack||e)}},
+    }catch(e){ERRLOG.report(e,'boot');console.error(e);$('loadT').textContent='Error: '+e.message;window.__err=String(e.stack||e)}},
   // ---------- title-screen backdrop: a few infected wandering the yard ----------
   menuDemo(){this.clearDemo();FX.clearLimbs();G.st='menu';G.actors=[];for(let i=0;i<6;i++){const a=mkActor('z'+i,false,'guard');a.zpick=rpick(ZLIST);a.zc=a.zpick;a.bot=AI.mk(a);a.team=TZ;a.alive=true;a.lvl=1;
       const n=NAV.nodes[(Math.random()*NAV.nodes.length)|0];placeAt(a,n.x,n.y,n.z,rr(0,TAU));ensureRig(a);a.cur='claw';G.actors.push(a);this.demo.push(a)}
@@ -206,6 +206,6 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       FX.rain.k=1;AU.rainIndoor&&!AU.throttle('ri',300)&&AU.rainIndoor(rayCast(R.cam.position.x,R.cam.position.y,R.cam.position.z,0,1,0,30)?1:0);
       $('app').classList.toggle('playing',!!G.player&&G.st!=='menu'&&G.st!=='over'&&!this.paused&&!this.overlay);
       if(G.player&&G.st!=='menu')HUD.update(dt);netHud(dt);if(this.boardOn&&!AU.throttle('bd',400))UI.board(true);
-      R.render();if(!this.paused&&document.visibilityState==='visible')R.adapt(dt*1000)}catch(e){console.error(e);window.__err=String(e.stack||e)}},
+      R.render();if(!this.paused&&document.visibilityState==='visible')R.adapt(dt*1000)}catch(e){ERRLOG.report(e,'frame');console.error(e);window.__err=String(e.stack||e)}},
 };
 addEventListener('load',()=>{Main.boot()});

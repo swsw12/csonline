@@ -1840,6 +1840,56 @@ const GORE={lv:1,gen:0,
   de(c){if(this.lv>=2||!c)return c;const [r,g,b]=rgbOf(c);if(!(r>40&&r>g*1.6&&r>b*1.6))return c;const l=r*.3+g*.59+b*.11;return rgbHex(l*1.12+9,l*1.02+7,l*.94+6)}};
 GORE.init();
 
+// ---- sb.js ----
+'use strict';
+// ============ Supabase: the project (accounts, coins, the shop: account.js; the admin page: admin/admin.js) ============
+// Fill in SB.url and SB.key from the Supabase dashboard: the project's Connect button (or Project Settings → API Keys) shows the
+// Project URL (https://<ref>.supabase.co) and the publishable key (sb_publishable_…; the legacy "anon public" eyJ… key works too).
+// Both are meant to be public: the tables are guarded by row level security and every coin change happens inside the database
+// functions in supabase/schema.sql. Never put the secret / service_role key here. Left empty, accounts are off and every gun
+// stays open as before.
+// SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
+const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
+if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
+
+// ---- errlog.js ----
+'use strict';
+// ============ Error reports (v6.65): an error on a player's page goes to the admin page's 「오류 기록」 (supabase qz_err_report) ============
+// What goes: errors nobody caught (window error), promises left failing (unhandledrejection), the boot or a frame that failed (main.js:
+// ERRLOG.report(e,'boot' | 'frame')) and errors the game caught and only logged (console.error with an Error in it). Each kind once a
+// page, 8 a page at most, one every 2 s; a network failure or a server's answer (account.js errors carry .net / .status, PeerJS ones
+// .type) is not a bug and stays out. Nothing about the player goes: the message, the first lines of the stack (addresses cut to the
+// file name), where it came from, the game's version, a little context (mode, map, the match's state, solo / host / guest, the gore
+// level, render scale, touch, language) and the browser's user agent. It goes as a guest (the publishable key, no sign-in token), so
+// the server cannot tie it to an account either. Off without Supabase (SB.url), on file:// pages, with Options → 게임플레이 → 오류 자동 보고
+// off (CFG.errRep false) and with localStorage qz_noerr set.
+// (Built right after util.js and sb.js so it is listening before the rest of the game runs.)
+const ERRLOG={seen:new Set(),objs:new WeakSet(),n:0,q:[],busy:false,last:0,MAX:8,GAP:2000,
+  NOISE:/Failed to fetch|NetworkError|Load failed|network error|ERR_[A-Z_]{4,}|AbortError|The user aborted|The operation was aborted|^Script error\.?$/i,
+  PEER:/^(peer-unavailable|network|server-error|socket-error|socket-closed|disconnected|unavailable-id|invalid-id|invalid-key|browser-incompatible|webrtc|negotiation-failed|connection-closed|ssl-unavailable)$/,
+  on(){try{if(typeof SB==='undefined'||!SB.url||!SB.key||location.protocol==='file:'||LS.get('noerr',false))return false}catch(e){return false}
+    try{if(CFG.errRep===false)return false}catch(e){}return true},// (CFG is not there yet while the page is still starting: an error then still goes)
+  clip(s,n){s=String(s==null?'':s);return s.length>n?s.slice(0,n):s},
+  // the stack's first 8 lines, each address cut to its file name and position: (index.html:12:345)
+  stackOf(e){const s=e&&e.stack?String(e.stack):'';return s.replace(/\(?(?:https?|blob|file):\/\/[^\s)]*\/([^\/\s)]*:\d+:\d+)\)?/g,'($1)').split('\n').slice(0,8).map(l=>l.trim()).filter(Boolean).join('\n')},
+  ver(){try{return typeof PATCH!=='undefined'&&PATCH[0]?String(PATCH[0][0]):''}catch(e){return ''}},
+  ctx(){const c={};try{if(typeof G!=='undefined'&&G){c.mode=G.mode||null;c.st=G.st||null}if(typeof MAP!=='undefined'&&MAP)c.map=MAP.id||null;
+      if(typeof NET!=='undefined'&&NET)c.net=NET.on?(NET.host?'host':'guest'):'solo';if(typeof GORE!=='undefined')c.gore=GORE.lv;if(typeof R!=='undefined'&&R&&R.scale)c.scale=R.scale;
+      if(typeof TOUCH!=='undefined'&&TOUCH)c.touch=!!TOUCH.on;if(typeof LANG!=='undefined')c.lang=LANG}catch(e){}return c},
+  report(e,src){try{if(!e)return;src=String(src||'log');
+      if(typeof e==='object'){if(this.objs.has(e))return;try{this.objs.add(e)}catch(x){}if(e.net||e.status||(typeof e.type==='string'&&this.PEER.test(e.type)))return}
+      const msg=this.clip(typeof e==='string'?e:(e.name&&e.message&&e.name!=='Error'?e.name+': '+e.message:(e.message||String(e))),300).trim();if(!msg||this.NOISE.test(msg))return;
+      const stack=typeof e==='object'?this.stackOf(e):'',key=src+'|'+msg+'|'+stack.split('\n').slice(0,3).join('|');if(this.seen.has(key))return;this.seen.add(key);
+      if(this.n>=this.MAX||!this.on())return;this.n++;
+      this.q.push({p_msg:msg,p_stack:stack||null,p_src:src,p_ver:this.ver(),p_ctx:this.ctx(),p_ua:this.clip(typeof navigator!=='undefined'&&navigator.userAgent||'',200)});this.flush()}catch(x){}},
+  flush(){if(this.busy||!this.q.length)return;if(!this.on()){this.q.length=0;return}
+    const wait=this.last+this.GAP-Date.now();if(wait>0){this.busy=true;setTimeout(()=>{this.busy=false;this.flush()},wait);return}
+    const a=this.q.shift(),done=()=>{this.busy=false;if(this.q.length)this.flush()};this.last=Date.now();this.busy=true;
+    try{fetch(SB.url.replace(/\/+$/,'')+'/rest/v1/rpc/qz_err_report',{method:'POST',keepalive:true,headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify(a)}).then(done,done)}catch(x){done()}}};
+addEventListener('error',ev=>{if(!ev)return;if(ev.error)ERRLOG.report(ev.error,'window');else if(ev.message)ERRLOG.report({message:ev.message,stack:(ev.filename||'')+':'+(ev.lineno|0)+':'+(ev.colno|0)},'window')});
+addEventListener('unhandledrejection',ev=>{const r=ev&&ev.reason;if(r&&typeof r==='object'&&r.message)ERRLOG.report(r,'promise')});
+{const ce=console.error.bind(console);console.error=function(...a){ce(...a);try{const e=a.find(x=>x instanceof Error);if(e)ERRLOG.report(e,'log')}catch(x){}}}
+
 // ---- i18n.js ----
 'use strict';
 // ============ Strings (ko / en) ============
@@ -16001,6 +16051,10 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.65','2026-10-16',[
+ ['UP','랭킹 공정성 — 판 · 라운드 결과는 지난 보상 뒤 흐른 시간만큼만 기록에 들어가요 (판은 1분에 처치 8 · 감염 4 · 점수 150 정도까지). 하루에 쌓이는 것도 처치 2,000 · 감염 800 · 경험치 150,000까지예요. 평소처럼 플레이하면 닿지 않는 선이고, 넘는 기록은 잘린 채로 운영자에게 표시돼요','Fairer rankings — a match or a round only counts as much as the time since the last reward allows (a match: about 8 kills, 4 infections and 150 score a minute), and a day adds at most 2,000 kills, 800 infections and 150,000 xp. Normal play never gets near it; anything past it is cut and shown to the admins'],
+ ['UP','계정을 만들기 전에 이 브라우저에 쌓였던 기록을 계정으로 옮기는 기능은 끝났어요','Bringing the record this browser kept from before accounts into an account has ended'],
+ ['NEW','오류 자동 보고 — 게임에서 오류가 나면 그 내용(오류 문구 · 모드 · 맵 · 브라우저 종류)이 개발자에게 자동으로 전달돼요. 닉네임 · 계정 같은 플레이어 정보는 보내지 않고, 옵션 → 게임플레이에서 끌 수 있어요','Error reports — when something goes wrong in the game, what happened (the error, the mode, the map, the browser) is sent to the developer by itself. Nothing about you (nickname, account) goes, and you can turn it off in Options → Gameplay']]],
 ['v6.64','2026-10-16',[
  ['NEW','피 표현 설정 — 옵션 → 게임플레이 → 피 표현에서 원본 · 15세(순화) · 피 끄기 중에 고를 수 있어요. 기본은 15세(순화)이고, 게임 중에 바꿔도 바로 적용돼요','Blood & gore setting — Options → Gameplay → Blood & gore: Original, 15+ (toned down) or No blood. 15+ is the default, and a change applies at once, mid-match too'],
  ['UP','15세(순화) — 팔다리 절단 · 머리 터짐 · 살점 · 피 분출이 없어요. 맞으면 어두운 피가 조금만 튀고, 바닥 · 벽 핏자국과 피 웅덩이도 남지 않아요','15+ (toned down) — no severed limbs, bursting heads, flesh scraps or spurting blood; a hit throws a small dark spray, and nothing stains the floor or walls'],
@@ -16479,7 +16533,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
         <div class="lvrow"><span>Lv.${lv.l}</span><i class="xp"><u style="width:${Math.round(lv.cur/lv.need*100)}%"></u></i><small>${lv.cur} / ${lv.need} XP</small></div></div>
       <div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>
     </div>
-    <div class="foot">v6.64 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
+    <div class="foot">v6.65 · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</div></div>`;
   UI.wantSnap();setTimeout(lobFit,0)};
 // (v6.58) the top bar keeps every button in view: past its width the logo gets smaller, then goes, then the main buttons lose
 // their words (a tooltip keeps them); run after every module has put its buttons in, on every resize and when the lobby shows again
@@ -16547,7 +16601,7 @@ UI.mpRender=function(){if(UI.open==='mp'){const m=$('mpMsg');if(m)m.textContent=
 // ---------- options window: tabs (gameplay / keyboard / mouse / audio / video), live preview, OK · Cancel · Apply ----------
 const XC={green:'#7dff6a',yellow:'#ffe14a',cyan:'#5ae8ff',white:'#ffffff',pink:'#ff6ad8'};
 function applyXhair(){const c=$('cross');if(!c)return;c.style.setProperty('--xc',XC[CFG.xc]||XC.green);c.style.setProperty('--g',(CFG.xg||6)+'px')}
-UI.optTab=UI.optTab||'game';if(CFG.xg==null)CFG.xg=6;if(CFG.tsens==null)CFG.tsens=1;if(CFG.tsz==null)CFG.tsz=1;for(const k of ['autoFire','aimAssist','leftFire','haptic'])if(CFG[k]==null)CFG[k]=true;if(CFG.tal==null)CFG.tal=.7;if(!CFG.touch)CFG.touch='auto';if(!CFG.xc)CFG.xc='green';
+UI.optTab=UI.optTab||'game';if(CFG.xg==null)CFG.xg=6;if(CFG.tsens==null)CFG.tsens=1;if(CFG.tsz==null)CFG.tsz=1;for(const k of ['autoFire','aimAssist','leftFire','haptic','errRep'])if(CFG[k]==null)CFG[k]=true;if(CFG.tal==null)CFG.tal=.7;if(!CFG.touch)CFG.touch='auto';if(!CFG.xc)CFG.xc='green';
 UI.buildOpts=function(){const L=LI(),t=UI.optTab;
   const tch=typeof TOUCH!=='undefined'&&TOUCH.on;const tabs=[['game',L?'Gameplay':'게임플레이'],['keys',tch?(L?'Controls':'조작법'):(L?'Keyboard':'키보드')],...(tch?[]:[['mouse',L?'Mouse':'마우스']]),['audio',L?'Audio':'오디오'],['video',L?'Video':'비디오']];
   const ck=(k,l,inv)=>{const on=inv?!CFG[k]:CFG[k]!==false&&!!CFG[k];return `<label class="ck${on?' on':''}" data-act="optck" data-v="${k}${inv?':inv':''}"><i></i>${l}</label>`};
@@ -16560,7 +16614,7 @@ UI.buildOpts=function(){const L=LI(),t=UI.optTab;
       ${sel('xc',L?'Crosshair colour':'조준점 색상',[['green',L?'Green':'초록'],['yellow',L?'Yellow':'노랑'],['cyan',L?'Cyan':'하늘'],['white',L?'White':'흰색'],['pink',L?'Pink':'분홍']])}
       ${sel('gore',L?'Blood & gore':'피 표현',[[2,L?'Original':'원본'],[1,L?'15+ (toned down)':'15세 (순화)'],[0,L?'No blood':'피 끄기']])}
       <p class="onote">${L?'15+: no severed limbs or bursting heads, a small dark spray on hits, no pools, zombies bruised instead of torn open. No blood: grey dust on hits.':'15세: 팔다리 절단·머리 터짐 없음, 맞으면 어두운 피가 조금만 튐, 피 웅덩이 없음, 좀비는 찢긴 살 대신 멍·때. 피 끄기: 맞으면 회색 먼지만.'}</p></div>
-    <div>${ck('minimap',L?'Show radar':'레이더(미니맵) 표시')}${ck('autoFire',L?'Auto-fire on target (touch)':'자동 사격 (조준점에 적이 오면 발사)')}${ck('aimAssist',L?'Aim assist (touch)':'조준 보정 (적 쪽으로 살짝 끌림)')}${ck('leftFire',L?'Left fire button':'왼쪽 사격 버튼')}${ck('invert',L?'Invert look (Y)':'시점 상하 반전')}${ck('haptic',L?'Vibration':'진동')}${sl('tsens',L?'Touch look speed':'터치 시점 감도',.4,2.5,.1,v=>(+v).toFixed(1),L?'slow':'느리게',L?'fast':'빠르게')}${sl('tal',L?'Button opacity':'버튼 투명도',.25,1,.05,v=>Math.round(v*100)+'%','25%','100%')}${sl('tsz',L?'Button size':'버튼 크기',.75,1.35,.05,v=>Math.round(v*100)+'%','75%','135%')}${sl('xg',L?'Crosshair gap':'조준점 간격',2,14,1,v=>v+'px',L?'tight':'좁게',L?'wide':'넓게')}
+    <div>${ck('minimap',L?'Show radar':'레이더(미니맵) 표시')}${ck('autoFire',L?'Auto-fire on target (touch)':'자동 사격 (조준점에 적이 오면 발사)')}${ck('aimAssist',L?'Aim assist (touch)':'조준 보정 (적 쪽으로 살짝 끌림)')}${ck('leftFire',L?'Left fire button':'왼쪽 사격 버튼')}${ck('invert',L?'Invert look (Y)':'시점 상하 반전')}${ck('haptic',L?'Vibration':'진동')}${ck('errRep',L?'Send error reports (nothing about you)':'오류 자동 보고 (플레이어 정보 없이)')}${sl('tsens',L?'Touch look speed':'터치 시점 감도',.4,2.5,.1,v=>(+v).toFixed(1),L?'slow':'느리게',L?'fast':'빠르게')}${sl('tal',L?'Button opacity':'버튼 투명도',.25,1,.05,v=>Math.round(v*100)+'%','25%','100%')}${sl('tsz',L?'Button size':'버튼 크기',.75,1.35,.05,v=>Math.round(v*100)+'%','75%','135%')}${sl('xg',L?'Crosshair gap':'조준점 간격',2,14,1,v=>v+'px',L?'tight':'좁게',L?'wide':'넓게')}
       <div class="xprev" style="--xc:${XC[CFG.xc]||XC.green};--g:${CFG.xg||6}px"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="d"></i></div></div></div>`;
   else if(t==='keys'&&typeof TOUCH!=='undefined'&&TOUCH.on){const g=L?[['Left thumb','Move — the stick starts wherever you touch; push past half for full speed'],['Right drag','Look around — slow drags are precise, flicks turn far'],['◎ big button','Fire. Hold it and drag to aim while shooting'],['Auto','Aim near an enemy: the sight is pulled in and it fires for you (Options)'],['Aim','Scope / alt attack / hammer stance / soft bomb lob'],['↑ ↓','Jump · crouch (toggle)'],['↻','Reload'],['Bottom bar','Tap a weapon to equip · tap the one in hand to swap back (quick switch) · hold it to drop it; walk over a gun to pick it up into an empty slot'],['Buy','Shop · Quick buy = best rifle + armour + grenade in one tap'],['⚡','Zombie skill · CLASS picks the zombie class · NV night vision'],['≡ / Ⅱ','Hold for the scoreboard · pause'],['Dead','Tap fire to watch the next player']]
       :[['왼손','이동 — 왼쪽 아무 데나 대면 그 자리에 스틱, 반 이상 밀면 달리기'],['오른손 드래그','시점 — 천천히 끌면 정밀, 휙 그으면 크게 회전'],['◎ 큰 버튼','사격. 누른 채로 끌면 쏘면서 조준'],['자동','적 근처로 조준하면 끌려가면서 자동 사격 (옵션에서 끄기)'],['조준','저격 줌 · 보조 공격 · 해머 자세 · 폭탄 살짝 던지기'],['↑ ↓','점프 · 앉기(토글)'],['↻','재장전'],['아래 슬롯','무기 탭해서 교체 · 들고 있는 무기 다시 탭 = 챈샷 · 길게 누르면 버리기, 빈 슬롯이면 바닥 무기를 밟아서 줍기'],['구매','상점 · 추천 구매 한 번에 소총+방탄+수류탄'],['⚡','좀비 스킬 · 클래스 = 좀비 종류 · NV 야간투시'],['≡ / Ⅱ','누르는 동안 점수판 · 일시정지'],['사망 시','사격 버튼으로 다른 사람 관전']];
@@ -16632,7 +16686,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       window.__ready=true;
       AU.prepare().catch(e=>console.warn(e));
       requestAnimationFrame(t=>{this.last=t;this.frame(t)})
-    }catch(e){console.error(e);$('loadT').textContent='Error: '+e.message;window.__err=String(e.stack||e)}},
+    }catch(e){ERRLOG.report(e,'boot');console.error(e);$('loadT').textContent='Error: '+e.message;window.__err=String(e.stack||e)}},
   // ---------- title-screen backdrop: a few infected wandering the yard ----------
   menuDemo(){this.clearDemo();FX.clearLimbs();G.st='menu';G.actors=[];for(let i=0;i<6;i++){const a=mkActor('z'+i,false,'guard');a.zpick=rpick(ZLIST);a.zc=a.zpick;a.bot=AI.mk(a);a.team=TZ;a.alive=true;a.lvl=1;
       const n=NAV.nodes[(Math.random()*NAV.nodes.length)|0];placeAt(a,n.x,n.y,n.z,rr(0,TAU));ensureRig(a);a.cur='claw';G.actors.push(a);this.demo.push(a)}
@@ -16818,7 +16872,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       FX.rain.k=1;AU.rainIndoor&&!AU.throttle('ri',300)&&AU.rainIndoor(rayCast(R.cam.position.x,R.cam.position.y,R.cam.position.z,0,1,0,30)?1:0);
       $('app').classList.toggle('playing',!!G.player&&G.st!=='menu'&&G.st!=='over'&&!this.paused&&!this.overlay);
       if(G.player&&G.st!=='menu')HUD.update(dt);netHud(dt);if(this.boardOn&&!AU.throttle('bd',400))UI.board(true);
-      R.render();if(!this.paused&&document.visibilityState==='visible')R.adapt(dt*1000)}catch(e){console.error(e);window.__err=String(e.stack||e)}},
+      R.render();if(!this.paused&&document.visibilityState==='visible')R.adapt(dt*1000)}catch(e){ERRLOG.report(e,'frame');console.error(e);window.__err=String(e.stack||e)}},
 };
 addEventListener('load',()=>{Main.boot()});
 // ---- scenario.js ----
@@ -17292,18 +17346,6 @@ const RANGE={on:false,move:true,st:null,el:null,uiT:0,
 Main.startRange=async function(){AU.init();if(MAP.id!=='range'){await loadMapUI('range');if(MAP.id!=='range')return}this.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);
   startMatch({mode:'range',bots:0,diff:0,rounds:1,time:0,skin:CFG.skin,zclass:CFG.zclass,money:999999,name:T('you')});
   HUD.show(true);this.paused=false;this.overlay=null;this.lock();window.onbeforeunload=null};
-
-// ---- sb.js ----
-'use strict';
-// ============ Supabase: the project (accounts, coins, the shop: account.js; the admin page: admin/admin.js) ============
-// Fill in SB.url and SB.key from the Supabase dashboard: the project's Connect button (or Project Settings → API Keys) shows the
-// Project URL (https://<ref>.supabase.co) and the publishable key (sb_publishable_…; the legacy "anon public" eyJ… key works too).
-// Both are meant to be public: the tables are guarded by row level security and every coin change happens inside the database
-// functions in supabase/schema.sql. Never put the secret / service_role key here. Left empty, accounts are off and every gun
-// stays open as before.
-// SB.oauth: social sign-in buttons to show, e.g. ['google','kakao'] (turn the provider on in Authentication → Providers first).
-const SB={url:'https://qoavmnovajakmfwqixiu.supabase.co',key:'sb_publishable_Pn-fNd9t03i6cOOGxoBbtQ_dRMChz_a',oauth:[]};
-if(typeof window!=='undefined'&&window.QZ_SB)Object.assign(SB,window.QZ_SB);// (the test harness points this at a mock)
 
 // ---- account.js ----
 'use strict';

@@ -90,6 +90,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
   if(p==='/rest/v1/rpc/qz_room_down'&&uid){RM();const code=String((body||{}).p_code||'').slice(0,8).toUpperCase(),r=db.rooms[code],gone=!!(r&&r.host===uid);if(gone)delete db.rooms[code];save(db);return res(200,{ok:true,gone})}
   if(p.startsWith('/rest/v1/rpc/')){const fn=p.slice(13);
     if(window.__MOCK_OFF&&window.__MOCK_OFF.includes(fn))return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+' without parameters in the schema cache'});
+    // v6.65: the game's error reports (anyone may send; kept on window.__mockErr with whether a bearer rode along)
+    if(fn==='qz_err_report'){(window.__mockErr=window.__mockErr||[]).push(Object.assign({},body,{_auth:!!H.Authorization}));return res(200,{ok:!!(body&&String(body.p_msg||'').trim())})}
     if(fn==='qz_titles_of'){const N=(Array.isArray(body&&body.p_names)?body.p_names:[]).slice(0,16),o={};for(const id in db.prof){const n=db.prof[id].nickname;if(!N.includes(n))continue;const w=titleWorn(id);o[n]=o[n]||[];if(w&&!o[n].includes(w))o[n].push(w)}return res(200,o)}
     if(fn==='qz_ep_firsts')return res(200,HOFL().slice().sort((a,b)=>a.ep-b.ep||a.diff-b.diff).map(h=>({ep:h.ep,diff:h.diff,at:h.at,time:h.time,team:h.members.map(id=>db.prof[id]?db.prof[id].nickname:null).filter(Boolean)})));
     // the ranking: anyone (a guest too); nicknames and records only, accounts without a finished match left out

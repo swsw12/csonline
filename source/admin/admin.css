@@ -212,3 +212,6 @@ input[type=number]{font-family:var(--pix);font-variant-numeric:tabular-nums}
 .ask .chips{margin-top:-2px}
 .rwe .cfg{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px 10px}
 .who .tag{margin-left:4px}
+/* v6.65: 오류 기록 — the row that opens under an error: when, the context, the stack, the browser */
+.errd td{background:var(--panel2);padding:10px 12px}
+.errd pre{margin:0;padding:10px;background:var(--field);border:1px solid var(--line);border-radius:3px;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all;color:var(--amber2);max-height:280px;overflow:auto}

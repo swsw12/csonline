@@ -33,6 +33,12 @@
 --     판 수 · 레벨 · 플레이 시간 · 보유 무기 · 챕터)과 profiles.ach 카운터(헤드샷 · 피해량 · 승리 · MVP · 생존 라운드 · 대인전 · 근접 처치 · 치료 …;
 --     qz_claim / qz_round_claim이 올림, 이전 기록은 처음 한 번 coin_log에서 채움)에서 읽고, 보상은 qz_ach_claim이 한 번만 줍니다.
 --     칭호는 받은 업적 단계와 명예의 전당에서 생기고, 착용은 profiles.title(qz_title_wear; 비우면 자동).
+--   * 랭킹 상한(v6.65): 판 · 라운드 결과의 숫자는 지난 보상 뒤 흐른 시간만큼만 인정합니다. 판은 1분에 처치 8(시나리오 16) · 감염 4 ·
+--     점수 150(시나리오 250) + 300까지(45분 · 시나리오 60분까지 셈), 라운드는 1분에 처치 12 + 3 · 감염 4 + 1 · 점수 300 + 100까지(10분까지 셈).
+--     하루(한국 시간)에 처치 2,000 · 감염 800 · 경험치 150,000까지(profiles.cap_*). 넘게 보낸 판 · 라운드는 잘리고 coin_log의 detail.cut에
+--     [보낸 값, 남긴 값]이 남아 관리자 페이지 「의심 유저 → 잘린 기록」에 뜹니다. 계정 만들기 전 기록 가져오기(qz_import_rec)는 닫았습니다.
+--   * 오류 기록(v6.65): 플레이어 화면의 오류가 err_log에 모입니다(같은 오류는 횟수만, 최대 2,000가지, 1분에 600개까지). 누구나 보내고
+--     (qz_err_report, 플레이어 정보 없음) 관리자만 봅니다(qz_admin_errors · qz_admin_err_clear, 관리자 페이지 「오류 기록」).
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -59,6 +65,11 @@ alter table public.profiles add column if not exists rec_infects  integer not nu
 alter table public.profiles add column if not exists rec_best     integer not null default 0;
 alter table public.profiles add column if not exists xp           integer not null default 0;
 alter table public.profiles add column if not exists rec_imported boolean not null default false;  -- the browser's old record was brought in
+-- v6.65: the day the ranking numbers were last counted on (Korean time) and how much xp, kills and infections went in on it (qz_claim / qz_round_claim cap them)
+alter table public.profiles add column if not exists cap_day   date;
+alter table public.profiles add column if not exists cap_xp    integer not null default 0;
+alter table public.profiles add column if not exists cap_kills integer not null default 0;
+alter table public.profiles add column if not exists cap_inf   integer not null default 0;
 create table if not exists public.gun_prices (
   gun_id text primary key,
   price  integer not null check (price >= 0),
@@ -957,6 +968,13 @@ declare
   v_match text := left(regexp_replace(coalesce(p_match, ''), '[^A-Za-z0-9]', '', 'g'), 24);
   v_fr public.ep_firsts;
   v_hof boolean := false;
+  v_scn boolean := coalesce(p_mode, '') = 'scen';
+  v_w numeric;                     -- (v6.65) the minutes of play this match can stand for
+  v_cap integer;
+  c0x integer;
+  c0k integer;
+  c0i integer;
+  v_cut jsonb := '{}'::jsonb;      -- what had to be cut: {what: [sent, kept]}
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform public.qz_guard(uid);
@@ -965,6 +983,23 @@ begin
   p := (select t from public.profiles t where t.id = uid);
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
+  -- v6.65: what goes on the ranking grows no faster than play can. Per minute since the last paid match (since the account was made, the
+  -- first time; counted up to 45 minutes, 60 for the scenario) at most 8 kills (16 in the scenario), 4 infections and 150 score (250 in the
+  -- scenario) + 300; per day (Korean time) at most 2,000 kills, 800 infections and 150,000 xp. Numbers sent past that are cut, and the
+  -- match is marked in coin_log (detail.cut) for the admin page's suspects
+  v_w := least(greatest(extract(epoch from (now() - coalesce(p.last_claim, p.created_at, now() - interval '15 minutes'))) / 60.0, 0), case when v_scn then 60 else 45 end);
+  -- (each one checked as sent, so a number past the claim's own limit above shows too: [sent, kept])
+  v_cap := least(80, floor(v_w * case when v_scn then 16 else 8 end)::integer);
+  if coalesce(p_kills, 0) > v_cap then v_cut := v_cut || jsonb_build_object('kills', jsonb_build_array(p_kills, v_cap)); k := least(k, v_cap); end if;
+  v_cap := least(30, floor(v_w * 4)::integer);
+  if coalesce(p_infects, 0) > v_cap then v_cut := v_cut || jsonb_build_object('infects', jsonb_build_array(p_infects, v_cap)); inf := least(inf, v_cap); end if;
+  v_cap := least(30000, floor(v_w * case when v_scn then 250 else 150 end)::integer + 300);
+  if coalesce(p_score, 0) > v_cap then v_cut := v_cut || jsonb_build_object('score', jsonb_build_array(p_score, v_cap)); sc := least(sc, v_cap); end if;
+  c0x := case when p.cap_day = today then p.cap_xp else 0 end;
+  c0k := case when p.cap_day = today then p.cap_kills else 0 end;
+  c0i := case when p.cap_day = today then p.cap_inf else 0 end;
+  if c0k + k > 2000 then v_cut := v_cut || jsonb_build_object('day_kills', jsonb_build_array(k, greatest(2000 - c0k, 0))); k := greatest(2000 - c0k, 0); end if;
+  if c0i + inf > 800 then v_cut := v_cut || jsonb_build_object('day_infects', jsonb_build_array(inf, greatest(800 - c0i, 0))); inf := greatest(800 - c0i, 0); end if;
   v_s0 := public.qz_ach_stats(uid);   -- (v6.57: the numbers before this match, to tell the tiers it reaches)
   v_secs := extract(epoch from (now() - coalesce(p.last_claim, p.created_at, now() - interval '1 day')));   -- (an episode's clear time fits in it)
   -- an episode's clear counts when it took 4 minutes at least (v6.21; 5 before) and no longer than the time since the last paid match, and (from
@@ -989,16 +1024,19 @@ begin
   if p.bonus_day is distinct from today then bonus := 250; end if;
   got := greatest(0, least(raw + bonus, 20000 - day0));
   gx := least(4000, greatest(25, round(sc * 0.75 + k * 10 + inf * 15)::integer));  -- a quarter more than the xp the game showed before accounts
+  if c0x + gx > 150000 then v_cut := v_cut || jsonb_build_object('day_xp', jsonb_build_array(gx, greatest(150000 - c0x, 0))); gx := greatest(150000 - c0x, 0); end if;
   update public.profiles set coins = coins + got, earned_total = earned_total + got, matches = matches + 1,
     last_claim = now(), day = today, day_earned = day0 + got, bonus_day = today,
     rec_games = rec_games + 1, rec_kills = rec_kills + k, rec_infects = rec_infects + inf, rec_best = greatest(rec_best, sc), xp = xp + gx,
+    cap_day = today, cap_xp = c0x + gx, cap_kills = c0k + k, cap_inf = c0i + inf,
     ny_quota = least(8, 2 + k / 6)   -- letters this match may add (qz_ny_add): a few, more with more kills
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', p_mode,
     'rounds', p_rounds, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'mvp', p_mvp,
     'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'hs', p_hs, 'raw', raw, 'bonus', bonus, 'xp', gx,
-    'ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'escaped', p_bonus));
+    'ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'escaped', p_bonus, 'mins', round(mins, 1))
+    || case when v_cut = '{}'::jsonb then '{}'::jsonb else jsonb_build_object('cut', v_cut) end);
   -- an episode (v6.20): the play and the clear (v_clear, above) go on the record; medal S = no life lost within 16 minutes,
   -- A = at most one within 22, B = the rest (and every clear without the escape)
   if v_ep > 0 then
@@ -1093,6 +1131,10 @@ declare
   dmg integer := least(greatest(coalesce(p_damage, 0), 0), 40000);
   sc integer := least(greatest(coalesce(p_score, 0), 0), 8000);
   gx integer;
+  v_w numeric;
+  v_cap integer;
+  c0x integer;
+  v_cut jsonb := '{}'::jsonb;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform public.qz_guard(uid);
@@ -1102,19 +1144,32 @@ begin
   p := (select t from public.profiles t where t.id = uid);
   secs := extract(epoch from (now() - coalesce(p.last_round, now() - interval '10 minutes')));
   if secs < 25 then raise exception 'too_soon'; end if;
+  -- v6.65: a round's numbers grow no faster than play either: per minute since the last paid round (counted up to 10) at most 12 kills + 3,
+  -- 4 infections + 1 and 300 score + 100; the xp shares the day's 150,000 with the matches (cut numbers are marked like the match's)
+  v_w := least(secs, 600) / 60.0;
+  v_cap := least(30, floor(v_w * 12)::integer + 3);
+  if coalesce(p_kills, 0) > v_cap then v_cut := v_cut || jsonb_build_object('kills', jsonb_build_array(p_kills, v_cap)); k := least(k, v_cap); end if;
+  v_cap := least(12, floor(v_w * 4)::integer + 1);
+  if coalesce(p_infects, 0) > v_cap then v_cut := v_cut || jsonb_build_object('infects', jsonb_build_array(p_infects, v_cap)); inf := least(inf, v_cap); end if;
+  v_cap := least(8000, floor(v_w * 300)::integer + 100);
+  if coalesce(p_score, 0) > v_cap then v_cut := v_cut || jsonb_build_object('score', jsonb_build_array(p_score, v_cap)); sc := least(sc, v_cap); end if;
+  c0x := case when p.cap_day = today then p.cap_xp else 0 end;
   raw := 150 + 8 * k + 12 * inf + 5 * (dmg / 1000)
        + case when p_won then 120 else 0 end + case when p_survived then 60 else 0 end + case when p_mvp then 80 else 0 end;
   raw := least(raw, 600, floor(secs * 4)::integer);
   day0 := case when p.day = today then p.day_earned else 0 end;
   got := greatest(0, least(raw, 20000 - day0));
   gx := least(1500, greatest(10, round(sc * 0.6 + k * 8 + inf * 12)::integer));
+  if c0x + gx > 150000 then v_cut := v_cut || jsonb_build_object('day_xp', jsonb_build_array(gx, greatest(150000 - c0x, 0))); gx := greatest(150000 - c0x, 0); end if;
   update public.profiles set coins = coins + got, earned_total = earned_total + got, last_round = now(), day = today,
-    day_earned = day0 + got, xp = xp + gx
+    day_earned = day0 + got, xp = xp + gx,
+    cap_xp = c0x + gx, cap_kills = case when cap_day = today then cap_kills else 0 end, cap_inf = case when cap_day = today then cap_inf else 0 end, cap_day = today
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'round', jsonb_build_object('mode', p_mode,
     'round', p_round, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'survived', p_survived,
-    'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx));
+    'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx, 'secs', round(secs))
+    || case when v_cut = '{}'::jsonb then '{}'::jsonb else jsonb_build_object('cut', v_cut) end);
   -- achievements (v6.57): a round lived through as a human, or won as a zombie (Mutation, Original)
   if p_mode in ('orig', 'mut') then
     update public.profiles set ach = public.qz_ach_add(ach, jsonb_build_object('surv', case when coalesce(p_survived, false) then 1 else 0 end,
@@ -1123,27 +1178,18 @@ begin
   return jsonb_build_object('got', got, 'coins', p.coins, 'raw', raw, 'xp_got', gx, 'day_left', 20000 - p.day_earned, 'rec', public.qz_rec(p));
 end $$;
 
--- once per account: the record this browser kept before accounts (games, kills, ...) is added in, within sane limits
+-- once per account: the record this browser kept before accounts (games, kills, ...) used to be added in here (v6.12).
+-- v6.65: closed — any numbers could be sent, straight onto the ranking; the call now only marks the account as imported and adds nothing
 create or replace function public.qz_import_rec(p_games integer, p_kills integer, p_infects integer, p_best integer, p_xp integer) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   p public.profiles;
-  g integer := least(greatest(coalesce(p_games, 0), 0), 5000);
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
-  perform public.qz_guard(uid);
   perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
-  p := (select t from public.profiles t where t.id = uid);
-  if p.rec_imported then raise exception 'already_imported'; end if;
-  update public.profiles set rec_imported = true,
-    rec_games   = rec_games + g,
-    rec_kills   = rec_kills + least(greatest(coalesce(p_kills, 0), 0), g * 80),
-    rec_infects = rec_infects + least(greatest(coalesce(p_infects, 0), 0), g * 30),
-    rec_best    = greatest(rec_best, least(greatest(coalesce(p_best, 0), 0), 30000)),
-    xp          = xp + least(greatest(coalesce(p_xp, 0), 0), g * 3000, 300000)
-  where id = uid;
+  update public.profiles set rec_imported = true where id = uid;
   p := (select t from public.profiles t where t.id = uid);
   return jsonb_build_object('rec', public.qz_rec(p));
 end $$;
@@ -3668,6 +3714,8 @@ end $$;
 -- players worth a look (staff too), by p_kind: cap (days the reward limit was reached, last 14 days), kills (the most kills in one
 -- match), damage (the most damage in one round), rate (coins per hour of play, at least an hour played, last 14 days), refs (players
 -- who brought in many accounts in the last 30 days, and how many of those barely played). 30 at most.
+-- v6.65: cut (the accounts whose matches or rounds sent more than play allows — qz_claim / qz_round_claim cut them; how often in the
+-- last 14 days and the last cut), score (the highest score sent for one match; the numbers as sent, before any cut)
 create or replace function public.qz_admin_suspects(p_kind text) returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -3675,7 +3723,25 @@ declare
   t14 timestamptz := now() - interval '14 days';
   rm integer := coalesce((select c.ref_matches from public.gacha_config c where c.id = 1), 3);
 begin
-  if p_kind = 'cap' then
+  if p_kind = 'cut' then
+    return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', q.user_id, 'nickname', p.nickname, 'fcode', p.fcode, 'banned', coalesce(p.banned_until > now(), false),
+        'n', q.n, 'at', q.at, 'cut', q.cut) order by q.n desc, q.at desc)
+      from (select c.user_id, count(*) as n, max(c.at) as at,
+              (select c2.detail -> 'cut' from public.coin_log c2 where c2.user_id = c.user_id and c2.at >= t14 and c2.detail ? 'cut' order by c2.at desc limit 1) as cut
+            from public.coin_log c where c.at >= t14 and c.reason in ('match', 'round') and c.detail ? 'cut'
+            group by c.user_id order by 2 desc, 3 desc limit 30) q
+      join public.profiles p on p.id = q.user_id), '[]'::jsonb));
+  elsif p_kind = 'score' then
+    return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', q.user_id, 'nickname', p.nickname, 'fcode', p.fcode, 'banned', coalesce(p.banned_until > now(), false),
+        'at', q.at, 'mode', q.mode, 'score', q.score, 'kills', q.kills, 'damage', q.damage, 'mins', q.mins, 'cut', q.cut) order by q.score desc)
+      from (select c.user_id, c.at, c.detail ->> 'mode' as mode, (c.detail ->> 'score')::integer as score, (c.detail ->> 'kills')::integer as kills,
+              (c.detail ->> 'damage')::integer as damage, (c.detail ->> 'mins')::numeric as mins, c.detail ? 'cut' as cut
+            from public.coin_log c where c.at >= t14 and c.reason = 'match' and c.detail ? 'score'
+            order by 4 desc nulls last limit 30) q
+      join public.profiles p on p.id = q.user_id), '[]'::jsonb),
+      'avg', (select round(avg((c.detail ->> 'score')::numeric), 1) from public.coin_log c where c.at >= t14 and c.reason = 'match' and c.detail ? 'score'),
+      'n', (select count(*) from public.coin_log c where c.at >= t14 and c.reason = 'match'));
+  elsif p_kind = 'cap' then
     return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', q.user_id, 'nickname', p.nickname, 'fcode', p.fcode, 'banned', coalesce(p.banned_until > now(), false),
         'days', q.days, 'earned', q.earned, 'best', q.best) order by q.days desc, q.earned desc)
       from (select d.user_id, count(*) filter (where d.e >= 19500) as days, sum(d.e) as earned, max(d.e) as best
@@ -3788,3 +3854,98 @@ revoke all on function public.qz_gun_notices() from public, anon;
 revoke all on function public.qz_gun_seen(bigint[]) from public, anon;
 grant execute on function public.qz_gun_notices() to authenticated;
 grant execute on function public.qz_gun_seen(bigint[]) to authenticated;
+
+-- ---------- v6.65: the game's error log (관리자 페이지 「오류 기록」) ----------
+-- An error on a player's page (one nobody caught, a promise left failing, a frame or the boot that failed, one the game caught and only
+-- logged) is sent here once per page and kind (errlog.js in the game), without anything about the player: the message, the first lines
+-- of the stack, where it came from, the game's version, a little context (mode, map, the match's state, host or guest) and the browser.
+-- The same error (fp: version + where + message + the top of the stack) is counted, not stored again. At most 2,000 kinds (the ones
+-- seen longest ago go first) and 600 reports a minute from all pages together. Anyone may send (anon too); only admins read and clear.
+create table if not exists public.err_log (
+  fp       text primary key,
+  msg      text not null,
+  stack    text,
+  src      text,
+  ver      text,
+  ctx      jsonb,
+  ua       text,
+  n        integer not null default 1,
+  first_at timestamptz not null default now(),
+  last_at  timestamptz not null default now()
+);
+create index if not exists err_log_last on public.err_log (last_at desc);
+alter table public.err_log enable row level security;
+revoke all on public.err_log from anon, authenticated;
+-- reports per minute, all pages together (rows older than an hour are cleared as they go)
+create table if not exists public.err_rate (
+  at timestamptz primary key,
+  n  integer not null default 0
+);
+alter table public.err_rate enable row level security;
+revoke all on public.err_rate from anon, authenticated;
+
+-- one report from a page: {ok} (false when the message is empty or the minute's reports are used up)
+create or replace function public.qz_err_report(p_msg text, p_stack text default null, p_src text default null, p_ver text default null,
+  p_ctx jsonb default null, p_ua text default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  m timestamptz := date_trunc('minute', now());
+  v_n integer;
+  v_msg text := left(btrim(regexp_replace(coalesce(p_msg, ''), '[[:cntrl:]]', ' ', 'g')), 300);
+  v_stack text := left(regexp_replace(coalesce(p_stack, ''), '[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]', '', 'g'), 2000);
+  v_src text := left(regexp_replace(lower(coalesce(p_src, '')), '[^a-z]', '', 'g'), 12);
+  v_ver text := left(regexp_replace(coalesce(p_ver, ''), '[^A-Za-z0-9.]', '', 'g'), 16);
+  v_ua text := left(regexp_replace(coalesce(p_ua, ''), '[[:cntrl:]]', ' ', 'g'), 200);
+  v_ctx jsonb := case when p_ctx is not null and jsonb_typeof(p_ctx) = 'object' and length(p_ctx::text) <= 600 then p_ctx end;
+  v_fp text;
+begin
+  if char_length(v_msg) < 1 then return jsonb_build_object('ok', false); end if;
+  insert into public.err_rate as r (at, n) values (m, 1) on conflict (at) do update set n = r.n + 1;
+  v_n := (select r.n from public.err_rate r where r.at = m);
+  if v_n = 1 then delete from public.err_rate where at < now() - interval '1 hour'; end if;
+  if v_n > 600 then return jsonb_build_object('ok', false); end if;
+  v_fp := md5(v_ver || '|' || v_src || '|' || v_msg || '|' || left(v_stack, 400));
+  insert into public.err_log as e (fp, msg, stack, src, ver, ctx, ua)
+  values (v_fp, v_msg, nullif(v_stack, ''), nullif(v_src, ''), nullif(v_ver, ''), v_ctx, nullif(v_ua, ''))
+  on conflict (fp) do update set n = e.n + 1, last_at = now(), ctx = coalesce(excluded.ctx, e.ctx), ua = coalesce(excluded.ua, e.ua);
+  v_n := (select count(*) from public.err_log);
+  if v_n > 2000 then
+    delete from public.err_log where fp in (select x.fp from public.err_log x order by x.last_at limit v_n - 1800);
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- the log for the admin page (staff too): the kinds seen last first (p_limit, 300 at most), how many kinds and reports in all, and how
+-- many kinds came in today (Korean time)
+create or replace function public.qz_admin_errors(p_limit integer default 100) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_uid();
+  t0 timestamptz := ((now() at time zone 'Asia/Seoul')::date)::timestamp at time zone 'Asia/Seoul';
+begin
+  return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('fp', q.fp, 'msg', q.msg, 'stack', q.stack, 'src', q.src, 'ver', q.ver,
+      'ctx', q.ctx, 'ua', q.ua, 'n', q.n, 'first_at', q.first_at, 'last_at', q.last_at) order by q.last_at desc)
+    from (select e.fp, e.msg, e.stack, e.src, e.ver, e.ctx, e.ua, e.n, e.first_at, e.last_at from public.err_log e
+          order by e.last_at desc limit least(greatest(coalesce(p_limit, 100), 1), 300)) q), '[]'::jsonb),
+    'kinds', (select count(*) from public.err_log),
+    'reports', (select coalesce(sum(e.n), 0) from public.err_log e),
+    'today', (select count(*) from public.err_log e where e.last_at >= t0));
+end $$;
+-- clear one kind (p_fp) or the whole log (p_fp null); it goes in the admin log
+create or replace function public.qz_admin_err_clear(p_fp text default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_uid();
+  v_n integer;
+begin
+  if p_fp is null then delete from public.err_log where fp is not null; else delete from public.err_log where fp = p_fp; end if;
+  get diagnostics v_n = row_count;
+  perform public.qz_admin_note(uid, 'err_clear', null, jsonb_build_object('fp', p_fp, 'n', v_n), null);
+  return jsonb_build_object('ok', true, 'n', v_n);
+end $$;
+revoke all on function public.qz_err_report(text, text, text, text, jsonb, text) from public;
+revoke all on function public.qz_admin_errors(integer) from public, anon;
+revoke all on function public.qz_admin_err_clear(text) from public, anon;
+grant execute on function public.qz_err_report(text, text, text, text, jsonb, text) to anon, authenticated;
+grant execute on function public.qz_admin_errors(integer) to authenticated;
+grant execute on function public.qz_admin_err_clear(text) to authenticated;
