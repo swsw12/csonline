@@ -39,6 +39,10 @@
 --     [보낸 값, 남긴 값]이 남아 관리자 페이지 「의심 유저 → 잘린 기록」에 뜹니다. 계정 만들기 전 기록 가져오기(qz_import_rec)는 닫았습니다.
 --   * 오류 기록(v6.65): 플레이어 화면의 오류가 err_log에 모입니다(같은 오류는 횟수만, 최대 2,000가지, 1분에 600개까지). 누구나 보내고
 --     (qz_err_report, 플레이어 정보 없음) 관리자만 봅니다(qz_admin_errors · qz_admin_err_clear, 관리자 페이지 「오류 기록」).
+--   * 구글 로그인(v6.66): Google · Kakao로 가입한 계정은 「생존자 + 숫자 4자리」 닉네임으로 시작합니다(공급자가 준 이름 · 이메일은 닉네임으로
+--     쓰지 않음, 게임이 처음 한 번 닉네임을 정하라고 물어봄). 켜는 곳: Supabase 대시보드 → Authentication → Sign In / Providers → Google.
+--   * 문의(v6.66): 로비의 「문의하기」로 누구나(게스트도) 운영진에게 글을 남깁니다(inquiries: 계정은 1시간에 5개 · 하루 20개, 게스트는 다 합쳐
+--     1시간에 60개). 답변은 관리자 페이지 「문의」에서 쓰고, 플레이어는 게임의 「내 문의」에서 봅니다(게스트는 쓴 브라우저에서만). 닫힌 문의는 180일 뒤 지워집니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -523,6 +527,32 @@ create table if not exists public.daily_activity (
   primary key (day, user_id)
 );
 create index if not exists daily_activity_user on public.daily_activity(user_id, day desc);
+-- v6.66: 문의 — what players (guests too) write from the lobby's 문의하기 button, and the operators' answers. Read and written only
+-- through the functions in the 「문의」 part near the end (qz_inquiry_send, qz_my_inquiries, qz_admin_inquir*)
+create table if not exists public.inquiries (
+  id       bigint generated always as identity primary key,
+  user_id  uuid references auth.users(id) on delete cascade,      -- null: a guest
+  ticket   text not null,                                          -- the inquiry's own key: a guest's browser keeps it to read the answer
+  nickname text,                                                   -- the nickname when it was written
+  kind     text not null default 'etc' check (kind in ('bug', 'account', 'report', 'idea', 'etc')),
+  body     text not null check (char_length(body) between 1 and 1000),
+  contact  text check (char_length(contact) <= 100),               -- a way to reach them, if they gave one (the owner sees it, staff do not)
+  ctx      jsonb,                                                  -- what the game added: version, language, browser, screen
+  status   text not null default 'new' check (status in ('new', 'done')),
+  reply    text check (char_length(reply) <= 1000),
+  reply_at timestamptz,
+  reply_by uuid references auth.users(id) on delete set null,
+  seen     boolean not null default true,                          -- false: an answer the player has not opened yet
+  at       timestamptz not null default now(),
+  done_at  timestamptz,
+  done_by  uuid references auth.users(id) on delete set null
+);
+create unique index if not exists inquiries_ticket on public.inquiries(ticket);
+create index if not exists inquiries_status on public.inquiries(status, id desc);
+create index if not exists inquiries_user on public.inquiries(user_id, id desc);
+create index if not exists inquiries_at on public.inquiries(at desc);
+alter table public.inquiries enable row level security;
+revoke all on table public.inquiries from public, anon, authenticated;
 
 -- ---------- row level security: read your own rows (prices and pouch numbers are public); no direct writes ----------
 alter table public.profiles     enable row level security;
@@ -678,12 +708,31 @@ begin
     insert into public.coin_log (user_id, delta, reason) values (uid, 3000, 'welcome');
   end if;
 end $$;
--- every sign-up (email or Google / Kakao) gets a profile
+-- v6.66: a nickname for an account that did not choose one: 생존자 + 4 digits (one nobody has, when 8 tries find one)
+create or replace function public.qz_auto_nick() returns text
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  n text;
+  i integer := 0;
+begin
+  loop
+    n := '생존자' || lpad(floor(random() * 10000)::integer::text, 4, '0');
+    i := i + 1;
+    exit when i >= 8 or not exists (select 1 from public.profiles t where t.nickname = n);
+  end loop;
+  return n;
+end $$;
+-- every sign-up (email or Google / Kakao) gets a profile. v6.66: the nickname is the one the game's own sign-up form sent (an e-mail
+-- account) and nothing else: a Google / Kakao account starts as 생존자 + 4 digits (the game asks for a nickname once), never with the
+-- name or the e-mail address the provider gave (those would show to every player)
 create or replace function public.qz_on_signup() returns trigger
 language plpgsql security definer set search_path = '' as $$
+declare v_nick text;
 begin
-  perform public.qz_new_profile(new.id, coalesce(new.raw_user_meta_data ->> 'nickname', new.raw_user_meta_data ->> 'name',
-    new.raw_user_meta_data ->> 'full_name', split_part(coalesce(new.email, ''), '@', 1)));
+  if coalesce(new.raw_app_meta_data ->> 'provider', 'email') = 'email' then v_nick := new.raw_user_meta_data ->> 'nickname'; end if;
+  v_nick := public.qz_clean_nick(v_nick);
+  if v_nick = '생존자' then v_nick := public.qz_auto_nick(); end if;
+  perform public.qz_new_profile(new.id, v_nick);
   return new;
 end $$;
 drop trigger if exists qz_on_signup on auth.users;
@@ -833,7 +882,7 @@ grant execute on function public.qz_titles_of(text[]) to anon, authenticated;
 -- ---------- what the game calls (POST /rest/v1/rpc/<name>) ----------
 -- me: nickname, coins, fragments, pouch pity, the free decoder, 근하신년 decoders kept (tickets), owned guns, admin / ban (v6.42),
 -- the friend code, gifts not shown yet and friend requests waiting (v6.18), the episode records (v6.20), hall-of-fame titles (v6.24),
--- the title worn and the achievement rewards waiting (v6.57)
+-- the title worn and the achievement rewards waiting (v6.57), answers to my inquiries not read yet (v6.66)
 -- (creates the profile if the account is older than this file)
 create or replace function public.qz_me() returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -845,8 +894,10 @@ begin
   if uid is null then raise exception 'not_signed_in'; end if;
   p := (select t from public.profiles t where t.id = uid);
   if p.id is null then
-    perform public.qz_new_profile(uid, (select coalesce(u.raw_user_meta_data ->> 'nickname', u.raw_user_meta_data ->> 'name',
-      split_part(coalesce(u.email, ''), '@', 1)) from auth.users u where u.id = uid));
+    -- (v6.66: the nickname the way qz_on_signup picks it: the sign-up form's for an e-mail account, else 생존자 + 4 digits)
+    perform public.qz_new_profile(uid, (select case when coalesce(u.raw_app_meta_data ->> 'provider', 'email') = 'email'
+        and public.qz_clean_nick(u.raw_user_meta_data ->> 'nickname') <> '생존자' then u.raw_user_meta_data ->> 'nickname' else public.qz_auto_nick() end
+      from auth.users u where u.id = uid));
     p := (select t from public.profiles t where t.id = uid);
   end if;
   if p.fcode is null then
@@ -873,6 +924,7 @@ begin
     'admin', exists (select 1 from public.admins a where a.user_id = uid),
     'mail_new', (select count(*) from public.qz_mail_open(uid)),   -- (v6.43: letters waiting in the mailbox)
     'gun_new', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen),   -- (v6.46: weapons an admin put on the account, not shown yet)
+    'inq_new', (select count(*) from public.inquiries q where q.user_id = uid and q.reply is not null and not q.seen),   -- (v6.66: answers to my inquiries not read yet)
     'ban', case when p.banned_until > now() then jsonb_build_object('until', p.banned_until, 'forever', p.banned_until = 'infinity'::timestamptz, 'reason', p.ban_reason) end,
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
@@ -2141,6 +2193,7 @@ end $$;
 -- ---------- who may call what ----------
 revoke all on function public.qz_new_profile(uuid, text) from public, anon, authenticated;
 revoke all on function public.qz_on_signup() from public, anon, authenticated;
+revoke all on function public.qz_auto_nick() from public, anon, authenticated;
 revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
 revoke all on function public.qz_buy(text) from public, anon;
@@ -2451,7 +2504,8 @@ begin
   return jsonb_build_object('dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen),
     'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'),
     'mail', (select count(*) from public.qz_mail_open(uid)),
-    'gun', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen));
+    'gun', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen),
+    'inq', (select count(*) from public.inquiries q where q.user_id = uid and q.reply is not null and not q.seen));   -- (v6.66: answers not read yet)
 end $$;
 
 -- a message to a friend (p_who = their code). Friends only; 1..200 characters; at most 20 a minute and 300 an hour; each pair keeps its newest 100.
@@ -2811,7 +2865,8 @@ language plpgsql stable security definer set search_path = '' as $$
 declare uid uuid := public.qz_admin_uid();
 begin
   return jsonb_build_object('id', uid, 'role', (select a.role from public.admins a where a.user_id = uid),
-    'nickname', (select t.nickname from public.profiles t where t.id = uid), 'email', (select u.email from auth.users u where u.id = uid));
+    'nickname', (select t.nickname from public.profiles t where t.id = uid), 'email', (select u.email from auth.users u where u.id = uid),
+    'inq_new', (select count(*) from public.inquiries q where q.status = 'new'));   -- (v6.66: inquiries waiting, the menu's number)
 end $$;
 
 -- the dashboard: players (all, new today, online now = a heartbeat in the last 150 s, played today), bans, coins today (paid out / spent),
@@ -3949,3 +4004,147 @@ revoke all on function public.qz_admin_err_clear(text) from public, anon;
 grant execute on function public.qz_err_report(text, text, text, text, jsonb, text) to anon, authenticated;
 grant execute on function public.qz_admin_errors(integer) to authenticated;
 grant execute on function public.qz_admin_err_clear(text) to authenticated;
+
+-- ============================================================================================================
+-- 문의 (v6.66): the lobby's 문의하기 button writes to the operators (inquiries); the admin page's 「문의」 answers
+-- ============================================================================================================
+-- Anyone may write (a guest too): a kind (bug 버그 · account 계정 · report 신고 · idea 건의 · etc 기타), 5..1,000 characters, a way to
+-- reach them if they like (100 characters) and what the game adds (version, language, browser, screen). A signed-in account: 5 an hour
+-- and 20 a day; guests: 60 an hour from all guests together and at most 300 waiting. A banned account may still write (to ask about the
+-- ban). The answer comes back in the game under 「내 문의」: a signed-in player's by the account (a dot on the button: qz_me inq_new,
+-- qz_ping inq), a guest's by the tickets that browser kept. A closed inquiry goes 180 days after it was closed.
+create or replace function public.qz_inquiry_send(p_kind text, p_body text, p_contact text default null, p_ctx jsonb default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_kind text := case when p_kind in ('bug', 'account', 'report', 'idea', 'etc') then p_kind else 'etc' end;
+  v_body text := btrim(regexp_replace(regexp_replace(replace(coalesce(p_body, ''), E'\r', ''), '[\x01-\x09\x0b-\x1f\x7f]', ' ', 'g'), E'\n{3,}', E'\n\n', 'g'));
+  v_contact text := nullif(left(btrim(regexp_replace(coalesce(p_contact, ''), '[[:cntrl:]]', ' ', 'g')), 100), '');
+  v_ctx jsonb := case when p_ctx is not null and jsonb_typeof(p_ctx) = 'object' and length(p_ctx::text) <= 800 then p_ctx end;
+  v_ticket text := replace(gen_random_uuid()::text, '-', '');
+  v_id bigint;
+begin
+  if char_length(v_body) < 5 then raise exception 'inq_short'; end if;
+  if char_length(v_body) > 1000 then raise exception 'inq_long'; end if;
+  if uid is not null then
+    if (select count(*) from public.inquiries q where q.user_id = uid and q.at > now() - interval '1 hour') >= 5
+      or (select count(*) from public.inquiries q where q.user_id = uid and q.at > now() - interval '1 day') >= 20 then raise exception 'inq_slow'; end if;
+  elsif (select count(*) from public.inquiries q where q.user_id is null and q.at > now() - interval '1 hour') >= 60
+    or (select count(*) from public.inquiries q where q.user_id is null and q.status = 'new') >= 300 then raise exception 'inq_busy';
+  end if;
+  delete from public.inquiries where status = 'done' and done_at < now() - interval '180 days';
+  insert into public.inquiries (user_id, ticket, nickname, kind, body, contact, ctx)
+  values (uid, v_ticket, (select t.nickname from public.profiles t where t.id = uid), v_kind, v_body, v_contact, v_ctx);
+  v_id := (select q.id from public.inquiries q where q.ticket = v_ticket);
+  return jsonb_build_object('ok', true, 'id', v_id, 'ticket', v_ticket);
+end $$;
+
+-- my inquiries and their answers, newest first (30): a signed-in account's own and the ones whose tickets this browser kept (p_tickets,
+-- 30 at most). new = answers not read yet (before this call); p_mark (opening 「내 문의」): from now on they count as read
+create or replace function public.qz_my_inquiries(p_tickets text[] default null, p_mark boolean default true) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_t text[] := (select coalesce(array_agg(s.t), '{}'::text[]) from (select distinct x as t from unnest(coalesce(p_tickets, '{}'::text[])) x
+    where x ~ '^[0-9a-f]{32}$' limit 30) s);
+  v_new integer;
+  r jsonb;
+begin
+  v_new := (select count(*) from public.inquiries q where (q.user_id = uid or q.ticket = any(v_t)) and q.reply is not null and not q.seen);
+  r := (select coalesce(jsonb_agg(jsonb_build_object('id', q.id, 'kind', q.kind, 'body', q.body, 'at', q.at, 'status', q.status,
+      'reply', q.reply, 'reply_at', q.reply_at, 'new', q.reply is not null and not q.seen, 'mine', coalesce(q.user_id = uid, false))
+      order by q.id desc), '[]'::jsonb)
+    from (select x.* from public.inquiries x where x.user_id = uid or x.ticket = any(v_t) order by x.id desc limit 30) q);
+  if coalesce(p_mark, true) and v_new > 0 then
+    update public.inquiries set seen = true where (user_id = uid or ticket = any(v_t)) and reply is not null and not seen;
+  end if;
+  return jsonb_build_object('rows', r, 'new', v_new);
+end $$;
+
+-- the inquiries for the admin page (staff too; a guest's way to reach them only for the owner): p_status new | done | all, newest first,
+-- 100 at a time (p_before: the last id already shown); how many wait, how many are closed, how many came in today (Korean time)
+create or replace function public.qz_admin_inquiries(p_status text default 'new', p_before bigint default 0, p_limit integer default 100) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_uid();
+  own boolean := coalesce((select a.role from public.admins a where a.user_id = uid) = 'owner', false);
+  st text := case when p_status in ('new', 'done', 'all') then p_status else 'new' end;
+  t0 timestamptz := ((now() at time zone 'Asia/Seoul')::date)::timestamp at time zone 'Asia/Seoul';
+begin
+  return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('id', q.id, 'user_id', q.user_id,
+      'nickname', coalesce(p.nickname, q.nickname), 'nick_then', q.nickname, 'fcode', p.fcode, 'banned', coalesce(p.banned_until > now(), false),
+      'kind', q.kind, 'body', q.body, 'has_contact', q.contact is not null, 'contact', case when own then q.contact end, 'ctx', q.ctx,
+      'status', q.status, 'reply', q.reply, 'reply_at', q.reply_at, 'reply_by', (select b.nickname from public.profiles b where b.id = q.reply_by),
+      'seen', q.seen, 'at', q.at, 'done_at', q.done_at, 'done_by', (select b.nickname from public.profiles b where b.id = q.done_by))
+      order by q.id desc)
+    from (select x.* from public.inquiries x where (st = 'all' or x.status = st) and (coalesce(p_before, 0) <= 0 or x.id < p_before)
+          order by x.id desc limit least(greatest(coalesce(p_limit, 100), 1), 200)) q
+    left join public.profiles p on p.id = q.user_id), '[]'::jsonb),
+    'new', (select count(*) from public.inquiries x where x.status = 'new'),
+    'done', (select count(*) from public.inquiries x where x.status = 'done'),
+    'today', (select count(*) from public.inquiries x where x.at >= t0),
+    'owner', own);
+end $$;
+-- answer one (1..1,000 characters): the player finds it under 「내 문의」, with a dot on the button. p_done (the default) closes it too.
+-- Writing again replaces the answer (it counts as new again). In the admin log.
+create or replace function public.qz_admin_inquiry_reply(p_id bigint, p_reply text, p_done boolean default true) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_uid();
+  v_r text := btrim(regexp_replace(replace(coalesce(p_reply, ''), E'\r', ''), '[\x01-\x09\x0b-\x1f\x7f]', ' ', 'g'));
+  v_d boolean := coalesce(p_done, true);
+  v_u uuid;
+begin
+  if char_length(v_r) < 1 or char_length(v_r) > 1000 then raise exception 'bad_reply'; end if;
+  if not exists (select 1 from public.inquiries q where q.id = p_id) then raise exception 'no_inquiry'; end if;
+  v_u := (select q.user_id from public.inquiries q where q.id = p_id);
+  update public.inquiries set reply = v_r, reply_at = now(), reply_by = uid, seen = false,
+    status = case when v_d then 'done' else status end, done_at = case when v_d then now() else done_at end,
+    done_by = case when v_d then uid else done_by end
+  where id = p_id;
+  perform public.qz_admin_note(uid, 'inq_reply', v_u, jsonb_build_object('id', p_id, 'done', v_d), null);
+  return jsonb_build_object('ok', true, 'id', p_id);
+end $$;
+-- close one without an answer (p_done true) or open it again (false). In the admin log.
+create or replace function public.qz_admin_inquiry_done(p_id bigint, p_done boolean default true) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_uid();
+  v_d boolean := coalesce(p_done, true);
+  v_u uuid;
+begin
+  if not exists (select 1 from public.inquiries q where q.id = p_id) then raise exception 'no_inquiry'; end if;
+  v_u := (select q.user_id from public.inquiries q where q.id = p_id);
+  update public.inquiries set status = case when v_d then 'done' else 'new' end, done_at = case when v_d then now() end,
+    done_by = case when v_d then uid end
+  where id = p_id;
+  perform public.qz_admin_note(uid, case when v_d then 'inq_done' else 'inq_open' end, v_u, jsonb_build_object('id', p_id), null);
+  return jsonb_build_object('ok', true, 'id', p_id, 'status', case when v_d then 'done' else 'new' end);
+end $$;
+-- delete one (spam; the owner only). The admin log keeps its kind, not what it said.
+create or replace function public.qz_admin_inquiry_del(p_id bigint) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_owner();
+  v_u uuid;
+  v_k text;
+begin
+  if not exists (select 1 from public.inquiries q where q.id = p_id) then raise exception 'no_inquiry'; end if;
+  v_u := (select q.user_id from public.inquiries q where q.id = p_id);
+  v_k := (select q.kind from public.inquiries q where q.id = p_id);
+  delete from public.inquiries where id = p_id;
+  perform public.qz_admin_note(uid, 'inq_del', v_u, jsonb_build_object('id', p_id, 'kind', v_k), null);
+  return jsonb_build_object('ok', true, 'id', p_id);
+end $$;
+revoke all on function public.qz_inquiry_send(text, text, text, jsonb) from public;
+revoke all on function public.qz_my_inquiries(text[], boolean) from public;
+revoke all on function public.qz_admin_inquiries(text, bigint, integer) from public, anon;
+revoke all on function public.qz_admin_inquiry_reply(bigint, text, boolean) from public, anon;
+revoke all on function public.qz_admin_inquiry_done(bigint, boolean) from public, anon;
+revoke all on function public.qz_admin_inquiry_del(bigint) from public, anon;
+grant execute on function public.qz_inquiry_send(text, text, text, jsonb) to anon, authenticated;
+grant execute on function public.qz_my_inquiries(text[], boolean) to anon, authenticated;
+grant execute on function public.qz_admin_inquiries(text, bigint, integer) to authenticated;
+grant execute on function public.qz_admin_inquiry_reply(bigint, text, boolean) to authenticated;
+grant execute on function public.qz_admin_inquiry_done(bigint, boolean) to authenticated;
+grant execute on function public.qz_admin_inquiry_del(bigint) to authenticated;

@@ -20,10 +20,10 @@
   - 옛날 키를 쓰려면 같은 페이지의 **Legacy** 탭(anon / service_role) → `anon` `public` (`eyJ...` 로 시작)도 됩니다. 단 Supabase가 2026년 말까지 이 옛 키를 없앨 예정이라 publishable key 권장
   - Project URL은 `https://<Project ID>.supabase.co` (Project ID는 **Project Settings → General**)
 
-`source/src/account.js` 맨 위 줄을 이렇게 바꾸고 빌드(`python3 build.py`)합니다.
+`source/src/sb.js`의 `SB` 줄을 이렇게 바꾸고 빌드(`python3 build.py`)합니다 (v6.42부터 `account.js`가 아니라 `sb.js`, 관리 페이지도 같은 파일을 씀).
 
 ```js
-const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
+const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:['google']};
 ```
 
 - publishable(anon) 키는 원래 공개용입니다. 테이블은 RLS로 막혀 있어서 자기 데이터 읽기만 되고, 코인·구매·해독기는 서버 함수에서만 바뀝니다.
@@ -36,11 +36,34 @@ const SB={url:'https://xxxx.supabase.co',key:'sb_publishable_...',oauth:[]};
 
 ## 3. 로그인 설정 (Authentication)
 - **URL Configuration → Site URL**: 배포 주소 (예: `https://내프로젝트.vercel.app`)
-- **Redirect URLs**: 같은 주소 추가 (로컬 테스트는 `http://localhost:*` 도 추가)
-- **Providers → Email → Confirm email**
+- **Redirect URLs**: `https://내프로젝트.vercel.app/**` (게임 `index.html`과 관리 페이지 `admin.html`이 둘 다 이 주소로 돌아와요. 로컬 테스트는 `http://localhost:*/**`도 추가)
+- **Sign In / Providers → Email → Confirm email**
   - 끄면: 가입 즉시 로그인
   - 켜면: 인증 메일 링크를 눌러야 로그인 (링크 누르면 게임으로 돌아오면서 로그인됨)
-- 구글 / 카카오 로그인(선택): Providers에서 켜고 클라이언트 ID·Secret 입력 → `account.js`의 `oauth:['google','kakao']`
+
+### 구글 로그인 (v6.66)
+`sb.js`에 `oauth:['google']`이 이미 들어 있어요. 버튼은 Supabase에서 Google을 켠 뒤에만 보입니다(게임이 공개 설정 `/auth/v1/settings`로 확인 — 켜기 전에는 아무것도 안 보임).
+1. **Google Cloud Console**(https://console.cloud.google.com) → 프로젝트 만들기(또는 고르기) → **Google Auth Platform**
+   - **Branding**: 앱 이름, 사용자 지원 이메일, 앱 홈페이지 · 개인정보처리방침 주소, 승인된 도메인(배포 도메인). 브랜드 확인은 며칠 걸릴 수 있어요.
+   - **Audience**: User type **External**. 처음엔 **Testing**이라 테스트 사용자로 넣은 계정만 로그인돼요 → 다 확인하면 **Publish app**(프로덕션)
+   - **Data Access**: `openid`를 직접 추가(`userinfo.email` · `userinfo.profile`은 기본). 이 세 개는 민감한 범위가 아니라 별도 심사가 필요 없어요.
+   - **Clients → Create client → Web application**
+     - 승인된 JavaScript 원본: 배포 주소(예: `https://내프로젝트.vercel.app`)
+     - 승인된 리디렉션 URI: Supabase의 Google 설정 화면에 나오는 **Callback URL** (`https://<프로젝트 ID>.supabase.co/auth/v1/callback`)
+     - 만들면 나오는 **Client ID**와 **Client Secret**을 복사
+2. **Supabase 대시보드 → Authentication → Sign In / Providers → Google** → 켜고 Client ID · Client Secret 붙여넣기 → Save
+   - Client Secret은 Supabase에만 넣어요. 게임 코드(`sb.js`)에는 절대 넣지 마세요.
+3. 게임을 새로 고치면 로그인 창에 「Google로 계속」이 생겨요. 관리 페이지 로그인에도 「구글로 로그인」이 생겨요.
+- 구글 계정의 이름 · 이메일은 닉네임으로 쓰지 않아요. 구글로 가입한 계정은 「생존자 + 숫자 4자리」로 시작하고, 게임이 처음 한 번 닉네임을 정하라고 물어봐요.
+- 구글 동의 화면에는 앱 주소가 `<프로젝트 ID>.supabase.co`로 보여요. 내 도메인으로 보이게 하려면 Supabase 커스텀 도메인(유료)이 필요해요.
+- 구글 계정 고르기 화면이 매번 떠요(`prompt=select_account` — PC방처럼 같이 쓰는 컴퓨터에서 앞사람 계정으로 들어가지 않게).
+- 카카오도 같은 식: Providers → Kakao를 켜고 `sb.js`의 `oauth`에 `'kakao'`를 더하면 버튼이 생겨요.
+
+### 문의 (v6.66)
+로비 상단의 **문의하기**(작은 화면은 더보기 메뉴)로 플레이어 · 게스트가 운영진에게 글을 보내요. 관리 페이지 **문의**에서 답하면 플레이어 게임의 「내 문의」로 가고 버튼에 빨간 점이 떠요.
+- 테이블 `inquiries`(직접 읽기 · 쓰기 막힘, 함수로만): 종류(버그 · 계정 · 신고 · 건의 · 기타), 내용(5~1,000자), 게스트의 연락처(선택, 주인 계정만 봄), 게임이 붙이는 정보(버전 · 언어 · 브라우저 · 화면 크기)
+- 제한: 계정은 1시간 5개 · 하루 20개, 게스트는 다 합쳐 1시간 60개 · 대기 300개까지. 정지된 계정도 문의는 돼요(이의 제기).
+- 게스트의 답변은 문의를 쓴 브라우저에서만 보여요(브라우저가 문의 키를 30개까지 기억). 닫힌 문의는 닫은 지 180일 뒤 지워져요.
 
 ## 4. 경제 규칙
 | 항목 | 값 |

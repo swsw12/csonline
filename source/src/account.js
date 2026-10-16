@@ -29,17 +29,24 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     let kind=null;const hs=location.hash||'';
     if(/access_token=|error=/.test(hs)){const q=new URLSearchParams(hs.slice(1));
       if(q.get('error')){this.lastErr=q.get('error_description')||q.get('error')}
-      else{this.setSes({access_token:q.get('access_token'),refresh_token:q.get('refresh_token'),expires_at:+q.get('expires_at')||0,expires_in:q.get('expires_in')});kind=q.get('type')}
+      else{this.setSes({access_token:q.get('access_token'),refresh_token:q.get('refresh_token'),expires_at:+q.get('expires_at')||0,expires_in:q.get('expires_in')});kind=q.get('type')||'oauth'}// (an e-mail link says its type; back from Google / Kakao: none)
       try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
     else this.ses=this.ls('qz_ses');
-    this.loadPrices();this.loadGacha();
+    this.loadPrices();this.loadGacha();this.loadProviders();
     if(this.ses){try{await this.fresh();if(!this.ses.user)this.ses.user=await this.req('GET','/auth/v1/user',null,true);await this.loadMe()}catch(e){if(!e.net){this.setSes(null);this.me=null}}}
     else this.me=null;
     this.ready=true;this.emit();return kind},
   async loadPrices(){try{const r=await this.req('GET','/rest/v1/gun_prices?select=gun_id,price,free,sold,tier',null,false);if(Array.isArray(r)&&r.length){const P={};for(const x of r)P[x.gun_id]=x;this.prices=P;this.emit()}}catch(e){}},
   async loadGacha(){try{const r=await this.req('GET','/rest/v1/gacha_config?select=*',null,false);if(Array.isArray(r)&&r[0]){this.gcfg=r[0];this.emit()}}catch(e){}},
+  // v6.66: which of SB.oauth's sign-in buttons show: the providers switched on in the project (its public auth settings,
+  // /auth/v1/settings, asked once at start); when that cannot be asked (offline, an old project) the list as SB.oauth has it
+  provs:null,
+  async loadProviders(){const want=(SB.oauth||[]).slice();if(!this.on||!want.length){this.provs=[];return this.provs}
+    try{const r=await this.req('GET','/auth/v1/settings',null,false),ex=r&&r.external;this.provs=ex&&typeof ex==='object'?want.filter(p=>ex[p]===true):want}catch(e){this.provs=want}
+    this.emit();return this.provs},
+  oauthList(){return this.provs||[]},
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
-      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null,mailN:r.mail_new|0,gunNew:r.gun_new|0,
+      frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null,mailN:r.mail_new|0,gunNew:r.gun_new|0,inqN:r.inq_new|0,
       // (v6.57: the title worn as everyone sees it — undefined on a database from before it —, as set (null: automatic), achievement rewards waiting)
       title:r.title===undefined?undefined:(r.title||null),titleSet:r.title_set||null,achReady:r.ach_ready|0};
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts,title:this.me.title,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
@@ -54,7 +61,9 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async signUp(email,pw,nick){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';
     const s=await this.req('POST','/auth/v1/signup'+q,{email,password:pw,data:{nickname:nick}},false);
     if(s&&s.access_token){this.setSes(s);await this.loadMe();return {ok:1}}return {confirm:1}},// e-mail confirmation is on: the link brings the player back signed in
-  oauth(p){location.assign(SB.url.replace(/\/+$/,'')+'/auth/v1/authorize?provider='+encodeURIComponent(p)+(this.here()?'&redirect_to='+encodeURIComponent(this.here()):''))},
+  // (Google: the account picker every time — a shared computer, a PC방, never signs the next player in as the last one)
+  oauthUrl(p){return SB.url.replace(/\/+$/,'')+'/auth/v1/authorize?provider='+encodeURIComponent(p)+(this.here()?'&redirect_to='+encodeURIComponent(this.here()):'')+(p==='google'?'&prompt=select_account':'')},
+  oauth(p){location.assign(this.oauthUrl(p))},
   async recover(email){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';await this.req('POST','/auth/v1/recover'+q,{email},false)},
   async newPassword(pw){await this.call('PUT','/auth/v1/user',{password:pw})},
   async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.side=null;this.mis=null;this.ls('qz_me',null);this.emit()},
@@ -122,10 +131,11 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   // v6.25: 'I am here' (profiles.last_seen; friends read it as online / last seen) and the friend chat. dm_new = unread messages.
   // qz_dm_list → {msgs:[{id,mine,text,at}], seen, dm_new}; asking for a talk marks what the friend wrote as read. Old databases: no ping, no chat.
   // v6.42: play = seconds of a match since the last beat, fresh = the game just came into view (a new stretch of play time starts);
-  // a database from before v6.42 has qz_ping without arguments (asked that way from then on)
+  // a database from before v6.42 has qz_ping without arguments (asked that way from then on). It also brings the counts the lobby's
+  // dots show: messages, invites, letters, weapons given, answers to my inquiries (v6.66: inq)
   async ping(play,fresh){if(this.noPing)return null;let r;const a=this.pingOld?{}:{p_play:Math.max(0,play|0),p_fresh:!!fresh};
     try{r=await this.rpc('qz_ping',a)}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){if(!this.pingOld){this.pingOld=true;return this.ping(play,fresh)}this.noPing=true;return null}throw e}
-    const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(r.mail!=null&&(me.mailN|0)!==(r.mail|0)){me.mailN=r.mail|0;ch=true}if(r.gun!=null&&(me.gunNew|0)!==(r.gun|0)){me.gunNew=r.gun|0;ch=true}if(ch)this.emit()}return r},
+    const me=this.me;if(me&&r){let ch=false;if(r.dm_new!=null&&(me.dmNew|0)!==(r.dm_new|0)){me.dmNew=r.dm_new|0;ch=true}if(r.inv!=null&&(me.invN|0)!==(r.inv|0)){me.invN=r.inv|0;ch=true}if(r.mail!=null&&(me.mailN|0)!==(r.mail|0)){me.mailN=r.mail|0;ch=true}if(r.gun!=null&&(me.gunNew|0)!==(r.gun|0)){me.gunNew=r.gun|0;ch=true}if(r.inq!=null&&(me.inqN|0)!==(r.inq|0)){me.inqN=r.inq|0;ch=true}if(ch)this.emit()}return r},
   async dmList(code,after){const r=await this.rpc('qz_dm_list',{p_who:code,p_after:after|0});if(this.me&&(this.me.dmNew|0)!==(r.dm_new|0)){this.me.dmNew=r.dm_new|0;this.emit()}return r},
   async dmSend(code,text){return this.rpc('qz_dm_send',{p_who:code,p_text:text})},
   // a gun from the shop for a friend (the giver's coins): {coins,gun,to}
@@ -201,6 +211,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/dm_text/.test(m))return T2('메시지는 1~200자로 적어 주세요','A message is 1 to 200 characters');
     if(/dm_slow/.test(m))return T2('너무 빨리 보내고 있어요. 잠시 후에 다시 보내 주세요','Slow down — try again in a moment');
     if(/dm_not_friend/.test(m))return T2('친구끼리만 메시지를 보낼 수 있어요','Messages go to friends only');
+    if(/inq_short/.test(m))return T2('문의 내용을 5자 이상 적어 주세요','Write at least 5 characters');
+    if(/inq_long/.test(m))return T2('문의는 1,000자까지 쓸 수 있어요','An inquiry is 1,000 characters at most');
+    if(/inq_slow/.test(m))return T2('문의를 너무 많이 보냈어요. 1시간 뒤에 다시 보내 주세요','Too many inquiries — try again in an hour');
+    if(/inq_busy/.test(m))return T2('지금은 게스트 문의가 많이 밀려 있어요. 로그인하고 보내거나 조금 뒤에 다시 보내 주세요','Guest inquiries are backed up right now — sign in to send, or try again later');
     if(/Could not find the function|PGRST202/i.test(m+' '+c)&&/dm_/.test(m))return T2('채팅은 서버 스키마를 갱신해야 쓸 수 있어요','Chat needs the server schema updated');
     if(/friend_self/.test(m))return T2('나 자신은 친구로 추가할 수 없어요','That is you');
     if(/friend_already/.test(m))return T2('이미 친구예요','Already friends');

@@ -505,7 +505,7 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
   render(){const o=$('accWin');if(!o)return;this.grab();const L=LI(),m=this.mode,f=this.f,me=ACC.me;
     const inp=(k,type,ph,ac)=>`<input name="${k}" type="${type}" placeholder="${ph}" autocomplete="${ac}" value="${esc(f[k]||'')}" maxlength="${k==='nick'?16:120}">`;
     const tabs=m==='in'||m==='up'?`<div class="atabs"><button class="${m==='in'?'on':''}" data-aa="mode" data-v="in">${L?'Sign in':'로그인'}</button><button class="${m==='up'?'on':''}" data-aa="mode" data-v="up">${L?'Sign up':'회원가입'}</button></div>`:'';
-    const so=(m==='in'||m==='up')&&SB.oauth&&SB.oauth.length?`<div class="aor"><span>${L?'or':'또는'}</span></div><div class="aso">${SB.oauth.map(p=>`<button class="ao ${p}" data-aa="oauth" data-v="${p}">${p==='google'?'<b>G</b> '+(L?'Continue with Google':'Google로 계속'):p==='kakao'?'<b>K</b> '+(L?'Continue with Kakao':'카카오로 계속'):esc(p)}</button>`).join('')}</div>`:'';
+    const OA=ACC.oauthList(),so=(m==='in'||m==='up')&&OA.length?`<div class="aor"><span>${L?'or':'또는'}</span></div><div class="aso">${OA.map(p=>`<button class="ao ${p}" data-aa="oauth" data-v="${p}">${p==='google'?'<b>G</b> '+(L?'Continue with Google':'Google로 계속'):p==='kakao'?'<b>K</b> '+(L?'Continue with Kakao':'카카오로 계속'):esc(p)}</button>`).join('')}</div>`:'';
     let body='';
     if(m==='in')body=`<label>${L?'E-mail':'이메일'}${inp('email','email','you@example.com','email')}</label><label>${L?'Password':'비밀번호'}${inp('pw','password','••••••','current-password')}</label>
       <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Sign in':'로그인')}</button><button class="alink" data-aa="mode" data-v="reset">${L?'Forgot your password?':'비밀번호를 잊었어요'}</button>${so}`;
@@ -517,13 +517,17 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
     else if(m==='newpw')body=`<p class="anote">${L?'Choose a new password.':'새 비밀번호를 정해 주세요.'}</p><label>${L?'New password':'새 비밀번호'}${inp('pw','password','••••••','new-password')}</label>
       <button class="ago" data-aa="go"${this.busy?' disabled':''}>${this.busy?'…':(L?'Save':'저장')}</button>`;
     else if(m==='sent')body=`<p class="anote big">${this.msg?esc(this.msg):''}</p><button class="ago" data-aa="mode" data-v="in">${L?'OK':'확인'}</button>`;
+    else if(m==='nick'&&me)body=`<p class="anote big">${L?'Welcome! Pick the nickname other players will see.':'환영해요! 다른 플레이어에게 보일 닉네임을 정해 주세요.'}</p>
+      <label>${L?'Nickname':'닉네임'} <small>${L?'2–16 characters':'2~16자'}</small>${inp('nick','text',esc(me.nickname),'nickname')}</label>
+      <button class="ago" data-aa="nick"${this.busy?' disabled':''}>${this.busy?'…':(L?'Use this nickname':'이 닉네임으로 할게요')}</button>
+      <button class="alink" data-aa="x">${L?'Keep '+esc(me.nickname)+' for now':esc(me.nickname)+' 그대로 쓸게요'}</button><p class="anote">${L?'You can change it any time under My account.':'닉네임은 나중에 내 계정에서 언제든 바꿀 수 있어요.'}</p>`;
     else if(m==='me'&&me)body=`<div class="ame"><div class="amc">${COIN}<b>${fmtC(me.coins)}</b><small>${L?'coins':'코인'}</small></div>
         <div class="ams"><span>${L?'Earned':'모은 코인'} <b>${fmtC(me.earned||0)}</b></span><span>${L?'Matches':'정산한 판'} <b>${fmtC(me.matches||0)}</b></span><span>${L?'Left today':'오늘 남은 보상'} <b>${fmtC(me.dayLeft==null?20000:me.dayLeft)}</b></span><span>${L?'Guns owned':'보유 총'} <b>${(me.owned?me.owned.size:0)+SHOP_FREE.length}</b></span><span>${L?'Fragments':'해독 조각'} <b>${fmtC(me.frags||0)}</b></span></div>
         ${me.email?`<p class="anote">${esc(me.email)}</p>`:''}</div>
       <label>${L?'Nickname':'닉네임'}${inp('nick','text',esc(me.nickname),'nickname')}</label><button class="ago" data-aa="nick"${this.busy?' disabled':''}>${L?'Change nickname':'닉네임 바꾸기'}</button>
       <div class="arow"><button class="alink" data-aa="shop">${L?'Open the shop':'상점 열기'}</button><button class="alink red" data-aa="out">${L?'Sign out':'로그아웃'}</button></div>`;
     else body=`<p class="anote">${L?'Not signed in.':'로그인되어 있지 않아요.'}</p><button class="ago" data-aa="mode" data-v="in">${L?'Sign in':'로그인'}</button>`;
-    const title={in:L?'Sign in':'로그인',up:L?'Sign up':'회원가입',reset:L?'Reset password':'비밀번호 재설정',newpw:L?'New password':'새 비밀번호',sent:L?'Check your mail':'메일을 확인해 주세요',me:L?'My account':'내 계정'}[m]||'';
+    const title={in:L?'Sign in':'로그인',up:L?'Sign up':'회원가입',reset:L?'Reset password':'비밀번호 재설정',newpw:L?'New password':'새 비밀번호',sent:L?'Check your mail':'메일을 확인해 주세요',me:L?'My account':'내 계정',nick:L?'Your nickname':'닉네임 정하기'}[m]||'';
     o.innerHTML=`<div class="awin"><div class="awh"><b>${title}</b><button data-aa="x" aria-label="close">×</button></div>${tabs}<div class="awb">${body}
       ${m!=='sent'&&this.msg?`<div class="amsg ${this.ok?'ok':'bad'}">${esc(this.msg)}</div>`:''}
       ${m==='in'||m==='up'?`<button class="aguest" data-aa="x">${L?'Play as a guest — free guns only':'게스트로 계속 — 기본 총만 사용'}</button>`:''}</div></div>`},
@@ -533,7 +537,9 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
     if(a==='oauth'){ACC.oauth(v);return}
     if(a==='shop'){this.close();SHOP.open();return}
     if(a==='out'){ACC.signOut().then(()=>{this.close();shopToast(L?'Signed out':'로그아웃했어요')});return}
-    if(a==='nick'){this.grab();this.run(async()=>{const n=await ACC.setNick(this.f.nick);this.f.nick='';this.msg=(L?'Nickname: ':'닉네임 변경 — ')+n;this.ok=true});return}
+    if(a==='nick'){this.grab();const from=this.mode;if((this.f.nick||'').trim().length<2){this.msg=L?'Pick a nickname (2–16 characters)':'닉네임을 2~16자로 정해 주세요';this.ok=false;this.render();return}
+      this.run(async()=>{const n=await ACC.setNick(this.f.nick);this.f.nick='';if(from==='nick'){this.close();shopToast((L?'Nickname: ':'닉네임: ')+n);AU.play('uiok',{vol:.5});return}this.msg=(L?'Nickname: ':'닉네임 변경 — ')+n;this.ok=true});return}
+    if(a==='go'&&(this.mode==='nick'||this.mode==='me')){this.act('nick');return}// (Enter in the nickname box)
     if(a==='go'){this.grab();const f=this.f,m=this.mode;
       if((m==='in'||m==='up'||m==='reset')&&!/^\S+@\S+\.\S+$/.test(f.email.trim())){this.msg=L?'Enter your e-mail address':'이메일을 입력해 주세요';this.ok=false;this.render();return}
       if((m==='in'||m==='up'||m==='newpw')&&(f.pw||'').length<6){this.msg=L?'Use a password of at least 6 characters':'비밀번호는 6자 이상이에요';this.ok=false;this.render();return}
@@ -545,6 +551,9 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:''},
       else if(m==='reset')this.run(async()=>{await ACC.recover(f.email.trim());this.mode='sent';this.msg=L?'If that e-mail has an account, a reset link is on its way.':'가입된 이메일이면 재설정 링크가 곧 도착해요.'});
       else if(m==='newpw')this.run(async()=>{await ACC.newPassword(f.pw);this.f.pw='';this.mode='me';this.msg=L?'Password changed':'비밀번호를 바꿨어요';this.ok=true});
       return}},
+  // v6.66: an account that never picked a nickname (Google / Kakao start as 생존자 + 4 digits) is asked for one, once on this browser
+  nickAsk(){const me=ACC.signed()&&ACC.me,uid=ACC.ses&&ACC.ses.user&&ACC.ses.user.id;if(!me||!uid||!/^생존자\d{4}$/.test(me.nickname||''))return false;
+    const A0=ACC.ls('qz_nickAsk'),A=Array.isArray(A0)?A0:[];if(A.includes(uid))return false;A.push(uid);ACC.ls('qz_nickAsk',A.slice(-20));this.f.nick='';this.open('nick');return true},
   done(hi){const me=ACC.me;this.f.pw='';this.close();if(me){shopToast(hi+me.nickname+' · '+fmtC(me.coins)+(LI()?' coins':' 코인'));AU.play('uiok',{vol:.5})}},
   async run(fn){if(this.busy)return;this.busy=true;this.msg='';this.render();try{await fn()}catch(e){this.msg=ACC.errText(e);this.ok=false}this.busy=false;if($('accWin'))this.render()}};
 // a short line on screen: in a match the HUD's note, in the lobby a toast
@@ -634,6 +643,7 @@ function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||AC
   ACC.init().then(kind=>{const L=LI();
     if(kind==='recovery'){ACCW.open('newpw');return}
     if(ACC.lastErr){ACCW.open('in');ACCW.msg=ACC.lastErr;ACCW.ok=false;ACCW.render();return}
+    if(ACC.signed()&&/^생존자\d{4}$/.test(ACC.me.nickname||'')){const t0=Date.now(),go=()=>{if(!ACC.signed())return;if($('nbWin')||$('accWin')||G.st!=='menu'||UI.open!=='menu'){if(Date.now()-t0<60e3)setTimeout(go,700);return}if(!ACCW.nickAsk()&&kind)shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname)};setTimeout(go,500);return}
     if(ACC.signed()&&kind){shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname);return}
     // first visit: offer to sign in once the lobby is on screen (the boot can still be painting characters)
     let seen=null;try{seen=LS.get('accSeen',null)}catch(e){}

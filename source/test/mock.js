@@ -8,9 +8,18 @@ const clean=t=>{const n=String(t||'').replace(/[\u0000-\u001f]/g,'').replace(/\s
 const res=(st,body)=>new Response(body==null?'':JSON.stringify(body),{status:st,headers:{'Content-Type':'application/json'}});
 const err=(st,o)=>res(st,o);const pgerr=m=>res(400,{code:'P0001',details:null,hint:null,message:m});
 window.__mockCalls=[];
+// v6.66: a session back from Google / Kakao — a test opens the page with #access_token=oauth_<provider>_<tag>&refresh_token=oauthr_<provider>_<tag>
+// (the account is made the first time one of them comes in: the provider's name and e-mail in its metadata, a 생존자 + 4 digits nickname)
+const oauthUser=(db,t)=>{const mt=/^oauthr?_(google|kakao)_([a-z0-9]{1,20})$/.exec(String(t||''));if(!mt)return;const id='uo_'+mt[1]+'_'+mt[2],a='oauth_'+mt[1]+'_'+mt[2],r='oauthr_'+mt[1]+'_'+mt[2];
+  if(!db.users[id]){const e=mt[2]+'@gmail.com';db.users[id]={email:e,pw:null,meta:Object.assign({name:'홍길동',full_name:'홍길동',email:e},mt[1]==='kakao'?{nickname:'카카오닉'}:{}),prov:mt[1],confirmed:true};newProfile(db,id,autoNick())}
+  if(!db.tok[a])db.tok[a]={uid:id,exp:Date.now()+3600e3};if(!db.tok[r]&&t===r)db.tok[r]={uid:id,refresh:1};save(db)};
+// v6.66: an operator's answer to an inquiry (the admin page's qz_admin_inquiry_reply); done false keeps it open
+window.__mockInqReply=(id,text,done)=>{const db=load(),q=(db.inq||[]).find(x=>x.id===id);if(!q)return false;q.reply=text;q.reply_at=new Date().toISOString();q.seen=false;if(done!==false)q.status='done';save(db);return true};
 const ses=(db,uid)=>{const a='at_'+uuid(),r='rt_'+uuid();db.tok[a]={uid,exp:Date.now()+3600e3};db.tok[r]={uid,refresh:1};const u=db.users[uid];
   return {access_token:a,token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,refresh_token:r,user:{id:uid,email:u.email,user_metadata:u.meta}}};
 const REC=Q=>Object.assign({g:0,k:0,inf:0,best:0,xp:0,imported:false},Q.rec||{});
+// v6.66: an account that picked no nickname (Google / Kakao) starts as 생존자 + 4 digits (schema.sql qz_auto_nick)
+const autoNick=()=>'생존자'+String(Math.floor(Math.random()*10000)).padStart(4,'0');
 const newProfile=(db,uid,nick)=>{if(db.prof[uid])return;db.prof[uid]={nickname:clean(nick),coins:3000,earned:0,matches:0,last:null,day:null,dayE:0,frags:0,pity:0,freeDay:null,created:Date.now()};db.own[uid]=[];db.glog=db.glog||[];db.log.push([uid,3000,'welcome'])};
 const GCFG={id:1,dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,cost1:500,cost10:4500,rate_s:0.02,rate_a:0.08,rate_coin:0.3,pity:60,coin_table:[[100,30],[200,30],[300,20],[500,15],[1000,5]],frag_min:2,frag_max:5,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
@@ -41,7 +50,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
   init=init||{};const m=(init.method||'GET').toUpperCase(),u=new URL(url),p=u.pathname,body=init.body?JSON.parse(init.body):null,H=init.headers||{};
   window.__mockCalls.push(m+' '+p+u.search);if(window.__MOCK_DOWN)throw new TypeError('Failed to fetch');
   if(H.apikey!=='anon-test-key')return err(401,{message:'Invalid API key'});
-  const db=load();const bearer=String(H.Authorization||'').replace('Bearer ','');const tk=db.tok[bearer];const uid=tk&&!tk.refresh&&tk.exp>Date.now()?tk.uid:null;
+  const db=load();const bearer=String(H.Authorization||'').replace('Bearer ','');oauthUser(db,bearer);oauthUser(db,body&&body.refresh_token);const tk=db.tok[bearer];const uid=tk&&!tk.refresh&&tk.exp>Date.now()?tk.uid:null;
   // the hall of fame (v6.24; same rules as qz_claim / qz_ep_firsts): db.hof = [{ep,diff,match,at,time,members:[uid]}]
   const HOFL=()=>db.hof||(db.hof=[]),hofOf=id=>HOFL().filter(h=>h.members.includes(id)).map(h=>h.ep*10+h.diff).sort((a,b)=>a-b),hofBest=id=>{const L=hofOf(id);return L.length?L[L.length-1]:null};
   // v6.57: the numbers an achievement reads, the tiers claimed (db.achc[uid] = [{id,at}]), the title worn (window.__MOCK_ACH = {stat: n} adds to the numbers)
@@ -60,14 +69,16 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
   if(p==='/auth/v1/signup'&&m==='POST'){const e=String(body.email||'').toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return err(400,{code:400,error_code:'validation_failed',msg:'Unable to validate email address: invalid format'});
     if(Object.values(db.users).some(x=>x.email===e))return err(422,{code:422,error_code:'user_already_exists',msg:'User already registered'});
     if(String(body.password||'').length<6)return err(422,{code:422,error_code:'weak_password',msg:'Password should be at least 6 characters.'});
-    const id=uuid();db.users[id]={email:e,pw:body.password,meta:(body.data||{}),confirmed:!window.__MOCK_CONFIRM};newProfile(db,id,(body.data||{}).nickname||e.split('@')[0]);
+    const id=uuid(),nk=clean((body.data||{}).nickname);db.users[id]={email:e,pw:body.password,meta:(body.data||{}),prov:'email',confirmed:!window.__MOCK_CONFIRM};newProfile(db,id,nk==='생존자'?autoNick():nk);
     if(window.__MOCK_CONFIRM){save(db);return res(200,{id,email:e,confirmation_sent_at:new Date().toISOString()})}const s=ses(db,id);save(db);return res(200,s)}
   if(p==='/auth/v1/token'&&m==='POST'){const g=u.searchParams.get('grant_type');
     if(g==='password'){const e=String(body.email||'').toLowerCase();const id=Object.keys(db.users).find(k=>db.users[k].email===e&&db.users[k].pw===body.password);
       if(!id)return err(400,{code:400,error_code:'invalid_credentials',msg:'Invalid login credentials'});if(!db.users[id].confirmed)return err(400,{code:400,error_code:'email_not_confirmed',msg:'Email not confirmed'});
       const s=ses(db,id);save(db);return res(200,s)}
     if(g==='refresh_token'){const t=db.tok[body.refresh_token];if(!t||!t.refresh)return err(400,{code:400,error_code:'refresh_token_not_found',msg:'Invalid Refresh Token: Refresh Token Not Found'});delete db.tok[body.refresh_token];const s=ses(db,t.uid);save(db);return res(200,s)}}
-  if(p==='/auth/v1/user'&&m==='GET'){if(!uid)return err(401,{code:401,msg:'invalid JWT'});const x=db.users[uid];return res(200,{id:uid,email:x.email,user_metadata:x.meta})}
+  if(p==='/auth/v1/user'&&m==='GET'){if(!uid)return err(401,{code:401,msg:'invalid JWT'});const x=db.users[uid];return res(200,{id:uid,email:x.email,user_metadata:x.meta,app_metadata:{provider:x.prov||'email',providers:[x.prov||'email']}})}
+  // v6.66: the project's public auth settings (which providers are on): window.__MOCK_PROVIDERS = {google:false,…} switches some off, __MOCK_SETTINGS_DOWN fails it
+  if(p==='/auth/v1/settings'&&m==='GET'){if(window.__MOCK_SETTINGS_DOWN)return err(500,{message:'down'});return res(200,{external:Object.assign({email:true,google:true,kakao:true},window.__MOCK_PROVIDERS||{}),disable_signup:false,mailer_autoconfirm:!window.__MOCK_CONFIRM})}
   if(p==='/auth/v1/user'&&m==='PUT'){if(!uid)return err(401,{code:401,msg:'invalid JWT'});if(body.password)db.users[uid].pw=body.password;save(db);return res(200,{id:uid})}
   if(p==='/auth/v1/logout'){if(uid){for(const k in db.tok)if(db.tok[k].uid===uid)delete db.tok[k];save(db)}return new Response(null,{status:204})}
   if(p==='/auth/v1/recover'){return res(200,{})}
@@ -92,6 +103,20 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(window.__MOCK_OFF&&window.__MOCK_OFF.includes(fn))return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+' without parameters in the schema cache'});
     // v6.65: the game's error reports (anyone may send; kept on window.__mockErr with whether a bearer rode along)
     if(fn==='qz_err_report'){(window.__mockErr=window.__mockErr||[]).push(Object.assign({},body,{_auth:!!H.Authorization}));return res(200,{ok:!!(body&&String(body.p_msg||'').trim())})}
+    // v6.66: inquiries (anyone; same rules as qz_inquiry_send / qz_my_inquiries): db.inq, what was sent also on window.__mockInq
+    if(fn==='qz_inquiry_send'||fn==='qz_my_inquiries'){const IQ=db.inq||(db.inq=[]),b=body||{},now=Date.now();
+      if(fn==='qz_inquiry_send'){const kind=['bug','account','report','idea','etc'].includes(b.p_kind)?b.p_kind:'etc';
+        const txt=String(b.p_body||'').replace(/\r/g,'').replace(/[\x01-\x09\x0b-\x1f\x7f]/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+        if(txt.length<5)return pgerr('inq_short');if(txt.length>1000)return pgerr('inq_long');
+        if(uid){if(IQ.filter(q=>q.uid===uid&&now-q.at<3600e3).length>=5||IQ.filter(q=>q.uid===uid&&now-q.at<864e5).length>=20)return pgerr('inq_slow')}
+        else if(IQ.filter(q=>!q.uid&&now-q.at<3600e3).length>=60||IQ.filter(q=>!q.uid&&q.status==='new').length>=300)return pgerr('inq_busy');
+        const ticket=[...Array(32)].map(()=>'0123456789abcdef'[Math.floor(Math.random()*16)]).join(''),ctx=b.p_ctx&&typeof b.p_ctx==='object'&&!Array.isArray(b.p_ctx)&&JSON.stringify(b.p_ctx).length<=800?b.p_ctx:null;
+        db.inqId=(db.inqId|0)+1;IQ.push({id:db.inqId,uid:uid||null,ticket,nick:uid&&db.prof[uid]?db.prof[uid].nickname:null,kind,body:txt,contact:String(b.p_contact||'').replace(/[\x00-\x1f]/g,' ').trim().slice(0,100)||null,ctx,status:'new',reply:null,reply_at:null,seen:true,at:now});
+        (window.__mockInq=window.__mockInq||[]).push(Object.assign({},b,{_auth:!!uid}));save(db);return res(200,{ok:true,id:db.inqId,ticket})}
+      const T=(Array.isArray(b.p_tickets)?b.p_tickets:[]).filter(t=>/^[0-9a-f]{32}$/.test(String(t))).slice(0,30),mine=q=>!!(uid&&q.uid===uid)||T.includes(q.ticket);
+      const nw=IQ.filter(q=>mine(q)&&q.reply&&!q.seen).length,rows=IQ.filter(mine).sort((x,y)=>y.id-x.id).slice(0,30)
+        .map(q=>({id:q.id,kind:q.kind,body:q.body,at:new Date(q.at).toISOString(),status:q.status,reply:q.reply,reply_at:q.reply_at,new:!!q.reply&&!q.seen,mine:!!uid&&q.uid===uid}));
+      if(b.p_mark!==false&&nw)for(const q of IQ)if(mine(q)&&q.reply)q.seen=true;save(db);return res(200,{rows,new:nw})}
     if(fn==='qz_titles_of'){const N=(Array.isArray(body&&body.p_names)?body.p_names:[]).slice(0,16),o={};for(const id in db.prof){const n=db.prof[id].nickname;if(!N.includes(n))continue;const w=titleWorn(id);o[n]=o[n]||[];if(w&&!o[n].includes(w))o[n].push(w)}return res(200,o)}
     if(fn==='qz_ep_firsts')return res(200,HOFL().slice().sort((a,b)=>a.ep-b.ep||a.diff-b.diff).map(h=>({ep:h.ep,diff:h.diff,at:h.at,time:h.time,team:h.members.map(id=>db.prof[id]?db.prof[id].nickname:null).filter(Boolean)})));
     // the ranking: anyone (a guest too); nicknames and records only, accounts without a finished match left out
@@ -140,7 +165,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_coupon_redeem'){if(window.__MOCK_BAN)return pgerr('banned');const c=String(body.p_code||'').toUpperCase().replace(/[^A-Z0-9]/g,''),C=window.__MOCK_COUPONS||{};
       if(!C[c])return res(200,{error:'coupon_not_found'});const U=db.cuse||(db.cuse={});if(U[uid+':'+c])return res(200,{error:'coupon_used'});
       U[uid+':'+c]=1;const got=GIVE(C[c],'coupon');save(db);return res(200,Object.assign({code:c,got},WAL()))}
-    if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length,gun:GNS().length})}
+    if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length,gun:GNS().length,inq:(db.inq||[]).filter(q=>q.uid===uid&&q.reply&&!q.seen).length})}
     // v6.42: a ban (window.__MOCK_BAN) refuses what qz_guard refuses in schema.sql
     if(window.__MOCK_BAN&&['qz_buy','qz_claim','qz_round_claim','qz_import_rec','qz_ny_add','qz_ny_exchange','qz_mission_claim','qz_decode','qz_bingo_reset','qz_bingo_shuffle',
       'qz_season_decode','qz_season_reset','qz_season_shuffle','qz_side_decode','qz_side_reset','qz_side_shuffle','qz_exchange','qz_trans_exchange','qz_friend_add','qz_friend_answer',
@@ -185,8 +210,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
         GFL().push({from:uid,to:t,gun:body.p_gun,price:r.price,at:new Date().toISOString(),seen:false});db.log.push([uid,-r.price,'gift']);save(db);return res(200,{coins:P.coins,gun:body.p_gun,to:db.prof[t].nickname})}
       if(fn==='qz_gift_inbox'){const L=GFL().filter(g=>g.to===uid&&!g.seen);for(const g of L)g.seen=true;save(db);return res(200,{gifts:L.map(g=>({gun:g.gun,from:db.prof[g.from]?db.prof[g.from].nickname:'?',at:g.at}))})}
     }catch(e){if(typeof e==='string')return pgerr(e);throw e}}
-    if(fn==='qz_me'){if(!P)newProfile(db,uid,db.users[uid].email.split('@')[0]);const Q=db.prof[uid];FC(uid);save(db);
-      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,tfrags:Q.tfr|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid),ref:refJ(Q),admin:!!window.__MOCK_ADMIN,ban:window.__MOCK_BAN||null,mail_new:MAILS().length,gun_new:GNS().length,title:titleWorn(uid),title_set:Q.title||null,ach_ready:achReady(uid)})}
+    if(fn==='qz_me'){if(!P){const U=db.users[uid],nk=(U.prov||'email')==='email'?clean((U.meta||{}).nickname):'생존자';newProfile(db,uid,nk==='생존자'?autoNick():nk)}const Q=db.prof[uid];FC(uid);save(db);
+      return res(200,{nickname:Q.nickname,fcode:Q.fcode,gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,friend_req:FRL().filter(f=>!f.acc&&f.b===uid).length,coins:Q.coins,earned:Q.earned,matches:Q.matches,day_left:20000-(Q.day===today()?Q.dayE:0),fragments:Q.frags|0,tfrags:Q.tfr|0,pity:Q.pity|0,tickets:Q.tickets|0,ny:Q.ny||[0,0,0,0],season_tickets:Q.sTk|0,free_today:Q.freeDay!==today(),rec:REC(Q),owned:db.own[uid],firsts:hofOf(uid),ref:refJ(Q),admin:!!window.__MOCK_ADMIN,ban:window.__MOCK_BAN||null,mail_new:MAILS().length,gun_new:GNS().length,title:titleWorn(uid),title_set:Q.title||null,ach_ready:achReady(uid),inq_new:(db.inq||[]).filter(q=>q.uid===uid&&q.reply&&!q.seen).length})}
     if(fn==='qz_ny_add'){let q=Math.max(P.nyQ|0,0);const v=[body.p_g,body.p_h,body.p_s,body.p_n].map(x=>Math.min(Math.max(x|0,0),8)),ad=v.map(x=>{const t=Math.min(x,q);q-=t;return t});
       P.ny=(P.ny||[0,0,0,0]).map((x,i)=>x+ad[i]);P.nyQ=0;save(db);return res(200,{added:ad,ny:P.ny})}
     if(fn==='qz_ny_exchange'){const c=body.p_choice;if(c!=='ny'&&c!=='season')return pgerr('bad_choice');const N=P.ny||[0,0,0,0];if(Math.min(...N)<1)return pgerr('no_set');

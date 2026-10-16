@@ -57,7 +57,7 @@ const MBOX={list:null,busy:false,off:false,res:'',resBad:false,autoAt:0,
     this.busy=false;ACC.emit();this.render()},
   // a new letter opens the mailbox once, in the lobby, when nothing else is open (server notices and the ban window go first: closing
   // them asks again); qz_mails is asked only when the count says something changed, at most every 20 s
-  busyUI(){return G.st!=='menu'||!!document.querySelector('#mailWin,#srvWin,#giftPop,#gPop,#gunPop,#accWin,#patchWin,#shopWin,#rkWin,#nbWin,#invWin,#frWin')||(typeof SRVN!=='undefined'&&(SRVN.busy||!!SRVN.ban()))},
+  busyUI(){return G.st!=='menu'||!!document.querySelector('#mailWin,#srvWin,#giftPop,#gPop,#gunPop,#accWin,#patchWin,#shopWin,#rkWin,#nbWin,#invWin,#frWin,#inqWin')||(typeof SRVN!=='undefined'&&(SRVN.busy||!!SRVN.ban()))},
   auto(){if(this.off||!this.n()||this.busyUI())return;const L0=this.list,top=L=>Math.max(0,...L.map(m=>+m.id||0));
     if(L0&&L0.length===this.n()){if(top(L0)>(ACC.ls('qz_mailSeen')|0))this.open();return}// (the list already known: no need to ask)
     if(Date.now()-this.autoAt<20e3)return;this.autoAt=Date.now();
@@ -66,7 +66,7 @@ const MBOX={list:null,busy:false,off:false,res:'',resBad:false,autoAt:0,
   const sl=shopLobby;shopLobby=function(){sl();try{MBOX.btn()}catch(e){console.error(e)}};
   // (the notices loaded and nothing popped up: ask now; a window in the way closed: ask again)
   if(typeof SRVN!=='undefined'){const p0=SRVN.popup;SRVN.popup=function(){const r=p0.apply(this,arguments);if(!$('srvWin'))setTimeout(()=>MBOX.auto(),300);return r}}
-  const WINS=/^(srvWin|giftPop|gPop|gunPop|accWin|patchWin|shopWin|rkWin|nbWin|invWin|frWin)$/;let awT=0;
+  const WINS=/^(srvWin|giftPop|gPop|gunPop|accWin|patchWin|shopWin|rkWin|nbWin|invWin|frWin|inqWin)$/;let awT=0;
   new MutationObserver(ms=>{if(G.st!=='menu'||!MBOX.n())return;for(const m of ms)for(const n of m.removedNodes)if(n.id&&WINS.test(n.id)){clearTimeout(awT);awT=setTimeout(()=>MBOX.auto(),450);return}}).observe(document.body,{childList:true});
   const act0=UI.act;UI.act=function(a,v,el){if(a==='mailbox'){MBOX.open();return}return act0.call(this,a,v,el)};
   addEventListener('keydown',e=>{if(e.code==='Escape'&&$('mailWin')){MBOX.close();e.stopPropagation()}},true);

@@ -5,8 +5,9 @@
 // supabase/schema.sql, and each of those checks that the caller is in public.admins. Its sign-in is kept apart from the game's
 // (localStorage qz_adm_ses), so the game and this page never use one refresh token at the same time.
 // Views (the address's hash): #/dash, #/players[/<id>], #/suspects[/<kind>], #/mail[/coupons | /to/<id>], #/notices, #/settings[/prices|gacha|missions],
-// #/staff, #/logs[/<player id>]. v6.43: staff (admins.role 'staff') get the dashboard, players (no e-mails, no grants or guns), the
-// suspects, closing rooms, bans, nicknames and the log; the owner's menus are left out for them (and refused by the server anyway).
+// #/inquiries[/new | done | all] (v6.66), #/staff, #/logs[/<player id>]. v6.43: staff (admins.role 'staff') get the dashboard, players (no e-mails, no grants or guns), the
+// suspects, closing rooms, bans, nicknames and the log (v6.65 / v6.66: the error log and the inquiries too, a guest's contact left out);
+// the owner's menus are left out for them (and refused by the server anyway).
 
 // ---------- small helpers ----------
 const $=id=>document.getElementById(id);
@@ -47,7 +48,7 @@ const API={ses:null,
     try{return await this.req(m,p,b,true)}catch(e){if(e.status===401&&this.ses){await this.refresh();return await this.req(m,p,b,true)}throw e}},
   rpc(name,args){return this.call('POST','/rest/v1/rpc/'+name,args||{})},
   async signIn(email,pw){this.save(await this.req('POST','/auth/v1/token?grant_type=password',{email,password:pw},false))},
-  oauth(p){location.assign(this.base()+'/auth/v1/authorize?provider='+encodeURIComponent(p)+'&redirect_to='+encodeURIComponent(location.origin+location.pathname))},
+  oauth(p){location.assign(this.base()+'/auth/v1/authorize?provider='+encodeURIComponent(p)+'&redirect_to='+encodeURIComponent(location.origin+location.pathname)+(p==='google'?'&prompt=select_account':''))},
   async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.save(null)}};
 
 // what went wrong, in words
@@ -65,7 +66,7 @@ function errText(e){const m=String(e&&e.message||e||''),c=String(e&&e.code||'');
     [/no_target/,'받을 사람을 한 명 이상 적어 주세요'],[/too_many_targets/,'한 번에 1,000명까지 보낼 수 있어요'],[/coupon_exists/,'이미 있는 쿠폰 코드예요'],
     [/bad_code/,'쿠폰 코드는 영문 · 숫자 4~20자예요 (- 와 띄어쓰기는 빠져요)'],[/coupon_not_found/,'쿠폰을 찾을 수 없어요'],[/no_room/,'이미 목록에서 내려간 방이에요'],
     [/already_admin/,'이미 운영진인 계정이에요'],[/staff_banned/,'정지 중인 계정은 부운영자로 넣을 수 없어요'],[/not_staff/,'부운영자가 아닌 계정이에요'],
-    [/owner_fixed/,'주인 계정은 SQL Editor에서만 바꿀 수 있어요'],[/no_mail/,'우편을 찾을 수 없어요'],[/not_found/,'그 플레이어를 찾지 못했어요 (이메일 · 친구 코드 · 한 명만 쓰는 닉네임)'],[/no_config/,'설정 줄이 없어요 (schema.sql을 다시 실행해 주세요)'],
+    [/owner_fixed/,'주인 계정은 SQL Editor에서만 바꿀 수 있어요'],[/bad_reply/,'답변을 1~1,000자로 적어 주세요'],[/no_inquiry/,'문의를 찾을 수 없어요 (이미 지워졌을 수 있어요)'],[/no_mail/,'우편을 찾을 수 없어요'],[/not_found/,'그 플레이어를 찾지 못했어요 (이메일 · 친구 코드 · 한 명만 쓰는 닉네임)'],[/no_config/,'설정 줄이 없어요 (schema.sql을 다시 실행해 주세요)'],
     [/Could not find the function|PGRST202/i,'서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)'],[/permission denied/i,'권한이 없어요 (schema.sql을 다시 실행해 주세요)']];
   if(/who_not_found/.test(m))return '이 사람들을 찾지 못했어요: '+(e.details||'?')+' — 이메일, 친구 코드, 한 명만 쓰는 닉네임, 계정 ID로 적어 주세요';
   for(const [r,t] of T)if(r.test(m)||r.test(c))return t;return '문제가 생겼어요: '+m.slice(0,120)}
@@ -75,7 +76,7 @@ const ST={me:null,r:{v:'dash'},dash:null,dashT:0,clkT:0,
   users:{q:'',sort:'new',rows:[],total:0,loaded:false,busy:false},user:null,utab:'coin',
   prices:null,pf:'all',pq:'',cfg:null,cfgDraft:{},missions:null,mNew:false,notices:null,nEdit:null,nLevel:'info',
   logs:{rows:[],target:null,done:false,busy:false},
-  sus:{kind:'cap',data:{}},errs:{data:null,open:null},mails:null,coupons:null,cpUses:{},staff:null,
+  sus:{kind:'cap',data:{}},errs:{data:null,open:null},inq:{st:'new',data:null,done:true,open:null,draft:{},busy:false},mails:null,coupons:null,cpUses:{},staff:null,
   md:{to_all:true,for_new:false,who:'',title:'',body:'',rw:{guns:[]},days:14},cd:{code:'',rw:{guns:[]},max:'',starts:'',ends:'',note:''}};
 const isOwner=()=>!!(ST.me&&ST.me.role==='owner');
 const VIEWS={
@@ -83,6 +84,7 @@ const VIEWS={
   players:{t:'플레이어',ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 1.5a3.2 3.2 0 110 6.4 3.2 3.2 0 010-6.4zM2 14.5c0-3 2.7-5 6-5s6 2 6 5V15H2z"/></svg>'},
   settings:{t:'게임 설정',own:1,ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 3h7v1.6H2zm10 0h2v1.6h-2zM9.5 1.8h2v4h-2zM2 7.2h2v1.6H2zm5 0h7v1.6H7zM4.5 6h2v4h-2zM2 11.4h5V13H2zm8 0h4V13h-4zM7.5 10.2h2v4h-2z"/></svg>'},
   suspects:{t:'의심 유저',ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M6.5 1a5.5 5.5 0 014.4 8.8l4 4-1.2 1.2-4-4A5.5 5.5 0 116.5 1zm0 1.7a3.8 3.8 0 100 7.6 3.8 3.8 0 000-7.6zM5.8 4h1.4v2.6H5.8zm0 3.4h1.4v1.3H5.8z"/></svg>'},
+  inquiries:{t:'문의',ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1.5 2h13v9.5H8.4L4.6 14.6v-3.1H1.5zm1.5 1.5V10h3.1v1.6L8 10h5V3.5zM4.5 5h7v1.3h-7zm0 2.4h5v1.3h-5z"/></svg>'},
   errors:{t:'오류 기록',ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8 1l7.5 13H.5zm0 3.2L3.3 12.4h9.4zM7.2 6.5h1.6v3.4H7.2zm0 4.3h1.6v1.4H7.2z"/></svg>'},
   mail:{t:'우편 · 쿠폰',own:1,ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1 3h14v10H1zm2.2 1.6L8 8.1l4.8-3.5zM2.6 6v5.4h10.8V6L8 9.9z"/></svg>'},
   notices:{t:'공지',own:1,ico:'<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 6h3l6-3.5v11L5 10H4l1 4H3l-1-4zm11-.5h1.5v5H13z"/></svg>'},
@@ -108,7 +110,12 @@ function ask(o){return new Promise(res=>{const w=document.createElement('div');w
 async function busy(el,fn){const bs=el?[...el.querySelectorAll('button')]:[];bs.forEach(b=>b.disabled=true);try{return await fn()}finally{bs.forEach(b=>b.disabled=false)}}
 
 // ---------- the way in ----------
-function gate(kind,info){clearInterval(ST.dashT);clearInterval(ST.clkT);const app=$('app');app.className='';const L=(SB.oauth||[]).filter(p=>PROV[p]);
+// v6.66: the sign-in buttons for the providers switched on in the project (its public auth settings, asked once; when that cannot be
+// asked, SB.oauth as it is)
+async function provs(){if(ST.provs)return ST.provs;const want=(SB.oauth||[]).filter(p=>PROV[p]);if(!want.length)return ST.provs=[];
+  try{const r=await API.req('GET','/auth/v1/settings',null,false),ex=r&&r.external;ST.provs=ex&&typeof ex==='object'?want.filter(p=>ex[p]===true):want}catch(e){ST.provs=want}return ST.provs}
+const provBtns=()=>(ST.provs||[]).map(p=>`<button type="button" class="btn" data-a="oauth" data-v="${p}">${PROV[p]}로 로그인</button>`).join('');
+function gate(kind,info){clearInterval(ST.dashT);clearInterval(ST.clkT);const app=$('app');app.className='';
   let inner='';
   if(kind==='nocfg')inner=`<p>이 페이지가 쓸 Supabase 주소와 키가 없어요. source/src/sb.js의 SB를 채우고 다시 빌드해 주세요.</p>`;
   else if(kind==='notadmin')inner=`<p>${info?`지금 로그인한 계정(<b>${esc(info)}</b>)은`:'이 계정은'} 관리자가 아니에요. 관리자로 쓰려면 Supabase 대시보드의 SQL Editor에서 한 번 실행해 주세요.</p>
@@ -118,10 +125,11 @@ function gate(kind,info){clearInterval(ST.dashT);clearInterval(ST.clkT);const ap
   else inner=`<p>게임과 같은 계정으로 로그인해요. 관리자로 등록된 계정만 들어올 수 있어요.</p>
     <label class="fld"><span>이메일</span><input name="email" type="email" autocomplete="username" required></label>
     <label class="fld"><span>비밀번호</span><input name="pw" type="password" autocomplete="current-password" required></label>
-    <button class="btn pri">로그인</button>${L.map(p=>`<button type="button" class="btn" data-a="oauth" data-v="${p}">${PROV[p]}로 로그인</button>`).join('')}
+    <button class="btn pri">로그인</button><span id="gOauth" style="display:contents">${provBtns()}</span>
     ${info?`<div class="err">${esc(info)}</div>`:''}`;
   app.innerHTML=`<div class="gate"><form class="card" data-f="login" novalidate><div class="wm">QUARANTINE<b>Z</b></div><b>관리 페이지</b>${inner}</form></div>`;
-  const e=app.querySelector('input[name=email]');if(e)e.focus()}
+  const e=app.querySelector('input[name=email]');if(e)e.focus();
+  if(!ST.provs&&$('gOauth'))provs().then(()=>{const g=$('gOauth');if(g)g.innerHTML=provBtns()})}
 async function enter(){if(!SB.url||!SB.key){gate('nocfg');return}API.load();if(!API.ses){gate('login');return}
   try{ST.me=await API.rpc('qz_admin_whoami')}
   catch(e){if(/not_admin/.test(e.message)){let em='';try{const u=await API.call('GET','/auth/v1/user');em=u&&u.email||''}catch(x){}gate('notadmin',em);return}
@@ -132,7 +140,7 @@ function frame(){const me=ST.me||{},app=$('app');app.className='layout';
     <nav class="nav" aria-label="관리 메뉴">${Object.entries(VIEWS).filter(([k,v])=>!v.own||isOwner()).map(([k,v])=>`<a href="#/${k}" data-v="${k}">${v.ico}<span>${v.t}</span></a>`).join('')}</nav>
     <div class="who"><div class="me"><b>${esc(me.nickname||'')}</b> <span class="tag ${me.role==='owner'?'adm':''}">${me.role==='owner'?'주인':'부운영자'}</span><div>${esc(me.email||'')}</div></div>
       <div class="row"><a class="btn sm" href="index.html" target="_blank" rel="noopener">게임 열기</a><button class="btn sm ghost" data-a="logout">로그아웃</button></div></div></aside>
-    <main id="main"></main><div id="over"></div>`}
+    <main id="main"></main><div id="over"></div>`;inqBadge(me.inq_new|0)}
 async function route(){if(!$('main'))return;const r=parse(),was=ST.r||{};ST.r=r;document.querySelectorAll('.nav a').forEach(a=>{const on=a.dataset.v===r.v;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
   clearInterval(ST.dashT);clearInterval(ST.clkT);chartTip(null,false);
   if(r.v!=='players'||!r.a)closeSheet(true);
@@ -140,6 +148,7 @@ async function route(){if(!$('main'))return;const r=parse(),was=ST.r||{};ST.r=r;
   if(r.v==='dash')return vDash();
   if(r.v==='suspects')return vSuspects(r.a||ST.sus.kind);
   if(r.v==='errors')return vErrors();
+  if(r.v==='inquiries')return vInq(r.a||ST.inq.st);
   if(r.v==='mail')return vMail(r.a,r.b);
   if(r.v==='staff')return vStaff();
   if(r.v==='players'){if(was.v!=='players'||!$('plist'))await vPlayers();if(r.a)vPlayer(r.a);return}
@@ -366,7 +375,7 @@ function renderNList(){const B=$('nList');if(!B)return;const L=ST.notices||[];
     :'<div class="empty">아직 올린 공지가 없어요. 왼쪽에서 첫 공지를 써 보세요.</div>'}`}
 
 // ---------- 기록 (the admin log) ----------
-const ACT={mail_send:'우편 보냄',mail_on:'우편 켬',mail_off:'우편 끔',coupon_add:'쿠폰 만듦',coupon_edit:'쿠폰 고침',room_close:'방 내림',staff_add:'부운영자 추가',staff_remove:'부운영자 해제',grant:'지급',gun_give:'무기 지급',gun_take:'무기 회수',rename:'닉네임 변경',ban:'이용 정지',unban:'정지 해제',price:'가격 변경',price_reset:'가격 되돌림',config:'설정 변경',mission:'미션 저장',notice_add:'공지 올림',notice_edit:'공지 고침',notice_delete:'공지 삭제',err_clear:'오류 기록 지움'};
+const ACT={mail_send:'우편 보냄',mail_on:'우편 켬',mail_off:'우편 끔',coupon_add:'쿠폰 만듦',coupon_edit:'쿠폰 고침',room_close:'방 내림',staff_add:'부운영자 추가',staff_remove:'부운영자 해제',grant:'지급',gun_give:'무기 지급',gun_take:'무기 회수',rename:'닉네임 변경',ban:'이용 정지',unban:'정지 해제',price:'가격 변경',price_reset:'가격 되돌림',config:'설정 변경',mission:'미션 저장',notice_add:'공지 올림',notice_edit:'공지 고침',notice_delete:'공지 삭제',err_clear:'오류 기록 지움',inq_reply:'문의 답변',inq_done:'문의 닫음',inq_open:'문의 다시 엶',inq_del:'문의 삭제'};
 const CFGL=k=>{for(const g of CFG_G)for(const f of g[1])if(f[0]===k)return f[1];return k};
 const short=v=>{const s=typeof v==='string'?v:JSON.stringify(v);return s.length>60?s.slice(0,57)+'…':s};
 function logWhat(l){const d=l.detail||{};let a=ACT[l.action]||l.action,x='';
@@ -383,6 +392,7 @@ function logWhat(l){const d=l.detail||{};let a=ACT[l.action]||l.action,x='';
   else if(l.action==='coupon_add')x=`${d.code} — ${rwText(d.rewards)}${d.max_uses?', '+N(d.max_uses)+'번':''}`;
   else if(l.action==='coupon_edit')x=`${d.code}${d.active===false?' (끔)':''}`;
   else if(l.action==='err_clear')x=d.fp?`한 가지 (${N(d.n)}개)`:`전부 (${N(d.n)}가지)`;
+  else if(/^inq_/.test(l.action))x=`#${d.id}${d.kind?' '+(IQK[d.kind]||d.kind):''}${l.action==='inq_reply'&&d.done===false?' (열어 둠)':''}`;
   else if(l.action==='room_close')x=`${d.code} (${d.host_name||''}) ${d.minutes>=60?Math.round(d.minutes/60)+'시간':d.minutes+'분'}`;
   return `<b style="font-weight:600">${esc(a)}</b>${x?` <span class="dim">${esc(x)}</span>`:''}`}
 async function vLogs(target){const M=$('main'),G=ST.logs;if(G.target!==target){G.rows=[];G.done=false;G.target=target}
@@ -393,8 +403,49 @@ async function loadLogs(){const G=ST.logs;if(G.busy)return;G.busy=true;try{const
 function renderLogs(){const B=$('logB'),G=ST.logs;if(!B)return;if(!G.rows.length){B.innerHTML='<div class="empty">아직 기록이 없어요.</div>';return}
   const who=G.target&&G.rows[0]?G.rows[0].target_name:null;
   B.innerHTML=`${G.target?`<h2><span>${esc(who||'이 플레이어')}에게 한 일</span></h2>`:''}<div class="tw"><table class="tbl"><thead><tr><th>시각</th><th>관리자</th><th>대상</th><th>작업</th><th class="hm">사유</th></tr></thead><tbody>
-    ${G.rows.map(l=>`<tr><td class="mute" style="white-space:nowrap">${esc(dt(l.at))}</td><td style="white-space:nowrap">${esc(l.by||'-')}</td><td style="white-space:nowrap">${l.target?`<a href="#/players/${esc(l.target)}">${esc(l.target_name||'(지워진 계정)')}</a>`:`<span class="mute">${/^mail_/.test(l.action)?'우편':/^coupon_/.test(l.action)?'쿠폰':/^notice_/.test(l.action)?'공지':'게임 설정'}</span>`}</td><td>${logWhat(l)}</td><td class="hm">${esc(l.reason||'')}</td></tr>`).join('')}
+    ${G.rows.map(l=>`<tr><td class="mute" style="white-space:nowrap">${esc(dt(l.at))}</td><td style="white-space:nowrap">${esc(l.by||'-')}</td><td style="white-space:nowrap">${l.target?`<a href="#/players/${esc(l.target)}">${esc(l.target_name||'(지워진 계정)')}</a>`:`<span class="mute">${/^mail_/.test(l.action)?'우편':/^coupon_/.test(l.action)?'쿠폰':/^notice_/.test(l.action)?'공지':/^inq_/.test(l.action)?'게스트 문의':/^err_/.test(l.action)?'오류 기록':'게임 설정'}</span>`}</td><td>${logWhat(l)}</td><td class="hm">${esc(l.reason||'')}</td></tr>`).join('')}
     </tbody></table></div><div class="more"><span>${N(G.rows.length)}개</span>${G.done?'':'<button class="btn sm" data-a="morelogs">더 보기</button>'}</div>`}
+
+// ---------- 문의 (v6.66; staff too — a guest's way to reach them and deleting are the owner's) ----------
+// What players and guests wrote from the lobby's 문의하기, newest first, 100 at a time. 답변 쓰기 opens a box under it (what is typed stays
+// while the list reloads); the answer goes to the player's 「내 문의」 with a dot on their button (qz_admin_inquiry_reply: 답변하고 닫기, or
+// 열어 둔 채 답변); 답변 없이 닫기 / 다시 열기 (qz_admin_inquiry_done); 삭제 for spam (the owner). The menu shows how many wait.
+const IQK={bug:'버그 · 오류',account:'계정 · 코인',report:'신고',idea:'건의',etc:'기타'};
+const IQS=[['new','답변 대기'],['done','처리 완료'],['all','전체']];
+function inqBadge(n){if(ST.me)ST.me.inq_new=n|0;const a=document.querySelector('.nav a[data-v="inquiries"]');if(!a)return;let b=a.querySelector('.nb');
+  if(n>0){if(!b){b=document.createElement('i');b.className='nb';a.appendChild(b)}b.textContent=n>99?'99+':String(n);b.title=`답변을 기다리는 문의 ${n}개`}else if(b)b.remove()}
+function uaShort(u){u=String(u||'');const v=re=>{const m=re.exec(u);return m?m[1]:null};let b='';
+  for(const [n,re] of [['Edge',/Edg\/(\d+)/],['Whale',/Whale\/(\d+)/],['Samsung',/SamsungBrowser\/(\d+)/],['Opera',/OPR\/(\d+)/],['Firefox',/Firefox\/(\d+)/],['Chrome',/Chrome\/(\d+)/],['Safari',/Version\/(\d+)[.\d]* .*Safari/]]){const x=v(re);if(x){b=n+' '+x;break}}
+  const o=/Windows/.test(u)?'Windows':/Android/.test(u)?'Android':/iPhone|iPad|iPod/.test(u)?'iOS':/Mac OS X/.test(u)?'macOS':/CrOS/.test(u)?'ChromeOS':/Linux/.test(u)?'Linux':'';return [b,o].filter(Boolean).join(' ')}
+async function vInq(st,soft){if(!IQS.some(x=>x[0]===st))st='new';const I=ST.inq;if(I.st!==st){I.st=st;I.data=null;I.open=null}const M=$('main');
+  if(!soft||!$('inqB'))M.innerHTML=head('문의','게임 로비의 「문의하기」로 들어온 글이에요. 답변은 그 플레이어 게임의 「내 문의」로 가요 (게스트는 쓴 브라우저에서만 보여요). 비밀번호나 결제 정보는 묻지 마세요.','<button class="btn" data-a="reinq">새로 고침</button>')+
+    `<div class="sub" id="inqS"></div><div class="panel" id="inqB">${I.data?'':'<div class="empty">불러오는 중…</div>'}</div>`;
+  if(I.data)renderInq();else inqSub();
+  try{const d=await API.rpc('qz_admin_inquiries',{p_status:st,p_before:0,p_limit:100});if(ST.inq.st!==st)return;I.data=d;I.done=(d.rows||[]).length<100;inqBadge(d.new|0);if(parse().v==='inquiries')renderInq()}
+  catch(e){if($('inqB')&&!I.data)$('inqB').innerHTML=errBox(e,'reinq');else toast(errText(e),'bad')}}
+function inqSub(){const S=$('inqS');if(!S)return;const I=ST.inq,D=I.data;
+  S.innerHTML=IQS.map(([k,t])=>`<a class="chip${k===I.st?' on':''}" href="#/inquiries/${k}"${k===I.st?' aria-current="page"':''}>${t}${D&&k!=='all'?` ${N(k==='new'?D.new:D.done)}`:''}</a>`).join('')}
+async function moreInq(){const I=ST.inq,D=I.data;if(!D||I.busy||I.done)return;I.busy=true;
+  try{const L=D.rows||[],r=await API.rpc('qz_admin_inquiries',{p_status:I.st,p_before:L.length?L[L.length-1].id:0,p_limit:100});D.rows=L.concat(r.rows||[]);I.done=(r.rows||[]).length<100;renderInq()}
+  catch(e){toast(errText(e),'bad')}finally{I.busy=false}}
+function renderInq(){inqSub();const B=$('inqB'),I=ST.inq;if(!B)return;const D=I.data||{},L=D.rows||[],own=!!D.owner;
+  const sum=`<div class="more" style="border-top:0;border-bottom:1px solid var(--line)"><span>대기 ${N(D.new)} · 처리 완료 ${N(D.done)} · 오늘 들어온 것 ${N(D.today)}</span></div>`;
+  if(!L.length){B.innerHTML=sum+`<div class="empty">${I.st==='new'?'답변을 기다리는 문의가 없어요.':'문의가 없어요.'}</div>`;return}
+  const ta=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('form[data-f="inqreply"]')?document.activeElement:null,pos=ta?[ta.selectionStart,ta.selectionEnd]:null;
+  B.innerHTML=sum+`<div class="iqlist">${L.map(q=>inqCard(q,own)).join('')}</div>${I.done?'':'<div class="more"><span></span><button class="btn sm" data-a="moreinq">더 보기</button></div>'}`;
+  if(pos){const t=B.querySelector('form[data-f="inqreply"] textarea');if(t){t.focus();try{t.setSelectionRange(pos[0],pos[1])}catch(e){}}}}
+function inqCard(q,own){const c=q.ctx&&typeof q.ctx==='object'?q.ctx:{},ed=ST.inq.open===q.id,dr=ST.inq.draft[q.id];
+  const who=q.user_id?`<a href="#/players/${esc(q.user_id)}">${esc(q.nickname||'(이름 없음)')}</a>${q.nick_then&&q.nick_then!==q.nickname?` <span class="mute">(보낼 때 ${esc(q.nick_then)})</span>`:''}${q.banned?' <span class="tag ban">정지</span>':''}`:'<span class="dim">게스트</span>';
+  const ctx=[c.ver,uaShort(c.ua),c.scr,c.lang==='en'?'English':c.lang?'한국어':'',c.touch?'터치':''].filter(Boolean).join(' · ');
+  const st=q.status==='done'?(q.reply?['답변 완료','live']:['처리 완료','']):['대기','set'];
+  return `<div class="iqc${q.status==='new'?' wait':''}"><div class="iqt"><span class="tag${q.kind==='report'?' ban':''}">${esc(IQK[q.kind]||q.kind)}</span><b>${who}</b><span class="mute" title="${esc(dt(q.at))}">${esc(ago(q.at))}</span><span class="tag ${st[1]}" style="margin-left:auto">${st[0]}</span></div>
+    <p class="iqb">${esc(q.body)}</p>
+    <div class="iqm">${q.has_contact?(own&&q.contact?`<span>연락처 <code>${esc(q.contact)}</code> <button class="btn sm ghost" data-a="copy" data-v="${esc(q.contact)}">복사</button></span>`:'<span class="mute">연락처 있음 (주인 계정만 볼 수 있어요)</span>'):''}${ctx?`<span class="mute" title="${esc(c.ua||'')}">${esc(ctx)}</span>`:''}</div>
+    ${q.reply&&!ed?`<div class="iqa"><div><b>답변</b> <span class="mute">${esc(q.reply_by||'')}${q.reply_by?' · ':''}${esc(dt(q.reply_at))}${q.seen?' · 플레이어가 읽음':''}</span></div><p>${esc(q.reply)}</p></div>`:''}
+    ${ed?`<form class="iqf" data-f="inqreply" data-id="${q.id}" novalidate><textarea name="reply" rows="4" maxlength="1000" aria-label="답변" placeholder="답변 (1,000자까지) — ${q.user_id?'플레이어의 「내 문의」에 그대로 보여요':'게스트 문의라 그 브라우저를 쓰는 누구나 볼 수 있어요. 개인 정보는 적지 마세요'}">${esc(dr!=null?dr:q.reply||'')}</textarea>
+      ${q.user_id?'':`<p class="mute" style="margin:0;font-size:12px">게스트 답변은 문의를 쓴 브라우저의 「내 문의」에만 보여요 (PC방처럼 같이 쓰는 컴퓨터면 다음 사람도 볼 수 있어요). 연락처로 따로 답할 때는 이 칸에 「메일로 답변드렸어요」처럼만 남겨 주세요.</p>`}
+      <div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-a="inqcancel" data-v="${q.id}">취소</button><button class="btn" name="keep" value="1">열어 둔 채 답변</button><button class="btn pri">답변하고 닫기</button></div></form>`
+      :`<div class="row iqx"><button class="btn sm${q.reply?'':' pri'}" data-a="inqedit" data-v="${q.id}">${q.reply?'답변 고치기':'답변 쓰기'}</button>${q.status==='new'?`<button class="btn sm ghost" data-a="inqdone" data-v="${q.id}">답변 없이 닫기</button>`:`<button class="btn sm ghost" data-a="inqopen" data-v="${q.id}">다시 열기</button>`}${own?`<button class="btn sm ghost" data-a="inqdel" data-v="${q.id}" style="color:#ff8a7c">삭제</button>`:''}</div>`}</div>`}
 
 // ---------- 오류 기록 (staff too; the owner may clear all) ----------
 const ESRC={window:'잡히지 않은 오류',promise:'처리 안 된 promise',frame:'게임 화면 갱신',boot:'게임 시작',log:'게임이 잡은 오류'};
@@ -504,7 +555,7 @@ function renderSus(kind){const B=$('susB');if(!B)return;const r=ST.sus.data[kind
 
 // ---------- 운영진 (owner) ----------
 async function vStaff(){const M=$('main');
-  M.innerHTML=head('운영진','부운영자는 현황, 플레이어 조회(이메일 제외), 닉네임 변경, 이용 정지, 의심 유저, 방 내리기, 기록만 쓸 수 있어요.')+`<div class="grid2" style="align-items:start"><div class="panel" id="stB"><div class="empty">불러오는 중…</div></div>
+  M.innerHTML=head('운영진','부운영자는 현황, 플레이어 조회(이메일 제외), 닉네임 변경, 이용 정지, 의심 유저, 문의 답변(게스트 연락처 제외), 오류 기록, 방 내리기, 기록만 쓸 수 있어요.')+`<div class="grid2" style="align-items:start"><div class="panel" id="stB"><div class="empty">불러오는 중…</div></div>
     <form class="panel" data-f="staffadd" novalidate><h2><span>부운영자 추가</span></h2><div class="pb nedit"><label class="fld"><span>플레이어 <em>이메일, 친구 코드, 한 명만 쓰는 닉네임</em></span><input name="who" autocomplete="off" spellcheck="false"></label>
       <p class="note mute" style="margin:0;font-size:12px">주인 계정은 Supabase SQL Editor에서만 추가하거나 뺄 수 있어요.</p><div class="row" style="justify-content:flex-end"><button class="btn pri">부운영자로 추가</button></div></div></form></div>`;
   try{ST.staff=await API.rpc('qz_admin_staff');renderStaff()}catch(e){if($('stB'))$('stB').innerHTML=errBox(e,'restaff')}}
@@ -515,7 +566,7 @@ function renderStaff(){const B=$('stB');if(!B)return;const L=ST.staff||[];
     </tbody></table></div>`}
 
 // the forms and buttons of part two (answers true when it was one of theirs)
-async function onSubmit2(f,k){
+async function onSubmit2(f,k,sub){
   if(k==='mailsend'){const d=ST.md;mdSync(f);const rw=rwRead('mrw',d.rw);d.title=d.title.trim();
     if(!d.title){toast('제목을 적어 주세요','bad');f.title.focus();return true}
     if(!Object.keys(rw).length){toast('보상을 하나 이상 넣어 주세요','bad');return true}
@@ -531,8 +582,10 @@ async function onSubmit2(f,k){
     const max=d.max===''?null:parseInt(d.max,10);if(max!==null&&!(max>=1)){toast('총 사용 횟수는 1 이상이에요','bad');f.max.focus();return true}
     await busy(f,async()=>{try{ST.coupons=await API.rpc('qz_admin_coupon_save',{p_row:{new:true,code,rewards:rw,max_uses:max,starts_at:fromLocal(d.starts),expires_at:fromLocal(d.ends),note:d.note,active:true}});
       const made=ST.coupons[0];toast(`쿠폰을 만들었어요: ${made?made.code:code}`,'ok');ST.cd={code:'',rw:{guns:[]},max:'',starts:'',ends:'',note:''};renderCoupons()}catch(x){toast(errText(x),'bad')}});return true}
+  if(k==='inqreply'){const id=+f.dataset.id,txt=f.reply.value.trim(),keep=!!(sub&&sub.name==='keep');if(!txt){toast('답변을 적어 주세요','bad');f.reply.focus();return true}
+    await busy(f,async()=>{try{await API.rpc('qz_admin_inquiry_reply',{p_id:id,p_reply:txt,p_done:!keep});delete ST.inq.draft[id];ST.inq.open=null;toast(keep?'답변을 보냈어요 (문의는 열어 뒀어요)':'답변을 보내고 문의를 닫았어요','ok');await vInq(ST.inq.st,true)}catch(x){toast(errText(x),'bad')}});return true}
   if(k==='staffadd'){const w=f.who.value.trim();if(!w){toast('부운영자로 넣을 플레이어를 적어 주세요','bad');f.who.focus();return true}
-    if(!await ask({title:'부운영자 추가',eff:w,body:'현황, 플레이어 조회, 닉네임 변경, 이용 정지, 의심 유저, 방 내리기, 기록을 쓸 수 있게 돼요.',ok:'추가하기'}))return true;
+    if(!await ask({title:'부운영자 추가',eff:w,body:'현황, 플레이어 조회, 닉네임 변경, 이용 정지, 의심 유저, 문의 답변, 오류 기록, 방 내리기, 기록을 쓸 수 있게 돼요.',ok:'추가하기'}))return true;
     await busy(f,async()=>{try{ST.staff=await API.rpc('qz_admin_staff_add',{p_who:w});renderStaff();f.reset();toast(`부운영자로 넣었어요: ${w}`,'ok')}catch(x){toast(errText(x),'bad')}});return true}
   return false}
 async function onClick2(t,a,v,e){
@@ -554,6 +607,14 @@ async function onClick2(t,a,v,e){
     try{ST.staff=await API.rpc('qz_admin_staff_remove',{p_id:v});renderStaff();toast('부운영자에서 뺐어요','ok')}catch(x){toast(errText(x),'bad')}return}
   case 'remail':{const r=parse();vMail(r.a,r.b);return}
   case 'resus':vSuspects(ST.sus.kind);return;
+  case 'reinq':vInq(ST.inq.st,true);return;
+  case 'moreinq':await moreInq();return;
+  case 'inqedit':{const f=document.querySelector('form[data-f="inqreply"]');if(f)ST.inq.draft[f.dataset.id]=f.reply.value;ST.inq.open=+v;renderInq();const t=document.querySelector('form[data-f="inqreply"] textarea');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}return}
+  case 'inqcancel':{const f=t.closest('form');if(f)ST.inq.draft[v]=f.reply.value;ST.inq.open=null;renderInq();return}
+  case 'inqdone':case 'inqopen':{const on=a==='inqdone';try{await API.rpc('qz_admin_inquiry_done',{p_id:+v,p_done:on});toast(on?'문의를 닫았어요':'문의를 다시 열었어요','ok');await vInq(ST.inq.st,true)}catch(x){toast(errText(x),'bad')}return}
+  case 'inqdel':{const q=((ST.inq.data||{}).rows||[]).find(x=>String(x.id)===String(v));if(!q)return;
+    if(!await ask({title:'문의 삭제',eff:`${IQK[q.kind]||q.kind} · ${q.user_id?q.nickname:'게스트'}`,body:'스팸 같은 글을 지울 때 써요. 지우면 되돌릴 수 없고, 플레이어의 「내 문의」에서도 사라져요.',ok:'삭제하기',danger:true}))return;
+    try{await API.rpc('qz_admin_inquiry_del',{p_id:+v});toast('문의를 지웠어요','ok');await vInq(ST.inq.st,true)}catch(x){toast(errText(x),'bad')}return}
   case 'reerrs':vErrors();return;
   case 'errx':{ST.errs.open=ST.errs.open===v?null:v;renderErrs();return}
   case 'errdel':{const e=((ST.errs.data||{}).rows||[]).find(x=>x.fp===v);if(!e)return;
@@ -565,7 +626,7 @@ async function onClick2(t,a,v,e){
 // ---------- what the buttons do ----------
 const curVal=(u,k)=>+(({coins:u.coins,frags:u.frags,tfrags:u.tfrags,tickets:u.tickets,season_tickets:u.season_tickets})[k]||0);
 async function onSubmit(f,k,sub){
-  if(await onSubmit2(f,k))return;
+  if(await onSubmit2(f,k,sub))return;
   if(k==='login'){const em=f.email.value.trim(),pw=f.pw.value;if(!em||!pw){toast('이메일과 비밀번호를 적어 주세요','bad');return}
     await busy(f,async()=>{try{await API.signIn(em,pw);await enter()}catch(e){gate('login',errText(e))}});return}
   if(k==='search'){ST.users.q=f.q.value.trim();ST.users.loaded=false;await loadUsers(false);return}
@@ -656,6 +717,7 @@ document.addEventListener('input',e=>{const t=e.target;
     if(t.type==='checkbox'||t.dataset.kind==='lines'){const pos=t.selectionStart;renderCfg();const n=document.querySelector(`[data-ck="${k}"]`);if(n&&t.type!=='checkbox'){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}}
     else{const l=t.closest('label.fld');if(l)l.classList.toggle('chg',!same);const sb=document.querySelector('.savebar');if(sb){const n=Object.keys(ST.cfgDraft).length;sb.querySelector('span').innerHTML=n?`<b style="color:var(--tape)">${n}개 바뀜</b>`:'<span class="mute">바뀐 값 없음</span>';sb.querySelectorAll('input,button').forEach(x=>x.disabled=!n)}}
     return}
+  if(t.form&&t.form.dataset.f==='inqreply'){ST.inq.draft[t.form.dataset.id]=t.value;return}
   if(t.form&&t.form.dataset.f==='nsave'&&(t.name==='title'||t.name==='body'))nPreview(t.form)});
 document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.rsel){rwAddGun(t.dataset.rsel);return}if(t.dataset&&(t.dataset.ps||t.dataset.ck)&&t.type==='checkbox')t.dispatchEvent(new Event('input',{bubbles:true}))});
 document.addEventListener('pointerover',e=>{const h=e.target.closest&&e.target.closest('.chart .hit');if(h)chartTip(h,true)});

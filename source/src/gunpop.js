@@ -28,7 +28,7 @@ const GUNPOP={busy:false,off:false,
   addEventListener('keydown',e=>{if(e.code==='Escape'&&$('gunPop')){$('gunPop').remove();e.stopPropagation()}},true);
   ACC.sub(()=>{try{if(ACC.signed())setTimeout(()=>GUNPOP.check(),900)}catch(e){console.error(e)}});
   // a window in the way closed, or the lobby came back after a match: ask again
-  const WINS=/^(srvWin|giftPop|gPop|accWin|patchWin|shopWin|rkWin|nbWin|invWin|frWin|mailWin)$/;let t=0;
+  const WINS=/^(srvWin|giftPop|gPop|accWin|patchWin|shopWin|rkWin|nbWin|invWin|frWin|mailWin|inqWin)$/;let t=0;
   new MutationObserver(ms=>{if(G.st!=='menu'||!GUNPOP.n())return;for(const m of ms)for(const n of m.removedNodes)if(n.id&&WINS.test(n.id)){clearTimeout(t);t=setTimeout(()=>GUNPOP.check(),500);return}}).observe(document.body,{childList:true});
   const sl=shopLobby;shopLobby=function(){sl();if(ACC.signed()&&GUNPOP.n())setTimeout(()=>GUNPOP.check(),800)};
   const sm=startMatch;startMatch=function(cfg){const o=$('gunPop');if(o)o.remove();return sm(cfg)};

@@ -44,12 +44,13 @@ const SRVN={list:[],at:0,busy:false,off:false,banSeen:'',
   seenList(){const v=ACC.ls('qz_ntc');return Array.isArray(v)?v:[]},
   seen(id){const L=this.seenList();if(!L.includes(id)){L.push(id);ACC.ls('qz_ntc',L.slice(-60))}},
   // a notice marked popup opens once per browser, in the lobby (not over a window already open)
-  popup(){if(G.st!=='menu'||$('srvWin')||$('patchWin'))return;if(this.banWin(false))return;const S=this.seenList(),n=this.list.find(x=>x.popup&&!S.includes(x.id));if(n)this.open(n.id)},
+  popup(){if(G.st!=='menu'||$('srvWin')||$('patchWin')||$('inqWin'))return;if(this.banWin(false))return;const S=this.seenList(),n=this.list.find(x=>x.popup&&!S.includes(x.id));if(n)this.open(n.id)},
   // (the ban comes first: the notice popup waits until it is closed)
   banWin(force){const B=this.ban();if(!B||G.st!=='menu')return false;const key=String(B.until)+'|'+(ACC.me&&ACC.me.nickname);if(!force&&this.banSeen===key)return false;if(!force&&$('srvWin'))return false;this.banSeen=key;
     const L=LI(),till=B.forever?(L?'Permanently':'영구 정지'):(L?'Until ':'')+fmtWhen(B.until)+(L?'':' 까지');
     this.win(L?'Account suspended':'계정 이용 정지',`<div class="bnr"><span>${L?'Period':'기간'}</span><b>${till}</b><span>${L?'Reason':'사유'}</span><b>${esc(B.reason||'-')}</b></div>
-      <p>${L?'While suspended, rewards, the shop, decoders, public rooms, friends and messages are closed to this account. Playing alone (bot matches, the range) still works.':'정지 중에는 보상 · 상점 · 해독기 · 공개 방 · 친구 · 메시지를 쓸 수 없어요. 혼자 하기(봇전 · 사격장)는 계속할 수 있어요.'}</p>`,'ban',()=>setTimeout(()=>this.popup(),250));return true}};
+      <p>${L?'While suspended, rewards, the shop, decoders, public rooms, friends and messages are closed to this account. Playing alone (bot matches, the range) still works.':'정지 중에는 보상 · 상점 · 해독기 · 공개 방 · 친구 · 메시지를 쓸 수 없어요. 혼자 하기(봇전 · 사격장)는 계속할 수 있어요.'}</p>
+      ${typeof INQ!=='undefined'&&INQ.on()?`<p class="bnq">${L?'Think this is a mistake?':'정지에 이의가 있으면'} <button data-act="inq" data-v="account">${L?'Contact us':'문의하기'}</button></p>`:''}`,'ban',()=>setTimeout(()=>this.popup(),250));return true}};
 // a date and time in the player's own time zone: 2026-10-14 02:00
 function fmtWhen(t){const d=new Date(t);if(isNaN(d))return '';const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`}
 (function(){

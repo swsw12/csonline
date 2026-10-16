@@ -215,3 +215,15 @@ input[type=number]{font-family:var(--pix);font-variant-numeric:tabular-nums}
 /* v6.65: 오류 기록 — the row that opens under an error: when, the context, the stack, the browser */
 .errd td{background:var(--panel2);padding:10px 12px}
 .errd pre{margin:0;padding:10px;background:var(--field);border:1px solid var(--line);border-radius:3px;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all;color:var(--amber2);max-height:280px;overflow:auto}
+/* v6.66: 문의 — the cards, the answer box, the menu's count */
+.nav a .nb{margin-left:auto;font-style:normal;font-family:var(--pix);font-size:11px;line-height:16px;min-width:18px;padding:0 5px;border-radius:8px;text-align:center;background:var(--zombie);color:#fff}
+.iqlist{display:flex;flex-direction:column}
+.iqc{display:flex;flex-direction:column;gap:7px;padding:12px 14px;border-bottom:1px solid #1c1f25;border-left:3px solid transparent}
+.iqc:last-child{border-bottom:0}.iqc.wait{border-left-color:var(--tape)}
+.iqt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;font-size:13px}.iqt b{font-weight:600}
+.iqb{margin:0;white-space:pre-wrap;word-break:break-word;line-height:1.6;font-size:14px}
+.iqm{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;align-items:center}.iqm code{font-family:var(--pix);color:var(--amber2)}
+.iqa{padding:8px 10px;border:1px solid rgba(90,180,255,.35);background:rgba(90,180,255,.06);border-radius:3px;font-size:13px}
+.iqa p{margin:4px 0 0;white-space:pre-wrap;word-break:break-word;line-height:1.55}
+.iqf{display:flex;flex-direction:column;gap:8px}.iqf textarea{width:100%;min-height:96px;resize:vertical;line-height:1.5}
+.iqx{gap:6px}

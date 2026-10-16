@@ -1704,3 +1704,48 @@ html.touch #results>.mbtns{bottom:calc(max(8px,env(safe-area-inset-bottom)) * -1
 /* touch: the coins / mail / account buttons and the results' shop and mission buttons big enough for a thumb */
 html.touch .accChip button{min-height:40px;min-width:40px;justify-content:center}
 html.touch #results [data-act="shop"],html.touch #results [data-act="mis"]{min-height:36px}
+/* ===== v6.66: 문의하기 (inquiry.js) — the window, the dot on the top bar's button, the ban window's way in ===== */
+#inqWin{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}
+#inqWin .pwin{width:min(540px,100%);max-height:100%;display:flex;flex-direction:column;background:#23262c;border:1px solid #4a4e58;box-shadow:0 10px 40px #000}
+#inqWin .pwh{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#2c2f36;border-bottom:2px solid #e8a33a;font-size:15px;color:#ffd890}
+#inqWin .pwh svg{width:18px;height:18px}
+#inqWin .pwh button{margin-left:auto;min-width:0;width:32px;height:32px;font-size:20px;line-height:1;padding:0;background:#3a3e46;border:1px solid #555a64;color:#fff;cursor:pointer;box-shadow:none}
+#inqWin .itabs{display:flex;border-bottom:1px solid #33373e;flex:none}
+#inqWin .itabs button{flex:1;min-width:0;font:inherit;font-size:13px;padding:9px;background:#1a1d21;border:0;border-bottom:2px solid transparent;color:#9a968c;cursor:pointer;box-shadow:none;display:flex;align-items:center;justify-content:center;gap:6px}
+#inqWin .itabs button.on{color:#ffd890;border-bottom-color:#e8a33a;background:#22252a}
+#inqWin .itabs .n{font-style:normal;font-size:10px;font-weight:bold;min-width:16px;padding:1px 4px;border-radius:8px;background:#ff3a2a;color:#fff;line-height:14px}
+#inqWin .pwb{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;display:flex;flex-direction:column;gap:9px;min-height:120px}
+#inqWin .ikinds{display:flex;flex-wrap:wrap;gap:5px}
+#inqWin .ikinds button{min-width:0;font:inherit;font-size:12px;padding:6px 10px;background:#1b1d22;border:1px solid #444955;border-radius:14px;color:#c8ccd2;cursor:pointer;box-shadow:none}
+#inqWin .ikinds button.on{border-color:#e8a33a;color:#ffd890;background:#3a2c10}
+#inqWin textarea{font:inherit;font-size:14px;line-height:1.5;padding:9px 10px;min-height:120px;resize:vertical;background:#121417;border:1px solid #3a3e46;color:#f0ece0;border-radius:3px;outline:none;user-select:text;-webkit-user-select:text}
+#inqWin textarea:focus,#inqWin input:focus{border-color:#e8a33a}
+#inqWin .icnt{margin-top:-6px;text-align:right;font-size:11px;color:#7a7e86}
+#inqWin .ict{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#b8b4a8}#inqWin .ict small{color:#7a7e86}
+#inqWin input{font:inherit;font-size:14px;padding:8px 10px;background:#121417;border:1px solid #3a3e46;color:#f0ece0;border-radius:3px;outline:none;user-select:text;-webkit-user-select:text}
+#inqWin .inote{margin:0;font-size:12px;color:#b8b4a8;line-height:1.5}#inqWin .inote b{color:#ffd890;font-weight:normal}#inqWin .inote.dim{color:#7a7e86;font-size:11px}
+#inqWin .ilink{min-width:0;font:inherit;font-size:12px;background:none;border:0;padding:0;color:#9ab8e8;cursor:pointer;text-decoration:underline;box-shadow:none}
+#inqWin .mem{margin:18px 0;text-align:center;color:#8a8f98;font-size:13px}
+#inqWin .iq{padding:9px 11px;background:#1b1d22;border:1px solid #3a3e46;border-left:3px solid #5a5e66}
+#inqWin .iq.ans{border-left-color:#4a9a5a}#inqWin .iq.new{border-left-color:#ff3a2a}
+#inqWin .iqh{display:flex;align-items:center;gap:8px;font-size:11px}
+#inqWin .iqh em{font-style:normal;padding:1px 6px;border-radius:2px;background:#33373f;color:#d8dce2}
+#inqWin .iqh time{color:#8a8f98}#inqWin .iqh .st{margin-left:auto;font-weight:bold}
+#inqWin .st.w{color:#c8a050}#inqWin .st.a{color:#8ad89a}#inqWin .st.d{color:#8a8f98}
+#inqWin .iq>p{margin:6px 0 0;font-size:13px;color:#d8dce2;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+#inqWin .iqr{margin-top:8px;padding:8px 10px;background:rgba(74,154,90,.1);border:1px solid rgba(74,154,90,.4)}
+#inqWin .iqr>div{display:flex;align-items:center;gap:8px;font-size:11px}#inqWin .iqr b{color:#a8e8b0}#inqWin .iqr time{margin-left:auto;color:#8a8f98}
+#inqWin .iqr i{font-style:normal;font-size:9px;font-weight:bold;padding:1px 5px;border-radius:2px;background:#ff3a2a;color:#fff}
+#inqWin .iqr p{margin:5px 0 0;font-size:13px;color:#e6f2e8;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+#inqWin .mres{margin:0 14px 8px;padding:8px 10px;font-size:12px;color:#bfe3ff;background:rgba(90,180,255,.08);border:1px solid rgba(90,180,255,.35)}
+#inqWin .mres.bad{color:#ffb3a8;background:rgba(255,75,58,.08);border-color:rgba(255,75,58,.4)}
+#inqWin .pwf{display:flex;justify-content:flex-end;gap:6px;padding:10px 14px 12px;border-top:1px solid #353941;flex:none}
+#inqWin .pwf button{min-width:96px;padding:8px 14px;font-size:13px}
+#inqWin .pwf .isend{border-color:#c8901e;color:#ffe2a0;background:linear-gradient(#5a4310,#3a2a08)}#inqWin .pwf .isend:hover{background:#e8a33a;color:#111}
+html.touch #inqWin .pwf button,html.touch #inqWin .ikinds button,html.touch #inqWin .itabs button{min-height:44px}
+.tutil .tinq,.tmore{position:relative}
+.tutil .tinq .dot,.tmore .dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+@media (max-width:1180px){.tutil .tinq .dot{position:static;margin-left:auto;flex:none}}
+#srvWin .bnq{margin-top:10px!important;display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;color:#b8b4a8}
+#srvWin .bnq button{min-width:0;padding:5px 12px;font-size:12px;border-color:#c8901e;color:#ffe2a0}
+@media (max-height:520px){#inqWin textarea{min-height:84px;height:96px}#inqWin .pwb{gap:7px;padding:10px 12px}}
