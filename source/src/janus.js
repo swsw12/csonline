@@ -14,7 +14,9 @@
 // swing out, the crest on the mask lifts and the five chambers light. Closing: it shuts with a clank and lets off steam.
 // Network: the state changes go out as ['jn', id, 0 shut | 1 signal | 2 opening]; the grenades are projectiles like the others.
 // v6.55: JANUS-2 (janus2.js) runs on the same machinery: what differs between the two (the form's round, sounds, clips, light, the
-// grenades) sits in JNW / JNP; WPN[id].jn names the JANUS weapon a WPN entry belongs to.
+// grenades) sits in JNW / JNP; WPN[id].jn names the JANUS weapon a WPN entry belongs to. v6.68: a JNW entry may also set its own opening
+// and closing times (oT / cT), how far open it is (openK), calm (no burst, kick or shake when the form comes on or the world model
+// changes) and no light while open (lit null) — the Dick gun's second sheet.
 
 // ---------- atlas: one self-lit violet ----------
 for(const m of ['jnGlow']){if(GA.idx[m]==null){GA_MATS.push(m);GA.idx[m]=GA_MATS.length-1}}
@@ -133,8 +135,10 @@ FDS.janus=function(P,G,m,L){const cyL=[-.046,JN_CY-.005,JN_CZ],hm=[0,.106,.05];
 const jnForm=a=>a.jnO>0||a.jnB>0;
 // how far the shells are open (0..1): they burst open at 40 % of the opening with an overshoot, ease shut while it closes
 function jnEaseBack(x){const c=1.9;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)}
-function jnOpenK(a){if(a.jnO>0){const u=1-a.jnO/JN.OPEN;return u<.4?0:jnEaseBack(clamp((u-.4)/.42,0,1))}if(a.jnB>0)return 1;
+function jnOpenK(a){const C=jnC(a);if(C.openK)return C.openK(a);if(a.jnO>0){const u=1-a.jnO/JN.OPEN;return u<.4?0:jnEaseBack(clamp((u-.4)/.42,0,1))}if(a.jnB>0)return 1;
   if(a.jnC>0){const u=1-a.jnC/JN.CLOSE;return 1-smooth(clamp((u-.1)/.55,0,1))}return 0}
+// how long the opening and the closing take (v6.68: a JANUS weapon may set its own, oT / cT)
+const jnOT=a=>jnC(a).oT||JN.OPEN,jnCT=a=>jnC(a).cT||JN.CLOSE;
 function jnReset(a){a.jnH=0;a.jnS=0;a.jnO=0;a.jnB=0;a.jnC=0;if(a.jnL){a.jnL.dead=true;a.jnL=null}}
 // the page that runs this human (its own page, or the host / a solo game for bots)
 const jnOwn=a=>!a.pup;
@@ -150,18 +154,18 @@ function jnSigFx(a){jnAt(a,'jnsig',.8);if(a.isPlayer){VM.sp.rz.v+=.7;VM.sp.py.v+
 function jnAlt(a){if(NET.ghost||!jnOwn(a))return;if(jnForm(a)||a.jnC>0)return;
   if(!(a.jnS>0)){if(a.isPlayer&&!AU.throttle('jnno',700)){HUD.note(LI()?`JANUS — ${a.jnH|0} / ${JN.N} hits`:`JANUS — 적중 ${a.jnH|0} / ${JN.N}`,1.2);AU.play('dry',{vol:.4,rate:1.3})}return}
   if(a.drawT>0||a.fmKd>0||a.grabT>0)return;jnOpen(a)}
-function jnOpen(a){a.jnS=0;a.jnO=JN.OPEN;a.jnB=0;a.jnC=0;a.jnH=0;jnSend(a,2);jnOpenFx(a)}
-function jnOpenFx(a){const C=jnC(a);jnAt(a,C.sOpen,.85);if(a.isPlayer){try{VM.playClip(C.open(),0,JN.OPEN,'jn')}catch(e){console.error(e)}}}
-// the opening is over: the form is on
-function jnBStart(a){const C=jnC(a);a.jnB=JN.B;if(C.sOn)jnAt(a,C.sOn,.85);if(!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);C.burst(mz.x,mz.y,mz.z,1)}// (the player sees it on the view model)
-  if(a.isPlayer){VM.U.uMuzzle.value.setRGB(C.mz[0],C.mz[1],C.mz[2]);VM.sp.pz.v+=.45;VM.sp.rx.v-=.8;FX.shake=Math.max(FX.shake,.3);
+function jnOpen(a){a.jnS=0;a.jnO=jnOT(a);a.jnB=0;a.jnC=0;a.jnH=0;jnSend(a,2);jnOpenFx(a)}
+function jnOpenFx(a){const C=jnC(a);jnAt(a,C.sOpen,.85);if(a.isPlayer){try{VM.playClip(C.open(),0,C.oT||JN.OPEN,'jn')}catch(e){console.error(e)}}}
+// the opening is over: the form is on (C.calm: no burst of light, no kick, no shake — v6.68, the Dick gun's sheet)
+function jnBStart(a){const C=jnC(a);a.jnB=JN.B;if(C.sOn)jnAt(a,C.sOn,.85);if(!C.calm&&!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);C.burst(mz.x,mz.y,mz.z,1)}// (the player sees it on the view model)
+  if(a.isPlayer){if(!C.calm){VM.U.uMuzzle.value.setRGB(C.mz[0],C.mz[1],C.mz[2]);VM.sp.pz.v+=.45;VM.sp.rx.v-=.8;FX.shake=Math.max(FX.shake,.3)}
     HUD.note(LI()?`JANUS — ${JN.B}s of grenades without limit, hold to fire`:`JANUS 모드 — ${JN.B}초간 유탄 무한 연사 (꾹 누르기)`,2)}}
 // it closes (its time is up, or it was put away): every page, own pages tell the rest; was = it was open (or opening) until now
 function jnClose(a,own,was){a.jnB=0;a.jnO=0;a.jnH=0;if(own)jnSend(a,0);if(!was)return;
-  if(jnHeld(a)&&a.alive){const C=jnC(a);a.jnC=JN.CLOSE;jnAt(a,C.sClose,.8);C.cfx(a,muzzleWorld(a));
-    if(a.isPlayer){a.nextFire=Math.max(a.nextFire,G.t+JN.CLOSE*.9);try{VM.playClip(C.close(),0,JN.CLOSE,'jn')}catch(e){console.error(e)}}}}
+  if(jnHeld(a)&&a.alive){const C=jnC(a);a.jnC=jnCT(a);jnAt(a,C.sClose,.8);C.cfx(a,muzzleWorld(a));
+    if(a.isPlayer){a.nextFire=Math.max(a.nextFire,G.t+a.jnC*.9);try{VM.playClip(C.close(),0,a.jnC,'jn')}catch(e){console.error(e)}}}}
 // another page's state change
-function jnRemote(a,st){if(!a||a.team!==TH)return;if(st===1){a.jnS=JN.SIG;a.jnO=a.jnB=a.jnC=0;jnSigFx(a)}else if(st===2){a.jnS=0;a.jnO=JN.OPEN;a.jnB=0;a.jnC=0;jnOpenFx(a)}else{jnClose(a,false,a.jnB>0||a.jnO>0);a.jnS=0}}
+function jnRemote(a,st){if(!a||a.team!==TH)return;if(st===1){a.jnS=JN.SIG;a.jnO=a.jnB=a.jnC=0;jnSigFx(a)}else if(st===2){a.jnS=0;a.jnO=jnOT(a);a.jnB=0;a.jnC=0;jnOpenFx(a)}else{jnClose(a,false,a.jnB>0||a.jnO>0);a.jnS=0}}
 // a violet burst (the form opening, a JANUS blast)
 function jnBurst(x,y,z,s){FX.spawn({x,y,z,life:.2,s0:.3*s,s1:1.8*s,r:.75,g:.4,b:1,a:.85,f:14,add:1});FX.spawn({x,y,z,life:.1,s0:.25*s,s1:.6*s,r:1,g:.85,b:1,f:1,add:1});
   for(let i=0;i<10;i++){const g=Math.random()*TAU,e=rr(-.5,1),sp=rr(1.5,4)*s;FX.spawn({x,y,z,vx:Math.cos(g)*Math.cos(e)*sp,vy:Math.sin(e)*sp,vz:Math.sin(g)*Math.cos(e)*sp,life:rr(.2,.4),s0:.06,s1:.01,r:.8,g:.5,b:1,f:11,add:1,grav:2})}
@@ -182,10 +186,10 @@ function jnTick(a,dt){const own=jnOwn(a);
   if(a.jnC>0)a.jnC=Math.max(0,a.jnC-dt);
   // the rounds it holds and its spares (a refill shows up as more), so putting it down and taking a new one does not fill it again
   const am=sid&&a.ammo&&a.ammo[sid];if(am)(a.jnLeft||(a.jnLeft={}))[sid]=[am.mag,am.res|0];
-  // the world model: shut / signal / open (with a burst when it changes), and a light while it is open
+  // the world model: shut / signal / open (with a burst when it changes, unless C.calm), and a light while it is open (C.lit)
   const hid=jnHeld(a)?a.cur:'',C=jnC(a),fm=hid&&hid+(jnOpenK(a)>.5?'b':a.jnS>0||a.jnO>0?'s':'n');
-  if(fm!==a.jnFm){if(a.jnFm&&fm&&a.gun&&!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);C.burst(mz.x,mz.y,mz.z,.6)}a.jnFm=fm}
-  if(hid&&jnOpenK(a)>.05){const mz=muzzleWorld(a),s=C.spark;if(!a.jnL)a.jnL=DL.add(mz.x,mz.y,mz.z,C.lit,4,1.3,0,{flick:.18});a.jnL.x=mz.x;a.jnL.y=mz.y;a.jnL.z=mz.z;
+  if(fm!==a.jnFm){if(a.jnFm&&fm&&a.gun&&!C.calm&&!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);C.burst(mz.x,mz.y,mz.z,.6)}a.jnFm=fm}
+  if(hid&&C.lit&&jnOpenK(a)>.05){const mz=muzzleWorld(a),s=C.spark;if(!a.jnL)a.jnL=DL.add(mz.x,mz.y,mz.z,C.lit,4,1.3,0,{flick:.18});a.jnL.x=mz.x;a.jnL.y=mz.y;a.jnL.z=mz.z;
     if(!(a.isPlayer&&!G.spec)&&Math.random()<dt*14)FX.spawn({x:mz.x+rr(-.05,.05),y:mz.y+rr(-.05,.05),z:mz.z+rr(-.05,.05),vy:rr(.1,.4),life:rr(.15,.3),s0:.05,s1:.01,r:s[0],g:s[1],b:s[2],f:11,add:1})}
   else if(a.jnL){a.jnL.dead=true;a.jnL=null}
   // a bot with the signal takes it out again (its last grenade emptied it) and opens it as soon as there is a zombie to use it on
