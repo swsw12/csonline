@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'weapon',ref:'m4dk2',tag:['보급 무기 · 특수','Crate weapon · special'],t:['M4A1 다크나이트-2','M4A1 Dark Knight-2'],
+    d:['용의 턱 핸드가드와 가시 곤봉 총구, 금빛 뿔과 붉은 구형 눈을 단 M4A1. 50발 자동 (헤드 150 · 몸통 90 · 팔다리 50), 경직이 아주 좋아요. 우클릭하면 B모드: 눈이 더 밝게 빛나고 시야가 살짝 좁아지며, 한 발에 2발씩 써서 데미지 2배 관통탄을 분당 600발로 — 좀비 3마리까지 뚫고 (뒤로 갈수록 0.75배), 흰 궤적이 남아요. 들고 있으면 확인사살 +1초.','An M4A1 with a dragon\'s-jaw handguard, a spiked-club muzzle, gold horns and red round eyes. 50 rounds full auto (head 150, body 90, arms and legs 50) with a very strong stagger. Right click for B: the eyes glow brighter and the view narrows a little; two rounds a shot, double damage, 600 a minute, through up to three zombies (each next one ×0.75), leaving a white trail. Carrying it adds a second to the Deadshot.']},
   {kind:'weapon',ref:'spas12d',tag:['보급 무기 · 산탄총','Crate weapon · shotgun'],t:['SPAS-12 드래곤브레스','SPAS-12 Dragon’s Breath'],
     d:['마그네슘 소이탄을 쓰는 반자동 산탄총 — 쏠 때마다 총구에서 불꽃이 뿜어져 나오고, 맞은 좀비는 3초 동안 불타요 (초당 44). 8발에 9펠릿. 우클릭하면 펌프 액션: 느리지만 더 세고 (펠릿 27) 더 모여요. 한 번 더 누르면 반자동.','A semi-auto shotgun with magnesium incendiary shells: every shot throws a plume of fire, and a zombie it hits burns for 3 s (44 a second). Eight shells, nine pellets. Right click for pump action: slower but harder (27 a pellet) and tighter; again, back to semi-auto.']},
   {kind:'weapon',ref:'m32c',tag:['보급 무기 · 특수','Crate weapon · special'],t:['M32 클러스터','M32 Cluster'],

@@ -173,7 +173,8 @@ const SUP={list:[],seq:1,next:1e9,MAXN:2,
       else if(b.mk)b.mk.style.display='none';
       // opening: host / solo decides
       if(own&&b.landed){for(const a of G.actors){if(!a.alive||a.team!==TH)continue;if(Math.abs(a.c.x-b.x)>1.1||Math.abs(a.c.z-b.z)>1.1||Math.abs(a.c.y-b.y)>1.6)continue;this.open(a,b);break}}}},
-  // what is inside: Event Horizon 30 %, a crate gun 35 % (v6.56: five of them, from 30 %; v6.59: six, the Double Glock a sidearm), a heavy gun 15 %, the kit 20 %
+  // what is inside: Event Horizon 30 %, a crate gun 35 % (v6.56: five of them, from 30 %; v6.59: six, the Double Glock a sidearm; v6.69: nine,
+  // the M4A1 다크나이트-2 the ninth), a heavy gun 15 %, the kit 20 %
   open(a,b){const i=this.list.indexOf(b);if(i>=0)this.list.splice(i,1);this.drop(b);
     const r=Math.random(),heavy=['gx6','airb','ripper','rdc','hmg','gl40','bdc'].filter(w=>WPN[w]&&a.inv[1]!==w),cg=CRATE_GUNS.filter(w=>WPN[w]&&a.inv[WPN[w].slot]!==w);
     let k='kit',w='';if(r<.3&&a.inv[1]!=='bhole'){k='w';w='bhole'}else if(r<.65&&cg.length){k='w';w=rpick(cg)}else if(r<.8&&heavy.length){k='w';w=rpick(heavy)}

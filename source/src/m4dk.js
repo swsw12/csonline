@@ -133,6 +133,8 @@ VMX.m4dk=function(V,a,dt,o,m){const T=m.tags;V.dkK=approach(V.dkK||0,a.dkB?1:0,d
 
 // ---------- the Deadshot: a second longer for whoever owns one ----------
 // (the local player: the account owns it — with accounts off, it is in hand; a bot: carrying it; anyone else: what their request said)
+// the name the Deadshot's note gives (m4dk2.js: the Dark Knight-2 for one who owns only that)
+function dkOwnN(a){return WPN.m4dk.n}
 function dkOwns(a){if(!a)return false;if(a===G.player)return ACC.on?!!(ACC.signed()&&ACC.me&&ACC.me.owned&&ACC.me.owned.has('m4dk')):!!(a.inv&&a.inv[1]==='m4dk');
   if(a.bot&&!a.pup)return !!(a.inv&&a.inv[1]==='m4dk');return !!a.dkOwn}
 
@@ -165,7 +167,7 @@ function dkOwns(a){if(!a)return false;if(a===G.player)return ACC.on?!!(ACC.signe
   const wt=UI.wTags;UI.wTags=function(W,id){if(W&&W.trans)return LI()?'Transcendence · RMB B: half zoom, piercing rounds ×2 · Deadshot +1 s while owned · Mag 50 · auto':'초월 · 우클릭 B: 반줌 · 관통탄 데미지 ×2 · 보유 시 확인사살 +1초 · 탄창 50 · 자동';return wt.call(this,W,id)};
   // the Deadshot: a second longer for an owner, every page (the host and the others learn it from the request / the event)
   const hs0=HSK.start.bind(HSK);HSK.start=function(a,k){hs0(a,k);if(k==='ds'&&dkOwns(a)){const h=this.of(a);h.ds+=DK.DS;
-    if(a===G.player)HUD.note(LI()?`DEADSHOT — ${HSK.DS+DK.DS} s (M4A1 Dark Knight +${DK.DS} s)`:`확인사살 — ${HSK.DS+DK.DS}초 (M4A1 다크나이트 +${DK.DS}초)`,1.8)}};
+    if(a===G.player)HUD.note(LI()?`DEADSHOT — ${HSK.DS+DK.DS} s (${dkOwnN(a)[1]} +${DK.DS} s)`:`확인사살 — ${HSK.DS+DK.DS}초 (${dkOwnN(a)[0]} +${DK.DS}초)`,1.8)}};
   const nth=netToHost;netToHost=function(m){if(m&&m.t==='hsk'&&m.k==='ds'&&dkOwns(G.player))m.x=1;return nth(m)};
   const hh=HOSTH.hsk;HOSTH.hsk=function(L,m){const a=actorOfKey(L.key);if(a&&m&&m.k==='ds')a.dkOwn=!!m.x;return hh.call(this,L,m)};
   const ne=netEv;netEv=function(t,d){if(t==='hsk'&&d&&d.k==='ds'){const a=byId(d.i);if(a&&dkOwns(a))d.x=1}return ne(t,d)};
