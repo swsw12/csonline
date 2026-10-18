@@ -2052,3 +2052,26 @@ html[data-lob="l"] .rsT .tbl th{position:sticky;top:0;z-index:1;background:#1618
 html[data-lob="l"] .rsT .tbl td{padding:3px 6px;white-space:nowrap}
 html[data-lob="l"] .rsT .tbl td:nth-child(2){max-width:130px;overflow:hidden;text-overflow:ellipsis}
 html[data-lob="l"] .rsT .pvSide{margin:0;padding:5px 8px;background:#1e2026;border-bottom:1px solid #2e3138}
+/* ============ v6.80: 빠른 매칭 (quick.js): the multiplayer screen's button and steps, the lobby card's pill ============ */
+#mp .mpw .qmbox{display:flex;flex-direction:column;gap:4px}
+#mp .mpw .qmgo{display:flex;align-items:center;justify-content:center;gap:8px;color:#1a1408;background:linear-gradient(#f2b850,#c8862a);border-color:#f2c870}
+#mp .mpw .qmgo:hover{filter:brightness(1.1)}
+#mp .mpw .qmgo svg{width:18px;height:18px;flex:none}
+#mp .mpw .qmgo.busy{color:#ffd890;background:linear-gradient(#3a3020,#262014);border-color:#8a6a2e}
+#mp .mpw .qmgo.busy svg{animation:qmPulse 1s ease-in-out infinite}
+@keyframes qmPulse{50%{opacity:.35}}
+#mp .mpw .qmmsg{margin:0;font-size:12px;line-height:1.4;color:#ffd890;overflow-wrap:anywhere}
+#mp .mpw .qmmsg:empty{display:none}
+#mp .mpw .qmhint{margin:0;font-size:11px;color:#8a9098}
+#mp .mpw .mpmk{margin-top:4px}
+.mc .mqm{border-color:#4aa8e8;background:rgba(4,14,26,.86);color:#bfe4ff}
+.mc .mqm:hover{background:#4aa8e8;color:#04121e}
+.mc .mqm svg{width:12px;height:12px;flex:none}
+html[data-lob] .mc .mqm svg{width:10px;height:10px}
+/* (a short screen: the hint goes and the two big buttons are lower, so the code row stays in view) */
+@media (max-height:520px){#mp .mpw .qmhint{display:none}#mp .mpw .qmgo,#mp .mpw .mpmk{padding:6px 12px;font-size:15px}#mp .mpw .mpmk{margin-top:0}#mp .mpw .mpbox label{margin-top:2px}}
+/* (sideways: 빠른 매칭 and 방 만들기 side by side, so the whole box fits a phone's height) */
+html[data-lob="l"] #mp .mpw .mpbox{flex-direction:row;flex-wrap:wrap;align-content:flex-start}
+html[data-lob="l"] #mp .mpw .mpbox>*{flex:1 1 100%;min-width:0;box-sizing:border-box}
+html[data-lob="l"] #mp .mpw .mpbox>.qmbox,html[data-lob="l"] #mp .mpw .mpbox>.mpmk{flex:1 1 calc(50% - 4px)}
+html[data-lob="l"] #mp .mpw .mpbox>.mpmk{margin-top:0;align-self:flex-start}
