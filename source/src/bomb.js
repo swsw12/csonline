@@ -208,7 +208,7 @@ const BOMB={FREEZE:6,ROUND:105,TIMER:40,PLANT:3.2,DEFUSE:6,BUYT:20,ENDT:5,REACH:
   off(){if(this.mkL)this.mkL.style.display='none';if(this.pbar)this.pbar.style.display='none';this.clearFx();const h=$('hTime');if(h)h.classList.remove('bomb');this.b={st:'none'}},
   // the top bar, the bomb's clock, the hints under the crosshair, the progress bar, the markers (site letters, the bomb)
   hud(dt,set){const P=G.player,e=HUD.el,L=LI();if(!P)return;this.ui();const S=PVP.SIDES,b=this.b,at=this.att(),me=P.side===1?1:0,role=me===at;
-    set(e.hRound,`${T('bomb')} · ${T('round')} ${G.round}/${G.rounds} · <b class="${me?'z':'h'}">${role?(L?'ATTACK':'공격'):(L?'DEFEND':'수비')}</b>`,1);set(e.hSH,String(G.score[0]|0));set(e.hSZ,String(G.score[1]|0));
+    set(e.hRound,`${T('bomb')} · ${T('round')} ${G.round|0}/${G.rounds|0} · <b class="${me?'z':'h'}">${role?(L?'ATTACK':'공격'):(L?'DEFEND':'수비')}</b>`,1);set(e.hSH,String(G.score[0]|0));set(e.hSZ,String(G.score[1]|0));
     let a0=0,a1=0;for(const a of G.actors)if(a.alive){if(a.side===1)a1++;else a0++}set(e.hAH,`${S[0].n[L]} ${a0}`);set(e.hAZ,`${S[1].n[L]} ${a1}`);
     const pl=b.st==='planted'&&G.st==='fight';e.hTime.classList.toggle('bomb',pl);if(pl){const t=Math.max(0,G.time);set(e.hTime,`C4 ${Math.floor(t)}.${Math.floor(t*10)%10}`)}
     // under the crosshair: the buy window, what I can do with E

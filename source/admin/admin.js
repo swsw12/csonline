@@ -3,7 +3,8 @@
 // A page of its own next to the game: the same Supabase project (SB, sb.js) and the game's gun and map names (GUN_NAMES, MAP_NAMES:
 // build.py reads them out of the game's sources). It has no powers of its own: every call is one of the qz_admin_* functions in
 // supabase/schema.sql, and each of those checks that the caller is in public.admins. Its sign-in is kept apart from the game's
-// (localStorage qz_adm_ses), so the game and this page never use one refresh token at the same time.
+// (qz_adm_ses), so the game and this page never use one refresh token at the same time. v6.71: kept in sessionStorage — this tab only,
+// gone when the tab closes (a copy an older version left in localStorage moves over once and is wiped from there).
 // Views (the address's hash): #/dash, #/players[/<id>], #/suspects[/<kind>], #/mail[/coupons | /to/<id>], #/notices, #/settings[/prices|gacha|missions],
 // #/inquiries[/new | done | all] (v6.66), #/staff, #/logs[/<player id>]. v6.43: staff (admins.role 'staff') get the dashboard, players (no e-mails, no grants or guns), the
 // suspects, closing rooms, bans, nicknames and the log (v6.65 / v6.66: the error log and the inquiries too, a guest's contact left out);
@@ -28,15 +29,16 @@ const KIND={coins:'코인',frags:'해독 조각',tfrags:'초월 조각',tickets:
 const PROV={email:'이메일',google:'구글',kakao:'카카오',github:'깃허브',apple:'애플'};
 const online=t=>!!t&&Date.now()-new Date(t)<150e3;
 const ls=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
+const ss=(k,v)=>{try{if(v===undefined)return JSON.parse(sessionStorage.getItem(k)||'null');if(v===null)sessionStorage.removeItem(k);else sessionStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 const isoLocal=t=>{if(!t)return '';const d=new Date(t);if(isNaN(d))return '';return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
 const fromLocal=v=>{if(!v)return '';const d=new Date(v);return isNaN(d)?'':d.toISOString()};
 
 // ---------- the server (the game's account.js does the same with fetch; no library) ----------
 const API={ses:null,
   base(){return String(SB.url||'').replace(/\/+$/,'')},
-  load(){this.ses=ls('qz_adm_ses')},
-  save(s){if(!s||!s.access_token){this.ses=null;ls('qz_adm_ses',null);return}
-    this.ses={access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at||Math.floor(Date.now()/1000)+(+s.expires_in||3600)};ls('qz_adm_ses',this.ses)},
+  load(){let s=ss('qz_adm_ses');const old=ls('qz_adm_ses');if(old){ls('qz_adm_ses',null);if(!s&&old.access_token){s=old;ss('qz_adm_ses',s)}}this.ses=s},
+  save(s){if(!s||!s.access_token){this.ses=null;ss('qz_adm_ses',null);ls('qz_adm_ses',null);return}
+    this.ses={access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at||Math.floor(Date.now()/1000)+(+s.expires_in||3600)};ss('qz_adm_ses',this.ses)},
   async req(method,path,body,auth){const h={apikey:SB.key,'Content-Type':'application/json'};if(auth&&this.ses)h.Authorization='Bearer '+this.ses.access_token;
     let r;try{r=await fetch(this.base()+path,{method,headers:h,body:body==null?undefined:JSON.stringify(body)})}catch(e){const er=new Error('network');er.net=1;throw er}
     const tx=await r.text();let j=null;try{j=tx?JSON.parse(tx):null}catch(e){j=null}
@@ -290,7 +292,7 @@ function ulogHtml(u){const k=ST.utab;
 // ---------- 게임 설정 ----------
 const CFG_G=[
   ['근하신년 해독기',[['dec_cost1','1개 가격','코인'],['dec_cost10','10개 가격','코인'],['bingo_hi','숫자 범위 (0 ~ 이 값)','24 이상'],['dec_frag_min','해독 조각 최소','1개당'],['dec_frag_max','해독 조각 최대','1개당'],
-    ['shuffle_free','하루 뒤섞기 횟수',''],['daily_free','매일 무료 해독기 1개',''],['full_s_coins','S급을 다 가졌을 때 대신 주는 코인',''],['full_a_frags','A급을 다 가졌을 때 대신 주는 조각',''],['ex_s','S급 교환에 드는 조각',''],['ex_a','A급 교환에 드는 조각','']]],
+    ['shuffle_free','하루 뒤섞기 횟수',''],['daily_free','매일 무료 해독기 1개',''],['full_s_coins','S급을 다 가졌을 때 대신 주는 코인',''],['full_a_frags','A급을 다 가졌을 때 대신 주는 조각',''],['ex_s','S급 교환에 드는 조각',''],['ex_a','A급 교환에 드는 조각',''],['ny_day_cap','하루 근·하·신·년 글자 상한','판당 2~8개']]],
   ['시즌 해독기',[['season_cost1','1개 가격','코인'],['season_cost10','10개 가격','코인'],['season_hi','숫자 범위 (0 ~ 이 값)','24 이상'],['season_frag_min','해독 조각 최소','1개당'],['season_frag_max','해독 조각 최대','1개당'],
     ['season_owned_coins','이미 가진 무기 줄 대신 주는 코인',''],['season_lines','빙고 줄 보상','한 줄에 하나, 12개']]],
   ['보조무기 해독기',[['side_cost1','1개 가격','코인'],['side_cost10','10개 가격','코인'],['side_hi','숫자 범위 (1 ~ 이 값)','25 이상'],['side_frag_min','해독 조각 최소','1개당'],['side_frag_max','해독 조각 최대','1개당'],

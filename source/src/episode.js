@@ -481,7 +481,7 @@ function epPrev(id,d){const L=LI(),E=EPS[id]&&!EPS[id].soon?EPS[id]:EPS[1],rc=EP
   const lb=CLIH.lobby;CLIH.lobby=function(L,m){const c=m&&m.lob&&m.lob.cfg;if(c&&c.mode==='scen'&&epSel(c)>1&&!EP.unlocked(epSel(c))&&NET.cli){netFatal(LI()?'This room plays a chapter you have not opened yet (clear the one before it first)':'아직 열지 않은 챕터를 하는 방이에요 (앞 챕터를 먼저 깨야 열려요)');return}return lb(L,m)};
   Object.assign(CLIH,{
     eps(L,m){EP.stageStart(null,null,m)},
-    epw(L,m){EP.w=m.w;SCEN.wave=m.w;EP.ph='wave';G.st='fight';G.time=0;SCEN.closePick(false);EP.waveFx(m.w)},
+    epw(L,m){EP.w=m.w|0;SCEN.wave=m.w|0;EP.ph='wave';G.st='fight';G.time=0;SCEN.closePick(false);EP.waveFx(m.w)},
     epwc(){EP.ph='break';EP.t=8;G.st='prep';G.beepAt=6;SCEN.breakFx()},
     epm(L,m){EP.ph='move';EP.t=40;G.st='fight';if(m.pw!=null)EP.pow=m.pw;EP.moveFx(m.n)},
     epo(L,m){EP.obj.i=m.i;EP.obj.p=0;AU.play('morale',{vol:.6})},
@@ -489,8 +489,8 @@ function epPrev(id,d){const L=LI(),E=EPS[id]&&!EPS[id].soon?EPS[id]:EPS[1],rc=EP
     epui(L,m){const P=G.player;if(P&&P.id===m.i)EP.useHit()},
     epgo(L,m){const P=G.player;for(const q of m.P||[])if(P&&q[0]===P.id)placeAt(P,q[1]/100,q[2]/100,q[3]/100,q[4]/1000);EP.ph='run';G.st='fight';SCEN.closePick(false);EP.goFx()},
     epk(L,m){TELE.clear();ELAS.clear();if(m.e){EP.st++;EP.ph='run';EP.t=60}EP.deadFx()},
-    epf(L,m){SCEN.lives=m.l;EP.ph='fail';G.st='end';TELE.clear();ELAS.clear();SCEN.failFx()},
-    epend(L,m){EP.res={win:!!m.w,bonus:!!m.b,time:m.tm,lost:m.l,st:m.s,diff:G.diff||0};EP.res.medal=EP.medal(EP.res);EP.ph='over';SCEN.win=!!m.w;SCEN.best=m.w?4:Math.max(0,(m.s|0)-1);G.st='end';TELE.clear();ELAS.clear();if(m.q)EP.later(2.8,()=>EP.endFx());else EP.endFx();EP.saveLocal()},
+    epf(L,m){SCEN.lives=m.l|0;EP.ph='fail';G.st='end';TELE.clear();ELAS.clear();SCEN.failFx()},
+    epend(L,m){EP.res={win:!!m.w,bonus:!!m.b,time:+m.tm||0,lost:m.l|0,st:m.s|0,diff:G.diff||0};EP.res.medal=EP.medal(EP.res);EP.ph='over';SCEN.win=!!m.w;SCEN.best=m.w?4:Math.max(0,(m.s|0)-1);G.st='end';TELE.clear();ELAS.clear();if(m.q)EP.later(2.8,()=>EP.endFx());else EP.endFx();EP.saveLocal()},
     eprh(L,m){for(const q of m.P||[]){const a=byIdAny(q[0]);if(a&&!a.alive){SCEN.reviveOne(a,[q[1]/100,q[2]/100,q[3]/100]);a.hp=q[4]||100}}},
     epdz(L,m){for(const i of m.i||[]){const a=byIdAny(i);if(a)EP.despawn(a)}},
     epg(L,m){EP.setGates(m.m,!!m.i,true);EP.gmT=G.t},

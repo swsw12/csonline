@@ -16,6 +16,26 @@ js = '\n'.join(parts)
 # v6.67: the terms and the privacy policy — legal/legal.json holds the operator, the contact, the database region and the date the text
 # takes effect; the game's LEGAL.ver (account.js, sent with an e-mail sign-up) is that date
 import json, html as _html, re as _re
+# v6.71: a Content-Security-Policy on the pages the site serves (dist/standalone, the admin page, the legal pages): the browser runs only
+# the page's own inline scripts — each named by its SHA-256 — and the page talks only to itself, the Supabase project and the PeerJS
+# cloud, so markup slipped in through a name or a room setting can no longer run anything. The claude.ai artifact (dist/index.html)
+# gets none (claude.ai sets its own). frame-ancestors, which a <meta> cannot carry, is a header: vercel.json.
+import hashlib
+SB_URL = _re.search(r"url:'(https://[^']+)'", open(os.path.join(S, 'sb.js'), encoding='utf8').read()).group(1).rstrip('/')
+PEER_HOSTS = ['https://0.peerjs.com', 'wss://0.peerjs.com']
+def with_csp(doc, connect, n_scripts, what):
+    doc = doc.replace('\r\n', '\n').replace('\r', '\n')  # (what the HTML parser hands the hash)
+    bodies = _re.findall(r'<script>(.*?)</script>', doc, flags=_re.S)
+    if len(bodies) != n_scripts or _re.search(r'<script\s[^>]*src=', doc[:doc.index('</head>')]):
+        raise SystemExit('csp ' + what + ': expected %d inline scripts, found %d' % (n_scripts, len(bodies)))
+    hs = ' '.join("'sha256-" + base64.b64encode(hashlib.sha256(b.encode('utf8')).digest()).decode() + "'" for b in bodies)
+    pol = ("default-src 'self'; script-src " + hs + "; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; "
+           "media-src 'self' data: blob:; connect-src " + ' '.join(["'self'"] + connect) + "; worker-src blob:; object-src 'none'; "
+           "base-uri 'none'; form-action 'self'")
+    tag = '<meta charset="utf-8">'
+    if doc.count(tag) != 1:
+        raise SystemExit('csp ' + what + ': no single charset meta')
+    return doc.replace(tag, tag + '\n<meta http-equiv="Content-Security-Policy" content="' + pol + '">', 1)
 LG = os.path.join(R, 'legal')
 LCFG = json.load(open(os.path.join(LG, 'legal.json'), encoding='utf8')) if os.path.isdir(LG) else {'effective': ''}
 js = js.replace("'%LEGAL_VER%'", json.dumps(str(LCFG.get('effective', ''))))
@@ -53,6 +73,7 @@ standalone = ('<!doctype html>\n<html lang="ko"><head><meta charset="utf-8">\n'
               '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'
               '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
               + head_sa + '</head><body>\n' + body + '\n<script>\n' + three + '\n</script>\n' + peer + '<script>\n' + js + '\n</script>\n</body></html>\n')
+standalone = with_csp(standalone, [SB_URL] + PEER_HOSTS, 3 if peer else 2, 'index')
 open(os.path.join(D, 'standalone', 'index.html'), 'w', encoding='utf8').write(standalone)
 # sound files (design.js SOUND_DESIGN[...].file = 'sound/…') sit next to the page: copy sound/ into both builds
 if os.path.isdir(os.path.join(R, 'sound')):
@@ -110,6 +131,7 @@ if os.path.isdir(A):
              '<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#07080c">\n'
              '<title>QUARANTINE Z 관리</title>\n<style>\n' + ff + acss + '\n</style>\n</head><body>\n<div id="app"><div class="gate"><div class="card"><p>불러오는 중…</p></div></div></div>\n'
              '<noscript>이 페이지는 자바스크립트가 켜져 있어야 해요.</noscript>\n<script>\n' + ajs + '\n</script>\n</body></html>\n')
+    admin = with_csp(admin, [SB_URL], 1, 'admin')
     for out in (D, os.path.join(D, 'standalone')):
         open(os.path.join(out, 'admin.html'), 'w', encoding='utf8').write(admin)
     print('admin bytes', len(admin.encode()), 'guns', len(guns), 'maps', len(maps), 'chars', len(ach))
@@ -131,6 +153,7 @@ if os.path.isdir(LG):
         left = _re.findall(r'\{\{\w+\}\}', t)
         if left:
             raise SystemExit('legal/' + name + '.html: no value for ' + ', '.join(sorted(set(left))))
+        t = with_csp(t, [], 1, name)
         for out in (D, os.path.join(D, 'standalone')):
             open(os.path.join(out, name + '.html'), 'w', encoding='utf8').write(t)
     print('legal pages', LCFG.get('effective'), 'contact', 'e-mail' if str(LCFG.get('email', '')).strip() else '문의하기 only')

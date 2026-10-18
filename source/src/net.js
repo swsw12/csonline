@@ -115,7 +115,7 @@ const RSIG={R:null,U:null,uUnsub:null,uOpening:false,lastU:null,lastRl:'',pres:{
       if(k!==NET.hostKey)return;const s=P.sig&&P.sig[NET.me];const pd=this.pend.get(k);
       if(s&&s.a&&pd&&!pd.answered&&s.i===pd.i){pd.answered=true;pd.pc.setRemoteDescription({type:'answer',sdp:sdpUnpack(s.a)}).catch(e=>{console.warn(e);netUseRelay(k,'sdp')})}}
     else if(NET.host){if(P.r!=='c')return;
-      if(P.rq&&!CFG.p2pOnly){const L=NET.links.get(k);if(!L||L.kind!=='relay')netUseRelay(k,typeof P.rq==='string'?P.rq:'peer')}
+      if(P.rq&&!CFG.p2pOnly){const L=NET.links.get(k);if(!L||L.kind!=='relay')netUseRelay(k,typeof P.rq==='string'&&/^[a-z]{1,8}$/.test(P.rq)?P.rq:'peer')}
       const s=P.sig&&P.sig[NET.me];if(s&&s.o&&!P.rq&&typeof RTCPeerConnection==='function'){const pd=this.pend.get(k);if(!pd||pd.i!==s.i)netRtcAnswer(k,s).catch(e=>console.warn(e))}}
     if(P.rl){const L=NET.links.get(k);if(L&&L.kind==='relay')this.rx(L,P.rl)}},
   // relay receive: the latest state blob, then every numbered message not seen yet, then the other side's acknowledgement
@@ -214,7 +214,14 @@ function netAll(m,except){for(const [k,L] of NET.links)if(k!==except&&!L.dead)ne
 function netEv(t,o){if(!NET.host)return;o=o||{};o.t=t;for(const [k,L] of NET.links)if(L.inGame&&!L.dead)netSend(k,o)}
 function netToHost(m){netSend(NET.hostKey,m)}
 function netFlushR(){for(const [k,q] of NET.out){if(!q.length)continue;const L=NET.links.get(k);if(!L||!L.ok)continue;L.send(JSON.stringify(q),true);q.length=0}}
-function netRx(L,data,rel){if(typeof data!=='string')return;let m;try{m=JSON.parse(data)}catch(e){return}
+// v6.71: whatever another player sends loses the characters markup needs (< > " ' `) before anything reads it, however deep;
+// a chat line is the one text kept as typed (it is only ever shown escaped). Past 8 levels a value is dropped.
+function netScrub(v,d){if(typeof v==='string')return /[<>"'`]/.test(v)?v.replace(/[<>"'`]/g,''):v;
+  if(!v||typeof v!=='object')return v;if(d>8)return null;
+  if(Array.isArray(v)){for(let i=0;i<v.length;i++){const x=v[i];if(typeof x==='string'||x&&typeof x==='object')v[i]=netScrub(x,d+1)}return v}
+  const chat=v.t==='chat'&&typeof v.m==='string';
+  for(const k of Object.keys(v)){if(chat&&k==='m')continue;const x=v[k];if(typeof x==='string'||x&&typeof x==='object')v[k]=netScrub(x,d+1)}return v}
+function netRx(L,data,rel){if(typeof data!=='string')return;let m;try{m=netScrub(JSON.parse(data),0)}catch(e){return}
   if(rel){if(Array.isArray(m))for(const x of m)if(x&&typeof x.t==='string')NET.inQ.push([L,x,true])}else if(m&&typeof m==='object')NET.inQ.push([L,m,false])}
 function netFxPush(f){if(NET.on&&NET.ui==='game'&&!NET.ghost)NET.fx.push(f)}
 // a remote page's clock: track the least-delayed arrivals so interpolation runs a fixed delay behind the sender
@@ -268,19 +275,19 @@ function netOnState(L,m){if(m.t)return;if(!(m.k>L.lastK))return;L.lastK=m.k;cons
     if(f[0]==='n'&&a.inv&&a.inv[f[2]]>0)a.inv[f[2]]--}}
 // the host's snapshot on a client
 function netOnSnap(L,m){if(m.t||L.key!==NET.hostKey||!(m.k>NET.lastK))return;NET.lastK=m.k;const now=netNow();NET.hostTs=m.ts;NET.hostRx=now;netClock('h',m.ts,now);
-  if(NET.ui!=='game')return;const g=m.g;if(g){G.time=g[1]/10;if(G.pvp){G.score[0]=g[3]|0;G.score[1]=g[4]|0}if(g[5]>G.moraleLvl&&G.mode==='mut'){HUD.announce(T('moraleUp',g[5]*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}G.moraleLvl=g[5];G.hostN=g[6]}
+  if(NET.ui!=='game')return;const g=Array.isArray(m.g)?m.g:null;if(g){G.time=netN(g[1])/10;if(G.pvp){G.score[0]=g[3]|0;G.score[1]=g[4]|0}if(g[5]>G.moraleLvl&&G.mode==='mut'){HUD.announce(T('moraleUp',g[5]*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}G.moraleLvl=g[5]|0;G.hostN=g[6]|0}
   const P=G.player;
   for(const e of m.A||[]){const a=byId(e[0]);if(!a)continue;const F=e[8];const same=((F&2)?TZ:TH)===a.team&&!!(F&1)===a.alive;
-    if(a===P){if(!same)continue;const hp0=P.hp,ar0=P.armor;P.hp=e[10];P.armor=e[11];P.maxHp=e[12];P.lvl=e[13];P.money=e[18];P.skillT=e[15]/10;P.skillCD=e[19]/10;P.host=!!(F&16);
+    if(a===P){if(!same)continue;const hp0=P.hp,ar0=P.armor;P.hp=netN(e[10]);P.armor=netN(e[11]);P.maxHp=netN(e[12],100);P.lvl=e[13]|0;P.money=netN(e[18]);P.skillT=e[15]/10;P.skillCD=e[19]/10;P.host=!!(F&16);
       if(P.alive&&P.hp<hp0-.5){const d=hp0-P.hp;if(P.team===TZ)HUD.hurt(clamp(d/600,.15,.8));else{HUD.hurt(clamp(d/40,.25,1));FX.shake=Math.max(FX.shake,.3);AU.play('hurt',{vol:.7})}}
       else if(P.alive&&P.team===TH&&P.armor<ar0-.5){HUD.hurt(.5);AU.play('armor',{vol:.5})}
       continue}
     netSample(a,m.ts,e[1]/100,e[2]/100,e[3]/100,e[4]/100,e[5]/100,e[6]/1000,e[7]/1000,F,e[9]);a.nsrc='h';if(!same)continue;
-    a.hp=e[10];a.armor=e[11];a.maxHp=e[12];a.lvl=e[13];a.skillT=e[15]/10;a.frozen=e[16]/10;a.rootT=e[17]/10;a.money=e[18];a.skillCD=e[19]/10;a.host=!!(F&16);
+    a.hp=netN(e[10]);a.armor=netN(e[11]);a.maxHp=netN(e[12],100);a.lvl=e[13]|0;a.skillT=e[15]/10;a.frozen=e[16]/10;a.rootT=e[17]/10;a.money=e[18];a.skillCD=e[19]/10;a.host=!!(F&16);
     a.permaDead=!!(F&2048);a.burnT=F&8192?Math.max(a.burnT||0,.3):0;
     if(a.team===TZ){const zc=ZALL[e[14]]||a.zc;if(zc!==a.zc){a.zc=zc;setHull(a);ensureRig(a)}}}
   if(G.mode==='scen'){if(m.Z)SCEN.decZ(m.Z,m.ts);if(m.sc)SCEN.decState(m.sc)}
-  if(m.S)for(const s of m.S){const a=byId(s[0]);if(!a)continue;a.kills=s[1];a.infects=s[2];a.deaths=s[3];a.score=s[4];a.dmgDealt=s[5];a.dmgRound=s[6];a.ping=s[7];a.assists=s[8]|0}
+  if(m.S)for(const s of m.S){const a=byId(s[0]);if(!a)continue;a.kills=s[1]|0;a.infects=s[2]|0;a.deaths=s[3]|0;a.score=netN(s[4]);a.dmgDealt=netN(s[5]);a.dmgRound=netN(s[6]);a.ping=netI(s[7],-1,99999,-1);a.assists=s[8]|0}
   for(const f of netFxList(L,m)){if(!Array.isArray(f))continue;const a=byId(f[1]);if(a&&a!==P)netQueueFx(a,f)}}
 function netFxList(L,m){if(Array.isArray(m.f))return m.f;if(!Array.isArray(m.fw))return [];const out=[];let hi=L.fxK||0;
   for(const w of m.fw){if(!Array.isArray(w)||!(w[0]>(L.fxK||0))||!Array.isArray(w[1]))continue;hi=Math.max(hi,w[0]);for(const f of w[1])out.push(f)}L.fxK=hi;return out}
@@ -384,8 +391,34 @@ const HOSTH={
   sk(L){const a=actorOfKey(L.key);if(!a||!a.alive||a.team!==TZ)return;if(a.skillCD>0&&a.skillCD<.6)a.skPend=G.t+.7;else useSkill(a)}};
 // ---------- client: handlers for what the host sends ----------
 function netWithEv(f){NET.ev++;try{f()}finally{NET.ev--}}
+// ---------- v6.71: what the host sends is checked before this page keeps it (a page can send anything at all) ----------
+// The lobby, the match settings and roster, round plans, the score and the stats block end up in the waiting room, the scoreboard
+// and the results, so every field is made the type and size it should be: modes and maps from the lists, skins and zombie classes
+// from theirs, numbers as numbers, names cut to length (they are escaped where they are shown).
+const NET_MODES=['mut','orig','scen','tdm','ffa','bomb','race'];
+const netN=(v,d)=>{v=+v;return Number.isFinite(v)?v:(d||0)};
+const netI=(v,lo,hi,d)=>{v=Math.round(+v);return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):(d==null?lo:d)};
+const netS=(v,n)=>typeof v==='string'?v.slice(0,n):'';
+const netZ=(z,d)=>typeof z==='string'&&ZLIST.includes(z)?z:d;
+function netCleanCfg(c){const o={};
+  if(c&&typeof c==='object'&&!Array.isArray(c))for(const k of Object.keys(c).slice(0,48)){if(!/^[A-Za-z][A-Za-z0-9_]{0,23}$/.test(k)||k==='constructor')continue;const v=c[k];
+    if(typeof v==='number'){if(Number.isFinite(v))o[k]=v}else if(typeof v==='boolean')o[k]=v;else if(typeof v==='string')o[k]=v.replace(/[^A-Za-z0-9_.:-]/g,'').slice(0,24)}
+  if(!NET_MODES.includes(o.mode))o.mode='mut';if(!(typeof o.map==='string'&&Object.prototype.hasOwnProperty.call(MAPDEFS,o.map)))o.map='q7';return o}
+function netCleanPl(p){if(!p||typeof p!=='object')return null;
+  return {k:netS(p.k,48),n:netS(p.n,16)||'?',s:HSKINS.includes(p.s)?p.s:'guard',z:netZ(p.z,'rager'),h:p.h?1:0,f:HOF.valid(p.f)?+p.f:0,
+    tt:typeof p.tt==='string'?p.tt.slice(0,24):null,an:netS(p.an,16),t:p.t?1:0,p:netI(p.p,-1,99999,0),r:p.r?1:0}}
+function netCleanLob(l){l=l&&typeof l==='object'?l:{};return {cfg:netCleanCfg(l.cfg),pl:Array.isArray(l.pl)?l.pl.slice(0,NET_MAXP).map(netCleanPl).filter(Boolean):[],pub:l.pub?1:0,g:netI(l.g,0,1e9,0)}}
+// the roster: [id, name, skin, zombie class, player key, scenario, hall-of-fame code, account nickname, title] (shorter for bots)
+function netCleanRo(ro){const out=[];if(!Array.isArray(ro))return out;
+  for(const r0 of ro.slice(0,96)){if(!Array.isArray(r0))continue;const r=r0.slice(0,9),o=[netI(r[0],0,99999,out.length),netS(r[1],16)||'?',HSKINS.includes(r[2])?r[2]:'guard',netZ(r[3],'rager'),netS(r[4],48)];
+    if(r.length>5)o.push(r[5]?1:0);if(r.length>6)o.push(HOF.valid(r[6])?+r[6]:0);if(r.length>7)o.push(netS(r[7],16));if(r.length>8)o.push(typeof r[8]==='string'?r[8].slice(0,24):null);out.push(o)}
+  return out}
+// a round plan: the round number and the placements as numbers; the modes' own fields stay as they are (numbers kept numbers)
+function netCleanPlan(m){const p=Object.assign({},m);p.n=netI(m.n,0,9999,1);
+  if(m.P!=null)p.P=Array.isArray(m.P)?m.P.slice(0,128).filter(Array.isArray).map(q=>q.slice(0,12).map(v=>typeof v==='number'||typeof v==='boolean'?v:netN(v))):[];
+  for(const k of ['s','l','f','k','bp','pw','bb'])if(p[k]!=null&&typeof p[k]!=='number')p[k]=netN(p[k]);return p}
 const CLIH={
-  lobby(L,m){if(!m.lob||!Array.isArray(m.lob.pl))return;NET.lob=m.lob;const mp=m.lob.cfg&&m.lob.cfg.map;if(NET.ui!=='game'&&MAPDEFS[mp]&&MAP.id!==mp&&MAP.want!==mp)loadMapUI(mp);if(NET.ui!=='game'){const was=NET.ui;NET.ui='lobby';if(was!=='lobby'||UI.open!=='lobby')UI.mpLobby();else UI.mpRender()}},
+  lobby(L,m){if(!m.lob||typeof m.lob!=='object'||!Array.isArray(m.lob.pl))return;const lob=netCleanLob(m.lob);NET.lob=lob;const mp=lob.cfg.map;if(NET.ui!=='game'&&MAPDEFS[mp]&&MAP.id!==mp&&MAP.want!==mp)loadMapUI(mp);if(NET.ui!=='game'){const was=NET.ui;NET.ui='lobby';if(was!=='lobby'||UI.open!=='lobby')UI.mpLobby();else UI.mpRender()}},
   ping(L,m){netToHost({t:'pong',h:m.h})},
   // a refusal ends it; the host leaving (with the succession it picked) starts the hand-over
   bye(L,m){if(m.why){netFatal(m.why==='full'?T('mpFull'):m.why==='ingame'?T('mpInGame'):m.why==='ver'?T('mpVer'):m.why==='mig'?T('mpMigFail'):T('mpHostGone'));return}
@@ -402,14 +435,14 @@ const CLIH={
     // the page asked is not taking over: drop that link and go where it points
     L.dead=true;try{L.close()}catch(e){}NET.links.delete(L.key);NET.out.delete(L.key);M.dial=null;NET.hostKey='';
     let i=M.list.indexOf(k);if(i<0){M.list.splice(M.i,0,k);i=M.i}M.i=i;netMigDial(k)},
-  start(L,m){netBegin(m.cfg,m.ro)},
-  round(L,m){netWithEv(()=>startRound(m))},
-  hosts(L,m){for(let i=0;i<m.i.length;i++){const a=byId(m.i[i]);if(a)a.zpick=a.isPlayer?a.zpick:m.z[i]}netWithEv(()=>selectHosts(m.i));G.st='fight';G.time=G.roundTime},
-  infect(L,m){const t=byId(m.i);if(!t||t.team!==TH)return;if(!t.isPlayer)t.zpick=m.z;netWithEv(()=>infect(t,byId(m.s)))},
+  start(L,m){netBegin(netCleanCfg(m.cfg),netCleanRo(m.ro))},
+  round(L,m){netWithEv(()=>startRound(netCleanPlan(m)))},
+  hosts(L,m){if(!Array.isArray(m.i))return;const zs=Array.isArray(m.z)?m.z:[];for(let i=0;i<m.i.length;i++){const a=byId(m.i[i]);if(a)a.zpick=a.isPlayer?a.zpick:netZ(zs[i],a.zpick)}netWithEv(()=>selectHosts(m.i));G.st='fight';G.time=G.roundTime},
+  infect(L,m){const t=byId(m.i);if(!t||t.team!==TH)return;if(!t.isPlayer)t.zpick=netZ(m.z,t.zpick);netWithEv(()=>infect(t,byId(m.s)))},
   kill(L,m){const t=byId(m.i);if(!t||!t.alive)return;netWithEv(()=>killZombie(t,byId(m.s),{w:m.w,hs:!!m.hs,dir:m.d?[m.d[0]/100,m.d[1]/100,m.d[2]/100]:null,knife:!!m.k,heavy:!!m.h,he:!!m.he}))},
   hdie(L,m){const t=byId(m.i);if(!t||!t.alive||t.team!==TH)return;netWithEv(()=>hurtHuman(t,1e6,byId(m.s),{}))},
-  rv(L,m){const a=byId(m.i);if(!a)return;if(!a.isPlayer)a.zpick=m.z;a.nb=null;netWithEv(()=>reviveZombie(a,m.at?[m.at[0]/100,m.at[1]/100,m.at[2]/100]:null,m.rs))},
-  end(L,m){netWithEv(()=>endRound(m.w));G.score=m.sc.slice(0,2);G.st='end';G.endT=6},
+  rv(L,m){const a=byId(m.i);if(!a)return;if(!a.isPlayer)a.zpick=netZ(m.z,a.zpick);a.nb=null;netWithEv(()=>reviveZombie(a,m.at?[m.at[0]/100,m.at[1]/100,m.at[2]/100]:null,m.rs))},
+  end(L,m){netWithEv(()=>endRound(m.w));G.score=Array.isArray(m.sc)?[m.sc[0]|0,m.sc[1]|0]:[0,0];G.st='end';G.endT=6},
   over(){G.st='over';UI.showResults()},
   bo(L,m){if(m.on)BO.start(m.d||20,true);else BO.stop(true)},
   tolobby(){netToLobby()},
@@ -422,7 +455,7 @@ const CLIH={
   snd(L,m){AU.at(m.n,m.x/100,m.y/100,m.z/100,{vol:m.v||.9});if(m.n==='clawarmor')FX.spawn({x:m.x/100,y:m.y/100,z:m.z/100,vy:1,life:.2,s0:.3,s1:.5,r:1,g:.9,b:.6,f:1,add:1})},
   bot(L,m){const a=byId(m.i);if(a){HUD.note(T('mpLeft',a.name),3);a.net=null}}};
 // (a client hears only its host; another page that opens a link to it is looking for a new host: netMigAsk)
-function netHandle(L,m){if(NET.cli&&L.key!==NET.hostKey){netMigAsk(L,m);return}const H=NET.host?HOSTH:CLIH;const f=H[m.t];if(f)f(L,m)}
+function netHandle(L,m){if(NET.cli&&L.key!==NET.hostKey){netMigAsk(L,m);return}const H=NET.host?HOSTH:CLIH;const f=typeof m.t==='string'&&Object.prototype.hasOwnProperty.call(H,m.t)?H[m.t]:null;if(f)f(L,m)}
 
 // ---------- lobby ----------
 function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=CFG.mpName;me.s=CFG.skin;me.z=CFG.zclass;Object.assign(me,TTL.hello());me.t=typeof TOUCH!=='undefined'&&TOUCH.on?1:0}
@@ -640,24 +673,7 @@ UI.mpMenu=function(){const L=LI();const inC=NET.kind==='room',inP=NET.kind==='pe
     <div class="dpFoot"><span class="conn">${conn}</span><button data-act="back">${T('back')}</button></div></div>`;
   const nm=$('mpName');nm.addEventListener('change',()=>{CFG.mpName=nm.value.trim().slice(0,14)||CFG.mpName;saveCfg()});
   const cd=$('mpCode');cd.addEventListener('keydown',e=>{if(e.key==='Enter'){UI.act('mpjoin')}});cd.addEventListener('input',()=>{cd.value=cd.value.toUpperCase().replace(/[^A-Z0-9]/g,'')})};
-// the lobby is rebuilt only when something in it changed; ping readings are patched in place (a rebuild would eat clicks)
-UI.mpRender=function(){if(UI.open==='mp'){const m=$('mpMsg');if(m)m.textContent=NET.msg||'';return}if(UI.open!=='lobby')return;
-  const key=JSON.stringify([NET.lob.cfg,NET.lob.pl.map(p=>[p.k,p.n,p.s,p.z,p.r]),CFG.skin,CFG.zclass]);if(key!==UI.mpKey){UI.mpLobby();return}
-  const ems=document.querySelectorAll('#lobby .pl em');NET.lob.pl.forEach((p,i)=>{const e=ems[i];if(e&&i>0)e.textContent=(p.r?T('mpRelay')+' · ':'')+(p.p||0)+'ms'})};
-UI.mpLobby=function(){const L=LI(),lb=NET.lob,H=NET.host,c=lb.cfg;UI.mpKey=JSON.stringify([lb.cfg,lb.pl.map(p=>[p.k,p.n,p.s,p.z,p.r]),CFG.skin,CFG.zclass]);
-  const seg=(k,opts)=>H?`<div class="seg">${opts.map(([v,l])=>`<button data-act="mpset" data-v="${k}:${v}" class="${String(c[k])===String(v)?'on':''}">${l}</button>`).join('')}</div>`:`<div class="mpval">${(opts.find(o=>String(o[0])===String(c[k]))||[0,c[k]])[1]}</div>`;
-  const conn=[...NET.links.values()].find(l=>l.ok);
-  $('lobby').innerHTML=`<h2>${T('mpLobby')} <span class="mpcode">${esc(NET.code)}</span> <button class="mini" data-act="mpcopy">${T('mpCopy')}</button></h2><p class="hint">${T('mpShare')}</p>
-    <div class="setupGrid"><div class="col"><label>${T('mpPlayers')} (${lb.pl.length}/${NET_MAXP})</label><div class="plist">${lb.pl.map((p,i)=>`<div class="pl${p.k===NET.me?' me':''}"><img src="${portrait('h_'+(HSKINS.includes(p.s)?p.s:'guard'),30)}"><b>${esc(p.n||'?')}</b>${i===0?`<span class="ht">${T('mpHost')}</span>`:''}${p.k===NET.me?`<small>(${T('mpMe')})</small>`:''}<em>${i===0?'':p.r?T('mpRelay')+' · ':''}${i===0?'':(p.p||0)+'ms'}</em></div>`).join('')}</div>
-      <label>${T('mpSet')}${H?'':' — '+T('mpOnlyHost')}</label>
-      <div class="mpset"><span>${T('mode')}</span>${seg('mode',[['mut',T('mut')],['orig',T('orig')]])}<span>${T('map')}</span>${seg('map',MAPLIST().map(id=>[id,MAPDEFS[id].n[L]]))}<span>${T('mpBots')}</span>${seg('bots',[[0,0],[4,4],[8,8],[12,12]])}
-      <span>${T('diff')}</span>${seg('diff',[[0,T('d0')],[1,T('d1')],[2,T('d2')],[3,T('d3')]])}<span>${T('rounds')}</span>${seg('rounds',[[5,5],[7,7],[9,9]])}<span>${T('rtime')}</span>${seg('time',[[120,'2'+T('min')],[180,'3'+T('min')],[240,'4'+T('min')]])}</div></div>
-    <div class="col"><label>${T('char')}</label><div class="cards">${HSKINS.map(k=>`<div class="card${CFG.skin===k?' on':''}" data-act="mpme" data-v="skin:${k}" title="${esc(HSKIN_T[k][L])}"><img src="${portrait('h_'+k,62)}"><span>${HSKIN_N[k][L]}</span></div>`).join('')}</div>
-      <label>${T('zcls')}</label><div class="cards">${ZLIST.map(k=>`<div class="card z${CFG.zclass===k?' on':''}" data-act="mpme" data-v="zclass:${k}"><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${ZCLASS[k].n[L]}</span></div>`).join('')}</div>
-      <p class="desc">${ZCLASS[CFG.zclass].d[L]}</p></div></div>
-    <p class="hint">${NET.kind==='room'?(conn&&conn.kind==='relay'?T('mpRelay'):T('mpDirect'))+' · claude.ai':'PeerJS · '+T('mpDirect')}</p>
-    <div class="mbtns row"><button data-act="mpleave">${T('mpLeave')}</button>${H?`<button data-act="mpstart" class="big">${T('mpStart')}</button>`:`<span class="mpwait">${T('mpWait')}</span>`}</div>`;
-  UI.show('lobby')};
+// (the waiting room itself, UI.mpLobby / UI.mpRender: lobby.js; v6.71 took out the older copies that stood here unused)
 UI.mpAct=function(a,v){
   if(a==='mp'){UI.ret=null;UI.show('mp');UI.mpMenu();ROOMS.load();if(!NET.kind&&!NET.detecting){NET.detecting=true;netDetect().then(()=>{NET.detecting=false;NET.detected=true;if(UI.open==='mp')UI.mpMenu()})}}
   else if(a==='mpcreate'||a==='mpjoin'||a==='mproom'){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(typeof ACC!=='undefined'&&ACC.signed()&&String(ACC.me.nickname||'').slice(0,14))||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg();

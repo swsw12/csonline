@@ -47,6 +47,8 @@
 --     관리 기록 · 보낸 선물 · 오류 기록은 계정과의 연결 없이 남습니다. 관리자 계정은 탈퇴할 수 없습니다(운영진에서 먼저 빼야 함).
 --   * 기초 훈련(v6.70): 사격장에서 하는 튜토리얼을 로그인한 채 끝내면 qz_tut_claim이 계정마다 한 번 1,000코인을 줍니다(profiles.tut_done).
 --     게스트로 끝낸 사람은 나중에 로그인할 때 게임이 받아 줍니다.
+--   * 보안 1차(v6.71): 근·하·신·년 글자는 판마다의 한도에 더해 하루(한국 시간) gacha_config.ny_day_cap개(기본 60)까지만 쌓입니다(qz_ny_add,
+--     관리자 페이지 게임 설정에서 바꿈). 판 보상 기록(coin_log)의 모드와 방 초대의 맵 · 모드는 영문 · 숫자만 남겨 짧게 잘라 저장합니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -324,6 +326,8 @@ alter table public.gacha_config add column if not exists ref_tickets     integer
 alter table public.gacha_config add column if not exists ref_matches     integer not null default 3;     -- finished matches the new player needs
 alter table public.gacha_config add column if not exists ref_cap         integer not null default 10;    -- invited players an inviter is paid for
 alter table public.gacha_config add column if not exists ref_days        integer not null default 7;     -- how new an account must be to take a link
+-- v6.71: the 근·하·신·년 letters one account may keep in a Korean day, however many matches (qz_ny_add)
+alter table public.gacha_config add column if not exists ny_day_cap      integer not null default 60;
 -- who brought whom (one row per new player); rewarded = the inviter was paid (false once over ref_cap); seen = the inviter saw the reward
 create table if not exists public.referrals (
   referee  uuid primary key references auth.users(id) on delete cascade,
@@ -495,6 +499,9 @@ alter table public.profiles add column if not exists play_secs    bigint not nul
 alter table public.profiles add column if not exists last_beat    timestamptz;
 -- v6.70: when the account finished 기초 훈련 (the tutorial on the shooting range) and took its one-time reward (qz_tut_claim)
 alter table public.profiles add column if not exists tut_done     timestamptz;
+-- v6.71: the letters kept today (ny_day = that Korean day, ny_day_n = how many), against gacha_config.ny_day_cap
+alter table public.profiles add column if not exists ny_day       date;
+alter table public.profiles add column if not exists ny_day_n     integer not null default 0;
 create table if not exists public.admins (
   user_id  uuid primary key references auth.users(id) on delete cascade,
   role     text not null default 'owner' check (role in ('owner', 'staff')),
@@ -1026,7 +1033,7 @@ declare
   v_first integer := 0;
   v_tix integer := 0;
   v_secs numeric;
-  v_match text := left(regexp_replace(coalesce(p_match, ''), '[^A-Za-z0-9]', '', 'g'), 24);
+  v_match text := left(regexp_replace(left(coalesce(p_match, ''), 64), '[^A-Za-z0-9]', '', 'g'), 24);
   v_fr public.ep_firsts;
   v_hof boolean := false;
   v_scn boolean := coalesce(p_mode, '') = 'scen';
@@ -1093,7 +1100,7 @@ begin
     ny_quota = least(8, 2 + k / 6)   -- letters this match may add (qz_ny_add): a few, more with more kills
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
-  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', p_mode,
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12),
     'rounds', p_rounds, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'mvp', p_mvp,
     'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'hs', p_hs, 'raw', raw, 'bonus', bonus, 'xp', gx,
     'ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'escaped', p_bonus, 'mins', round(mins, 1))
@@ -1227,7 +1234,7 @@ begin
     cap_xp = c0x + gx, cap_kills = case when cap_day = today then cap_kills else 0 end, cap_inf = case when cap_day = today then cap_inf else 0 end, cap_day = today
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
-  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'round', jsonb_build_object('mode', p_mode,
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'round', jsonb_build_object('mode', left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12),
     'round', p_round, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'survived', p_survived,
     'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx, 'secs', round(secs))
     || case when v_cut = '{}'::jsonb then '{}'::jsonb else jsonb_build_object('cut', v_cut) end);
@@ -1292,13 +1299,18 @@ begin
 end $$;
 
 -- ---------- 근·하·신·년 letters (v6.15) ----------
--- the letters a player picked up in the match just finished (after qz_claim): at most ny_quota of them, then the quota is spent
+-- the letters a player picked up in the match just finished (after qz_claim): at most ny_quota of them, then the quota is spent.
+-- v6.71: and at most gacha_config.ny_day_cap of them a Korean day (Asia/Seoul) — short matches one after another no longer pile them up;
+-- day_left / day_cap tell the game what is left of today's
 create or replace function public.qz_ny_add(p_g integer, p_h integer, p_s integer, p_n integer) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   p public.profiles;
   q integer;
+  today date := (now() at time zone 'Asia/Seoul')::date;
+  v_cap integer := greatest(coalesce((select c.ny_day_cap from public.gacha_config c where c.id = 1), 60), 0);
+  v_used integer;
   g integer := least(greatest(coalesce(p_g, 0), 0), 8);
   h integer := least(greatest(coalesce(p_h, 0), 0), 8);
   s integer := least(greatest(coalesce(p_s, 0), 0), 8);
@@ -1309,15 +1321,19 @@ begin
   perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
   p := (select t from public.profiles t where t.id = uid);
-  q := greatest(p.ny_quota, 0);
+  v_used := case when p.ny_day = today then greatest(p.ny_day_n, 0) else 0 end;
+  q := least(greatest(p.ny_quota, 0), greatest(v_cap - v_used, 0));
   -- over the quota: keep the letters in the order 근 하 신 년 until it runs out
   g := least(g, q); q := q - g;
   h := least(h, q); q := q - h;
   s := least(s, q); q := q - s;
   n := least(n, q); q := q - n;
-  update public.profiles set ny_g = ny_g + g, ny_h = ny_h + h, ny_s = ny_s + s, ny_n = ny_n + n, ny_quota = 0 where id = uid;
+  update public.profiles set ny_g = ny_g + g, ny_h = ny_h + h, ny_s = ny_s + s, ny_n = ny_n + n, ny_quota = 0,
+    ny_day = today, ny_day_n = v_used + g + h + s + n
+  where id = uid;
   p := (select t from public.profiles t where t.id = uid);
-  return jsonb_build_object('added', jsonb_build_array(g, h, s, n), 'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n));
+  return jsonb_build_object('added', jsonb_build_array(g, h, s, n), 'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n),
+    'day_left', greatest(v_cap - p.ny_day_n, 0), 'day_cap', v_cap);
 end $$;
 -- one full set (one of each letter) for p_choice: 'ny' = 2 근하신년 decoders, 'season' = 1 season decoder (kept, opened on the season tab)
 create or replace function public.qz_ny_exchange(p_choice text) returns jsonb
@@ -2523,7 +2539,7 @@ language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   t uuid;
-  b text := btrim(regexp_replace(coalesce(p_text, ''), '[[:cntrl:]]', ' ', 'g'));
+  b text := btrim(regexp_replace(left(coalesce(p_text, ''), 800), '[[:cntrl:]]', ' ', 'g'));   -- (v6.71: cut before the work; over 200 is refused anyway)
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform public.qz_guard(uid);
@@ -2691,7 +2707,8 @@ begin
   delete from public.room_invites where from_id = uid and at < now() - interval '10 minutes';
   if exists (select 1 from public.room_invites i where i.from_id = uid and i.to_id = t and i.code = v_code and i.at > now() - interval '10 seconds') then raise exception 'inv_wait'; end if;
   if (select count(*) from public.room_invites i where i.from_id = uid and i.at > now() - interval '1 minute') >= 15 then raise exception 'inv_many'; end if;
-  insert into public.room_invites (from_id, to_id, code, map, mode, at) values (uid, t, v_code, left(coalesce(p_map, ''), 24), left(coalesce(p_mode, ''), 12), now())
+  insert into public.room_invites (from_id, to_id, code, map, mode, at) values (uid, t, v_code,
+    left(regexp_replace(left(coalesce(p_map, ''), 64), '[^A-Za-z0-9_-]', '', 'g'), 24), left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12), now())
   on conflict (from_id, to_id) do update set code = excluded.code, map = excluded.map, mode = excluded.mode, at = now();
   return jsonb_build_object('ok', true, 'to', (select x.nickname from public.profiles x where x.id = t));
 end $$;
@@ -3955,11 +3972,12 @@ language plpgsql security definer set search_path = '' as $$
 declare
   m timestamptz := date_trunc('minute', now());
   v_n integer;
-  v_msg text := left(btrim(regexp_replace(coalesce(p_msg, ''), '[[:cntrl:]]', ' ', 'g')), 300);
-  v_stack text := left(regexp_replace(coalesce(p_stack, ''), '[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]', '', 'g'), 2000);
-  v_src text := left(regexp_replace(lower(coalesce(p_src, '')), '[^a-z]', '', 'g'), 12);
-  v_ver text := left(regexp_replace(coalesce(p_ver, ''), '[^A-Za-z0-9.]', '', 'g'), 16);
-  v_ua text := left(regexp_replace(coalesce(p_ua, ''), '[[:cntrl:]]', ' ', 'g'), 200);
+  -- (v6.71: every text cut to a few times its kept length before any work on it — anyone may call this)
+  v_msg text := left(btrim(regexp_replace(left(coalesce(p_msg, ''), 1200), '[[:cntrl:]]', ' ', 'g')), 300);
+  v_stack text := left(regexp_replace(left(coalesce(p_stack, ''), 8000), '[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]', '', 'g'), 2000);
+  v_src text := left(regexp_replace(lower(left(coalesce(p_src, ''), 64)), '[^a-z]', '', 'g'), 12);
+  v_ver text := left(regexp_replace(left(coalesce(p_ver, ''), 64), '[^A-Za-z0-9.]', '', 'g'), 16);
+  v_ua text := left(regexp_replace(left(coalesce(p_ua, ''), 800), '[[:cntrl:]]', ' ', 'g'), 200);
   v_ctx jsonb := case when p_ctx is not null and jsonb_typeof(p_ctx) = 'object' and length(p_ctx::text) <= 600 then p_ctx end;
   v_fp text;
 begin
@@ -4027,8 +4045,9 @@ language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   v_kind text := case when p_kind in ('bug', 'account', 'report', 'idea', 'etc') then p_kind else 'etc' end;
-  v_body text := btrim(regexp_replace(regexp_replace(replace(coalesce(p_body, ''), E'\r', ''), '[\x01-\x09\x0b-\x1f\x7f]', ' ', 'g'), E'\n{3,}', E'\n\n', 'g'));
-  v_contact text := nullif(left(btrim(regexp_replace(coalesce(p_contact, ''), '[[:cntrl:]]', ' ', 'g')), 100), '');
+  -- (v6.71: the body cut to 4,000 before the work — over 1,000 is refused anyway — and the contact to 400)
+  v_body text := btrim(regexp_replace(regexp_replace(replace(left(coalesce(p_body, ''), 4000), E'\r', ''), '[\x01-\x09\x0b-\x1f\x7f]', ' ', 'g'), E'\n{3,}', E'\n\n', 'g'));
+  v_contact text := nullif(left(btrim(regexp_replace(left(coalesce(p_contact, ''), 400), '[[:cntrl:]]', ' ', 'g')), 100), '');
   v_ctx jsonb := case when p_ctx is not null and jsonb_typeof(p_ctx) = 'object' and length(p_ctx::text) <= 800 then p_ctx end;
   v_ticket text := replace(gen_random_uuid()::text, '-', '');
   v_id bigint;

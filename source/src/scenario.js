@@ -309,12 +309,12 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
     else if(c==='KeyU'){e.stopImmediatePropagation();if(!e.repeat)UI.act('scup')}else if(c==='KeyB'||c==='KeyM')e.stopImmediatePropagation()});
   Object.assign(CLIH,{
     scst(L,m){SCEN.stageStart(null,m)},
-    scw(L,m){SCEN.wave=m.w;SCEN.ph='wave';SCEN.t=0;G.st='fight';G.time=0;SCEN.closePick(false);SCEN.waveFx(m.w)},
+    scw(L,m){SCEN.wave=m.w|0;SCEN.ph='wave';SCEN.t=0;G.st='fight';G.time=0;SCEN.closePick(false);SCEN.waveFx(m.w)},
     scwc(){SCEN.ph='break';SCEN.t=8;G.st='prep';G.beepAt=6;SCEN.breakFx()},
     scrh(L,m){SCEN.reviveHumans(m.P)},
     scr(){SCEN.openPick()},
-    scf(L,m){SCEN.lives=m.l;SCEN.ph='fail';G.st='end';SCEN.failFx()},
-    scend(L,m){SCEN.best=m.b;SCEN.finish(!!m.w)},
+    scf(L,m){SCEN.lives=m.l|0;SCEN.ph='fail';G.st='end';SCEN.failFx()},
+    scend(L,m){SCEN.best=m.b|0;SCEN.finish(!!m.w)},
     scba(L,m){const a=byId(m.i);if(a&&a.alive)SCEN.bomberArm(a)},
     scb(L,m){SCEN.blast(m.x/100,m.y/100,m.z/100,4.5,0,null,true)},
     sca(L,m){const a=byId(m.i);if(a)a.an.skill=.55;SCEN.acidAdd(m.x/100,m.y/100,m.z/100,m.v.map(v=>v/100),null,true)},
@@ -322,7 +322,7 @@ SCEN.decState=function(s){if(!Array.isArray(s))return;SCEN.on=true;SCEN.stage=s[
     scbo(L,m){const a=byId(m.i);if(a){a.an.skill=m.k?1:.7;AU.at(m.k?'zroar':'zgrowl',a.c.x,a.c.y+3,a.c.z,{vol:1,range:80,rate:.7})}},
     scbh(){HUD.announce(LI()?'The giant calls the horde!':'거대 좀비가 무리를 부른다!','z',2.5)},
     scp(L,m){const P=G.player;if(P&&P.id===m.i){P.kvx+=m.v[0]/100;P.kvz+=m.v[2]/100;P.c.vy=Math.max(P.c.vy,m.v[1]/100);P.c.onGround=false;P.c.jumped=true}},
-    scuok(L,m){const P=G.player;if(P){P.wup=P.wup||{};P.wup[m.w]=m.l;SCEN.renderUp();HUD.note((LI()?'Upgraded: ':'강화 완료: ')+WPN[m.w].n[LI()]+' +'+m.l,2)}}});
+    scuok(L,m){const P=G.player;if(P&&typeof m.w==='string'&&Object.prototype.hasOwnProperty.call(WPN,m.w)){P.wup=P.wup||{};P.wup[m.w]=Math.max(0,Math.min(5,m.l|0));SCEN.renderUp();HUD.note((LI()?'Upgraded: ':'강화 완료: ')+WPN[m.w].n[LI()]+' +'+m.l,2)}}});
   Object.assign(HOSTH,{
     scrw(L,m){const a=actorOfKey(L.key);if(a&&(m.k==='heal'||m.k==='armor'))SCEN.applyReward(a,m.k,true)},
     scu(L,m){const a=actorOfKey(L.key);if(a&&WPN[m.w]&&SCEN.upgrade(a,m.w,true))netSend(L.key,{t:'scuok',w:m.w,l:a.wup[m.w]})}});

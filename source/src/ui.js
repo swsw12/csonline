@@ -1,6 +1,6 @@
 'use strict';
 // ============ HUD and menus (DOM over the canvas) ============
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s).replace(/[&<>"'`]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
 // full-body front "paper doll" portrait from a character's skin atlas
 const PORTRAITS={};
 function portrait(key,s){s=s||70;const k=key+':'+s;if(PORTRAITS[k])return PORTRAITS[k];const A=charAsset(key);const d=A.def;
@@ -88,9 +88,9 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     const n=v=>Math.round(v).toLocaleString('en-US');
     const rows=R.sort((p,q)=>(hs(q)+zs(q))-(hs(p)+zs(p))).slice(0,8);const P=G.player;
     let el=$('hRRes');if(!el){el=document.createElement('div');el.id='hRRes';$('hud').appendChild(el)}
-    el.innerHTML=`<div class="rhd ${win===TH?'h':'z'}"><b>${T('round')} ${G.round} · ${win===TH?T('winH'):T('winZ')}</b><span>${T('human')} ${G.score[TH]} : ${G.score[TZ]} ${T('zombie')}</span></div>
-      <div class="rmvps">${card(hm&&(hm.dm>0||hm.k>0)?hm:null,'h',L?'Human MVP':'인간 MVP',`${T('kills')} ${hm?hm.k:0} · ${T('dmg')} ${hm?n(hm.dm):0}`)}${card(zm,'z',L?'Zombie MVP':'좀비 MVP',`${T('infects')} ${zm?zm.i:0} · ${T('kills')} ${zm?zm.k:0}`)}</div>
-      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('infects')}</th><th>${T('dmg')}</th></tr>${rows.map(r=>{const f=fate(r.a);return `<tr class="${r.a===P?'me':''}"><td>${esc(r.a.name)}${TTL.mini(TTL.of(r.a))}</td><td class="f ${f[0]}">${f[1]}</td><td>${r.k}</td><td>${r.i}</td><td>${n(r.dm)}</td></tr>`}).join('')}</table>`;
+    el.innerHTML=`<div class="rhd ${win===TH?'h':'z'}"><b>${T('round')} ${G.round|0} · ${win===TH?T('winH'):T('winZ')}</b><span>${T('human')} ${G.score[TH]|0} : ${G.score[TZ]|0} ${T('zombie')}</span></div>
+      <div class="rmvps">${card(hm&&(hm.dm>0||hm.k>0)?hm:null,'h',L?'Human MVP':'인간 MVP',`${T('kills')} ${hm?hm.k|0:0} · ${T('dmg')} ${hm?n(hm.dm):0}`)}${card(zm,'z',L?'Zombie MVP':'좀비 MVP',`${T('infects')} ${zm?zm.i|0:0} · ${T('kills')} ${zm?zm.k|0:0}`)}</div>
+      <table class="rtbl"><tr><th>${T('name')}</th><th></th><th>${T('kills')}</th><th>${T('infects')}</th><th>${T('dmg')}</th></tr>${rows.map(r=>{const f=fate(r.a);return `<tr class="${r.a===P?'me':''}"><td>${esc(r.a.name)}${TTL.mini(TTL.of(r.a))}</td><td class="f ${f[0]}">${f[1]}</td><td>${r.k|0}</td><td>${r.i|0}</td><td>${n(r.dm)}</td></tr>`}).join('')}</table>`;
     this.annT=0;this.ann=null;$('hBig').className='a off';// the card carries the result itself
     el.classList.remove('off');el.style.animation='none';void el.offsetWidth;el.style.animation=''},
   resOff(){const el=$('hRRes');if(el)el.classList.add('off')},
@@ -143,7 +143,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     e.hMoney.textContent='$ '+P.money;
     {const dr=Math.round(P.dmgRound||0);const txt=dr>0||!zt?`${T('dmgRound')} <b>${dr.toLocaleString('en-US')}</b>`:'';if(e.hDmg.innerHTML!==txt)e.hDmg.innerHTML=txt}
     {const ik=zt?(P.cur==='zbomb'?'zbomb':'claw'):P.cur;if(this.wIcon!==ik){this.wIcon=ik;const src=ik==='claw'?miniIcon('claw'):ik&&WPN[ik]&&WPN[ik].model?gunIcon(WPN[ik].model,30):'';if(src)e.hWIcon.src=src;e.hWIcon.style.display=src?'block':'none';e.hWIcon.className=ik==='claw'?'cl':''}}
-    e.hLvl.style.display=zt?'block':'none';if(zt){const Z=ZCLASS[P.zc];e.hLvl.innerHTML=`<b>${Z.n[LI()]}</b> ${P.host?'<span class="host">HOST</span> ':''}${T('lvl')}.${P.lvl}`}
+    e.hLvl.style.display=zt?'block':'none';if(zt){const Z=ZCLASS[P.zc];e.hLvl.innerHTML=`<b>${Z.n[LI()]}</b> ${P.host?'<span class="host">HOST</span> ':''}${T('lvl')}.${P.lvl|0}`}
     // weapon / skill
     if(zt){e.hAmmo.style.display='none';e.hWName.textContent=P.cur==='zbomb'?T('bomb'):WPN.claw.n[LI()];const Z=ZCLASS[P.zc];
       e.hSkill.style.display='block';e.hSkill.innerHTML=`<span class="k">G</span> ${Z.sk?Z.sk[LI()]:T('skill')}: ${P.skillCD>0?Math.ceil(P.skillCD)+'s':`<b>${T('ready')}</b>`}${P.skillT>0?' ▲':''}<br><span class="k">4</span> ${T('bomb')} ×${P.bombs}  <span class="k">N</span> ${T('nv')} ${P.nv?'ON':'OFF'}`;e.hNades.textContent=''}
@@ -231,13 +231,13 @@ const UI={open:null,
     <div class="rules"><b>${T('rulesT')}</b><ul>${T('rules').map(r=>`<li>${r}</li>`).join('')}</ul></div><div class="mbtns row"><button data-act="back">${T('back')}</button></div>`},
   buildPause(){$('pause').innerHTML=`<h2>${T('paused')}</h2>${NET.on?`<p class="hint">${T('mpPaused')}</p>`:''}<div class="mbtns"><button data-act="resume" class="big">${T('resume')}</button><button data-act="opts">${T('settings')}</button><button data-act="help">${T('controls')}</button>${true?`<button data-act="full" class="fslbl">${FS.label()}</button>`:''}<button data-act="rot" class="rotbtn">${LI()?'Landscape lock':'가로모드 고정'}</button><button data-act="quit">${T('quit')}</button></div>`},
   showResults(){const A=G.actors.slice().sort((a,b)=>b.score-a.score);const mvp=A[0];const L=LI();
-    $('results').innerHTML=`<h2>${T('results')}</h2><div class="finalScore"><span class="h">${T('humanWins')} ${G.score[TH]}</span> : <span class="z">${G.score[TZ]} ${T('zombieWins')}</span></div>
-      <div class="mvp"><img src="${portrait('h_'+mvp.skin,56)}"><div><small>${T('mvp')}</small><b>${esc(mvp.name)}</b><span>${T('kills')} ${mvp.kills} · ${T('infects')} ${mvp.infects} · ${T('dmg')} ${Math.round(mvp.dmgDealt).toLocaleString('en-US')} · ${T('score')} ${Math.round(mvp.score)}</span></div></div>
+    $('results').innerHTML=`<h2>${T('results')}</h2><div class="finalScore"><span class="h">${T('humanWins')} ${G.score[TH]|0}</span> : <span class="z">${G.score[TZ]|0} ${T('zombieWins')}</span></div>
+      <div class="mvp"><img src="${portrait('h_'+mvp.skin,56)}"><div><small>${T('mvp')}</small><b>${esc(mvp.name)}</b><span>${T('kills')} ${mvp.kills|0} · ${T('infects')} ${mvp.infects|0} · ${T('dmg')} ${Math.round(mvp.dmgDealt).toLocaleString('en-US')} · ${T('score')} ${Math.round(mvp.score)}</span></div></div>
       ${this.table(A)}<div class="mbtns row">${NET.on?`<button data-act="mpleave">${T('mpLeave')}</button>${NET.host?`<button data-act="mplobby" class="big">${T('mpToLobby')}</button>`:`<span class="mpwait">${T('mpWait')}</span>`}`:`<button data-act="quit">${T('toTitle')}</button><button data-act="again" class="big">${T('again')}</button>`}</div>`;
     Main.unlock();this.show('results')},
-  table(A){const mp=NET.on;return `<table class="tbl"><tr><th></th><th>${T('name')}</th><th>${T('kills')}</th><th>${T('infects')}</th><th>${T('deaths')}</th><th>${T('dmg')}</th><th>${T('score')}</th>${mp?'<th>ping</th>':''}</tr>${A.map(a=>`<tr class="${a.isPlayer?'me ':''}${a.team===TZ?'z':'h'}${a.alive?'':' dead'}"><td>${a.team===TZ?'●':'■'}</td><td>${esc(a.name)}${TTL.mini(TTL.of(a))}${a.net?' <b class="mpp">◆</b>':''}${a.host&&a.team===TZ?' <i>HOST</i>':''}</td><td>${a.kills}</td><td>${a.infects}</td><td>${a.deaths}</td><td class="dmg">${Math.round(a.dmgDealt).toLocaleString('en-US')}</td><td>${Math.round(a.score)}</td>${mp?`<td>${a.net?(NET.host&&a.isPlayer?'—':a.ping>=0&&a.ping!=null?a.ping+'ms':(a.isPlayer?'':'—')):'BOT'}</td>`:''}</tr>`).join('')}</table>`},
+  table(A){const mp=NET.on;return `<table class="tbl"><tr><th></th><th>${T('name')}</th><th>${T('kills')}</th><th>${T('infects')}</th><th>${T('deaths')}</th><th>${T('dmg')}</th><th>${T('score')}</th>${mp?'<th>ping</th>':''}</tr>${A.map(a=>`<tr class="${a.isPlayer?'me ':''}${a.team===TZ?'z':'h'}${a.alive?'':' dead'}"><td>${a.team===TZ?'●':'■'}</td><td>${esc(a.name)}${TTL.mini(TTL.of(a))}${a.net?' <b class="mpp">◆</b>':''}${a.host&&a.team===TZ?' <i>HOST</i>':''}</td><td>${a.kills|0}</td><td>${a.infects|0}</td><td>${a.deaths|0}</td><td class="dmg">${Math.round(a.dmgDealt).toLocaleString('en-US')}</td><td>${Math.round(a.score)}</td>${mp?`<td>${a.net?(NET.host&&a.isPlayer?'—':a.ping>=0&&a.ping!=null?(a.ping|0)+'ms':(a.isPlayer?'':'—')):'BOT'}</td>`:''}</tr>`).join('')}</table>`},
   board(on){const b=$('board');b.classList.toggle('off',!on);if(!on)return;const A=G.actors.slice().sort((a,b)=>(a.team-b.team)||(b.score-a.score));
-    b.innerHTML=`<h3>${T('board')} — ${G.mode==='mut'?T('mut'):T('orig')} · ${T('round')} ${G.round}/${G.rounds}</h3><div class="finalScore sm"><span class="h">${T('human')} ${G.score[TH]}</span> : <span class="z">${G.score[TZ]} ${T('zombie')}</span></div>${this.table(A)}`},
+    b.innerHTML=`<h3>${T('board')} — ${G.mode==='mut'?T('mut'):T('orig')} · ${T('round')} ${G.round|0}/${G.rounds|0}</h3><div class="finalScore sm"><span class="h">${T('human')} ${G.score[TH]|0}</span> : <span class="z">${G.score[TZ]|0} ${T('zombie')}</span></div>${this.table(A)}`},
   // buy menu (CS style: category column + items, number keys)
   buyCat:0,
   statBars(W){const L=LI();if(W.kind==='melee'){const pw=Math.sqrt(W.dmg[1]/400),rt=1/W.rate[0]/2.2,kb=W.kb[1]/24,mob=(W.speed-.7)/.32;return this.bars([[L?'PWR':'위력',pw],[L?'ROF':'속도',rt],[L?'KB':'넉백',kb],[L?'MOB':'기동',mob]])}
