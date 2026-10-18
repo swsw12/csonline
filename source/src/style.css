@@ -1869,3 +1869,97 @@ html.touch .tuBtn kbd{display:none}
 #lobby .dpFoot .gchb{position:relative;display:inline-flex;align-items:center;gap:5px}#lobby .dpFoot .gchb svg{width:14px;height:14px;flex:none}
 #lobby .dpFoot .gchb .dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
 @media (max-width:620px){#lobby .dpFoot .gchb{min-width:0;width:44px;flex:none;padding:8px 0;justify-content:center}#lobby .dpFoot .gchb span{display:none}}
+/* ============ v6.77: the phone lobby (moblob.js sets html[data-lob]: p = held upright, l = sideways; desktop as it was) ============ */
+.lseg{display:none}
+html[data-lob] #menu.scr{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left));justify-content:flex-start;gap:0}
+html[data-lob] #menu>.lob{width:100%;max-width:none;margin:0;gap:8px}
+html[data-lob] .lobLogo{display:none}
+/* one header row: profile · coins · mail · ⋯ (the account button is the profile itself) */
+html[data-lob] .lobTop{flex-wrap:nowrap!important;gap:6px;padding:5px 6px;min-height:0;border-bottom-width:1px}
+html[data-lob] .prof{flex:1 1 auto;min-width:0;padding:2px 6px 2px 2px;border-left:0;margin:0}
+html[data-lob] .prof img{height:32px}
+html[data-lob] .prof>div>b:first-child{max-width:118px}
+html[data-lob] .prof .xp{width:62px}
+html[data-lob] .accChip{gap:4px}html[data-lob] .accChip .aname{display:none}
+html[data-lob] .accChip button{min-height:38px}
+html[data-lob] .tbtns .tgch,html[data-lob] .tbtns .tpatch{display:none!important}
+html[data-lob] .tmore{display:flex;flex:none;align-items:center;justify-content:center;width:40px;height:40px;min-width:0;padding:0}
+html[data-lob] .tutil{right:6px}
+/* the lower panels as tabs: 채팅 · 미션·전적 · 공지 (the tab names the panel, so its own title goes) */
+html[data-lob] .lobBot{display:flex!important;flex-direction:column;gap:0;min-height:0}
+html[data-lob] .lobBot>.lp{display:none;min-height:0}
+html[data-lob] .lobBot>.lp.on{display:flex;flex:1 1 0;border-radius:0 0 4px 4px;border-top:0}
+html[data-lob] .lobBot>.lp>.lpt>b.on{display:none}
+html[data-lob] .lobBot>.lp>.lpt:empty{display:none}
+html[data-lob] .lseg{display:flex;flex:none;background:#1b1d22;border:1px solid #3e424a;border-radius:4px 4px 0 0;overflow:hidden}
+html[data-lob] .lseg button{flex:1 1 0;position:relative;min-width:0;padding:9px 4px 8px;font:inherit;font-size:13px;color:#9aa0a8;background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;cursor:pointer;white-space:nowrap;box-shadow:none}
+html[data-lob] .lseg button+button{border-left:1px solid #2c2f36}
+html[data-lob] .lseg button.on{color:#ffd890;border-bottom-color:#e8a33a;background:#262930}
+html[data-lob] .lseg .dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+html[data-lob] .lrec .lmis{margin-bottom:6px}
+html[data-lob] .lp .news{padding-bottom:6px}
+/* the cards: 빠른 시작 as the hero, the other three as tiles (their words go; the title stays) */
+html[data-lob] .mcards{gap:8px!important}
+html[data-lob] .mc,html[data-lob] .lob.hasBan .mc{height:auto!important;min-height:0!important;aspect-ratio:auto!important}
+html[data-lob] .mc .mbar{padding:5px 8px 6px;border-top-width:2px}
+html[data-lob] .mc:not(.c0) .mbar span,html[data-lob] .mc:not(.c0) .mtag{display:none}
+html[data-lob] .mc:not(.c0) .mbar b{font-size:13px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-lob] .mc:not(.c0) .a1{bottom:22px;height:76%}
+html[data-lob] .mc:not(.c0) .a2,html[data-lob] .mc:not(.c0) .a3{display:none}
+html[data-lob] .mc.c3 .g1{top:6%;width:72%}html[data-lob] .mc.c3 .g2{top:36%;width:78%}html[data-lob] .mc.c3 .g3{display:none}
+html[data-lob] .mc .mtut{top:5px;right:5px;font-size:9px;padding:2px 6px}html[data-lob] .mc .mtut i{display:none}
+html[data-lob] .mc.c0 .mbar b{font-size:20px}html[data-lob] .mc.c0 .mbar b::before{content:'▶ ';color:#ff7a52}
+html[data-lob] .lob .foot{display:block;font-size:10px;line-height:1.3;margin:0;padding:0 4px}
+/* ---- held upright ---- */
+html[data-lob="p"] #menu>.lob{min-height:100%;padding-bottom:calc(62px + env(safe-area-inset-bottom))}
+html[data-lob="p"] .mcards{grid-template-columns:repeat(3,minmax(0,1fr))!important;flex:none}
+html[data-lob="p"] .mc.c0{grid-column:1/-1;height:clamp(118px,19vh,170px)!important}
+html[data-lob="p"] .mc:not(.c0){height:clamp(84px,12.5vh,118px)!important}
+html[data-lob="p"] .mc.c0 .art::after{background:linear-gradient(90deg,rgba(0,0,0,.72),rgba(0,0,0,.15) 62%,transparent)}
+html[data-lob="p"] .mc.c0 .a1{left:auto;right:24%;transform:none;bottom:0;height:96%}
+html[data-lob="p"] .mc.c0 .a2{right:3%;bottom:0;height:80%}
+html[data-lob="p"] .mc.c0 .mtag{max-width:62%}
+html[data-lob="p"] .mc.c0 .mbar{right:auto;width:64%;background:none;border-top:0;padding:0 12px 12px}
+html[data-lob="p"] .mc.c0 .mbar span{white-space:normal}
+html[data-lob="p"] .lobBot{flex:1 1 0;min-height:210px}
+/* the top bar's buttons as the tab bar along the bottom */
+html[data-lob="p"] .tbtns{position:fixed;left:0;right:0;bottom:0;z-index:6;margin:0!important;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0;
+  padding:3px max(4px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(4px,env(safe-area-inset-left));overflow:visible;
+  background:linear-gradient(#202328fa,#121417fc);border-top:1px solid #4a4e56;box-shadow:0 -8px 20px rgba(0,0,0,.55)}
+html[data-lob="p"] .tbtns button{min-width:0!important;min-height:54px!important;padding:7px 1px 5px!important;gap:4px;justify-content:center;background:transparent!important;border:0!important;border-radius:6px;color:#b8bec6!important;box-shadow:none}
+html[data-lob="p"] .tbtns button:active{background:#2a2d33!important}
+html[data-lob="p"] .tbtns button span{display:block!important;max-width:100%;font-size:10.5px;overflow:hidden;text-overflow:ellipsis}
+html[data-lob="p"] .tbtns svg{width:21px;height:21px}
+html[data-lob="p"] .tbtns .tshop{color:#ffd890!important}
+html[data-lob="p"] .tbtns button .dot{top:5px!important;right:calc(50% - 17px)!important}
+/* ---- sideways: the header, then the cards on the left and the tabs on the right ---- */
+html[data-lob="l"] #menu.scr{overflow:hidden}
+html[data-lob="l"] #menu>.lob{height:100%;display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;
+  grid-template-areas:"top top" "ban ban" "cards panel" "foot foot";gap:6px 8px}
+html[data-lob="l"] .lobTop{grid-area:top}html[data-lob="l"] .srvBan{grid-area:ban}html[data-lob="l"] .mcards{grid-area:cards}
+html[data-lob="l"] .lobBot{grid-area:panel}html[data-lob="l"] .lob .foot{grid-area:foot;font-size:9px;line-height:1.2}
+html[data-lob="l"] .mcards{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)!important;grid-template-rows:repeat(3,minmax(0,1fr));min-height:0}
+html[data-lob="l"] .mc.c0{grid-row:1/-1}
+html[data-lob="l"] .mc.c0 .a1{bottom:60px;height:62%}html[data-lob="l"] .mc.c0 .a2{bottom:54px;height:48%}
+html[data-lob="l"] .mc.c0 .mbar span{white-space:normal}
+html[data-lob="l"] .tbtns{margin-left:auto!important;flex:0 1 auto}
+html[data-lob="l"] .tbtns button{min-width:40px!important;min-height:40px!important;padding:5px 8px!important}
+html[data-lob="l"] .tbtns button span{display:none!important}
+html[data-lob="l"] .prof .xp{width:56px}
+html[data-lob="l"] .lseg button{padding:7px 4px 6px;font-size:12px}
+html[data-lob="p"] #menu>.lob{box-sizing:border-box}
+html[data-lob] .lrec .lmis{flex:0 1 auto}
+html[data-lob] .lobBot>.lp>.lpt{padding:3px 8px;min-height:30px;background:#202328}
+html[data-lob] .lob .foot .fst{display:none}
+html[data-lob="p"] .lseg button{padding:12px 4px 10px;font-size:13.5px}
+/* typing in the lobby's chat on a phone (moblob.js mobType): the chat takes the screen */
+html.gtype[data-lob] .mcards,html.gtype[data-lob] .tbtns,html.gtype[data-lob] .lob .foot,html.gtype[data-lob] .srvBan{display:none!important}
+html.gtype[data-lob="p"] #menu>.lob{padding-bottom:0}
+html.gtype[data-lob="l"] #menu>.lob{grid-template-areas:"top top" "ban ban" "panel panel" "foot foot"}
+/* on the phone lobby the utility buttons always fold under ⋯ (a wide but short window kept them in the row as well) */
+html[data-lob] .tutil{display:none;position:absolute;right:6px;top:calc(100% + 6px);z-index:40;flex-direction:column;align-items:stretch;gap:2px;padding:6px;min-width:180px;border:1px solid #4a4e56;border-radius:4px;background:linear-gradient(#2a2d33,#1b1d22);box-shadow:0 12px 30px rgba(0,0,0,.65)}
+html[data-lob] .tutil.open{display:flex}
+html[data-lob="l"] .tutil{grid-template-columns:1fr 1fr;min-width:330px}html[data-lob="l"] .tutil.open{display:grid}
+html[data-lob] .tutil button{width:auto;height:auto;min-height:40px;justify-content:flex-start;padding:9px 12px;color:#d8dce2}
+html[data-lob] .tutil button span{display:inline}
+html[data-lob] .tutil .tpatch{display:flex}

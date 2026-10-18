@@ -231,7 +231,7 @@ function gchLobby(){const tb=document.querySelector('#menu .lobTop .tbtns');if(!
   if(!b){b=document.createElement('button');b.className='tgch';b.dataset.act='gchat';b.dataset.tip=L?'Chat':'채팅';b.innerHTML=SVG_GCH+`<span>${L?'Chat':'채팅'}</span>`;
     const after=tb.querySelector('.tfr')||tb.querySelector('.tinv')||tb.querySelector('.trank');if(after)after.after(b);else tb.prepend(b)}
   gchDot()}
-function gchDot(){const n=GCH.visible()?0:GCH.unread;for(const b of document.querySelectorAll('#menu .tbtns .tgch, #lobby .gchb')){const d=b.querySelector('.dot');
+function gchDot(){const n=GCH.visible()?0:GCH.unread;for(const b of document.querySelectorAll('#menu .tbtns .tgch, #lobby .gchb, #menu .lseg [data-seg="chat"]')){const d=b.querySelector('.dot');
   if(n>0){if(!d){const i=document.createElement('i');i.className='dot';b.appendChild(i)}b.title=(LI()?'New messages':'새 메시지')+' '+n}else{if(d)d.remove();b.title=b.dataset.tip||''}}}
 // (v6.76) the waiting room's footer: its host posts the room to the chat (채팅에 모집), the others open the chat
 function gchRoomBtn(){const f=document.querySelector('#lobby .win.room .dpFoot');if(!f||!GCH.can()||f.querySelector('.gchb'))return;const L=LI(),host=!!(NET.host&&NET.kind==='peerjs');
