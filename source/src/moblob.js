@@ -12,10 +12,13 @@
 // mission or achievement to collect (the missions button's dot).
 const MOBL={seg:null,obs:null,
   mode(){const w=innerWidth,h=innerHeight;if(w>900&&h>520)return '';return w>h?'l':'p'},
+  // a text field has the focus (on a phone, the keyboard is up)
+  typing(){const a=document.activeElement;return !!a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT'&&!/^(range|checkbox|radio|button|submit|reset|color|file|image)$/i.test(a.type||''))},
   apply(){const m=this.mode(),r=document.documentElement,was=r.dataset.lob||'';if(was===m)return;
-    // (a phone's keyboard makes the window short while one types: the lobby does not turn sideways under the fingers)
-    if(r.classList.contains('gtype')&&was)return;
+    // (a phone's keyboard makes the window short while one types: nothing turns sideways under the fingers; leaving the field catches up)
+    if(was&&(r.classList.contains('gtype')||this.typing()))return;
     if(m)r.dataset.lob=m;else delete r.dataset.lob;if(document.querySelector('#menu .lobBot'))this.pick(this.cur(),true);
+    try{if(typeof MROOM!=='undefined')MROOM.relay()}catch(e){}
     try{if(typeof lobFit==='function')lobFit()}catch(e){}},
   // the tabs there are: the chat (when it can run here), the missions and record, the notices
   have(){const B=document.querySelector('#menu .lobBot');if(!B)return [];return ['chat','rec','news'].filter(s=>B.querySelector(`:scope>.lp[data-seg="${s}"]`))},
@@ -47,7 +50,8 @@ function mobType(on){const r=document.documentElement;if(on===r.classList.contai
   document.addEventListener('mousedown',e=>{const b=e.target&&e.target.closest&&e.target.closest('#gchBox [data-gc="send"]');if(b&&document.documentElement.classList.contains('gtype'))e.preventDefault()});
   const bt=UI.buildTitle;UI.buildTitle=function(){const r=bt.apply(this,arguments);try{MOBL.build()}catch(e){console.error(e)}return r};
   document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('#menu .lseg [data-seg]');if(b)MOBL.pick(b.dataset.seg)});
-  // (the mode follows the screen: turning the phone, a window made narrower)
+  // (the mode follows the screen: turning the phone, a window made narrower; a field left gets the shape the window has by then)
   let t=0;const re=()=>{clearTimeout(t);t=setTimeout(()=>MOBL.apply(),60)};addEventListener('resize',re);addEventListener('orientationchange',re);
+  document.addEventListener('focusout',e=>{const x=e.target;if(x&&(x.tagName==='INPUT'||x.tagName==='TEXTAREA'))setTimeout(()=>{if(!MOBL.typing())MOBL.apply()},200)});
   MOBL.apply();
 })();

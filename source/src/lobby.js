@@ -8,6 +8,11 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.78','2026-10-19',[
+ ['NEW','모바일 대기실 — 폰을 세우면 플레이어 · 설정 · 캐릭터 · 채팅이 탭으로 나뉘어 한 화면에 들어와요 (예전엔 설정까지 한참 내려야 했어요). 맨 위 요약 줄에 지금 모드 · 맵 · 봇이 보이고, 누르면 설정 탭으로 가요','A waiting room made for phones — held upright, the players, settings, character and chat are tabs on one screen (the settings used to be a long scroll down); a line on top shows the mode, map and bots, and tapping it opens the settings'],
+ ['UP','폰을 눕히면 왼쪽에 플레이어 8칸이 다 보이고, 오른쪽에서 설정 · 캐릭터 · 채팅을 골라요 (예전엔 방 채팅이 화면 밖에 있었어요). 채팅 탭이 아닐 때 새 메시지가 오면 빨간 점','Sideways, all eight player slots stay on the left and the settings, character and chat are tabs on the right (the room chat used to sit off the screen); a red dot on Chat when a line comes in while it is not open'],
+ ['UP','방 만들기와 멀티플레이 화면도 폰 화면에 꽉 맞춰요 — 방 만들기는 설정 · 캐릭터 탭, 눕히면 설정과 맵 미리보기가 나란히','Create room and the multiplayer screen fill a phone\'s screen too — Create room as Settings · Character tabs, sideways with the settings beside the map preview'],
+ ['UP','방 채팅을 입력하는 동안엔 채팅이 화면을 차지하고, 키보드가 올라와 있는 동안엔 화면이 가로 · 세로로 바뀌지 않아요','Typing in the room chat gives the chat the screen, and nothing turns sideways while the keyboard is up']]],
 ['v6.77','2026-10-19',[
  ['NEW','모바일 전용 로비 — 폰을 세우면: 위에 프로필 · 코인 · 우편 한 줄, 큰 「빠른 시작」과 방 만들기 · 멀티플레이 · 사격장 버튼, 아래에 채팅 · 미션·전적 · 공지 탭, 맨 아래에 상점 · 미션 · 업적 · 랭킹 · 인벤토리 · 친구 바 (엄지로 바로)','A lobby made for phones — held upright: one row for the profile, coins and mail; a big Quick start with Create room, Multiplayer and Range under it; Chat · Missions · News as tabs; and the shop, missions, achievements, ranking, inventory and friends in a bar along the bottom, in thumb\'s reach'],
  ['UP','폰을 눕히면 — 왼쪽에 모드, 오른쪽에 채팅 · 미션·전적 · 공지 탭 (예전엔 가로 화면에서 공지 · 전적 · 채팅이 아예 안 보였어요). 탭에 새 채팅이나 받을 미션 보상이 있으면 빨간 점, 고른 탭은 기억해요','Sideways — the modes on the left, the Chat · Missions · News tabs on the right (a sideways phone used to show none of them); a red dot on a tab with new chat lines or a reward to collect, and the tab you picked is kept'],
@@ -537,7 +542,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       ${typeof GCH!=='undefined'&&GCH.can()?`<div class="lp lchat" data-seg="chat"><div class="lpt"><b class="on">${L?'CHAT':'전체 채팅'}</b><small class="gcst"></small><button class="gcpop" data-gc="pop" title="${L?'Bigger':'크게 보기'}" aria-label="${L?'Bigger':'크게 보기'}"><svg viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9.5 2.5h4v4M13.5 2.5l-5 5M6.5 13.5h-4v-4M2.5 13.5l5-5"/></svg></button></div></div>`
         :`<div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>`}
     </div>
-    <div class="foot">v6.77<span class="fst"> · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</span>${typeof LEGAL!=='undefined'?' · '+LEGAL.links(L):''}</div></div>`;
+    <div class="foot">v6.78<span class="fst"> · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</span>${typeof LEGAL!=='undefined'?' · '+LEGAL.links(L):''}</div></div>`;
   UI.wantSnap();setTimeout(lobFit,0)};
 // (v6.58) the top bar keeps every button in view: past its width the logo gets smaller, then goes, then the main buttons lose
 // their words (a tooltip keeps them); run after every module has put its buttons in, on every resize and when the lobby shows again

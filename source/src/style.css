@@ -1963,3 +1963,72 @@ html[data-lob="l"] .tutil{grid-template-columns:1fr 1fr;min-width:330px}html[dat
 html[data-lob] .tutil button{width:auto;height:auto;min-height:40px;justify-content:flex-start;padding:9px 12px;color:#d8dce2}
 html[data-lob] .tutil button span{display:inline}
 html[data-lob] .tutil .tpatch{display:flex}
+/* ============ v6.78: the waiting room and 방 만들기 on a phone (mobroom.js: header · tabs · body (.mrpl players / .mrpan panel) · footer) ============ */
+html[data-lob] #lobby.scr,html[data-lob] #setup.scr{padding:max(4px,env(safe-area-inset-top)) max(4px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left));overflow:hidden;justify-content:flex-start;gap:0}
+html[data-lob] #lobby>.win.room.mroom,html[data-lob] #setup>.win.room.mroom{box-sizing:border-box;width:100%;max-width:none;height:100%;margin:0;display:flex;flex-direction:column;overflow:hidden;border-radius:4px}
+html[data-lob] .win.room.mroom>.dpHead,html[data-lob] .win.room.mroom>.dpFoot{position:relative;top:auto;bottom:auto;flex:none}
+html[data-lob] .win.room.mroom>.dpHead{flex-wrap:nowrap;gap:6px;padding:6px 8px;min-height:0}
+html[data-lob] .win.room.mroom>.dpHead>b{flex:none;font-size:15px;white-space:nowrap}
+html[data-lob] .win.room.mroom>.dpHead button.x{flex:none;width:36px;height:36px;margin-left:auto}
+html[data-lob] .win.room.mroom>.dpFoot{padding:7px 8px;gap:8px}
+/* the waiting room's head: the code and the invite buttons in one row (its words go; the code says enough) */
+html[data-lob] #lobby .mroom>.dpHead>span{flex:1 1 auto;min-width:0;flex-wrap:nowrap;gap:5px;font-size:0;overflow-x:auto;scrollbar-width:none}
+html[data-lob] #lobby .mroom>.dpHead>span::-webkit-scrollbar{display:none}
+html[data-lob] #lobby .mroom>.dpHead>span>*{flex:none;font-size:12px}
+html[data-lob] #lobby .mroom>.dpHead span.mpcode{font-size:15px;padding:1px 8px;letter-spacing:3px}
+html[data-lob] #lobby .mroom>.dpHead button.mini{padding:6px 8px!important;min-height:32px}
+@media (max-width:400px){html[data-lob] #lobby .mroom>.dpHead span.mpcode{font-size:13px;letter-spacing:2px;padding:1px 5px}
+  html[data-lob] #lobby .mroom>.dpHead button.mini{padding:5px 6px!important;font-size:11px}html[data-lob] #lobby .mroom>.dpHead>span{gap:4px}}
+html[data-lob="p"] #lobby .mroom>.dpHead>b{display:none}
+html[data-lob="p"] #lobby .mroom>.dpFoot .conn{display:none}
+html[data-lob] #lobby .mroom>.dpFoot .conn{font-size:10px;line-height:1.25;min-width:0;overflow:hidden}
+/* the tabs */
+html[data-lob] .mtabs{display:flex;flex:none;background:#1b1d22;border-bottom:1px solid #3e424a}
+html[data-lob] .mtabs button{flex:1 1 0;position:relative;min-width:0;padding:11px 4px 9px;font:inherit;font-size:13px;color:#9aa0a8;background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;cursor:pointer;white-space:nowrap;box-shadow:none}
+html[data-lob] .mtabs button+button{border-left:1px solid #2c2f36}
+html[data-lob] .mtabs button.on{color:#ffd890;border-bottom-color:#e8a33a;background:#262930}
+html[data-lob] .mtabs .dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+/* the body: the players and the panel; the window's data-mt shows one of the panel's parts */
+html[data-lob] .mrbody{flex:1 1 0;min-height:0;display:flex;gap:8px;padding:8px}
+html[data-lob] .mrpl,html[data-lob] .mrpan{flex:1 1 0;min-height:0;min-width:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#4a4e56 transparent;display:flex;flex-direction:column;gap:8px}
+html[data-lob] .mroom[data-mt="set"] .mrpan>[data-mt]:not([data-mt="set"]),html[data-lob] .mroom[data-mt="ch"] .mrpan>[data-mt]:not([data-mt="ch"]),
+html[data-lob] .mroom[data-mt="chat"] .mrpan>[data-mt]:not([data-mt="chat"]),html[data-lob] .mroom[data-mt="pl"] .mrpan>[data-mt]{display:none}
+html[data-lob] .mrpan>.rside{flex:none}html[data-lob] .mrpan>.rform{flex:none}
+html[data-lob] .mrpan>.sprev{grid-column:auto;margin-top:0;grid-template-columns:minmax(0,1fr)}html[data-lob] .mrpan>.sprev .rprev{grid-row:auto}
+html[data-lob] .mrpan>.wchars{padding:0;grid-template-columns:minmax(0,1fr)}
+html[data-lob] .mrpan>.rchat{flex:1 1 auto;min-height:0;margin-top:0}
+html[data-lob] .mrpan>.rchat #chatBox.inRoom{flex:1 1 0;height:auto;min-height:110px}
+/* the summary at the top of the players: tap → 설정 */
+html[data-lob] .mrsum{flex:none;display:flex;align-items:center;gap:8px;width:100%;min-width:0;padding:9px 10px;font:inherit;text-align:left;color:#e8e4d8;background:linear-gradient(#262930,#1b1d22);border:1px solid #3e424a;border-radius:4px;cursor:pointer;box-shadow:none}
+html[data-lob] .mrsum b{font-size:13px;color:#ffd890;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+html[data-lob] .mrsum span{font-size:12px;color:#a8aeb6;white-space:nowrap}
+html[data-lob] .mrsum i{margin-left:auto;font-style:normal;font-size:12px;color:#9fd6ff;white-space:nowrap}
+html[data-lob] .mrpl .slots{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+/* upright: one part at a time; the players in one column */
+html[data-lob="p"] .mrbody{flex-direction:column}
+html[data-lob="p"] #lobby .mroom[data-mt="pl"] .mrpan,html[data-lob="p"] #lobby .mroom:not([data-mt="pl"]) .mrpl{display:none}
+/* sideways: the players on the left (two columns), the panel and its tabs on the right; 방 만들기's settings beside the map */
+html[data-lob="l"] .mrbody{flex-direction:row}
+html[data-lob="l"] #lobby .mrpl{flex:1 1 0}html[data-lob="l"] #lobby .mrpan{flex:1.1 1 0;gap:6px}
+html[data-lob="l"] #lobby .mrpan>.mtabs{position:sticky;top:0;z-index:2;border:1px solid #3e424a;border-radius:4px 4px 0 0;margin-bottom:2px}
+html[data-lob="l"] #lobby .mrpl .slots{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+html[data-lob="l"] .mrpl .slot{min-height:44px;padding:4px 6px;gap:5px}html[data-lob="l"] .mrpl .slot img{height:32px}
+/* (a slot is half the players' width sideways: the name keeps its room — 방장 넘기기 goes on two lines, the ping stays inside the slot) */
+html[data-lob] .mrpl .slot div>small,html[data-lob] .mrpl .slot div>em{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-lob="l"] .mrpl .slot button.give{width:42px;min-height:0;padding:2px 3px;font-size:10px;line-height:1.15;white-space:normal;word-break:keep-all}
+html[data-lob="l"] #setup .mroom[data-mt="set"] .mrpan{flex-direction:row;align-items:stretch;overflow:hidden}
+html[data-lob="l"] #setup .mroom[data-mt="set"] .mrpan>[data-mt="set"]{flex:1 1 0;min-width:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#4a4e56 transparent}
+html[data-lob="l"] #setup .mrpan>.wchars{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+html[data-lob="l"] .mtabs button{padding:8px 4px 7px;font-size:12px}
+/* typing in the room chat (mobroom.js html.rtype): the chat takes the screen — the header, the footer and, sideways, the players step aside */
+html[data-lob].rtype #lobby .mroom>.dpHead,html[data-lob].rtype #lobby .mroom>.dpFoot,html[data-lob="l"].rtype #lobby .mrpl{display:none}
+/* the multiplayer screen: the whole screen, the open rooms take what is left */
+html[data-lob] #mp.scr{padding:max(4px,env(safe-area-inset-top)) max(4px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left));overflow:hidden;justify-content:flex-start;gap:0}
+html[data-lob] #mp>.win.mpw{box-sizing:border-box;width:100%;max-width:none;height:100%;margin:0;display:flex;flex-direction:column}
+html[data-lob] #mp>.win.mpw>.dpHead,html[data-lob] #mp>.win.mpw>.dpFoot{position:relative;top:auto;bottom:auto;flex:none}
+html[data-lob] #mp .mpw .mpwrap{flex:1 1 0;min-height:0;padding:8px;gap:8px}
+html[data-lob] #mp .mpw .mprooms{min-height:0;display:flex;flex-direction:column}
+html[data-lob] #mp .mpw .rlist{flex:1 1 0;max-height:none}
+html[data-lob="p"] #mp .mpw .mpwrap{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;justify-content:flex-start}
+html[data-lob="p"] #mp .mpw .mpbox{flex:none}html[data-lob="p"] #mp .mpw .mprooms{flex:1 1 0}
+html[data-lob="l"] #mp .mpw .mpwrap{align-items:stretch}html[data-lob="l"] #mp .mpw .mpbox{overflow-y:auto}
