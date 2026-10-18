@@ -12,7 +12,7 @@ const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r10'}// r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40); r10: THANATOS-9 states and its slow, the Dark Knight's B and Deadshot (v6.41)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r11'}// r11: the host checks every claim and holds each link to a message budget (v6.72); r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40); r10: THANATOS-9 states and its slow, the Dark Knight's B and Deadshot (v6.41)
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
@@ -221,8 +221,23 @@ function netScrub(v,d){if(typeof v==='string')return /[<>"'`]/.test(v)?v.replace
   if(Array.isArray(v)){for(let i=0;i<v.length;i++){const x=v[i];if(typeof x==='string'||x&&typeof x==='object')v[i]=netScrub(x,d+1)}return v}
   const chat=v.t==='chat'&&typeof v.m==='string';
   for(const k of Object.keys(v)){if(chat&&k==='m')continue;const x=v[k];if(typeof x==='string'||x&&typeof x==='object')v[k]=netScrub(x,d+1)}return v}
-function netRx(L,data,rel){if(typeof data!=='string')return;let m;try{m=netScrub(JSON.parse(data),0)}catch(e){return}
-  if(rel){if(Array.isArray(m))for(const x of m)if(x&&typeof x.t==='string')NET.inQ.push([L,x,true])}else if(m&&typeof m==='object')NET.inQ.push([L,m,false])}
+// v6.72: what one link may send in. On the host: a message over 64 KiB is dropped unread (it counts as 200 dropped), about 300 events a
+// second (600 at once) and 90 states a second get through and the rest is dropped; a link whose dropped count (fading over about 4 s)
+// passes 1,200 is closed — its player goes on as a bot. A client takes up to 512 KiB a message from its host. The queue holds 5,000.
+const NET_RXL={EV:300,EVB:600,ST:90,STB:150,KICK:1200,Q:5000};
+Object.assign(STR.ko,{mpFlood:'메시지를 너무 많이 보내서 방에서 내보내졌어요'});Object.assign(STR.en,{mpFlood:'Removed from the room: too many messages, too fast'});
+function netRxTake(L,n,rel){const now=netNow(),B=L.rxb||(L.rxb={e:0,s:0,t:now,o:0,l:0}),dt=Math.max(0,now-B.t)/1000;B.t=now;
+  B.e=Math.max(0,B.e-dt*NET_RXL.EV);B.s=Math.max(0,B.s-dt*NET_RXL.ST);
+  if(rel){const k=Math.max(0,Math.min(n,Math.floor(NET_RXL.EVB-B.e)));B.e+=k;return k}
+  if(B.s+1>NET_RXL.STB)return 0;B.s++;return 1}
+function netRxOver(L,n){if(!NET.host||L.dead)return;const now=netNow(),B=L.rxb||(L.rxb={e:0,s:0,t:now});
+  B.d=(B.d||0)*Math.exp(-Math.max(0,now-(B.dt||now))/4000)+n;B.dt=now;NET.rxDrop=(NET.rxDrop|0)+n;
+  if(B.d>NET_RXL.KICK){console.warn('net: link flooding, closed',L.key);netSend(L.key,{t:'bye',why:'flood'});netFlushR();netLinkDown(L,'flood')}}
+function netRx(L,data,rel){if(typeof data!=='string')return;if(data.length>(NET.host?65536:524288)){netRxOver(L,200);return}
+  let m;try{m=netScrub(JSON.parse(data),0)}catch(e){return}
+  if(rel){if(!Array.isArray(m))return;let n=m.length;if(NET.host){const k=netRxTake(L,n,true);if(k<n)netRxOver(L,n-k);n=k}
+    for(let i=0;i<n;i++){const x=m[i];if(x&&typeof x.t==='string'&&NET.inQ.length<NET_RXL.Q)NET.inQ.push([L,x,true])}}
+  else if(m&&typeof m==='object'){if(NET.host&&!netRxTake(L,1,false)){netRxOver(L,1);return}if(NET.inQ.length<NET_RXL.Q)NET.inQ.push([L,m,false])}}
 function netFxPush(f){if(NET.on&&NET.ui==='game'&&!NET.ghost)NET.fx.push(f)}
 // a remote page's clock: track the least-delayed arrivals so interpolation runs a fixed delay behind the sender
 function netClock(k,ts,now){const d=now-ts;const o=NET.off.get(k);NET.off.set(k,o==null||d<o?d:o+(d-o)*.004)}
@@ -245,7 +260,8 @@ NET.frameStart=function(dt){netTables();
   else{for(const [L,m,rel] of Q)netSafe(()=>rel?netHandle(L,m):netOnSnap(L,m));if(NET.ui==='game')netPre()}
   if(NET.ui==='game')netRunFx()};
 NET.frameEnd=function(dt){
-  if(NET.ui==='game'){netPost();if(NET.cli&&NET.hits.length){netToHost({t:'h',L:NET.hits});NET.hits=[]}
+  if(NET.ui==='game'){netPost();if(NET.cli&&NET.hits.length){for(let i=0;i<NET.hits.length;i+=48)netToHost({t:'h',L:NET.hits.slice(i,i+48)});NET.hits=[]}// (v6.72: 48 a message; the host takes 64)
+    if(NET.host)ngTrack(netNow());
     if(NET.host)for(const a of G.actors)if(a.skPend){if(G.t>a.skPend||!a.alive||a.team!==TZ)a.skPend=0;else if(a.skillCD<=0){a.skPend=0;useSkill(a)}}
     NET.tAcc+=dt;if(NET.tAcc>=1/NET_HZ){NET.tAcc=Math.min(NET.tAcc-1/NET_HZ,.1);if(NET.host){if(!netHold())netHostTick()}else netCliTick()}}
   if(NET.mig)netMigTick();
@@ -268,16 +284,22 @@ function netCliTick(){NET.k++;const P=G.player;const o={k:NET.k,ts:Math.round(ne
 // a client's 20 Hz state on the host
 function netOnState(L,m){if(m.t)return;if(!(m.k>L.lastK))return;L.lastK=m.k;const now=netNow();
   if(Array.isArray(m.e)&&m.e[0]>0){const r=now-m.e[0]-(m.e[1]||0);if(r>=0&&r<10000){L.srtt=lerp(L.srtt||r,r,.2);L.rtt=L.srtt}}
-  if(NET.ui!=='game')return;const a=actorOfKey(L.key);if(!a)return;netClock(L.key,m.ts,now);a.nsrc=L.key;
-  const s=m.s;if(s&&s.length>=13){const r={x:s[0]/100,y:s[1]/100,z:s[2]/100,vx:s[3]/100,vz:s[4]/100,yaw:s[5]/1000,pitch:s[6]/1000,F:s[7],cur:s[8]};a.nraw=r;
-    netSample(a,m.ts,r.x,r.y,r.z,r.vx,r.vz,r.yaw,r.pitch,r.F,r.cur);a.frozen=s[9]/10;a.rootT=s[10]/10;a.nyFree=s[11]|0;a.zpick=ZLIST[s[12]]||a.zpick}
-  for(const f of netFxList(L,m)){if(!Array.isArray(f)||f[1]!==a.id)continue;netQueueFx(a,f);NET.fx.push(f);
-    if(f[0]==='n'&&a.inv&&a.inv[f[2]]>0)a.inv[f[2]]--}}
+  if(NET.ui!=='game')return;const a=actorOfKey(L.key);if(!a)return;if(!Number.isFinite(m.ts))return;netClock(L.key,m.ts,now);a.nsrc=L.key;
+  // (v6.72: a state with anything but plain numbers where they belong is dropped whole; positions within 2 km, speeds 60 m/s)
+  const s=m.s;if(Array.isArray(s)&&s.length>=13){for(let i=0;i<13;i++)if(typeof s[i]!=='number'||!Number.isFinite(s[i]))return;
+    const r={x:clamp(s[0],-2e5,2e5)/100,y:clamp(s[1],-2e5,2e5)/100,z:clamp(s[2],-2e5,2e5)/100,vx:clamp(s[3],-6e3,6e3)/100,vz:clamp(s[4],-6e3,6e3)/100,yaw:s[5]/1000,pitch:clamp(s[6],-1600,1600)/1000,F:s[7]|0,cur:s[8]|0};a.nraw=r;
+    netSample(a,m.ts,r.x,r.y,r.z,r.vx,r.vz,r.yaw,r.pitch,r.F,r.cur);a.frozen=clamp(s[9],0,100)/10;a.rootT=clamp(s[10],0,100)/10;a.nyFree=s[11]|0;a.zpick=ZLIST[s[12]]||a.zpick}
+  // its effects go on to everyone: at most 48 a state, each a short list of numbers and short words (a grenade thrown is noted: ngClaim)
+  let nf=0;for(const f of netFxList(L,m)){if(!Array.isArray(f)||f[1]!==a.id||f.length>24||++nf>48)continue;
+    if(!f.every(v=>typeof v==='number'?Number.isFinite(v):typeof v==='string'?v.length<=24:v===null||typeof v==='boolean'||Array.isArray(v)&&v.length<=8&&v.every(x=>typeof x==='number'&&Number.isFinite(x))))continue;
+    netQueueFx(a,f);NET.fx.push(f);
+    if(f[0]==='n'&&typeof f[2]==='string'){(a.ngThr||(a.ngThr=Object.create(null)))[f[2]]=now;if(a.inv&&a.inv[f[2]]>0)a.inv[f[2]]--}}}
 // the host's snapshot on a client
 function netOnSnap(L,m){if(m.t||L.key!==NET.hostKey||!(m.k>NET.lastK))return;NET.lastK=m.k;const now=netNow();NET.hostTs=m.ts;NET.hostRx=now;netClock('h',m.ts,now);
   if(NET.ui!=='game')return;const g=Array.isArray(m.g)?m.g:null;if(g){G.time=netN(g[1])/10;if(G.pvp){G.score[0]=g[3]|0;G.score[1]=g[4]|0}if(g[5]>G.moraleLvl&&G.mode==='mut'){HUD.announce(T('moraleUp',g[5]*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}G.moraleLvl=g[5]|0;G.hostN=g[6]|0}
   const P=G.player;
-  for(const e of m.A||[]){const a=byId(e[0]);if(!a)continue;const F=e[8];const same=((F&2)?TZ:TH)===a.team&&!!(F&1)===a.alive;
+  // (v6.72: an actor's row with anything but numbers in its first ten is skipped)
+  for(const e of Array.isArray(m.A)?m.A:[]){if(!Array.isArray(e))continue;const a=byId(e[0]);if(!a)continue;let bad=false;for(let i=1;i<10;i++)if(typeof e[i]!=='number'||!Number.isFinite(e[i]))bad=true;if(bad)continue;const F=e[8];const same=((F&2)?TZ:TH)===a.team&&!!(F&1)===a.alive;
     if(a===P){if(!same)continue;const hp0=P.hp,ar0=P.armor;P.hp=netN(e[10]);P.armor=netN(e[11]);P.maxHp=netN(e[12],100);P.lvl=e[13]|0;P.money=netN(e[18]);P.skillT=e[15]/10;P.skillCD=e[19]/10;P.host=!!(F&16);
       if(P.alive&&P.hp<hp0-.5){const d=hp0-P.hp;if(P.team===TZ)HUD.hurt(clamp(d/600,.15,.8));else{HUD.hurt(clamp(d/40,.25,1));FX.shake=Math.max(FX.shake,.3);AU.play('hurt',{vol:.7})}}
       else if(P.alive&&P.team===TH&&P.armor<ar0-.5){HUD.hurt(.5);AU.play('armor',{vol:.5})}
@@ -372,6 +394,85 @@ function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||(G
   HUD.dmgNum(t,dealt,!!o.hs,false);if(!AU.throttle('zp'+t.id,350))AU.at(G.pvp?'hurt':'zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
 
 // ---------- host: handlers for what clients send ----------
+// ---------- v6.72: the host checks every claim a client makes (security part 2) ----------
+// A client's page decides its own hits and its zombie's claws; the host believes a claim only as far as the claimed weapon allows:
+// - the weapon is one the player has held in the last 8 s (the host's record of what it bought or picked up, or what its page says is
+//   in hand); a grenade's blast only after the host saw it thrown; the shooter a living human (a blast or a round in flight: 8 s on);
+// - the target a foe (in the zombie modes a zombie; 대인전 keeps its own per-gun check, pvp.js claimOk, on top of these);
+// - the damage no more than that weapon deals in one hit (its biggest damage figure x the head multiplier, at least x3, x2.2 for its
+//   special modes and slack; at least 60, a blast at least 1,000);
+// - the hits no more than it can make: each claim costs 1 / (shots a second x pellets / pierce / cleave, x2) of a
+//   second (splash 24 targets a shot, a blast at least 48 a second), one budget a player whatever the weapon (switching guns adds
+//   nothing), 1.5 s of it at a time;
+// - the target within the weapon's reach of where the shooter was in the last 0.8 s (110 m for a bullet, the railgun's 150, a blade's
+//   reach + 3 m, 170 m for anything that flies or bursts), and for a plain bullet (no pierce, wall, splash or second mode) a clear line
+//   from one of the shooter's eye positions of that time to the point it hit or to the target's chest or head;
+// - every number made finite and bounded (direction, knockback, lift, stagger, the point hit).
+// A zombie's claw: within its reach (+ the target's width and 2.2 m for lag) of the human in the last 0.8 s, in sight, after its
+// first-strike lock, 4 a second at most. An effect (eff) on another page's actor: within 120 m, numbers bounded; a status (freeze,
+// root, hold, stagger, dizzy, shriek, burn) only on the other side, a shove or a lift on anyone (a zombie bomb launches zombies).
+const NG={N:24,DT:1000/30,HMAX:64,HELD:8000,CAP:1.5,P:Object.create(null),rej:Object.create(null)};
+const ngRej=(why)=>{NG.rej[why]=(NG.rej[why]||0)+1;return null};
+// the host records where every actor was (every 1/30 s, the last 0.8 s) and what each remote player held
+function ngTrack(now){for(const a of G.actors){if(!a.alive)continue;let H=a.ngH;
+    if(!H)H=a.ngH={x:new Float32Array(NG.N),y:new Float32Array(NG.N),z:new Float32Array(NG.N),e:new Float32Array(NG.N),t:0,i:0,n:0};
+    if(!H.n||now-H.t>=NG.DT){H.t=now;H.x[H.i]=a.c.x;H.y[H.i]=a.c.y;H.z[H.i]=a.c.z;H.e[H.i]=eyeH(a);H.i=(H.i+1)%NG.N;if(H.n<NG.N)H.n++}
+    if(!a.net)continue;if(a.team===TH)a.ngHum=now;const S=a.ngW||(a.ngW=Object.create(null)),I=a.inv;
+    if(I){for(const k of [1,2,3])if(typeof I[k]==='string'&&I[k])S[I[k]]=now;for(const k of H_NADES)if(I[k]>0)S[k]=now}
+    if(typeof a.cur==='string'&&a.cur)S[a.cur]=now}}
+const _ngA={x:0,y:0,z:0,e:0},_ngB={x:0,y:0,z:0,e:0};
+function ngAt(a,k,o){const H=a.ngH;if(!H||k>=H.n){o.x=a.c.x;o.y=a.c.y;o.z=a.c.z;o.e=eyeH(a);return o}const j=(H.i-1-k+2*NG.N)%NG.N;o.x=H.x[j];o.y=H.y[j];o.z=H.z[j];o.e=H.e[j];return o}
+const ngN=a=>Math.max(1,a.ngH?a.ngH.n:1);
+// came within d of each other at some moment of the last 0.8 s (either one's recorded positions, every other one)
+function ngNear(a,t,d){const na=ngN(a),nt=ngN(t),d2=d*d;for(let i=0;i<na;i+=2){ngAt(a,i,_ngA);for(let j=0;j<nt;j+=2){ngAt(t,j,_ngB);const dx=_ngA.x-_ngB.x,dy=_ngA.y-_ngB.y,dz=_ngA.z-_ngB.z;if(dx*dx+dy*dy+dz*dz<=d2)return true}}return false}
+// a point by the target (one of its recent positions), as a hit point should be
+function ngByT(t,x,y,z){const nt=ngN(t),h=t.c.h||1.8;for(let j=0;j<nt;j+=2){ngAt(t,j,_ngB);if(Math.hypot(x-_ngB.x,z-_ngB.z)<=2.2&&y>=_ngB.y-.6&&y<=_ngB.y+h+.8)return true}return false}
+// a clear line from one of the shooter's eye positions to the hit point (when it is by the target) or to the target's chest or head
+function ngSee(a,t,px,py,pz){const na=ngN(a),nt=ngN(t),okP=Number.isFinite(px)&&Number.isFinite(py)&&Number.isFinite(pz)&&ngByT(t,px,py,pz),h=t.c.h||1.8;
+  for(let i=0;i<na;i+=4){ngAt(a,i,_ngA);const ex=_ngA.x,ey=_ngA.y+_ngA.e,ez=_ngA.z;if(okP&&losClear(ex,ey,ez,px,py,pz))return true;
+    for(let j=0;j<nt;j+=6){ngAt(t,j,_ngB);if(losClear(ex,ey,ez,_ngB.x,_ngB.y+h*.55,_ngB.z)||losClear(ex,ey,ez,_ngB.x,_ngB.y+h*.9,_ngB.z))return true}}
+  return false}
+// a body whose hit volumes reach far from its centre (a chapter's boss, the beetle's ball, the giant): no line-of-sight check
+const ngBig=t=>!!(t.epRay||t.xRay||t.boss||(t.hitW||t.c.hw||.4)>.9||(t.c.h||1.8)>3.2||(typeof ZBIG!=='undefined'&&!!ZBIG[t.zc]));
+// what a weapon allows (worked out once from its own numbers)
+function ngProf(w){let p=NG.P[w];if(p)return p;const W=WPN[w];if(!W)return null;
+  const big=re=>{let m=0;const scan=(o,d)=>{for(const k in o){const v=o[k];if(typeof v==='number'){if(re.test(k)&&Number.isFinite(v))m=Math.max(m,v)}
+      else if(Array.isArray(v)){if(re.test(k))for(const x of v)if(typeof x==='number'&&Number.isFinite(x))m=Math.max(m,x)}else if(v&&typeof v==='object'&&d<2)scan(v,d+1)}};scan(W,0);return m};
+  const melee=W.kind==='melee'||W.kind==='saw',area=!!(W.proj||W.cone||W.flame||W.air||W.cluster||W.slam||W.spFlame||W.kind==='nade'||W.kind==='special');
+  const rps=melee?(Array.isArray(W.rate)?1/Math.max(.08,Math.min(...W.rate)):3):Math.max(big(/rpm/i),60)/60;
+  const multi=Math.max(1,W.pellets||1,W.spFan||1)*Math.max(1,W.pen||1,W.pierce||1,W.fan||1,W.slugs||1)*(melee?Math.max(1,...[].concat(W.cleave||1)):1);
+  const plain=!area&&!melee&&!(W.pen||W.pierce||W.rail||W.wallK||W.trans||W.alt)&&['pistol','smg','rifle','mg','shotgun','sniper'].includes(W.kind);
+  p=NG.P[w]={cap:Math.max(big(/dmg|dm$/i),60)*Math.max(W.hs||0,W.pm&&W.pm.head||0,3)*2.2,per:rps*Math.max(multi,area?24:1)*2,area,plain,
+    reach:melee?Math.max(...[].concat(W.range||2.5))+3:area?170:(W.range>0?W.range:110)+6,kb:big(/kb/i)*2+2,up:big(/up$/i)+3};
+  return p}
+// one budget a player: a claim costs 1 / per seconds of it, 1.5 s at a time
+function ngSpend(a,per,now){const b=a.ngB||(a.ngB={d:0,t:now});b.d=Math.max(0,b.d-(now-b.t)/1000);b.t=now;const c=1/Math.max(per,.5);if(b.d+c>NG.CAP)return false;b.d+=c;return true}
+const ngF=(v,lo,hi,d)=>{v=+v;return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):d};
+// a claim h = [target id, damage, weapon index, flags, dir x, y, z (x100), knockback (x10), stagger (x100), hit x, y, z (x100), lift (x10)]
+function ngClaim(src,t,h,now){
+  const wi=h[2],w=Number.isInteger(wi)&&wi>=0?WL[wi]:'',f=h[3]|0,P=w?ngProf(w):null;if(!P)return ngRej('weapon');
+  const blast=!!(f&8),thrown=WPN[w].kind==='nade';
+  // the weapon: held lately (a grenade: seen thrown); the shooter: a living human now or very lately (a blast / a round in flight: 8 s)
+  if(thrown){const T=src.ngThr&&src.ngThr[w];if(!(T>now-NG.HELD))return ngRej('throw');}
+  else if(!(src.ngW&&src.ngW[w]>now-(P.area||blast?2*NG.HELD:NG.HELD)))return ngRej('held');// (what flies or lingers: 16 s)
+  if(!(src.alive&&src.team===TH)&&!(src.ngHum>now-(blast||P.area||thrown?NG.HELD:1000)))return ngRej('dead');
+  if(G.pvp){if(!foe(src,t)||!PVP.claimOk(src,t,h))return ngRej('pvp')}
+  else{if(t.team!==TZ)return ngRej('team');
+    const cap=blast||thrown?Math.max(P.cap,1000):P.cap,dm=+h[1];if(!(dm>=0&&dm<=cap+.5))return ngRej('dmg');
+    if(!ngSpend(src,blast||thrown?Math.max(P.per,48):P.per,now))return ngRej('rate')}
+  if(!ngNear(src,t,blast||thrown?170:P.reach))return ngRej('far');
+  const px=ngF(h[9],-2e5,2e5,NaN)/100,py=ngF(h[10],-2e5,2e5,NaN)/100,pz=ngF(h[11],-2e5,2e5,NaN)/100;
+  if(P.plain&&!blast&&!ngBig(t)&&!ngSee(src,t,px,py,pz))return ngRej('los');
+  const kbM=blast||thrown?Math.max(P.kb,16):P.kb,upM=blast||thrown?Math.max(P.up,8):P.up,dir=[ngF(h[4],-100,100,0)/100,ngF(h[5],-100,100,0)/100,ngF(h[6],-100,100,0)/100];
+  return {dmg:ngF(h[1],0,1e5,0),o:{w,hs:!!(f&1),knife:!!(f&2),heavy:!!(f&4),he:blast,blunt:!!(f&16),tank:f&32?1:0,dir,kb:ngF(h[7],0,kbM*10,0)/10,stag:ngF(h[8],0,300,0)/100,
+    x:Number.isFinite(px)?px:t.c.x,y:Number.isFinite(py)?py:t.c.y+1,z:Number.isFinite(pz)?pz:t.c.z,up:ngF(h[12],0,upM*10,0)/10}}}
+// an effect another page worked out on an actor it does not own, as numbers this page can take
+const NG_EFF=[['fz',50],['rt',40],['gb',20],['hd',20],['st',40],['dz',40],['sh',40]];// (tenths of a second; the game's own longest: a 3.2 s freeze, 2.5 s dizzy or shriek, 2.3 s rooted)
+function ngEff(src,t,m){const e={t:'eff',i:t.id},other=G.pvp?t.side!==src.side:t.team!==src.team;
+  const kx=ngF(m.kx,-4000,4000,0),kz=ngF(m.kz,-4000,4000,0),up=ngF(m.up,0,2200,0);if(kx||kz){e.kx=kx;e.kz=kz}if(up)e.up=up;
+  if(other){for(const [k,mx] of NG_EFF){const v=ngF(m[k],0,mx,0);if(v)e[k]=v}const bt=ngF(m.bt,0,60,0);if(bt&&Number.isInteger(m.bw)&&WPN[WL[m.bw]]){e.bt=bt;e.bw=m.bw}}
+  for(const k of Object.keys(m))if(!(k in e)&&!['t','i','kx','kz','up','bt','bw',...NG_EFF.map(x=>x[0])].includes(k)&&typeof m[k]==='number'&&Number.isFinite(m[k])&&other)e[k]=ngF(m[k],0,100,0);// (fields other files add, e.g. THANATOS-9's slow, in tenths of a second: up to 10 s)
+  return e}
 const HOSTH={
   hello(L,m){if(m.v!==NET_VER){netSend(L.key,{t:'bye',why:'ver'});return}
     if(NET.ui==='game'&&!actorOfKey(L.key)){netSend(L.key,{t:'bye',why:m.mg?'mig':'ingame'});return}
@@ -379,13 +480,15 @@ const HOSTH={
     p.n=String(m.n||'?').slice(0,14);p.s=HSKINS.includes(m.s)?m.s:'guard';p.z=ZLIST.includes(m.z)?m.z:'rager';p.f=HOF.valid(m.f)?+m.f:0;p.tt=typeof m.tt==='string'?m.tt.slice(0,24):null;p.an=p.f||p.tt?String(m.an||'').slice(0,16):'';p.t=m.tc?1:0;L.name=p.n;netLobbyCast();
     if(m.mg)netMigHello(L,m)},
   ping(L){},
-  pong(L,m){if(m.h&&!(L.srtt&&NET.ui==='game'))L.rtt=lerp(L.rtt||0,Math.max(0,netNow()-m.h),L.rtt?.3:1)},
+  pong(L,m){if(Number.isFinite(m.h)&&m.h>0&&!(L.srtt&&NET.ui==='game'))L.rtt=lerp(L.rtt||0,clamp(netNow()-m.h,0,1e4),L.rtt?.3:1)},
   bye(L){netLinkDown(L,'bye')},
-  h(L,m){const src=actorOfKey(L.key);if(!src||!Array.isArray(m.L))return;for(const h of m.L){const t=byId(h[0]);if(!t||!t.alive||(G.pvp?!foe(src,t)||!PVP.claimOk(src,t,h):t.team!==TZ))continue;const f=h[3];// (대인전: the host checks a claim against the gun: pvp.js)
-    damageActor(t,clamp(+h[1]||0,0,5000),src,{w:WL[h[2]]||'',hs:!!(f&1),knife:!!(f&2),heavy:!!(f&4),he:!!(f&8),blunt:!!(f&16),tank:f&32?1:0,dir:[h[4]/100,h[5]/100,h[6]/100],kb:h[7]/10,stag:h[8]/100,x:h[9]/100,y:h[10]/100,z:h[11]/100,up:h[12]/10})}},
-  claw(L,m){const a=actorOfKey(L.key),t=byId(m.i);if(!a||!t||!a.alive||a.team!==TZ||!t.alive||t.team!==TH)return;clawApply(a,t,!!m.h)},
+  // (v6.72: every claim goes through ngClaim above; 대인전's own per-gun check, pvp.js claimOk, runs inside it)
+  h(L,m){const src=actorOfKey(L.key);if(!src||!Array.isArray(m.L))return;const now=netNow();
+    for(const h of m.L.slice(0,NG.HMAX)){if(!Array.isArray(h))continue;const t=byId(h[0]);if(!t||!t.alive||t===src)continue;const c=ngClaim(src,t,h,now);if(c)damageActor(t,c.dmg,src,c.o)}},
+  claw(L,m){const a=actorOfKey(L.key),t=byId(m.i);if(!a||!t||!a.alive||a.team!==TZ||!t.alive||t.team!==TH)return;const now=netNow();
+    if(G.t<(a.clawLock||0)||!ngSpend(a,4,now)||!ngNear(a,t,CLAW_R[1]+(t.c.r||.4)+2.2)||!ngSee(a,t,NaN,NaN,NaN)){ngRej('claw');return}clawApply(a,t,!!m.h)},
   fall(){},// (fall damage was removed in v6.26; an older client may still send this)
-  eff(L,m){const src=actorOfKey(L.key),t=byId(m.i);if(t&&src)netApplyEff(t,m,src)},
+  eff(L,m){const src=actorOfKey(L.key),t=byId(m.i);if(!t||!src||t===src||!t.alive||!ngNear(src,t,120)){ngRej('eff');return}netApplyEff(t,ngEff(src,t,m),src)},
   buy(L,m){const a=actorOfKey(L.key);const ok=!!(a&&buy(a,m.w));netSend(L.key,{t:ok?'buyok':'buyno',w:m.w})},
   // a skill pressed just before the cooldown ends (the client's view of it lags a little) fires the moment it is ready
   sk(L){const a=actorOfKey(L.key);if(!a||!a.alive||a.team!==TZ)return;if(a.skillCD>0&&a.skillCD<.6)a.skPend=G.t+.7;else useSkill(a)}};
@@ -421,7 +524,7 @@ const CLIH={
   lobby(L,m){if(!m.lob||typeof m.lob!=='object'||!Array.isArray(m.lob.pl))return;const lob=netCleanLob(m.lob);NET.lob=lob;const mp=lob.cfg.map;if(NET.ui!=='game'&&MAPDEFS[mp]&&MAP.id!==mp&&MAP.want!==mp)loadMapUI(mp);if(NET.ui!=='game'){const was=NET.ui;NET.ui='lobby';if(was!=='lobby'||UI.open!=='lobby')UI.mpLobby();else UI.mpRender()}},
   ping(L,m){netToHost({t:'pong',h:m.h})},
   // a refusal ends it; the host leaving (with the succession it picked) starts the hand-over
-  bye(L,m){if(m.why){netFatal(m.why==='full'?T('mpFull'):m.why==='ingame'?T('mpInGame'):m.why==='ver'?T('mpVer'):m.why==='mig'?T('mpMigFail'):T('mpHostGone'));return}
+  bye(L,m){if(m.why){netFatal(m.why==='full'?T('mpFull'):m.why==='ingame'?T('mpInGame'):m.why==='ver'?T('mpVer'):m.why==='mig'?T('mpMigFail'):m.why==='flood'?T('mpFlood'):T('mpHostGone'));return}
     if(netMigOK())netMigStart('bye',m.mg);else netFatal(T('mpHostGone'))},
   // the new host has this page back (a match then waits for the others: mgo)
   mig(L,m){NET.gen=m.g|0;const M=NET.mig;if(!M||M.role!=='cli')return;M.joined=netNow();M.dial=null;M.hn=String(m.n||'').slice(0,14);
@@ -432,6 +535,9 @@ const CLIH={
   migto(L,m){const M=NET.mig;if(!M||M.role!=='cli')return;const k=typeof m.k==='string'?m.k:'';
     if(k===NET.me){netMigPromote();return}
     if(!k||M.gone.has(k)||++M.redir>3){netFatal(T('mpMigFail'));return}
+    // (v6.72: a page sends one on only to a page ahead of itself in the line; pointed further down or to a stranger, this page goes
+    // on in its own order instead)
+    {const iL=M.list.indexOf(L.key),iK=M.list.indexOf(k);if(iL>=0&&(iK<0||iK>iL)){M.gone.add(L.key);L.dead=true;try{L.close()}catch(e){}NET.links.delete(L.key);NET.out.delete(L.key);M.dial=null;NET.hostKey='';netMigNext();return}}
     // the page asked is not taking over: drop that link and go where it points
     L.dead=true;try{L.close()}catch(e){}NET.links.delete(L.key);NET.out.delete(L.key);M.dial=null;NET.hostKey='';
     let i=M.list.indexOf(k);if(i<0){M.list.splice(M.i,0,k);i=M.i}M.i=i;netMigDial(k)},
@@ -551,7 +657,10 @@ function netMigAsk(L,m){if(!m||m.t!=='hello'||!m.mg||NET.kind!=='peerjs')return;
   if(!NET.mig){const H=NET.links.get(NET.hostKey),q=!H||H.dead||!H.ok||netNow()-H.lastRx>(NET.ui==='game'?1500:2500);
     if(!q||!netMigOK()){netSend(L.key,{t:'mignot'});return}netMigStart('ask',null,true);if(!NET.mig)return}
   const M=NET.mig;if(M.role!=='cli')return;
-  if(Array.isArray(m.sk))for(const k of m.sk)if(typeof k==='string'&&k&&k!==NET.me)M.gone.add(k);
+  // (v6.72: the pages the asker found gone count only when it asks from further down the line than this page — then its word can only
+  // make this page or one ahead of it the host, never the asker itself. A page cannot talk the others into making it the host.)
+  const iMe=M.list.indexOf(NET.me),iA=M.list.indexOf(L.key);
+  if(Array.isArray(m.sk)&&iA>iMe)for(const k of m.sk.slice(0,NET_MAXP*2))if(typeof k==='string'&&k&&k!==NET.me&&k!==L.key)M.gone.add(k);
   const first=M.list.find(k=>!M.gone.has(k))||NET.me;
   if(first===NET.me){netMigPromote();HOSTH.hello(L,m);return}
   netSend(L.key,{t:'migto',k:first});if(!M.dial){M.i=Math.max(0,M.list.indexOf(first));netMigNext()}}

@@ -34,7 +34,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     let kind=null;const hs=location.hash||'';
     if(/access_token=|error=/.test(hs)){const q=new URLSearchParams(hs.slice(1));
       if(q.get('error')){this.lastErr=q.get('error_description')||q.get('error')}
-      else{this.setSes({access_token:q.get('access_token'),refresh_token:q.get('refresh_token'),expires_at:+q.get('expires_at')||0,expires_in:q.get('expires_in')});kind=q.get('type')||'oauth'}// (an e-mail link says its type; back from Google / Kakao: none)
+      else{this.setSes({access_token:q.get('access_token'),refresh_token:q.get('refresh_token'),expires_at:+q.get('expires_at')||0,expires_in:q.get('expires_in')});kind=q.get('type')||'oauth';this.signedNow()}// (an e-mail link says its type; back from Google / Kakao: none)
       try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
     else this.ses=this.ls('qz_ses');
     this.loadPrices();this.loadGacha();this.loadProviders();
@@ -63,13 +63,19 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     try{const r=await this.rpc('qz_import_rec',{p_games:L.g|0,p_kills:L.k|0,p_infects:L.inf|0,p_best:L.best|0,p_xp:L.xp|0});me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),rec:me.rec});this.emit()}
     catch(e){if(!/already_imported/.test(e.message))this.ls('qz_recFor',null)}},// not done (offline, or the database not updated yet): try again next time
   // ---- the player's actions ----
-  async signIn(email,pw){const s=await this.req('POST','/auth/v1/token?grant_type=password',{email,password:pw},false);this.setSes(s);await this.loadMe();return this.me},
+  async signIn(email,pw){const s=await this.req('POST','/auth/v1/token?grant_type=password',{email,password:pw},false);this.setSes(s);this.signedNow();await this.loadMe();return this.me},
   async signUp(email,pw,nick){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';
     const s=await this.req('POST','/auth/v1/signup'+q,{email,password:pw,data:{nickname:nick,terms:LEGAL.ver}},false);// (terms: the version of the terms agreed to)
-    if(s&&s.access_token){this.setSes(s);await this.loadMe();return {ok:1}}return {confirm:1}},// e-mail confirmation is on: the link brings the player back signed in
+    if(s&&s.access_token){this.setSes(s);this.signedNow();await this.loadMe();return {ok:1}}return {confirm:1}},// e-mail confirmation is on: the link brings the player back signed in
   // (Google: the account picker every time — a shared computer, a PC방, never signs the next player in as the last one)
   oauthUrl(p){return SB.url.replace(/\/+$/,'')+'/auth/v1/authorize?provider='+encodeURIComponent(p)+(this.here()?'&redirect_to='+encodeURIComponent(this.here()):'')+(p==='google'?'&prompt=select_account':'')},
-  oauth(p){location.assign(this.oauthUrl(p))},
+  // after: what to open again once back signed in (v6.72: 'del' — 회원 탈퇴 asks for a fresh sign-in)
+  oauth(p,after){if(after)this.ls('qz_after',{k:after,at:Date.now()});location.assign(this.oauthUrl(p))},
+  takeAfter(){const a=this.ls('qz_after');if(a)this.ls('qz_after',null);return a&&typeof a.k==='string'&&Date.now()-(+a.at||0)<10*60e3?a.k:''},
+  // v6.72: when this browser last signed in afresh (a password, Google / Kakao, an e-mail link): the server lets an account be deleted
+  // only within 10 minutes of that (qz_account_delete)
+  signedNow(){this.ls('qz_signAt',Date.now())},freshSign(){return Date.now()-(+this.ls('qz_signAt')||0)<9.5*60e3},
+  provider(){const u=this.ses&&this.ses.user,a=u&&u.app_metadata,P=a&&(Array.isArray(a.providers)?a.providers:a.provider?[a.provider]:[])||[];return P.find(x=>x!=='email')||''},
   async recover(email){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';await this.req('POST','/auth/v1/recover'+q,{email},false)},
   async newPassword(pw){await this.call('PUT','/auth/v1/user',{password:pw})},
   // the account has a password (an e-mail sign-up): deleting it asks for that first. Google / Kakao only: none to ask for
@@ -78,7 +84,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   // v6.67: 회원 탈퇴 — an e-mail account proves its password first (a fresh sign-in), then qz_account_delete takes the account and
   // everything on it (schema.sql); this browser then forgets the session and what it kept of the account
   async deleteAccount(pw){const u=this.ses&&this.ses.user,uid=u&&u.id,em=u&&u.email||this.me&&this.me.email;if(!this.ses)throw new Error('not_signed_in');
-    if(pw!=null)this.setSes(await this.req('POST','/auth/v1/token?grant_type=password',{email:em,password:pw},false));
+    if(pw!=null){this.setSes(await this.req('POST','/auth/v1/token?grant_type=password',{email:em,password:pw},false));this.signedNow()}
     await this.rpc('qz_account_delete',{p_confirm:'delete'});
     this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.side=null;this.mis=null;this.fr=null;this.refRec=null;this.ls('qz_me',null);
     if(uid&&this.ls('qz_recFor')===uid)this.ls('qz_recFor',null);const A=this.ls('qz_nickAsk');if(uid&&Array.isArray(A))this.ls('qz_nickAsk',A.filter(x=>x!==uid));
@@ -213,6 +219,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/not_admin/.test(m))return T2('관리자 계정이 아니에요','Not an admin account');
     if(/admin_account/.test(m))return T2('관리자 계정은 탈퇴할 수 없어요. 관리 페이지 운영진에서 먼저 빼 주세요','An admin account cannot be deleted — take it off the staff first');
     if(/confirm_needed/.test(m))return T2('확인 문구가 맞지 않아요','The confirmation does not match');
+    if(/reauth/.test(m))return T2('안전을 위해 다시 로그인한 뒤 10분 안에 탈퇴할 수 있어요','For safety, sign in again — then you have 10 minutes to delete');
     if(/qz_account_delete/.test(m))return T2('탈퇴는 서버 업데이트(schema.sql) 뒤에 할 수 있어요','Deleting needs the server updated (schema.sql)');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
     if(/not_enough_tfrags/.test(m))return T2('초월 조각이 부족해요','Not enough transcendence fragments');

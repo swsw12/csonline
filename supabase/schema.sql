@@ -49,6 +49,8 @@
 --     게스트로 끝낸 사람은 나중에 로그인할 때 게임이 받아 줍니다.
 --   * 보안 1차(v6.71): 근·하·신·년 글자는 판마다의 한도에 더해 하루(한국 시간) gacha_config.ny_day_cap개(기본 60)까지만 쌓입니다(qz_ny_add,
 --     관리자 페이지 게임 설정에서 바꿈). 판 보상 기록(coin_log)의 모드와 방 초대의 맵 · 모드는 영문 · 숫자만 남겨 짧게 잘라 저장합니다.
+--   * 보안 2차(v6.72): 회원 탈퇴는 10분 안에 새로 로그인한 세션만 할 수 있습니다(qz_account_delete, auth.sessions). 초대 보상은 초대한 계정의
+--     profiles.ref_paid로도 세서, 초대받은 계정이 탈퇴해도 ref_cap 자리가 다시 생기지 않고, 정지된 계정에는 초대 보상이 가지 않습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -338,6 +340,11 @@ create table if not exists public.referrals (
   seen     boolean not null default true
 );
 create index if not exists referrals_referrer on public.referrals(referrer);
+-- v6.72: the invite rewards an account has been paid, for good: an invited account deleted later no longer frees a place under ref_cap
+alter table public.profiles add column if not exists ref_paid integer not null default 0;
+update public.profiles p set ref_paid = q.n
+  from (select r.referrer, count(*)::integer as n from public.referrals r where r.rewarded group by r.referrer) q
+  where p.id = q.referrer and p.ref_paid < q.n;
 -- a friend invited into a PeerJS room (its 4-letter code): one row per inviter and friend, a new invite replaces the old; 3 minutes to answer
 create table if not exists public.room_invites (
   from_id uuid not null references auth.users(id) on delete cascade,
@@ -929,7 +936,7 @@ begin
     -- was paid for; new = rewards for them not shown yet)
     'ref', jsonb_build_object('by', (select x.nickname from public.profiles x where x.id = p.ref_by), 'done', p.ref_done,
       'left', greatest(0, coalesce((select c.ref_matches from public.gacha_config c where c.id = 1), 3) - p.matches),
-      'n', (select count(*) from public.referrals f where f.referrer = uid), 'paid', (select count(*) from public.referrals f where f.referrer = uid and f.rewarded),
+      'n', (select count(*) from public.referrals f where f.referrer = uid), 'paid', greatest(p.ref_paid, (select count(*) from public.referrals f where f.referrer = uid and f.rewarded)::integer),
       'new', (select count(*) from public.referrals f where f.referrer = uid and not f.seen)),
     'free_today', coalesce((select c.daily_free from public.gacha_config c where c.id = 1), false) and p.free_day is distinct from today,
     'rec', public.qz_rec(p), 'eps', public.qz_eps(uid), 'firsts', public.qz_firsts_of(uid),
@@ -2797,9 +2804,13 @@ begin
   update public.profiles set ref_done = true, dec_tickets = dec_tickets + greatest(cfg.ref_new_tickets, 0) where id = uid;
   perform 1 from public.profiles where id = p.ref_by for update;
   v_ok := found;
-  n := (select count(*) from public.referrals r where r.referrer = p.ref_by and r.rewarded);
+  -- (v6.72: counted on the inviter's own counter as well, which deleting an invited account does not lower; a suspended inviter is not paid)
+  v_ok := v_ok and not exists (select 1 from public.profiles x where x.id = p.ref_by and x.banned_until is not null and x.banned_until > now());
+  n := greatest(coalesce((select x.ref_paid from public.profiles x where x.id = p.ref_by), 0),
+    (select count(*) from public.referrals r where r.referrer = p.ref_by and r.rewarded)::integer);
   if v_ok and n < cfg.ref_cap then
-    update public.profiles set coins = coins + greatest(cfg.ref_coins, 0), dec_tickets = dec_tickets + greatest(cfg.ref_tickets, 0) where id = p.ref_by;
+    update public.profiles set coins = coins + greatest(cfg.ref_coins, 0), dec_tickets = dec_tickets + greatest(cfg.ref_tickets, 0),
+      ref_paid = greatest(ref_paid, n) + 1 where id = p.ref_by;
     if cfg.ref_coins > 0 then
       insert into public.coin_log (user_id, delta, reason, detail) values (p.ref_by, cfg.ref_coins, 'ref_reward', jsonb_build_object('from', p.nickname));
     end if;
@@ -2824,7 +2835,7 @@ begin
   cfg := (select g from public.gacha_config g where g.id = 1);
   r := jsonb_build_object('code', (select x.fcode from public.profiles x where x.id = uid),
     'n', (select count(*) from public.referrals f where f.referrer = uid),
-    'paid', (select count(*) from public.referrals f where f.referrer = uid and f.rewarded),
+    'paid', greatest((select x.ref_paid from public.profiles x where x.id = uid), (select count(*) from public.referrals f where f.referrer = uid and f.rewarded)::integer),
     'cap', cfg.ref_cap, 'matches', cfg.ref_matches, 'coins', cfg.ref_coins, 'tickets', cfg.ref_tickets,
     'new_coins', cfg.ref_new_coins, 'new_tickets', cfg.ref_new_tickets,
     'list', coalesce((select jsonb_agg(jsonb_build_object('nick', t.nickname, 'at', q.at, 'm', least(t.matches, cfg.ref_matches),
@@ -4191,11 +4202,23 @@ language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   v_nick text;
+  v_sid text;
+  v_fresh boolean := false;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   if coalesce(p_confirm, '') <> 'delete' then raise exception 'confirm_needed'; end if;
   if not exists (select 1 from auth.users u where u.id = uid) then raise exception 'not_signed_in'; end if;
   if exists (select 1 from public.admins a where a.user_id = uid) then raise exception 'admin_account'; end if;
+  -- v6.72: only a sign-in made in the last 10 minutes may delete (the game asks for the password again, or Google / Kakao again), so a
+  -- session carried off from another computer cannot. The session's own start (auth.sessions); where that cannot be read, the
+  -- account's last sign-in.
+  begin
+    v_sid := nullif(auth.jwt() ->> 'session_id', '');
+    v_fresh := exists (select 1 from auth.sessions s where s.id = v_sid::uuid and s.user_id = uid and s.created_at > now() - interval '10 minutes');
+  exception when others then
+    v_fresh := coalesce((select u.last_sign_in_at from auth.users u where u.id = uid) > now() - interval '10 minutes', false);
+  end;
+  if not v_fresh then raise exception 'reauth'; end if;
   v_nick := (select t.nickname from public.profiles t where t.id = uid);
   update public.admin_log set detail = detail - 'old' - 'new' where target = uid and action = 'rename';
   update public.admin_log set detail = detail - 'host_name' where target = uid and action = 'room_close';

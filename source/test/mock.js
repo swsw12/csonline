@@ -12,10 +12,11 @@ window.__mockCalls=[];
 // (the account is made the first time one of them comes in: the provider's name and e-mail in its metadata, a 생존자 + 4 digits nickname)
 const oauthUser=(db,t)=>{const mt=/^oauthr?_(google|kakao)_([a-z0-9]{1,20})$/.exec(String(t||''));if(!mt)return;const id='uo_'+mt[1]+'_'+mt[2],a='oauth_'+mt[1]+'_'+mt[2],r='oauthr_'+mt[1]+'_'+mt[2];
   if(!db.users[id]){const e=mt[2]+'@gmail.com';db.users[id]={email:e,pw:null,meta:Object.assign({name:'홍길동',full_name:'홍길동',email:e},mt[1]==='kakao'?{nickname:'카카오닉'}:{}),prov:mt[1],confirmed:true};newProfile(db,id,autoNick())}
-  if(!db.tok[a])db.tok[a]={uid:id,exp:Date.now()+3600e3};if(!db.tok[r]&&t===r)db.tok[r]={uid:id,refresh:1};save(db)};
+  if(!db.tok[a])db.tok[a]={uid:id,exp:Date.now()+3600e3,born:Date.now()};if(!db.tok[r]&&t===r)db.tok[r]={uid:id,refresh:1,born:Date.now()};save(db)};
 // v6.66: an operator's answer to an inquiry (the admin page's qz_admin_inquiry_reply); done false keeps it open
 window.__mockInqReply=(id,text,done)=>{const db=load(),q=(db.inq||[]).find(x=>x.id===id);if(!q)return false;q.reply=text;q.reply_at=new Date().toISOString();q.seen=false;if(done!==false)q.status='done';save(db);return true};
-const ses=(db,uid)=>{const a='at_'+uuid(),r='rt_'+uuid();db.tok[a]={uid,exp:Date.now()+3600e3};db.tok[r]={uid,refresh:1};const u=db.users[uid];
+// (v6.72: born = when the session was signed into; a refresh keeps it — qz_account_delete wants it within 10 minutes; window.__MOCK_SES_AGE ages every session)
+const ses=(db,uid,born)=>{born=born||Date.now();const a='at_'+uuid(),r='rt_'+uuid();db.tok[a]={uid,exp:Date.now()+3600e3,born};db.tok[r]={uid,refresh:1,born};const u=db.users[uid];
   return {access_token:a,token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,refresh_token:r,user:{id:uid,email:u.email,user_metadata:u.meta,app_metadata:{provider:u.prov||'email',providers:[u.prov||'email']}}}};
 const REC=Q=>Object.assign({g:0,k:0,inf:0,best:0,xp:0,imported:false},Q.rec||{});
 // v6.66: an account that picked no nickname (Google / Kakao) starts as 생존자 + 4 digits (schema.sql qz_auto_nick)
@@ -75,7 +76,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(g==='password'){const e=String(body.email||'').toLowerCase();const id=Object.keys(db.users).find(k=>db.users[k].email===e&&db.users[k].pw===body.password);
       if(!id)return err(400,{code:400,error_code:'invalid_credentials',msg:'Invalid login credentials'});if(!db.users[id].confirmed)return err(400,{code:400,error_code:'email_not_confirmed',msg:'Email not confirmed'});
       const s=ses(db,id);save(db);return res(200,s)}
-    if(g==='refresh_token'){const t=db.tok[body.refresh_token];if(!t||!t.refresh)return err(400,{code:400,error_code:'refresh_token_not_found',msg:'Invalid Refresh Token: Refresh Token Not Found'});delete db.tok[body.refresh_token];const s=ses(db,t.uid);save(db);return res(200,s)}}
+    if(g==='refresh_token'){const t=db.tok[body.refresh_token];if(!t||!t.refresh)return err(400,{code:400,error_code:'refresh_token_not_found',msg:'Invalid Refresh Token: Refresh Token Not Found'});delete db.tok[body.refresh_token];const s=ses(db,t.uid,t.born);save(db);return res(200,s)}}
   if(p==='/auth/v1/user'&&m==='GET'){if(!uid)return err(401,{code:401,msg:'invalid JWT'});const x=db.users[uid];return res(200,{id:uid,email:x.email,user_metadata:x.meta,app_metadata:{provider:x.prov||'email',providers:[x.prov||'email']}})}
   // v6.66: the project's public auth settings (which providers are on): window.__MOCK_PROVIDERS = {google:false,…} switches some off, __MOCK_SETTINGS_DOWN fails it
   if(p==='/auth/v1/settings'&&m==='GET'){if(window.__MOCK_SETTINGS_DOWN)return err(500,{message:'down'});return res(200,{external:Object.assign({email:true,google:true,kakao:true},window.__MOCK_PROVIDERS||{}),disable_signup:false,mailer_autoconfirm:!window.__MOCK_CONFIRM})}
@@ -218,6 +219,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       P.ny=N.map(x=>x-1);if(c==='ny')P.tickets=(P.tickets|0)+2;else P.sTk=(P.sTk|0)+1;save(db);return res(200,{ny:P.ny,tickets:P.tickets|0,season_tickets:P.sTk|0})}
     // v6.67: 회원 탈퇴 (same rules as qz_account_delete): the account and everything on it; window.__mockDeleted = the ids gone
     if(fn==='qz_account_delete'){if((body||{}).p_confirm!=='delete')return pgerr('confirm_needed');if(window.__MOCK_ADMIN)return pgerr('admin_account');
+      if(Date.now()-((tk&&tk.born)||0)+(window.__MOCK_SES_AGE||0)>600e3)return pgerr('reauth');
       delete db.users[uid];delete db.prof[uid];delete db.own[uid];for(const k in db.tok)if(db.tok[k].uid===uid)delete db.tok[k];
       db.inq=(db.inq||[]).filter(q=>q.uid!==uid);db.fr=FRL().filter(f=>f.a!==uid&&f.b!==uid);db.dms=DML().filter(m=>m.from!==uid&&m.to!==uid);db.gifts=GFL().filter(g=>g.to!==uid);
       db.log=db.log.filter(l=>l[0]!==uid);if(db.mis)delete db.mis[uid];if(db.bingo)delete db.bingo[uid];if(db.season)delete db.season[uid];if(db.side)delete db.side[uid];

@@ -534,9 +534,12 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:'',cf:''
       <ul class="adel">${(L?['Coins, fragments, decoders, owned guns and bingo cards','Level, records, achievements, titles, the hall of fame and the rankings','Friends, friend messages, gifts received and invites','Letters and coupons used, your inquiries and their answers']
         :['코인 · 조각 · 해독기 · 보유 무기 · 빙고판','레벨 · 기록 · 업적 · 칭호 · 명예의 전당 · 랭킹','친구 · 친구 메시지 · 받은 선물 · 초대','우편 · 쿠폰 사용 기록 · 내 문의와 답변']).map(x=>`<li>${x}</li>`).join('')}</ul>
       <p class="anote">${L?'Signing up again with the same e-mail starts from nothing. Records of what the operators did to the account stay, no longer tied to anyone.':'같은 이메일로 다시 가입해도 되살릴 수 없어요. 운영자가 계정에 한 조치 기록은 누구 것인지 알 수 없게 바뀐 채 남아요.'}</p>
+      ${!pw&&!ACC.freshSign()?(()=>{const pv=ACC.provider(),pn=pv==='kakao'?(L?'Kakao':'카카오'):pv==='google'||!pv?'Google':pv;// (v6.72: the server deletes only within 10 minutes of a fresh sign-in)
+        return `<p class="anote">${L?`For safety, sign in with ${pn} once more first — you then have 10 minutes to delete the account.`:`안전을 위해 ${pn}(으)로 한 번 더 로그인해야 탈퇴할 수 있어요 (로그인하고 10분 안에).`}</p>
+      <button class="ago" data-aa="reauth">${L?`Sign in again with ${pn}`:`${pn}로 다시 로그인`}</button><button class="alink" data-aa="mode" data-v="me">${L?'Cancel':'취소'}</button>`})():`
       ${pw?`<label>${L?'Your password':'비밀번호 확인'}${inp('pw','password','••••••','current-password')}</label>`:''}
       <label><span>${L?'Type <b>DELETE</b> to confirm':'확인을 위해 <b>탈퇴</b>라고 적어 주세요'}</span><input name="cf" type="text" autocomplete="off" spellcheck="false" value="${esc(f.cf||'')}" maxlength="10"></label>
-      <button class="ago red" data-aa="del"${this.busy?' disabled':''}>${this.busy?'…':(L?'Delete my account':'계정 지우기')}</button><button class="alink" data-aa="mode" data-v="me">${L?'Cancel':'취소'}</button>`}
+      <button class="ago red" data-aa="del"${this.busy?' disabled':''}>${this.busy?'…':(L?'Delete my account':'계정 지우기')}</button><button class="alink" data-aa="mode" data-v="me">${L?'Cancel':'취소'}</button>`}`}
     else body=`<p class="anote">${L?'Not signed in.':'로그인되어 있지 않아요.'}</p><button class="ago" data-aa="mode" data-v="in">${L?'Sign in':'로그인'}</button>`;
     const title={in:L?'Sign in':'로그인',up:L?'Sign up':'회원가입',reset:L?'Reset password':'비밀번호 재설정',newpw:L?'New password':'새 비밀번호',sent:L?'Check your mail':'메일을 확인해 주세요',me:L?'My account':'내 계정',nick:L?'Your nickname':'닉네임 정하기',del:L?'Delete account':'회원 탈퇴',bye:L?'Account deleted':'회원 탈퇴 완료'}[m]||'';
     o.innerHTML=`<div class="awin"><div class="awh"><b>${title}</b><button data-aa="x" aria-label="close">×</button></div>${tabs}<div class="awb">${body}
@@ -548,9 +551,10 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:'',cf:''
     if(a==='del'){this.grab();const f=this.f,word=String(f.cf||'').trim().toUpperCase();
       if(word!=='탈퇴'&&word!=='DELETE'){this.msg=L?'Type DELETE in the box to confirm':'확인 칸에 「탈퇴」라고 적어 주세요';this.ok=false;this.render();return}
       const pw=ACC.hasPw()?String(f.pw||''):null;if(pw!=null&&!pw){this.msg=L?'Enter your password':'비밀번호를 적어 주세요';this.ok=false;this.render();return}
-      this.run(async()=>{await ACC.deleteAccount(pw);this.f={email:'',pw:'',nick:'',cf:'',agree:false};this.mode='bye';
+      this.run(async()=>{try{await ACC.deleteAccount(pw)}catch(e){if(/reauth/.test(e&&e.message||'')&&pw==null)ACC.ls('qz_signAt',0);throw e}this.f={email:'',pw:'',nick:'',cf:'',agree:false};this.mode='bye';
         this.msg=L?'Your account is deleted. Thank you for playing.':'계정을 지웠어요. 그동안 함께해 줘서 고마워요.';AU.play('uiok',{vol:.4})});return}
     if(a==='oauth'){ACC.oauth(v);return}
+    if(a==='reauth'){ACC.oauth(ACC.provider()||'google','del');return}
     if(a==='shop'){this.close();SHOP.open();return}
     if(a==='out'){ACC.signOut().then(()=>{this.close();shopToast(L?'Signed out':'로그아웃했어요')});return}
     if(a==='nick'){this.grab();const from=this.mode;if((this.f.nick||'').trim().length<2){this.msg=L?'Pick a nickname (2–16 characters)':'닉네임을 2~16자로 정해 주세요';this.ok=false;this.render();return}
@@ -659,6 +663,7 @@ function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||AC
   ACC.sub(()=>{if(G.st==='menu'&&UI.open==='menu')UI.buildTitle();if($('shopWin'))SHOP.render();if($('accWin')&&!ACCW.busy)ACCW.render()});
   ACC.init().then(kind=>{const L=LI();
     if(kind==='recovery'){ACCW.open('newpw');return}
+    if(kind&&ACC.signed()&&ACC.takeAfter()==='del'){setTimeout(()=>{if(ACC.signed())ACCW.open('del')},800);return}// (v6.72: back from signing in again to delete the account)
     if(ACC.lastErr){ACCW.open('in');ACCW.msg=ACC.lastErr;ACCW.ok=false;ACCW.render();return}
     if(ACC.signed()&&/^생존자\d{4}$/.test(ACC.me.nickname||'')){const t0=Date.now(),go=()=>{if(!ACC.signed())return;if($('nbWin')||$('accWin')||G.st!=='menu'||UI.open!=='menu'){if(Date.now()-t0<60e3)setTimeout(go,700);return}if(!ACCW.nickAsk()&&kind)shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname)};setTimeout(go,500);return}
     if(ACC.signed()&&kind){shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname);return}
