@@ -57,14 +57,15 @@ const rpick=a=>a[Math.floor(Math.random()*a.length)];
 const _rgbCache={};function rgbOf(c){return _rgbCache[c]||(_rgbCache[c]=hexRGB(c))}
 const dk=(c,a)=>mix(c,'#0c0a10',a==null?.3:a),lt=(c,a)=>mix(c,'#fff4dc',a==null?.25:a);
 // ---------- blood & gore level (v6.64, Options → Gameplay; CFG.gore) ----------
-// 2 원본: everything (dismemberment, bursting heads, pools, splats, torn-open zombie skins)
+// 2 원본: everything (dismemberment, bursting heads, pools, splats, torn-open zombie skins) — v6.73: no longer offered (the game is
+//   locked at 15세 for its public release); the code that draws it stays, unreachable
 // 1 15세 (default): no dismemberment and no bursting heads, a small dark spray on hits, no pools or splats, zombie skins bruised
 //   and filthy instead of torn open (no ribs, spine or guts showing), a toned-down infection screen
 // 0 끄기: as 15세, and no blood at all: a hit throws a little grey dust
-// Everything that draws gore reads GORE.lv; GORE.set repaints what was already built (goreApply, fx.js)
+// Everything that draws gore reads GORE.lv; GORE.set repaints what was already built (goreApply, fx.js). A saved 2 is read as 1.
 const GORE={lv:1,gen:0,
-  init(){const c=LS.get('cfg',null),v=c?c.gore:null;this.lv=v===0||v===1||v===2?v:1},
-  set(v){v=v===0||v===1||v===2?v:1;if(v===this.lv)return;const was=this.lv;this.lv=v;if(typeof goreApply==='function')goreApply(was)},
+  init(){const c=LS.get('cfg',null),v=c?c.gore:null;this.lv=v===0?0:1},
+  set(v){v=v===0?0:1;if(v===this.lv)return;const was=this.lv;this.lv=v;if(typeof goreApply==='function')goreApply(was)},
   // a blood-red paint turns to grime at lv < 2 (dark, greyed, a touch of brown); other colours pass through
   de(c){if(this.lv>=2||!c)return c;const [r,g,b]=rgbOf(c);if(!(r>40&&r>g*1.6&&r>b*1.6))return c;const l=r*.3+g*.59+b*.11;return rgbHex(l*1.12+9,l*1.02+7,l*.94+6)}};
 GORE.init();
