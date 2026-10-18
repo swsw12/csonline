@@ -61,8 +61,8 @@ const INVT={list:[],shown:{},busy:false,off:false,last:0,lastN:0,sent:{},join:nu
       top.insertAdjacentHTML('afterend',`${room?`<div class="frroom">${SVG_INV}<span>${L?`Inviting to room <b>${esc(NET.code)}</b> — tap 「Invite」 on a friend, or send the link`:`지금 방 <b>${esc(NET.code)}</b>로 초대 중 — 친구의 「초대」를 누르거나 링크를 보내요`}</span><button data-fr="rjoin">${L?'Room link':'방 링크 복사'}</button></div>`:''}
         <div class="frref"><div class="frrh">${SVG_GIFT}<b>${L?'Invite friends to the game':'친구 초대 링크'}</b><span>${L?`brought in ${f.n|0} · paid ${f.paid|0}/${g.ref_cap}`:`초대한 친구 ${f.n|0}명 · 보상 ${f.paid|0}/${g.ref_cap}`}</span></div>
           <div class="frrl"><input readonly value="${esc(u)}" aria-label="link"><button data-fr="rcopy">${L?'Copy':'복사'}</button>${sh?`<button data-fr="rshare">${L?'Share':'공유'}</button>`:''}</div>
-          <small>${L?`A friend who signs up with this link gets ${fmtC(g.ref_new_coins)} coins at once and you become friends. After ${g.ref_matches} finished matches they get ${g.ref_new_tickets} 근하신년 decoders and you ${fmtC(g.ref_coins)} coins + ${g.ref_tickets} decoders (up to ${g.ref_cap} friends).`
-            :`이 링크로 가입한 친구는 바로 ${fmtC(g.ref_new_coins)}코인을 받고 나와 친구가 돼요. 친구가 ${g.ref_matches}판을 끝내면 친구는 근하신년 해독기 ${g.ref_new_tickets}개, 나는 ${fmtC(g.ref_coins)}코인 + 해독기 ${g.ref_tickets}개 (최대 ${g.ref_cap}명).`}</small>
+          <small>${L?`A friend who signs up with this link gets ${fmtC(g.ref_new_coins)} coins at once and sends you a friend request. After ${g.ref_matches} finished matches they get ${g.ref_new_tickets} 근하신년 decoders and you ${fmtC(g.ref_coins)} coins + ${g.ref_tickets} decoders (up to ${g.ref_cap} friends).`
+            :`이 링크로 가입한 친구는 바로 ${fmtC(g.ref_new_coins)}코인을 받고 나에게 친구 요청을 보내요. 친구가 ${g.ref_matches}판을 끝내면 친구는 근하신년 해독기 ${g.ref_new_tickets}개, 나는 ${fmtC(g.ref_coins)}코인 + 해독기 ${g.ref_tickets}개 (최대 ${g.ref_cap}명).`}</small>
           ${f.by&&!f.done?`<em class="frmy">${L?`Invited by ${esc(f.by)} — ${f.left|0} more match(es) for your decoders`:`${esc(f.by)}님의 초대로 가입 — 해독기까지 ${f.left|0}판 남음`}</em>`:''}</div>`)}
     if(!room)return;const now=Date.now();
     for(const b of o.querySelectorAll('.frbt [data-fr="chat"]')){const code=b.dataset.v,row=b.closest('.frr');if(!row||row.querySelector('[data-fr="inv"]'))continue;
@@ -76,7 +76,7 @@ const REFL={busy:false,off:false,
     ACC.refSet(c).then(r=>{ACC.ls('qz_ref',null);this.busy=false;this.welcome(r)},e=>{this.busy=false;const m=String(e&&e.message||'')+(e&&e.code||'');
       if(/ref_|not_found|friend_self/.test(m))ACC.ls('qz_ref',null);else this.off=true})},// (the server not updated yet, offline: try again on the next visit)
   welcome(r){const L=LI();INVT.pop('refPop',`<div class="iph">${SVG_GIFT}<b>${L?'Invite applied!':'초대 코드 적용!'}</b></div>
-      <div class="ipr"><span>${L?`You came in on <b>${esc(r.by)}</b>'s invite — you are friends now.`:`<b>${esc(r.by)}</b>님의 초대로 들어왔어요 — 이제 친구예요.`}</span>
+      <div class="ipr"><span>${L?`You came in on <b>${esc(r.by)}</b>'s invite — a friend request went to them.`:`<b>${esc(r.by)}</b>님의 초대로 들어왔어요 — 친구 요청을 보냈어요 (수락하면 친구가 돼요).`}</span>
         <small>${COIN} +${fmtC(r.bonus)} ${L?'coins':'코인'} · ${L?`finish ${r.left} match(es) for ${r.tickets} 근하신년 decoders (and a reward for ${esc(r.by)})`:`${r.left}판을 끝내면 근하신년 해독기 ${r.tickets}개 (${esc(r.by)}님도 보상)`}</small></div>
       <div class="ipb"><button class="ok" data-ip="ok">${L?'OK':'확인'}</button></div>`,(a,o)=>o.remove());AU.play('lvlup',{vol:.6})},
   // after a counted match: settle my invite reward once I have played enough

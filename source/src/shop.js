@@ -573,7 +573,7 @@ const ACCW={mode:'in',msg:'',ok:false,busy:false,f:{email:'',pw:'',nick:'',cf:''
       else if(m==='newpw')this.run(async()=>{await ACC.newPassword(f.pw);this.f.pw='';this.mode='me';this.msg=L?'Password changed':'비밀번호를 바꿨어요';this.ok=true});
       return}},
   // v6.66: an account that never picked a nickname (Google / Kakao start as 생존자 + 4 digits) is asked for one, once on this browser
-  nickAsk(){const me=ACC.signed()&&ACC.me,uid=ACC.ses&&ACC.ses.user&&ACC.ses.user.id;if(!me||!uid||!/^생존자\d{4}$/.test(me.nickname||''))return false;
+  nickAsk(){const me=ACC.signed()&&ACC.me,uid=ACC.ses&&ACC.ses.user&&ACC.ses.user.id;if(!me||!uid||!/^생존자\d{4,8}$/.test(me.nickname||''))return false;// (v6.74: 6 or 8 digits once the 4-digit ones run out)
     const A0=ACC.ls('qz_nickAsk'),A=Array.isArray(A0)?A0:[];if(A.includes(uid))return false;A.push(uid);ACC.ls('qz_nickAsk',A.slice(-20));this.f.nick='';this.open('nick');return true},
   done(hi){const me=ACC.me;this.f.pw='';this.close();if(me){shopToast(hi+me.nickname+' · '+fmtC(me.coins)+(LI()?' coins':' 코인'));AU.play('uiok',{vol:.5})}},
   async run(fn){if(this.busy)return;this.busy=true;this.msg='';this.render();try{await fn()}catch(e){this.msg=ACC.errText(e);this.ok=false}this.busy=false;if($('accWin'))this.render()}};
@@ -607,7 +607,8 @@ function shopMatchStats(){const P=G.player,A=G.actors.filter(a=>!a.scen&&!a.rg),
     stage:typeof SCEN!=='undefined'?(SCEN.best||SCEN.stage||0):0,cleared:typeof SCEN!=='undefined'&&!!SCEN.win,score:Math.round(P.score||0),hs:P.hsKills|0,
     // an episode (v6.20): which one, the difficulty, the clear time, lives lost and the escape bonus (records and first-clear rewards);
     // the match's id (v6.24: the hall of fame's first-clear team, hof.js)
-    ...(typeof EP!=='undefined'&&EP.on&&EP.res?{ep:EP.id,diff:G.diff|0,time:EP.res.time|0,lives:EP.res.lost|0,bonus:!!EP.res.bonus,match:G.mt||''}:{})}}
+    ...(typeof EP!=='undefined'&&EP.on&&EP.res?{ep:EP.id,diff:G.diff|0,time:EP.res.time|0,lives:EP.res.lost|0,bonus:!!EP.res.bonus,match:G.mt||''}:{}),
+    tok:G.mtok||''}}// (v6.74: the match's ticket, shopTicket)
 function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.mode==='range')return;const L=LI();
   const box=document.createElement('div');box.className='coinRes';const put=()=>{const fs=res.querySelector('.finalScore');if(fs)fs.after(box);else res.prepend(box)};
   if(G.coinDone){if(G.coinBox){box.innerHTML=G.coinBox;put();if(G.misBox)misResPut(box,G.misBox)}return}G.coinDone=true;// shown again, never paid twice
@@ -619,6 +620,16 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
       .catch(e=>{G.coinBox=box.innerHTML=`${COIN}<span>${esc(ACC.errText(e))}</span>`})}
   put()}
 
+// ---------- v6.74: the match's ticket ----------
+// As a match starts (signed in, a mode that pays) the server hands out a ticket for it (ACC.matchStart → qz_match_start: the mode, the
+// scenario's chapter and difficulty, the match's id G.mt); the match's claim and its rounds' claims take it back (tok), and the server
+// counts the numbers for the minutes the match ran by it. A database before v6.74 has none (the claims go without one, as before).
+function shopTicket(cfg){G.mtok='';const m=G.mode;if(!ACC.on||!ACC.signed()||!/^(orig|mut|tdm|ffa|bomb|race|scen)$/.test(m||''))return;
+  const key=G.mt,o={mode:m,ep:m==='scen'?(cfg&&cfg.ep|0):0,diff:G.diff|0,mt:G.mt||''};
+  const ask=tries=>ACC.matchStart(o).then(t=>{if(G.mt===key&&G.st!=='menu')G.mtok=t||''})
+    .catch(e=>{if(tries>0&&/too_soon|network|Failed to fetch/i.test(String(e&&e.message||e)))setTimeout(()=>{if(G.mt===key&&G.st!=='menu'&&!G.mtok)ask(tries-1)},2500)});
+  ask(2)}
+
 // ---------- after every round: that round's coins and xp (v6.17) ----------
 // the round's own numbers (kills, infections, damage since it began: a.r0), the side the player ended it on, and whether he was its
 // human or zombie MVP (picked the way the round card picks them, ui.js). The server works the coins out (qz_round_claim).
@@ -626,7 +637,7 @@ function shopRoundStats(win){const P=G.player,r0=P.r0||{},d=(v,b)=>Math.max(0,(v
   const R=A.map(a=>({a,k:d(a.kills,a.r0.k),i:d(a.infects,a.r0.i),dm:d(a.dmgDealt,a.r0.dm)})),hs=r=>r.dm+r.k*400,zs=r=>r.i*1000+r.k*300+r.dm*.2;
   const hm=R.filter(r=>!(r.a.team===TZ&&r.a.host)).sort((p,q)=>hs(q)-hs(p))[0],zm=R.filter(r=>r.a.team===TZ&&r.i>0).sort((p,q)=>zs(q)-zs(p))[0];
   return {mode:G.mode,round:G.round|0,kills:d(P.kills,r0.k),infects:d(P.infects,r0.i),damage:Math.round(d(P.dmgDealt,r0.dm)),won:P.team===win,survived:!!P.survived,
-    mvp:!!((hm&&hm.a===P&&(hm.dm>0||hm.k>0))||(zm&&zm.a===P)),score:Math.round(d(P.score,r0.sc)),hs:d(P.hsKills,r0.hs)}}
+    mvp:!!((hm&&hm.a===P&&(hm.dm>0||hm.k>0))||(zm&&zm.a===P)),score:Math.round(d(P.score,r0.sc)),hs:d(P.hsKills,r0.hs),tok:G.mtok||''}}
 // a line on the round card (or a note when the card has gone): counting… → +coins · +XP
 function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||ACC.noRound||G.mode==='range'||G.mode==='scen'||!P.r0)return;
   const n=G.round|0;if(G.roundPaid===n)return;G.roundPaid=n;const L=LI(),st=shopRoundStats(win);
@@ -656,7 +667,9 @@ function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||AC
     return r};
   const bi=Main.buyItem;Main.buyItem=function(id){const P=G.player;if(shopLocked(P,id)){UI.act('buylk',id);return}return bi.call(this,id)};
   const sr=UI.showResults;UI.showResults=function(){const r=sr.apply(this,arguments);try{shopReward()}catch(e){console.error(e)}return r};
-  const sm=startMatch;startMatch=function(cfg){G.coinDone=false;G.coinBox=null;G.misBox=null;G.roundPaid=0;return sm(cfg)};
+  const sm=startMatch;startMatch=function(cfg){G.coinDone=false;G.coinBox=null;G.misBox=null;G.roundPaid=0;G.mtok='';const r=sm(cfg);
+    // (v6.74: once every module has set the match up — the match id G.mt among it — its ticket is asked for)
+    Promise.resolve().then(()=>{try{shopTicket(cfg)}catch(e){console.error(e)}});return r};
   const er=endRound;endRound=function(win){const s0=G.st,r=er.apply(this,arguments);try{if(s0!==G.st&&G.st==='end')shopRoundReward(win)}catch(e){console.error(e)}return r};
   // the signed-in nickname is the name other players see
   const mn=myName;myName=function(){return ACC.signed()&&ACC.me.nickname||mn()};
@@ -665,7 +678,7 @@ function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||AC
     if(kind==='recovery'){ACCW.open('newpw');return}
     if(kind&&ACC.signed()&&ACC.takeAfter()==='del'){setTimeout(()=>{if(ACC.signed())ACCW.open('del')},800);return}// (v6.72: back from signing in again to delete the account)
     if(ACC.lastErr){ACCW.open('in');ACCW.msg=ACC.lastErr;ACCW.ok=false;ACCW.render();return}
-    if(ACC.signed()&&/^생존자\d{4}$/.test(ACC.me.nickname||'')){const t0=Date.now(),go=()=>{if(!ACC.signed())return;if($('nbWin')||$('accWin')||G.st!=='menu'||UI.open!=='menu'){if(Date.now()-t0<60e3)setTimeout(go,700);return}if(!ACCW.nickAsk()&&kind)shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname)};setTimeout(go,500);return}
+    if(ACC.signed()&&/^생존자\d{4,8}$/.test(ACC.me.nickname||'')){const t0=Date.now(),go=()=>{if(!ACC.signed())return;if($('nbWin')||$('accWin')||G.st!=='menu'||UI.open!=='menu'){if(Date.now()-t0<60e3)setTimeout(go,700);return}if(!ACCW.nickAsk()&&kind)shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname)};setTimeout(go,500);return}
     if(ACC.signed()&&kind){shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname);return}
     // first visit: offer to sign in once the lobby is on screen (the boot can still be painting characters)
     let seen=null;try{seen=LS.get('accSeen',null)}catch(e){}

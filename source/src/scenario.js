@@ -205,7 +205,8 @@ SCEN.leapTo=function(a,x,y,z,over){const c=a.c,G0=GRAV;const apex=Math.max(c.y,y
   const T=vy/G0+Math.sqrt(2*Math.max(.1,apex-y)/G0);a.leapV={x:(x-c.x)/T,z:(z-c.z)/T,t:0};c.vy=vy;c.onGround=false;c.jumped=true;a.yaw=Math.atan2(-(x-c.x),-(z-c.z))};
 SCEN.leapStep=function(a,dt){const L=a.leapV;if(!L)return false;L.t+=dt;if((a.c.onGround&&L.t>.15)||L.t>3){a.leapV=null;a.kvx*=.2;a.kvz*=.2;return false}a.kvx=L.x;a.kvz=L.z;a.mvx=a.mvz=0;a.cmd.f=a.cmd.s=0;a.cmd.jump=false;return true};
 // knockback: local bodies directly; a remote player gets it through an event its own page applies
-SCEN.pushHuman=function(h,vx,vy,vz){if(h.net&&NET.host&&!h.isPlayer){netEv('scp',{i:h.id,v:[r2(vx),r2(vy),r2(vz)]});return}h.kvx+=vx;h.kvz+=vz;h.c.vy=Math.max(h.c.vy,vy);h.c.onGround=false;h.c.jumped=true};
+// (v6.74: a push the host gives a remote player counts toward how far the host lets it move, net.js ngMove)
+SCEN.pushHuman=function(h,vx,vy,vz){if(h.net&&NET.host&&!h.isPlayer){ngShove(h,Math.hypot(vx,vz),vy);netEv('scp',{i:h.id,v:[r2(vx),r2(vy),r2(vz)]});return}h.kvx+=vx;h.kvz+=vz;h.c.vy=Math.max(h.c.vy,vy);h.c.onGround=false;h.c.jumped=true};
 // ---------- rewards: three supply boxes, take one ----------
 SCEN.REW={ammo:{n:['탄약 가득','Full ammo'],d:['모든 무기 탄약 최대 + 수류탄','Every gun fully loaded + grenades'],ic:'▤'},heal:{n:['체력 회복','Heal'],d:['체력 100 + 방탄 50','100 HP and 50 armour'],ic:'✚'},
   armor:{n:['방탄복','Kevlar'],d:['방탄 100','100 armour'],ic:'◆'},weapon:{n:['랜덤 무기','Random gun'],d:['주무기 하나를 받음 (탄약 가득)','A random primary, fully loaded'],ic:'✦'}};

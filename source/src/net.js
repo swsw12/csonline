@@ -288,6 +288,8 @@ function netOnState(L,m){if(m.t)return;if(!(m.k>L.lastK))return;L.lastK=m.k;cons
   // (v6.72: a state with anything but plain numbers where they belong is dropped whole; positions within 2 km, speeds 60 m/s)
   const s=m.s;if(Array.isArray(s)&&s.length>=13){for(let i=0;i<13;i++)if(typeof s[i]!=='number'||!Number.isFinite(s[i]))return;
     const r={x:clamp(s[0],-2e5,2e5)/100,y:clamp(s[1],-2e5,2e5)/100,z:clamp(s[2],-2e5,2e5)/100,vx:clamp(s[3],-6e3,6e3)/100,vz:clamp(s[4],-6e3,6e3)/100,yaw:s[5]/1000,pitch:clamp(s[6],-1600,1600)/1000,F:s[7]|0,cur:s[8]|0};a.nraw=r;
+    // (v6.74: a move faster than any player can make is taken only as far as its budget goes, ngMove)
+    if(a.alive)ngMove(a,r,now);
     netSample(a,m.ts,r.x,r.y,r.z,r.vx,r.vz,r.yaw,r.pitch,r.F,r.cur);a.frozen=clamp(s[9],0,100)/10;a.rootT=clamp(s[10],0,100)/10;a.nyFree=s[11]|0;a.zpick=ZLIST[s[12]]||a.zpick}
   // its effects go on to everyone: at most 48 a state, each a short list of numbers and short words (a grenade thrown is noted: ngClaim)
   let nf=0;for(const f of netFxList(L,m)){if(!Array.isArray(f)||f[1]!==a.id||f.length>24||++nf>48)continue;
@@ -374,7 +376,7 @@ function netPost(){for(const a of G.actors){const e0=a._ef;if(!e0||!a.pup||!a.al
     for(const [f,k] of EFF_T){if((a[f]||0)>e0[f]+.05){e[k]=r1(a[f]);any=true}}
     if(NET.cli&&(a.burnT||0)>e0.burnT+.05&&a.burnSrc===G.player){e.bt=r1(a.burnT);e.bw=WI[a.burnW]??-1;any=true}
     a.kvx=a.kvz=0;a.c.vy=0;if(!any)continue;
-    if(NET.host){if(a.net&&NET.links.has(a.net))netSend(a.net,e)}else netToHost(e)}}
+    if(NET.host){if(a.net&&NET.links.has(a.net)){ngShove(a,Math.hypot(e.kx||0,e.kz||0)/100,(e.up||0)/100);netSend(a.net,e)}}else netToHost(e)}}
 function netApplyEff(a,e,src){if(!a||!a.alive)return;
   if(e.fz){a.frozen=Math.max(a.frozen,e.fz/10);a.c.vx=a.c.vz=0;a.mvx=a.mvz=a.kvx=a.kvz=0}
   if(e.rt){a.rootT=Math.max(a.rootT||0,e.rt/10);a.c.vx=a.c.vz=0;a.mvx=a.mvz=a.kvx=a.kvz=0}
@@ -447,6 +449,29 @@ function ngProf(w){let p=NG.P[w];if(p)return p;const W=WPN[w];if(!W)return null;
   return p}
 // one budget a player: a claim costs 1 / per seconds of it, 1.5 s at a time
 function ngSpend(a,per,now){const b=a.ngB||(a.ngB={d:0,t:now});b.d=Math.max(0,b.d-(now-b.t)/1000);b.t=now;const c=1/Math.max(per,.5);if(b.d+c>NG.CAP)return false;b.d+=c;return true}
+// ---------- v6.74: how fast a remote player may move, as the host takes its states ----------
+// A budget that fills at R m/s across the ground up to C m (room for a burst: a knock-back, a charge, a few late packets) and at RU m/s
+// upward up to CU m; a shove the host gave that player adds to it (ngShove). The fastest any player went in bot matches of every mode was
+// about 7.5 m/s held (a chain of bunny hops, a berserk rager at 8.2), 8 m in half a second with a knock-back, 5.5 m up within 4 s.
+// A state past the budget is taken only as far as the budget goes (the others see that player catch up; its hits are checked from
+// there), counted in NG.rej mv / mvu. Falling is never held back. When the host itself puts the player somewhere (placeAt: a respawn,
+// a new round or zone) the budget starts again there, and for FREE ms a state from before — still where the player was — is held
+// at the new place instead. Nothing is closed or kicked for it.
+const NG_MV={R:9,C:16,RU:6,CU:6,FREE:3000,KX:40};
+function ngMove(a,r,now){let M=a.ngMv;
+  if(!M)M=a.ngMv={x:a.c.x,y:a.c.y,z:a.c.z,t:now,b:NG_MV.C,u:NG_MV.CU,g:0};
+  const dt=Math.max(0,(now-M.t)/1000);M.t=now;
+  if(M.b<NG_MV.C)M.b=Math.min(NG_MV.C,M.b+NG_MV.R*dt);if(M.u<NG_MV.CU)M.u=Math.min(NG_MV.CU,M.u+NG_MV.RU*dt);
+  // (a body that fell under the map is put back at 0, 2, 5 by its own page: game.js actorPhysics)
+  if(M.y<-12&&Math.hypot(r.x,r.z-5)<4&&r.y<8){M.x=r.x;M.y=r.y;M.z=r.z;M.b=NG_MV.C;M.u=NG_MV.CU;return}
+  const dx=r.x-M.x,dz=r.z-M.z,d=Math.hypot(dx,dz),du=r.y-M.y;
+  if(now<M.g&&(d>M.b||du>M.u)){r.x=M.x;r.y=M.y;r.z=M.z;return}
+  if(d>M.b){const f=M.b/d;r.x=M.x+dx*f;r.z=M.z+dz*f;M.b=0;ngRej('mv')}else M.b-=d;
+  if(du>M.u){r.y=M.y+M.u;M.u=0;ngRej('mvu')}else if(du>0)M.u-=du;
+  M.x=r.x;M.y=r.y;M.z=r.z}
+function ngShove(a,kv,up){const M=a.ngMv;if(!M)return;if(kv>0)M.b=Math.min(M.b+Math.min(kv,NG_MV.KX),NG_MV.C+NG_MV.KX);if(up>0)M.u=Math.min(M.u+Math.min(up,15)*.6,NG_MV.CU+9)}
+function ngPlaced(a){const now=netNow();a.ngMv={x:a.c.x,y:a.c.y,z:a.c.z,t:now,b:NG_MV.C,u:NG_MV.CU,g:now+NG_MV.FREE}}
+{const pa=placeAt;placeAt=function(a){const r=pa.apply(this,arguments);if(NET.host&&a&&a.net)ngPlaced(a);return r}}
 const ngF=(v,lo,hi,d)=>{v=+v;return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):d};
 // a claim h = [target id, damage, weapon index, flags, dir x, y, z (x100), knockback (x10), stagger (x100), hit x, y, z (x100), lift (x10)]
 function ngClaim(src,t,h,now){

@@ -51,6 +51,14 @@
 --     관리자 페이지 게임 설정에서 바꿈). 판 보상 기록(coin_log)의 모드와 방 초대의 맵 · 모드는 영문 · 숫자만 남겨 짧게 잘라 저장합니다.
 --   * 보안 2차(v6.72): 회원 탈퇴는 10분 안에 새로 로그인한 세션만 할 수 있습니다(qz_account_delete, auth.sessions). 초대 보상은 초대한 계정의
 --     profiles.ref_paid로도 세서, 초대받은 계정이 탈퇴해도 ref_cap 자리가 다시 생기지 않고, 정지된 계정에는 초대 보상이 가지 않습니다.
+--   * 보안 3차(v6.74): 판을 시작하면 서버가 판 표(match_tokens, qz_match_start)를 내주고, 판 · 라운드 보상(qz_claim · qz_round_claim)은 그 표로
+--     잰 판 안의 시간만큼만 랭킹 숫자 · 업적 카운터를 인정합니다. 시나리오 클리어는 그 판의 표가 있어야 하고, 걸린 시간이 판 시간보다 길거나
+--     챕터 × 난이도마다 정한 최소 시간(qz_ep_min)보다 짧으면 인정하지 않습니다. 하루 랭킹 상한은 gacha_config.rank_day_*(관리자 페이지 게임 설정),
+--     업적 카운터는 판 시간에 비례한 한도와 하루 한도(profiles.cap_ach). 닉네임은 대소문자 구분 없이 한 명만 씁니다. 초대 링크는 친구 요청만 보내고
+--     (받은 쪽이 수락), 차단(blocks: qz_block · qz_unblock · qz_blocks)한 사이에는 친구 요청 · 메시지 · 초대 · 선물이 막힙니다. 탈퇴한 계정의 이메일과
+--     구글 · 카카오 계정 번호는 되돌릴 수 없는 해시로 30일(정지 중에 탈퇴했으면 정지가 끝날 때까지) deleted_ids에 남아, 같은 사람이 다시 가입하면
+--     정지가 이어지고 가입 보상(코인 · 기초 훈련 · 초대 · 새 계정 우편)이 없습니다. 명예의 전당 기록은 관리자 페이지 「의심 유저 → 명예의 전당」에서
+--     주인이 지울 수 있습니다(qz_admin_hof_del).
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -330,6 +338,10 @@ alter table public.gacha_config add column if not exists ref_cap         integer
 alter table public.gacha_config add column if not exists ref_days        integer not null default 7;     -- how new an account must be to take a link
 -- v6.71: the 근·하·신·년 letters one account may keep in a Korean day, however many matches (qz_ny_add)
 alter table public.gacha_config add column if not exists ny_day_cap      integer not null default 60;
+-- v6.74: what one account's matches may put on the ranking in a Korean day: kills, infections, xp (qz_claim; xp from the rounds too)
+alter table public.gacha_config add column if not exists rank_day_kills  integer not null default 2000 check (rank_day_kills between 0 and 100000);
+alter table public.gacha_config add column if not exists rank_day_inf    integer not null default 400 check (rank_day_inf between 0 and 100000);
+alter table public.gacha_config add column if not exists rank_day_xp     integer not null default 100000 check (rank_day_xp between 0 and 10000000);
 -- who brought whom (one row per new player); rewarded = the inviter was paid (false once over ref_cap); seen = the inviter saw the reward
 create table if not exists public.referrals (
   referee  uuid primary key references auth.users(id) on delete cascade,
@@ -483,6 +495,21 @@ create table if not exists public.ep_first_members (
   foreign key (ep, diff) references public.ep_firsts (ep, diff) on delete cascade
 );
 create index if not exists ep_first_members_user on public.ep_first_members (user_id);
+-- v6.74: the ticket the server hands a page as a match starts there (qz_match_start); the match's claim (qz_claim, once) and its rounds'
+-- (qz_round_claim) bring it back. started_at = when the server saw the match start: the claim counts the minutes from it (not from the
+-- last claim), and a scenario clear can take no longer than that. mode / ep / diff are fixed at the start; mt = the match's own id.
+-- A new ticket ends the account's older ones not used yet; used ones go after a day.
+create table if not exists public.match_tokens (
+  token      text primary key,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  mode       text not null,
+  ep         integer not null default 0,
+  diff       integer not null default 1,
+  mt         text not null default '',
+  started_at timestamptz not null default now(),
+  used_at    timestamptz
+);
+create index if not exists match_tokens_user on public.match_tokens (user_id, started_at desc);
 -- the clears from before v6.24: the earliest first clear of each episode × difficulty, and everyone whose own first clear of it came
 -- within 3 minutes of that one (one match: every page claims as its results show). Only rows not there yet, so re-running is safe.
 insert into public.ep_firsts (ep, diff, match_id, at)
@@ -509,6 +536,10 @@ alter table public.profiles add column if not exists tut_done     timestamptz;
 -- v6.71: the letters kept today (ny_day = that Korean day, ny_day_n = how many), against gacha_config.ny_day_cap
 alter table public.profiles add column if not exists ny_day       date;
 alter table public.profiles add column if not exists ny_day_n     integer not null default 0;
+-- v6.74: cap_ach = the achievement counters taken on cap_day (Korean time), against the day's limits (qz_claim / qz_round_claim);
+-- reborn = made by someone whose deleted account (its e-mail, or its Google / Kakao account) is still remembered (deleted_ids): no sign-up rewards
+alter table public.profiles add column if not exists cap_ach      jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists reborn       boolean not null default false;
 create table if not exists public.admins (
   user_id  uuid primary key references auth.users(id) on delete cascade,
   role     text not null default 'owner' check (role in ('owner', 'staff')),
@@ -589,6 +620,8 @@ alter table public.ep_firsts        enable row level security;   -- (no policies
 alter table public.ep_first_members enable row level security;
 alter table public.referrals    enable row level security;   -- (no policies: read through qz_me / qz_ref_info only)
 alter table public.room_invites enable row level security;   -- (no policies: qz_invite / qz_invites only)
+alter table public.match_tokens enable row level security;   -- (no policies: qz_match_start / qz_claim / qz_round_claim only, v6.74)
+revoke all on table public.match_tokens from public, anon, authenticated;
 revoke all on table public.ep_firsts from anon, authenticated;
 revoke all on table public.ep_first_members from anon, authenticated;
 revoke all on table public.referrals from anon, authenticated;
@@ -721,40 +754,114 @@ language sql immutable set search_path = '' as $$
   select case when char_length(n) >= 2 then n else '생존자' end
   from (select left(btrim(regexp_replace(regexp_replace(coalesce(t, ''), '[[:cntrl:]]', '', 'g'), '\s+', ' ', 'g')), 16) as n) s
 $$;
--- a new player: profile + the welcome coins (once)
-create or replace function public.qz_new_profile(uid uuid, nick text) returns void
+-- a new player: profile + the welcome coins (once). v6.74: p_welcome false = no welcome coins (someone back after deleting an account);
+-- a nickname another player has (any case) becomes 생존자 + digits — the game asks for one then
+drop function if exists public.qz_new_profile(uuid, text);
+create or replace function public.qz_new_profile(uid uuid, nick text, p_welcome boolean default true) returns void
 language plpgsql security definer set search_path = '' as $$
+declare
+  n text := public.qz_clean_nick(nick);
+  i integer := 0;
+  v_new boolean := false;
 begin
-  insert into public.profiles (id, nickname, coins, fcode) values (uid, public.qz_clean_nick(nick), 3000, public.qz_fcode_new()) on conflict (id) do nothing;
-  if found then
+  if exists (select 1 from public.profiles t where t.id = uid) then return; end if;
+  if n = '생존자' or exists (select 1 from public.profiles t where lower(t.nickname) = lower(n)) then n := public.qz_auto_nick(); end if;
+  loop
+    begin
+      insert into public.profiles (id, nickname, coins, fcode) values (uid, n, case when p_welcome then 3000 else 0 end, public.qz_fcode_new()) on conflict (id) do nothing;
+      v_new := found;
+      exit;
+    exception when unique_violation then   -- (the same nickname or friend code taken at that very moment: another try)
+      i := i + 1;
+      if i >= 4 then raise; end if;
+      n := public.qz_auto_nick();
+    end;
+  end loop;
+  if v_new and p_welcome then
     insert into public.coin_log (user_id, delta, reason) values (uid, 3000, 'welcome');
   end if;
 end $$;
--- v6.66: a nickname for an account that did not choose one: 생존자 + 4 digits (one nobody has, when 8 tries find one)
+-- v6.66: a nickname for an account that did not choose one: 생존자 + 4 digits, one nobody has (any case). v6.74: after 8 tries 6 digits,
+-- then 8 — nicknames are one player's each now, so it always finds one
 create or replace function public.qz_auto_nick() returns text
 language plpgsql volatile security definer set search_path = '' as $$
 declare
   n text;
   i integer := 0;
+  d integer;
 begin
   loop
-    n := '생존자' || lpad(floor(random() * 10000)::integer::text, 4, '0');
+    d := case when i < 8 then 4 when i < 16 then 6 else 8 end;
+    n := '생존자' || lpad(floor(random() * power(10, d))::bigint::text, d, '0');
     i := i + 1;
-    exit when i >= 8 or not exists (select 1 from public.profiles t where t.nickname = n);
+    exit when i >= 30 or not exists (select 1 from public.profiles t where lower(t.nickname) = lower(n));
   end loop;
   return n;
 end $$;
+-- v6.74: what a deleted account leaves behind (qz_account_delete): its e-mail and its Google / Kakao accounts, each only as a hash that cannot
+-- be turned back (sha-256 with a secret of this database, qz_secret), kept 30 days or, when it was suspended, until the suspension ends.
+-- A sign-up that matches one (qz_on_signup) gets no sign-up rewards (welcome coins, 기초 훈련, invite link, mail for new accounts) and the
+-- suspension goes on. Nobody reads either table; the functions below only.
+create table if not exists public.qz_secret (
+  id     integer primary key default 1 check (id = 1),
+  pepper text not null
+);
+alter table public.qz_secret enable row level security;
+revoke all on table public.qz_secret from public, anon, authenticated;
+insert into public.qz_secret (id, pepper) values (1, replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')) on conflict (id) do nothing;
+create table if not exists public.deleted_ids (
+  h            text primary key,
+  keep_until   timestamptz not null,
+  banned_until timestamptz,
+  ban_reason   text,
+  at           timestamptz not null default now()
+);
+alter table public.deleted_ids enable row level security;
+revoke all on table public.deleted_ids from public, anon, authenticated;
+-- the hashes of one sign-in: its e-mail ('e:' + lower case) and, for Google / Kakao, the provider's own account number ('p:' provider ':' id)
+create or replace function public.qz_idhs(p_email text, p_prov text, p_pid text) returns text[]
+language sql stable security definer set search_path = '' as $$
+  select coalesce(array_agg(distinct encode(sha256(convert_to(s.pepper || ':' || x.v, 'UTF8')), 'hex')), '{}'::text[])
+  from public.qz_secret s cross join (values
+      (case when coalesce(btrim(p_email), '') <> '' then 'e:' || lower(btrim(p_email)) end),
+      (case when coalesce(p_prov, 'email') <> 'email' and coalesce(btrim(p_pid), '') <> '' then 'p:' || p_prov || ':' || btrim(p_pid) end)) as x(v)
+  where s.id = 1 and x.v is not null
+$$;
 -- every sign-up (email or Google / Kakao) gets a profile. v6.66: the nickname is the one the game's own sign-up form sent (an e-mail
 -- account) and nothing else: a Google / Kakao account starts as 생존자 + 4 digits (the game asks for a nickname once), never with the
 -- name or the e-mail address the provider gave (those would show to every player)
+-- v6.74: someone back with the e-mail or the Google / Kakao account of a deleted account still remembered (deleted_ids) starts with no
+-- sign-up rewards (reborn), and a suspension that account left under goes on (noted in the admin log). This part never stops a sign-up.
 create or replace function public.qz_on_signup() returns trigger
 language plpgsql security definer set search_path = '' as $$
-declare v_nick text;
+declare
+  v_nick text;
+  v_prov text := coalesce(new.raw_app_meta_data ->> 'provider', 'email');
+  v_hs text[];
+  v_re boolean := false;
+  v_ban timestamptz;
+  v_rsn text;
 begin
-  if coalesce(new.raw_app_meta_data ->> 'provider', 'email') = 'email' then v_nick := new.raw_user_meta_data ->> 'nickname'; end if;
+  if v_prov = 'email' then v_nick := new.raw_user_meta_data ->> 'nickname'; end if;
   v_nick := public.qz_clean_nick(v_nick);
   if v_nick = '생존자' then v_nick := public.qz_auto_nick(); end if;
-  perform public.qz_new_profile(new.id, v_nick);
+  begin
+    v_hs := public.qz_idhs(new.email, v_prov, coalesce(nullif(new.raw_user_meta_data ->> 'provider_id', ''), new.raw_user_meta_data ->> 'sub'));
+    v_re := exists (select 1 from public.deleted_ids d where d.h = any(v_hs) and d.keep_until > now());
+    v_ban := (select max(d.banned_until) from public.deleted_ids d where d.h = any(v_hs) and d.keep_until > now() and d.banned_until > now());
+    v_rsn := (select d.ban_reason from public.deleted_ids d where d.h = any(v_hs) and d.banned_until = v_ban limit 1);
+  exception when others then
+    v_re := false;
+    v_ban := null;
+  end;
+  perform public.qz_new_profile(new.id, v_nick, not v_re);
+  if v_re then
+    update public.profiles set reborn = true, tut_done = coalesce(tut_done, now()) where id = new.id;
+  end if;
+  if v_ban is not null then
+    update public.profiles set banned_until = v_ban, ban_reason = v_rsn where id = new.id;
+    insert into public.admin_log (admin_id, action, target, detail, reason) values (null, 'ban_carry', new.id, jsonb_build_object('until', v_ban), v_rsn);
+  end if;
   return new;
 end $$;
 drop trigger if exists qz_on_signup on auth.users;
@@ -952,16 +1059,36 @@ begin
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
 
+-- v6.74: a nickname is one player's (any case): another's is refused (nick_taken), and so is one under 2 characters (nick_short)
 create or replace function public.qz_set_nickname(p_nick text) returns text
 language plpgsql security definer set search_path = '' as $$
-declare r text;
+declare
+  uid uuid := auth.uid();
+  n text := public.qz_clean_nick(left(coalesce(p_nick, ''), 64));
+  r text;
 begin
-  if auth.uid() is null then raise exception 'not_signed_in'; end if;
-  perform public.qz_guard(auth.uid());
-  update public.profiles set nickname = public.qz_clean_nick(p_nick) where id = auth.uid();
-  if not found then raise exception 'no_profile'; end if;
-  r := (select t.nickname from public.profiles t where t.id = auth.uid());
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  if not exists (select 1 from public.profiles t where t.id = uid) then raise exception 'no_profile'; end if;
+  if char_length(btrim(regexp_replace(left(coalesce(p_nick, ''), 64), '[[:cntrl:]]', '', 'g'))) < 2 then raise exception 'nick_short'; end if;
+  if exists (select 1 from public.profiles t where lower(t.nickname) = lower(n) and t.id <> uid) then raise exception 'nick_taken'; end if;
+  begin
+    update public.profiles set nickname = n where id = uid;
+  exception when unique_violation then
+    raise exception 'nick_taken';
+  end;
+  r := (select t.nickname from public.profiles t where t.id = uid);
   return r;
+end $$;
+-- v6.74: is this nickname free (as it would be cleaned: nick)? The sign-up form asks first; anyone may (ok false: why nick_short, else taken)
+create or replace function public.qz_nick_free(p_nick text) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare n text := public.qz_clean_nick(left(coalesce(p_nick, ''), 64));
+begin
+  if char_length(btrim(regexp_replace(left(coalesce(p_nick, ''), 64), '[[:cntrl:]]', '', 'g'))) < 2 then
+    return jsonb_build_object('ok', false, 'why', 'nick_short', 'nick', n);
+  end if;
+  return jsonb_build_object('ok', not exists (select 1 from public.profiles t where lower(t.nickname) = lower(n) and t.id is distinct from auth.uid()), 'nick', n);
 end $$;
 
 -- buy a gun with coins (checked and charged here, never in the browser)
@@ -990,6 +1117,48 @@ begin
   return jsonb_build_object('coins', c, 'gun', p_gun);
 end $$;
 
+-- ---------- v6.74: the match ticket ----------
+-- a match starts on this page: its ticket (match_tokens). p_mode = one of the modes that pay; p_ep / p_diff = the chapter and the
+-- difficulty (the scenario); p_match = the match's own id (the same on every page of it). Older tickets not used yet end here; one every 2 s
+create or replace function public.qz_match_start(p_mode text, p_ep integer default 0, p_diff integer default 1, p_match text default '') returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_mode text := left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12);
+  v_tok text := replace(gen_random_uuid()::text, '-', '');
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  if v_mode not in ('orig', 'mut', 'tdm', 'ffa', 'bomb', 'race', 'scen') then raise exception 'bad_mode'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  if exists (select 1 from public.match_tokens t where t.user_id = uid and t.started_at > now() - interval '2 seconds') then raise exception 'too_soon'; end if;
+  delete from public.match_tokens t where t.user_id = uid and (t.used_at is null or t.used_at < now() - interval '1 day');
+  insert into public.match_tokens (token, user_id, mode, ep, diff, mt) values (v_tok, uid, v_mode,
+    case when v_mode = 'scen' then least(greatest(coalesce(p_ep, 0), 0), 5) else 0 end, least(greatest(coalesce(p_diff, 1), 0), 3),
+    left(regexp_replace(left(coalesce(p_match, ''), 64), '[^A-Za-z0-9]', '', 'g'), 24));
+  return jsonb_build_object('token', v_tok);
+end $$;
+-- the shortest clear of each chapter × difficulty (easy, normal, hard, expert) the server counts, in seconds: about 0.7 of the fastest a
+-- team of four bots cleared it that could not be hurt and hit three times as hard (v6.74: 3:16 – 6:00 a chapter, 3:53 – 8:29 on expert),
+-- so no real team is faster (bots that could be hurt took twice as long and more)
+create or replace function public.qz_ep_min(p_ep integer, p_diff integer) returns integer
+language sql immutable set search_path = '' as $$
+  select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350]]::integer[])[p_ep][p_diff + 1], 240)
+$$;
+-- v6.74: the most each achievement counter may take in a Korean day (qz_claim, qz_round_claim); the rest of a match's numbers is dropped
+create or replace function public.qz_ach_day() returns jsonb
+language sql immutable set search_path = '' as $$
+  select '{"hs": 1000, "dmg": 2000000, "wins": 40, "mvp": 40, "pk": 1500, "pw": 40, "rw": 15, "kn": 300, "cu": 100, "mk": 1000, "cr": 40, "bm": 80, "surv": 200, "zw": 200}'::jsonb
+$$;
+-- what a match or a round may add: each of add's numbers cut to what is left of its day's limit (lim) after today's so far (used)
+create or replace function public.qz_ach_left(used jsonb, add jsonb, lim jsonb) returns jsonb
+language sql immutable set search_path = '' as $$
+  select coalesce(jsonb_object_agg(e.k, case when coalesce(lim, '{}'::jsonb) ? e.k
+      then least(public.qz_big(e.v), greatest(public.qz_big(lim ->> e.k) - public.qz_big(coalesce(used, '{}'::jsonb) ->> e.k), 0)) else public.qz_big(e.v) end), '{}'::jsonb)
+  from jsonb_each_text(coalesce(add, '{}'::jsonb)) as e(k, v) where public.qz_big(e.v) > 0
+$$;
+
 -- the coins for a finished match: worked out here from the match's numbers, every one of them capped. The same numbers
 -- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills).
 -- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them.
@@ -1001,36 +1170,43 @@ end $$;
 -- v6.57: the achievements' counters (profiles.ach) take this match's numbers, clamped like the rest; p_ach = what only the game counts
 -- ({kn melee kills, cu Q7 cures, mk Bloodhound marks, cr supply crates, pl / df bombs planted / defused}); ach_hit in the answer =
 -- the tiers this match reached, ach_ready = every tier waiting to be claimed
+-- v6.74: p_token = the match's ticket (qz_match_start). The numbers count for the minutes the match took by it (never more than since the
+-- last paid match); a claim without one stands for 10 minutes at most. A chapter's clear needs it — no longer than the match took, no
+-- shorter than qz_ep_min —, the hall of fame takes the ticket's match id, and a win or an MVP counts for a match of 3 minutes or more. The
+-- day's ranking limits are gacha_config.rank_day_*; the achievement counters are cut to the match's minutes and the day's limits (cap_ach)
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean);
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer);   -- v6.11, before p_hs
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer);   -- v6.12, before the episodes
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean);   -- v6.20, before p_match
 drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text);   -- v6.24, before p_ach
+drop function if exists public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text, jsonb);   -- v6.57, before p_token
 create or replace function public.qz_claim(p_mode text, p_rounds integer, p_kills integer, p_infects integer, p_damage integer,
   p_won boolean, p_mvp boolean, p_stage integer, p_cleared boolean, p_score integer default 0, p_hs integer default 0,
   p_ep integer default 0, p_diff integer default 1, p_time integer default 0, p_lives integer default 0, p_bonus boolean default false,
-  p_match text default '', p_ach jsonb default null) returns jsonb
+  p_match text default '', p_ach jsonb default null, p_token text default '') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   p public.profiles;
+  cfg public.gacha_config;
   today date := (now() at time zone 'Asia/Seoul')::date;
+  v_mode text := left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12);
   v_s0 jsonb;
   v_hit jsonb;
-  v_pvp boolean := coalesce(p_mode, '') in ('tdm', 'ffa', 'bomb', 'race');
-  v_zm boolean := coalesce(p_mode, '') in ('orig', 'mut');
+  v_pvp boolean;
+  v_zm boolean;
   mins numeric;
   raw integer;
   bonus integer := 0;
   day0 integer;
   got integer;
-  k integer := least(greatest(coalesce(p_kills, 0), 0), 80);
+  k integer := least(greatest(coalesce(p_kills, 0), 0), case when coalesce(p_mode, '') = 'scen' then 400 else 80 end);   -- (v6.74: 400 in the scenario, a horde)
   inf integer := least(greatest(coalesce(p_infects, 0), 0), 30);
   sc integer := least(greatest(coalesce(p_score, 0), 0), 30000);
   gx integer;
   v_gain jsonb;
   v_mis jsonb;
-  v_ep integer := case when p_mode = 'scen' then least(greatest(coalesce(p_ep, 0), 0), 5) else 0 end;
+  v_ep integer := 0;
   v_diff integer := least(greatest(coalesce(p_diff, 1), 0), 3);
   v_time integer := least(greatest(coalesce(p_time, 0), 0), 36000);
   v_lives integer := least(greatest(coalesce(p_lives, 0), 0), 3);
@@ -1040,52 +1216,85 @@ declare
   v_first integer := 0;
   v_tix integer := 0;
   v_secs numeric;
-  v_match text := left(regexp_replace(left(coalesce(p_match, ''), 64), '[^A-Za-z0-9]', '', 'g'), 24);
+  v_match text;
   v_fr public.ep_firsts;
   v_hof boolean := false;
-  v_scn boolean := coalesce(p_mode, '') = 'scen';
+  v_scn boolean;
   v_w numeric;                     -- (v6.65) the minutes of play this match can stand for
   v_cap integer;
   c0x integer;
   c0k integer;
   c0i integer;
   v_cut jsonb := '{}'::jsonb;      -- what had to be cut: {what: [sent, kept]}
+  v_tk public.match_tokens;        -- (v6.74) this match's ticket, ok when it is good for this claim; v_el = seconds since it started
+  v_tok boolean := false;
+  v_el numeric := 0;
+  v_ach jsonb := case when jsonb_typeof(p_ach) = 'object' and char_length(p_ach::text) <= 400 then p_ach end;
+  v_dmg integer;
+  v_long boolean;
+  v_ca jsonb;                      -- today's achievement counters so far
+  v_add jsonb;
+  v_dk integer;
+  v_di integer;
+  v_dx integer;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform public.qz_guard(uid);
   perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
   p := (select t from public.profiles t where t.id = uid);
+  cfg := (select g from public.gacha_config g where g.id = 1);
+  v_pvp := v_mode in ('tdm', 'ffa', 'bomb', 'race');
+  v_zm := v_mode in ('orig', 'mut');
+  v_scn := v_mode = 'scen';
+  if v_scn then v_ep := least(greatest(coalesce(p_ep, 0), 0), 5); end if;
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
-  -- v6.65: what goes on the ranking grows no faster than play can. Per minute since the last paid match (since the account was made, the
-  -- first time; counted up to 45 minutes, 60 for the scenario) at most 8 kills (16 in the scenario), 4 infections and 150 score (250 in the
-  -- scenario) + 300; per day (Korean time) at most 2,000 kills, 800 infections and 150,000 xp. Numbers sent past that are cut, and the
-  -- match is marked in coin_log (detail.cut) for the admin page's suspects
+  -- v6.74: the ticket: this account's, used once, at most 3 hours old, for this mode (the scenario: this chapter and difficulty)
+  v_tk := (select t from public.match_tokens t where t.token = left(coalesce(p_token, ''), 64) and t.user_id = uid);
+  if v_tk.token is not null then
+    update public.match_tokens set used_at = coalesce(used_at, now()) where token = v_tk.token;
+    v_tok := v_tk.used_at is null and v_tk.started_at > now() - interval '3 hours' and v_tk.mode = v_mode
+      and (not v_scn or (v_tk.ep = v_ep and v_tk.diff = v_diff));
+    if v_tok then v_el := greatest(extract(epoch from (now() - v_tk.started_at)), 0); end if;
+  end if;
+  -- v6.65: what goes on the ranking grows no faster than play can. Per minute at most 8 kills (16 in the scenario), 4 infections and
+  -- 150 score (250 in the scenario) + 300; per day (Korean time) at most gacha_config.rank_day_kills / _inf / _xp (v6.74; 2,000, 800 and
+  -- 150,000 before). Numbers sent past that are cut, and the match is marked in coin_log (detail.cut) for the admin page's suspects.
+  -- v6.74: the minutes are the match's own, from its ticket (never more than since the last paid match — since the account was made, the
+  -- first time —, 45 at most, 60 for the scenario); without a ticket 10 at most
   v_w := least(greatest(extract(epoch from (now() - coalesce(p.last_claim, p.created_at, now() - interval '15 minutes'))) / 60.0, 0), case when v_scn then 60 else 45 end);
+  v_w := least(v_w, case when v_tok then v_el / 60.0 else 10 end);
+  v_long := v_w >= 3;
   -- (each one checked as sent, so a number past the claim's own limit above shows too: [sent, kept])
-  v_cap := least(80, floor(v_w * case when v_scn then 16 else 8 end)::integer);
+  v_cap := least(case when v_scn then 400 else 80 end, floor(v_w * case when v_scn then 16 else 8 end)::integer);
   if coalesce(p_kills, 0) > v_cap then v_cut := v_cut || jsonb_build_object('kills', jsonb_build_array(p_kills, v_cap)); k := least(k, v_cap); end if;
   v_cap := least(30, floor(v_w * 4)::integer);
   if coalesce(p_infects, 0) > v_cap then v_cut := v_cut || jsonb_build_object('infects', jsonb_build_array(p_infects, v_cap)); inf := least(inf, v_cap); end if;
   v_cap := least(30000, floor(v_w * case when v_scn then 250 else 150 end)::integer + 300);
   if coalesce(p_score, 0) > v_cap then v_cut := v_cut || jsonb_build_object('score', jsonb_build_array(p_score, v_cap)); sc := least(sc, v_cap); end if;
+  v_dmg := least(greatest(coalesce(p_damage, 0), 0), 60000, floor(v_w * 20000)::integer);
   c0x := case when p.cap_day = today then p.cap_xp else 0 end;
   c0k := case when p.cap_day = today then p.cap_kills else 0 end;
   c0i := case when p.cap_day = today then p.cap_inf else 0 end;
-  if c0k + k > 2000 then v_cut := v_cut || jsonb_build_object('day_kills', jsonb_build_array(k, greatest(2000 - c0k, 0))); k := greatest(2000 - c0k, 0); end if;
-  if c0i + inf > 800 then v_cut := v_cut || jsonb_build_object('day_infects', jsonb_build_array(inf, greatest(800 - c0i, 0))); inf := greatest(800 - c0i, 0); end if;
+  v_ca := case when p.cap_day = today then coalesce(p.cap_ach, '{}'::jsonb) else '{}'::jsonb end;
+  v_dk := greatest(coalesce(cfg.rank_day_kills, 2000), 0);
+  v_di := greatest(coalesce(cfg.rank_day_inf, 800), 0);
+  v_dx := greatest(coalesce(cfg.rank_day_xp, 150000), 0);
+  if c0k + k > v_dk then v_cut := v_cut || jsonb_build_object('day_kills', jsonb_build_array(k, greatest(v_dk - c0k, 0))); k := greatest(v_dk - c0k, 0); end if;
+  if c0i + inf > v_di then v_cut := v_cut || jsonb_build_object('day_infects', jsonb_build_array(inf, greatest(v_di - c0i, 0))); inf := greatest(v_di - c0i, 0); end if;
   v_s0 := public.qz_ach_stats(uid);   -- (v6.57: the numbers before this match, to tell the tiers it reaches)
   v_secs := extract(epoch from (now() - coalesce(p.last_claim, p.created_at, now() - interval '1 day')));   -- (an episode's clear time fits in it)
-  -- an episode's clear counts when it took 4 minutes at least (v6.21; 5 before) and no longer than the time since the last paid match, and (from
-  -- episode 2 on) the episode before it was cleared; only such a clear pays the clear and the escape
+  -- an episode's clear counts when (v6.74) the match had its ticket, took no longer than the ticket's time (30 s to spare) and no shorter
+  -- than the chapter's least (qz_ep_min; 4 minutes for all of them before), fits in the time since the last paid match, and (from episode 2
+  -- on) the episode before it was cleared; only such a clear pays the clear and the escape
   if v_ep > 0 then
-    v_clear := coalesce(p_cleared, false) and v_time >= 240 and v_secs >= v_time * 0.9
+    v_clear := coalesce(p_cleared, false) and v_tok and v_time >= public.qz_ep_min(v_ep, v_diff) and v_time <= v_el + 30 and v_secs >= v_time * 0.9
       and (v_ep = 1 or exists (select 1 from public.ep_records r where r.user_id = uid and r.ep = v_ep - 1 and r.clears > 0));
     raw := round((100 + 150 * least(greatest(coalesce(p_stage, 0), 0), 4) + case when v_clear then 400 else 0 end
          + case when v_clear and p_bonus then 300 else 0 end + 5 * k) * (array[0.7, 1.0, 1.4, 2.0])[v_diff + 1])::integer;
     raw := least(raw, 3000, floor(mins * 150)::integer);
-  elsif p_mode = 'scen' then
+  elsif v_scn then
     raw := 100 + 50 * least(greatest(coalesce(p_stage, 0), 0), 5) + case when p_cleared then 200 else 0 end + 5 * k;
     raw := least(raw, 1200, floor(mins * 100)::integer);
   else
@@ -1099,18 +1308,19 @@ begin
   if p.bonus_day is distinct from today then bonus := 250; end if;
   got := greatest(0, least(raw + bonus, 20000 - day0));
   gx := least(4000, greatest(25, round(sc * 0.75 + k * 10 + inf * 15)::integer));  -- a quarter more than the xp the game showed before accounts
-  if c0x + gx > 150000 then v_cut := v_cut || jsonb_build_object('day_xp', jsonb_build_array(gx, greatest(150000 - c0x, 0))); gx := greatest(150000 - c0x, 0); end if;
+  if c0x + gx > v_dx then v_cut := v_cut || jsonb_build_object('day_xp', jsonb_build_array(gx, greatest(v_dx - c0x, 0))); gx := greatest(v_dx - c0x, 0); end if;
   update public.profiles set coins = coins + got, earned_total = earned_total + got, matches = matches + 1,
     last_claim = now(), day = today, day_earned = day0 + got, bonus_day = today,
     rec_games = rec_games + 1, rec_kills = rec_kills + k, rec_infects = rec_infects + inf, rec_best = greatest(rec_best, sc), xp = xp + gx,
-    cap_day = today, cap_xp = c0x + gx, cap_kills = c0k + k, cap_inf = c0i + inf,
+    cap_day = today, cap_xp = c0x + gx, cap_kills = c0k + k, cap_inf = c0i + inf, cap_ach = v_ca,
     ny_quota = least(8, 2 + k / 6)   -- letters this match may add (qz_ny_add): a few, more with more kills
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
-  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12),
+  -- (v6.74: tok = the match came with its good ticket, w = the minutes it was counted for)
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'match', jsonb_build_object('mode', v_mode,
     'rounds', p_rounds, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'mvp', p_mvp,
     'stage', p_stage, 'cleared', p_cleared, 'score', p_score, 'hs', p_hs, 'raw', raw, 'bonus', bonus, 'xp', gx,
-    'ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'escaped', p_bonus, 'mins', round(mins, 1))
+    'ep', v_ep, 'diff', v_diff, 'time', v_time, 'lives', v_lives, 'escaped', p_bonus, 'mins', round(mins, 1), 'tok', v_tok, 'w', round(v_w, 1))
     || case when v_cut = '{}'::jsonb then '{}'::jsonb else jsonb_build_object('cut', v_cut) end);
   -- an episode (v6.20): the play and the clear (v_clear, above) go on the record; medal S = no life lost within 16 minutes,
   -- A = at most one within 22, B = the rest (and every clear without the escape)
@@ -1137,13 +1347,15 @@ begin
       p := (select t from public.profiles t where t.id = uid);
     end if;
     -- the hall of fame (v6.24): the first accepted clear makes the row with its match id; the same match's accounts join within
-    -- 15 minutes, 8 at most (a page sending no id gets one of its own, so it never joins anybody else)
+    -- 15 minutes, 8 at most. v6.74: the match id is the one the ticket was given at the start (none: one of the account's own, so it
+    -- joins nobody), a member's match started before the row was made, and the row is held while its team is counted
     if v_clear then
-      if v_match = '' then v_match := 'u:' || uid::text; end if;
+      v_match := coalesce(nullif(v_tk.mt, ''), 'u:' || uid::text);
       insert into public.ep_firsts (ep, diff, match_id, at, clear_time) values (v_ep, v_diff, v_match, now(), v_time)
       on conflict (ep, diff) do nothing;
+      perform 1 from public.ep_firsts f where f.ep = v_ep and f.diff = v_diff for update;
       v_fr := (select f from public.ep_firsts f where f.ep = v_ep and f.diff = v_diff);
-      if v_fr.match_id = v_match and v_fr.at > now() - interval '15 minutes'
+      if v_fr.match_id = v_match and v_fr.at > now() - interval '15 minutes' and v_tk.started_at <= v_fr.at + interval '1 minute'
          and (select count(*) from public.ep_first_members m where m.ep = v_ep and m.diff = v_diff) < 8 then
         insert into public.ep_first_members (ep, diff, user_id) values (v_ep, v_diff, uid) on conflict do nothing;
         v_hof := found;
@@ -1153,9 +1365,9 @@ begin
   -- daily missions (v6.12): what this match adds to each kind, clamped like the coins above
   perform public.qz_missions_make(uid, today);
   v_gain := jsonb_build_object('play', 1,
-    'win', case when coalesce(p_won, false) or (p_mode = 'scen' and coalesce(p_cleared, false)) then 1 else 0 end,
-    'kills', k, 'infects', inf, 'damage', least(greatest(coalesce(p_damage, 0), 0), 60000),
-    'rounds', case when p_mode = 'scen' then least(greatest(coalesce(p_stage, 0), 0), 5) else least(greatest(coalesce(p_rounds, 0), 0), 10) end,
+    'win', case when coalesce(p_won, false) or (v_scn and coalesce(p_cleared, false)) then 1 else 0 end,
+    'kills', k, 'infects', inf, 'damage', v_dmg,
+    'rounds', case when v_scn then least(greatest(coalesce(p_stage, 0), 0), 5) else least(greatest(coalesce(p_rounds, 0), 0), 10) end,
     'hs', least(greatest(coalesce(p_hs, 0), 0), k));
   v_mis := (select coalesce(jsonb_agg(jsonb_build_object('slot', m.slot, 'kind', m.kind, 'goal', m.goal, 'from', m.progress,
       'progress', least(m.goal, m.progress + coalesce((v_gain ->> m.kind)::integer, 0)), 'claimed', m.claimed_at is not null,
@@ -1163,40 +1375,48 @@ begin
     from public.daily_missions m where m.user_id = uid and m.day = today);
   update public.daily_missions m set progress = least(m.goal, m.progress + coalesce((v_gain ->> m.kind)::integer, 0))
   where m.user_id = uid and m.day = today and m.progress < m.goal;
-  -- achievements (v6.57): this match's counters (melee kills at most the kills), then the tiers it reached
-  update public.profiles set ach = public.qz_ach_add(ach, jsonb_build_object(
+  -- achievements (v6.57): this match's counters (melee kills at most the kills), then the tiers it reached. v6.74: each also no more than the
+  -- match's minutes allow (damage 20,000, cures 2, marks 15, crates 1 + ½, bombs 1 + 1 a minute), wins and MVPs from matches of 3 minutes
+  -- or more, and all within the day's limits (qz_ach_day)
+  v_add := public.qz_ach_left(v_ca, jsonb_build_object(
       'hs', least(greatest(coalesce(p_hs, 0), 0), k),
-      'dmg', least(greatest(coalesce(p_damage, 0), 0), 60000),
-      'wins', case when v_zm and coalesce(p_won, false) then 1 else 0 end,
-      'mvp', case when coalesce(p_mvp, false) then 1 else 0 end,
+      'dmg', v_dmg,
+      'wins', case when v_zm and coalesce(p_won, false) and v_long then 1 else 0 end,
+      'mvp', case when coalesce(p_mvp, false) and v_long then 1 else 0 end,
       'pk', case when v_pvp then k else 0 end,
-      'pw', case when v_pvp and coalesce(p_won, false) then 1 else 0 end,
-      'rw', case when p_mode = 'race' and coalesce(p_won, false) then 1 else 0 end,
-      'kn', least(greatest(public.qz_int(p_ach ->> 'kn'), 0), 40, k),
-      'cu', least(greatest(public.qz_int(p_ach ->> 'cu'), 0), 20),
-      'mk', least(greatest(public.qz_int(p_ach ->> 'mk'), 0), 200),
-      'cr', least(greatest(public.qz_int(p_ach ->> 'cr'), 0), 10),
-      'bm', least(greatest(public.qz_int(p_ach ->> 'pl'), 0), 12) + least(greatest(public.qz_int(p_ach ->> 'df'), 0), 12)))
-  where id = uid;
+      'pw', case when v_pvp and coalesce(p_won, false) and v_long then 1 else 0 end,
+      'rw', case when v_mode = 'race' and coalesce(p_won, false) and v_long then 1 else 0 end,
+      'kn', least(greatest(public.qz_int(v_ach ->> 'kn'), 0), 40, k),
+      'cu', least(greatest(public.qz_int(v_ach ->> 'cu'), 0), 20, floor(v_w * 2)::integer),
+      'mk', least(greatest(public.qz_int(v_ach ->> 'mk'), 0), 200, floor(v_w * 15)::integer),
+      'cr', least(greatest(public.qz_int(v_ach ->> 'cr'), 0), 10, 1 + floor(v_w / 2)::integer),
+      'bm', least(least(greatest(public.qz_int(v_ach ->> 'pl'), 0), 12) + least(greatest(public.qz_int(v_ach ->> 'df'), 0), 12), 1 + floor(v_w)::integer)),
+    public.qz_ach_day());
+  update public.profiles set ach = public.qz_ach_add(ach, v_add), cap_ach = public.qz_ach_add(v_ca, v_add) where id = uid;
   v_hit := public.qz_ach_hits(uid, v_s0);
   return jsonb_build_object('got', got, 'coins', p.coins, 'bonus', bonus, 'raw', raw, 'day_left', 20000 - p.day_earned,
     'xp_got', gx, 'rec', public.qz_rec(p), 'missions', v_mis, 'tickets', p.dec_tickets,
     'ep_first', v_first, 'ep_tickets', v_tix, 'ep_clear', v_clear, 'ep_medal', v_medal, 'eps', case when v_ep > 0 then public.qz_eps(uid) end,
     'ep_hof', v_hof, 'firsts', case when v_ep > 0 then public.qz_firsts_of(uid) end,
-    'ach_hit', v_hit, 'ach_ready', public.qz_ach_ready(uid));
+    'ach_hit', v_hit, 'ach_ready', public.qz_ach_ready(uid), 'tok', v_tok);
 end $$;
 
 -- the coins and xp for one finished round (v6.17): a round of the infection modes pays about what a whole match paid before.
 -- Worked out here from that round's own numbers (kills, infections and damage in it; won = the side the player ended the round on
 -- won it; survived; mvp = the round's human or zombie MVP), each capped: at most 600 a round and 4 a second since the last round was
 -- paid (never twice within 25 s); the day's limit is the one the match rewards use. The scenario and the range have no rounds.
+-- v6.74: p_token = the match's ticket: the round counts no more minutes than the match has run (without one, 3 at most); a round lived
+-- through or won as a zombie goes on the achievements within the day's limits (qz_ach_day)
+drop function if exists public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer);   -- v6.17, before p_token
 create or replace function public.qz_round_claim(p_mode text, p_round integer, p_kills integer, p_infects integer, p_damage integer,
-  p_won boolean, p_survived boolean, p_mvp boolean, p_score integer default 0, p_hs integer default 0) returns jsonb
+  p_won boolean, p_survived boolean, p_mvp boolean, p_score integer default 0, p_hs integer default 0, p_token text default '') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid uuid := auth.uid();
   p public.profiles;
+  cfg public.gacha_config;
   today date := (now() at time zone 'Asia/Seoul')::date;
+  v_mode text := left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12);
   secs numeric;
   raw integer;
   day0 integer;
@@ -1209,19 +1429,30 @@ declare
   v_w numeric;
   v_cap integer;
   c0x integer;
+  v_dx integer;
   v_cut jsonb := '{}'::jsonb;
+  v_tk public.match_tokens;
+  v_tok boolean := false;
+  v_ca jsonb;
+  v_add jsonb;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   perform public.qz_guard(uid);
-  if coalesce(p_mode, '') in ('scen', 'range', '') then raise exception 'no_rounds'; end if;
+  if v_mode in ('scen', 'range', '') then raise exception 'no_rounds'; end if;
   perform 1 from public.profiles where id = uid for update;
   if not found then raise exception 'no_profile'; end if;
   p := (select t from public.profiles t where t.id = uid);
+  cfg := (select g from public.gacha_config g where g.id = 1);
   secs := extract(epoch from (now() - coalesce(p.last_round, now() - interval '10 minutes')));
   if secs < 25 then raise exception 'too_soon'; end if;
+  -- (v6.74: the match's ticket — not used yet, or by the match's own claim just now; this mode)
+  v_tk := (select t from public.match_tokens t where t.token = left(coalesce(p_token, ''), 64) and t.user_id = uid);
+  v_tok := v_tk.token is not null and v_tk.mode = v_mode and v_tk.started_at > now() - interval '3 hours'
+    and (v_tk.used_at is null or v_tk.used_at > now() - interval '2 minutes');
   -- v6.65: a round's numbers grow no faster than play either: per minute since the last paid round (counted up to 10) at most 12 kills + 3,
-  -- 4 infections + 1 and 300 score + 100; the xp shares the day's 150,000 with the matches (cut numbers are marked like the match's)
+  -- 4 infections + 1 and 300 score + 100; the xp shares the day's limit with the matches (cut numbers are marked like the match's)
   v_w := least(secs, 600) / 60.0;
+  v_w := least(v_w, case when v_tok then greatest(extract(epoch from (now() - v_tk.started_at)), 0) / 60.0 else 3 end);
   v_cap := least(30, floor(v_w * 12)::integer + 3);
   if coalesce(p_kills, 0) > v_cap then v_cut := v_cut || jsonb_build_object('kills', jsonb_build_array(p_kills, v_cap)); k := least(k, v_cap); end if;
   v_cap := least(12, floor(v_w * 4)::integer + 1);
@@ -1229,26 +1460,30 @@ begin
   v_cap := least(8000, floor(v_w * 300)::integer + 100);
   if coalesce(p_score, 0) > v_cap then v_cut := v_cut || jsonb_build_object('score', jsonb_build_array(p_score, v_cap)); sc := least(sc, v_cap); end if;
   c0x := case when p.cap_day = today then p.cap_xp else 0 end;
+  v_ca := case when p.cap_day = today then coalesce(p.cap_ach, '{}'::jsonb) else '{}'::jsonb end;
+  v_dx := greatest(coalesce(cfg.rank_day_xp, 150000), 0);
   raw := 150 + 8 * k + 12 * inf + 5 * (dmg / 1000)
        + case when p_won then 120 else 0 end + case when p_survived then 60 else 0 end + case when p_mvp then 80 else 0 end;
   raw := least(raw, 600, floor(secs * 4)::integer);
   day0 := case when p.day = today then p.day_earned else 0 end;
   got := greatest(0, least(raw, 20000 - day0));
   gx := least(1500, greatest(10, round(sc * 0.6 + k * 8 + inf * 12)::integer));
-  if c0x + gx > 150000 then v_cut := v_cut || jsonb_build_object('day_xp', jsonb_build_array(gx, greatest(150000 - c0x, 0))); gx := greatest(150000 - c0x, 0); end if;
+  if c0x + gx > v_dx then v_cut := v_cut || jsonb_build_object('day_xp', jsonb_build_array(gx, greatest(v_dx - c0x, 0))); gx := greatest(v_dx - c0x, 0); end if;
   update public.profiles set coins = coins + got, earned_total = earned_total + got, last_round = now(), day = today,
     day_earned = day0 + got, xp = xp + gx,
-    cap_xp = c0x + gx, cap_kills = case when cap_day = today then cap_kills else 0 end, cap_inf = case when cap_day = today then cap_inf else 0 end, cap_day = today
+    cap_xp = c0x + gx, cap_kills = case when cap_day = today then cap_kills else 0 end, cap_inf = case when cap_day = today then cap_inf else 0 end,
+    cap_ach = v_ca, cap_day = today
   where id = uid;
   p := (select t from public.profiles t where t.id = uid);
-  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'round', jsonb_build_object('mode', left(regexp_replace(left(coalesce(p_mode, ''), 64), '[^a-z]', '', 'g'), 12),
+  insert into public.coin_log (user_id, delta, reason, detail) values (uid, got, 'round', jsonb_build_object('mode', v_mode,
     'round', p_round, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'survived', p_survived,
-    'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx, 'secs', round(secs))
+    'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx, 'secs', round(secs), 'tok', v_tok)
     || case when v_cut = '{}'::jsonb then '{}'::jsonb else jsonb_build_object('cut', v_cut) end);
-  -- achievements (v6.57): a round lived through as a human, or won as a zombie (Mutation, Original)
-  if p_mode in ('orig', 'mut') then
-    update public.profiles set ach = public.qz_ach_add(ach, jsonb_build_object('surv', case when coalesce(p_survived, false) then 1 else 0 end,
-      'zw', case when coalesce(p_won, false) and not coalesce(p_survived, false) then 1 else 0 end)) where id = uid;
+  -- achievements (v6.57): a round lived through as a human, or won as a zombie (Mutation, Original) — v6.74: within the day's limits
+  if v_mode in ('orig', 'mut') then
+    v_add := public.qz_ach_left(v_ca, jsonb_build_object('surv', case when coalesce(p_survived, false) then 1 else 0 end,
+      'zw', case when coalesce(p_won, false) and not coalesce(p_survived, false) then 1 else 0 end), public.qz_ach_day());
+    update public.profiles set ach = public.qz_ach_add(ach, v_add), cap_ach = public.qz_ach_add(v_ca, v_add) where id = uid;
   end if;
   return jsonb_build_object('got', got, 'coins', p.coins, 'raw', raw, 'xp_got', gx, 'day_left', 20000 - p.day_earned, 'rec', public.qz_rec(p));
 end $$;
@@ -2223,14 +2458,20 @@ begin
 end $$;
 
 -- ---------- who may call what ----------
-revoke all on function public.qz_new_profile(uuid, text) from public, anon, authenticated;
+revoke all on function public.qz_new_profile(uuid, text, boolean) from public, anon, authenticated;
+revoke all on function public.qz_idhs(text, text, text) from public, anon, authenticated;
 revoke all on function public.qz_on_signup() from public, anon, authenticated;
 revoke all on function public.qz_auto_nick() from public, anon, authenticated;
 revoke all on function public.qz_me() from public, anon;
 revoke all on function public.qz_set_nickname(text) from public, anon;
+revoke all on function public.qz_nick_free(text) from public;
 revoke all on function public.qz_buy(text) from public, anon;
-revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text, jsonb) from public, anon;
-revoke all on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) from public, anon;
+revoke all on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text, jsonb, text) from public, anon;
+revoke all on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer, text) from public, anon;
+revoke all on function public.qz_match_start(text, integer, integer, text) from public, anon;
+revoke all on function public.qz_ep_min(integer, integer) from public, anon, authenticated;
+revoke all on function public.qz_ach_day() from public, anon, authenticated;
+revoke all on function public.qz_ach_left(jsonb, jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo_json(uuid) from public, anon, authenticated;
 revoke all on function public.qz_bingo() from public, anon;
@@ -2258,9 +2499,11 @@ revoke all on function public.qz_rec(public.profiles) from public, anon, authent
 revoke all on function public.qz_eps(uuid) from public, anon, authenticated;
 grant execute on function public.qz_me() to authenticated;
 grant execute on function public.qz_set_nickname(text) to authenticated;
+grant execute on function public.qz_nick_free(text) to anon, authenticated;
 grant execute on function public.qz_buy(text) to authenticated;
-grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text, jsonb) to authenticated;
-grant execute on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer) to authenticated;
+grant execute on function public.qz_claim(text, integer, integer, integer, integer, boolean, boolean, integer, boolean, integer, integer, integer, integer, integer, integer, boolean, text, jsonb, text) to authenticated;
+grant execute on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer, text) to authenticated;
+grant execute on function public.qz_match_start(text, integer, integer, text) to authenticated;
 grant execute on function public.qz_bingo() to authenticated;
 grant execute on function public.qz_decode(integer, boolean, boolean) to authenticated;
 grant execute on function public.qz_bingo_reset() to authenticated;
@@ -2331,6 +2574,33 @@ begin
     update public.profiles set fcode = public.qz_fcode_new() where id = r.id;
   end loop;
 end $$;
+-- v6.74: one player per nickname, whatever the case (profiles_nick_lower). A name several accounts shared before keeps to the oldest of them;
+-- the others become their first 9 characters + _ + their friend code (16 at most; they can pick another in 내 계정)
+update public.profiles p set nickname = left(p.nickname, 9) || '_' || coalesce(p.fcode, left(replace(p.id::text, '-', ''), 6))
+from (select t.id, row_number() over (partition by lower(t.nickname) order by t.created_at, t.id) as n from public.profiles t) q
+where q.id = p.id and q.n > 1;
+-- (one that meets yet another name that way: its own id's letters instead)
+update public.profiles p set nickname = left(p.nickname, 6) || '_' || left(replace(p.id::text, '-', ''), 9)
+from (select t.id, row_number() over (partition by lower(t.nickname) order by t.created_at, t.id) as n from public.profiles t) q
+where q.id = p.id and q.n > 1;
+create unique index if not exists profiles_nick_lower on public.profiles (lower(nickname));
+-- v6.74: blocks: a = who blocked, b = whom. Between the two no friend requests, messages, room invites or gifts either way, and the friendship
+-- and its requests and invites go when it is made. Read and written through qz_block / qz_unblock / qz_blocks only.
+create table if not exists public.blocks (
+  a  uuid not null references auth.users(id) on delete cascade,
+  b  uuid not null references auth.users(id) on delete cascade,
+  at timestamptz not null default now(),
+  primary key (a, b),
+  check (a <> b)
+);
+create index if not exists blocks_b on public.blocks (b);
+alter table public.blocks enable row level security;
+revoke all on table public.blocks from public, anon, authenticated;
+-- either of the two has blocked the other
+create or replace function public.qz_blocked(x uuid, y uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.blocks k where (k.a = x and k.b = y) or (k.a = y and k.b = x))
+$$;
 -- whom a request or a gift is for: a friend code (with or without #, any case), else a nickname only one player has
 create or replace function public.qz_find_player(p_who text) returns uuid
 language plpgsql stable security definer set search_path = '' as $$
@@ -2395,10 +2665,12 @@ begin
       from public.friends f join public.profiles t on t.id = f.b where f.a = uid and not f.accepted), '[]'::jsonb),
     'gifts_new', (select count(*) from public.gifts g where g.to_id = uid and not g.seen),
     'dm_new', (select count(*) from public.friend_msgs m where m.to_id = uid and not m.seen),
-    'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'));
+    'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'),
+    'blocked', (select count(*) from public.blocks k where k.a = uid));   -- (v6.74: how many I blocked)
 end $$;
 
 -- ask someone to be friends. If they had asked me already, this is a yes. At most 100 friends and requests, 30 requests waiting.
+-- v6.74: not someone I blocked (you_blocked) or who blocked me (friend_blocked, the same answer as for anyone it cannot reach)
 create or replace function public.qz_friend_add(p_who text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -2410,6 +2682,8 @@ begin
   perform public.qz_guard(uid);
   t := public.qz_find_player(p_who);
   if t = uid then raise exception 'friend_self'; end if;
+  if exists (select 1 from public.blocks k where k.a = uid and k.b = t) then raise exception 'you_blocked'; end if;
+  if exists (select 1 from public.blocks k where k.a = t and k.b = uid) then raise exception 'friend_blocked'; end if;
   f := (select x from public.friends x where (x.a = uid and x.b = t) or (x.a = t and x.b = uid));
   if f.a is not null then
     if f.accepted then raise exception 'friend_already'; end if;
@@ -2456,6 +2730,48 @@ begin
   return public.qz_friends();
 end $$;
 
+-- v6.74: block someone (their friend code, or a nickname): the friendship, the requests either way and the room invites between the two
+-- go, and from then on nothing reaches across (requests, messages, invites, gifts) — 500 blocks at most. Returns the friend list.
+create or replace function public.qz_block(p_who text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  t := public.qz_find_player(p_who);
+  if t = uid then raise exception 'friend_self'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not exists (select 1 from public.blocks k where k.a = uid and k.b = t) then
+    if (select count(*) from public.blocks k where k.a = uid) >= 500 then raise exception 'block_full'; end if;
+    insert into public.blocks (a, b) values (uid, t) on conflict do nothing;
+  end if;
+  delete from public.friends where (a = uid and b = t) or (a = t and b = uid);
+  delete from public.room_invites where (from_id = uid and to_id = t) or (from_id = t and to_id = uid);
+  return public.qz_friends();
+end $$;
+-- the players I blocked (newest first): their friend code and nickname, since when
+create or replace function public.qz_blocks() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  return jsonb_build_object('blocked', coalesce((select jsonb_agg(jsonb_build_object('code', t.fcode, 'nickname', t.nickname, 'at', k.at) order by k.at desc)
+    from public.blocks k join public.profiles t on t.id = k.b where k.a = uid), '[]'::jsonb));
+end $$;
+-- a block taken back (p_who = their code): the list that is left
+create or replace function public.qz_unblock(p_who text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  t uuid;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  t := public.qz_find_player(p_who);
+  delete from public.blocks where a = uid and b = t;
+  return public.qz_blocks();
+end $$;
+
 -- a gun from the shop bought for a friend: the giver pays the shop price, the friend owns it at once (and sees a note next time).
 -- Only guns the shop sells; never to someone who has it already (nothing is charged then).
 create or replace function public.qz_gift(p_who text, p_gun text) returns jsonb
@@ -2471,7 +2787,8 @@ begin
   perform public.qz_guard(uid);
   t := public.qz_find_player(p_who);
   if t = uid then raise exception 'friend_self'; end if;
-  if not exists (select 1 from public.friends x where ((x.a = uid and x.b = t) or (x.a = t and x.b = uid)) and x.accepted) then raise exception 'not_friends'; end if;
+  if not exists (select 1 from public.friends x where ((x.a = uid and x.b = t) or (x.a = t and x.b = uid)) and x.accepted)
+     or public.qz_blocked(uid, t) then raise exception 'not_friends'; end if;
   pr := (select g from public.gun_prices g where g.gun_id = p_gun);
   if pr.tier is not null then raise exception 'gacha_only'; end if;
   if pr.gun_id is null or not pr.sold then raise exception 'not_for_sale'; end if;
@@ -2552,7 +2869,8 @@ begin
   perform public.qz_guard(uid);
   if char_length(b) < 1 or char_length(b) > 200 then raise exception 'dm_text'; end if;
   t := public.qz_find_player(p_who);
-  if not exists (select 1 from public.friends x where x.accepted and ((x.a = uid and x.b = t) or (x.a = t and x.b = uid))) then raise exception 'dm_not_friend'; end if;
+  if not exists (select 1 from public.friends x where x.accepted and ((x.a = uid and x.b = t) or (x.a = t and x.b = uid)))
+     or public.qz_blocked(uid, t) then raise exception 'dm_not_friend'; end if;
   if (select count(*) from public.friend_msgs m where m.from_id = uid and m.at > now() - interval '1 minute') >= 20 then raise exception 'dm_slow'; end if;
   if (select count(*) from public.friend_msgs m where m.from_id = uid and m.at > now() - interval '1 hour') >= 300 then raise exception 'dm_slow'; end if;
   insert into public.friend_msgs (from_id, to_id, body) values (uid, t, b);
@@ -2595,6 +2913,13 @@ revoke all on function public.qz_gift_inbox() from public, anon;
 revoke all on function public.qz_ping(integer, boolean) from public, anon;
 revoke all on function public.qz_dm_send(text, text) from public, anon;
 revoke all on function public.qz_dm_list(text, bigint) from public, anon;
+revoke all on function public.qz_blocked(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.qz_block(text) from public, anon;
+revoke all on function public.qz_blocks() from public, anon;
+revoke all on function public.qz_unblock(text) from public, anon;
+grant execute on function public.qz_block(text) to authenticated;
+grant execute on function public.qz_blocks() to authenticated;
+grant execute on function public.qz_unblock(text) to authenticated;
 grant execute on function public.qz_friends() to authenticated;
 grant execute on function public.qz_friend_add(text) to authenticated;
 grant execute on function public.qz_friend_answer(text, boolean) to authenticated;
@@ -2710,7 +3035,8 @@ begin
   if v_code !~ '^[A-Z0-9]{4}$' then raise exception 'bad_code'; end if;
   t := public.qz_find_player(p_who);
   if t = uid then raise exception 'friend_self'; end if;
-  if not exists (select 1 from public.friends x where ((x.a = uid and x.b = t) or (x.a = t and x.b = uid)) and x.accepted) then raise exception 'inv_friends'; end if;
+  if not exists (select 1 from public.friends x where ((x.a = uid and x.b = t) or (x.a = t and x.b = uid)) and x.accepted)
+     or public.qz_blocked(uid, t) then raise exception 'inv_friends'; end if;
   delete from public.room_invites where from_id = uid and at < now() - interval '10 minutes';
   if exists (select 1 from public.room_invites i where i.from_id = uid and i.to_id = t and i.code = v_code and i.at > now() - interval '10 seconds') then raise exception 'inv_wait'; end if;
   if (select count(*) from public.room_invites i where i.from_id = uid and i.at > now() - interval '1 minute') >= 15 then raise exception 'inv_many'; end if;
@@ -2745,6 +3071,9 @@ end $$;
 -- Invite links: a new account (made within ref_days) applies the friend code of the link that brought it, once: it gets ref_new_coins at
 -- once and the two become friends. After its ref_matches-th finished match (qz_ref_check, asked by the game after each match), it gets
 -- ref_new_tickets 근하신년 decoders and the inviter ref_coins coins + ref_tickets decoders — for the first ref_cap players they bring in.
+-- v6.74: the two no longer become friends by themselves — the new account sends the inviter a friend request, which the inviter answers
+-- (none when either has blocked the other, or a request or a friendship is there already); an account made again by someone whose
+-- deleted account is remembered (profiles.reborn) cannot take an invite link (ref_reborn)
 create or replace function public.qz_ref_set(p_code text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -2761,6 +3090,7 @@ begin
   if not found then raise exception 'no_profile'; end if;
   p := (select x from public.profiles x where x.id = uid);
   if p.ref_by is not null then raise exception 'ref_already'; end if;
+  if p.reborn then raise exception 'ref_reborn'; end if;
   if p.created_at < now() - make_interval(days => greatest(cfg.ref_days, 0)) then raise exception 'ref_old'; end if;
   if char_length(c) <> 6 then raise exception 'not_found'; end if;
   t := (select x.id from public.profiles x where x.fcode = c);
@@ -2770,11 +3100,10 @@ begin
   update public.profiles set ref_by = t, coins = coins + greatest(cfg.ref_new_coins, 0) where id = uid;
   insert into public.referrals (referee, referrer) values (uid, t) on conflict (referee) do nothing;
   if cfg.ref_new_coins > 0 then insert into public.coin_log (user_id, delta, reason, detail) values (uid, cfg.ref_new_coins, 'ref_welcome', jsonb_build_object('code', c)); end if;
-  -- friends at once: a request either way is accepted, else a new pair (unless the inviter's list is full)
-  update public.friends set accepted = true, accepted_at = now() where ((a = t and b = uid) or (a = uid and b = t)) and not accepted;
-  if not exists (select 1 from public.friends x where (x.a = t and x.b = uid) or (x.a = uid and x.b = t))
+  -- (v6.74) a friend request to the inviter, who answers it — unless one is there either way already, or a block, or a full list
+  if not exists (select 1 from public.friends x where (x.a = t and x.b = uid) or (x.a = uid and x.b = t)) and not public.qz_blocked(uid, t)
      and (select count(*) from public.friends x where x.a = t or x.b = t) < 100 then
-    insert into public.friends (a, b, accepted, accepted_at) values (t, uid, true, now()) on conflict do nothing;
+    insert into public.friends (a, b) values (uid, t) on conflict do nothing;
   end if;
   return jsonb_build_object('by', (select x.nickname from public.profiles x where x.id = t), 'bonus', greatest(cfg.ref_new_coins, 0),
     'coins', (select x.coins from public.profiles x where x.id = uid), 'left', greatest(0, cfg.ref_matches - p.matches),
@@ -3093,7 +3422,13 @@ declare
 begin
   o := (select t.nickname from public.profiles t where t.id = p_id);
   if o is null then raise exception 'no_profile'; end if;
-  update public.profiles set nickname = nn where id = p_id;
+  -- (v6.74: a nickname is one player's, any case)
+  if exists (select 1 from public.profiles t where lower(t.nickname) = lower(nn) and t.id <> p_id) then raise exception 'nick_taken'; end if;
+  begin
+    update public.profiles set nickname = nn where id = p_id;
+  exception when unique_violation then
+    raise exception 'nick_taken';
+  end;
   update public.rooms set host_name = nn where host = p_id;
   perform public.qz_admin_note(uid, 'rename', p_id, jsonb_build_object('old', o, 'new', nn), rsn);
   return jsonb_build_object('old', o, 'new', nn);
@@ -3543,7 +3878,9 @@ create or replace function public.qz_mail_open(uid uuid) returns setof public.ma
 language sql stable security definer set search_path = '' as $$
   select m.* from public.mails m
   where m.active and (m.expires_at is null or m.expires_at > now())
-    and case when m.to_all then m.for_new or (select p.created_at from public.profiles p where p.id = uid) <= m.created_at
+    -- (v6.74: an account made again by someone whose deleted account is remembered gets no mail meant for new accounts)
+    and case when m.to_all then (m.for_new and not coalesce((select p.reborn from public.profiles p where p.id = uid), false))
+          or (select p.created_at from public.profiles p where p.id = uid) <= m.created_at
         else exists (select 1 from public.mail_targets t where t.mail_id = m.id and t.user_id = uid) end
     and not exists (select 1 from public.mail_claims c where c.mail_id = m.id and c.user_id = uid)
 $$;
@@ -3869,8 +4206,54 @@ begin
             from public.referrals r join public.profiles p2 on p2.id = r.referee where r.at >= now() - interval '30 days'
             group by r.referrer order by 2 desc limit 30) q
       join public.profiles p on p.id = q.referrer), '[]'::jsonb), 'ref_matches', rm);
+  elsif p_kind = 'hof' then
+    -- (v6.74) the hall of fame: each chapter × difficulty's first-clear team, its clear time and the shortest the server takes now (min);
+    -- src: match (made by a claim), past (moved over from before v6.24), refill (put back by qz_admin_hof_del)
+    return jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object('ep', f.ep, 'diff', f.diff, 'at', f.at, 'time', f.clear_time,
+        'min', public.qz_ep_min(f.ep, f.diff), 'src', case when f.match_id like 'past:%' then 'past' when f.match_id like 'refill:%' then 'refill' else 'match' end,
+        'team', coalesce((select jsonb_agg(jsonb_build_object('id', m.user_id, 'nickname', t.nickname, 'fcode', t.fcode,
+            'banned', coalesce(t.banned_until > now(), false)) order by m.at, t.nickname)
+          from public.ep_first_members m join public.profiles t on t.id = m.user_id where m.ep = f.ep and m.diff = f.diff), '[]'::jsonb))
+        order by f.ep, f.diff) from public.ep_firsts f), '[]'::jsonb));
   end if;
   raise exception 'bad_kind';
+end $$;
+-- v6.74: take a hall-of-fame record down (the owner only — a clear that was made up, say). p_refill: the earliest clear left of that
+-- chapter × difficulty on the players' own records (ep_records.first_at; accounts not suspended, none of the team taken down) takes its
+-- place, with the accounts whose own first clear came within 3 minutes of it (one match), 8 at most; no time shown for it. The admin log
+-- keeps the old record (its team as account ids).
+create or replace function public.qz_admin_hof_del(p_ep integer, p_diff integer, p_refill boolean default false, p_reason text default '') returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := public.qz_admin_owner();
+  rsn text := public.qz_admin_reason(p_reason);
+  f public.ep_firsts;
+  v_team uuid[];
+  v_at timestamptz;
+  v_n integer := 0;
+begin
+  f := (select x from public.ep_firsts x where x.ep = p_ep and x.diff = p_diff);
+  if f.ep is null then raise exception 'no_record'; end if;
+  v_team := coalesce((select array_agg(m.user_id) from public.ep_first_members m where m.ep = p_ep and m.diff = p_diff), '{}'::uuid[]);
+  delete from public.ep_firsts where ep = p_ep and diff = p_diff;
+  if coalesce(p_refill, false) then
+    v_at := (select min(r.first_at) from public.ep_records r join public.profiles t on t.id = r.user_id
+      where r.ep = p_ep and r.diff = p_diff and r.first_at is not null and not (r.user_id = any(v_team))
+        and (t.banned_until is null or t.banned_until <= now()));
+    if v_at is not null then
+      insert into public.ep_firsts (ep, diff, match_id, at, clear_time) values (p_ep, p_diff, 'refill:', v_at, null);
+      insert into public.ep_first_members (ep, diff, user_id, at)
+      select r.ep, r.diff, r.user_id, r.first_at from public.ep_records r join public.profiles t on t.id = r.user_id
+      where r.ep = p_ep and r.diff = p_diff and r.first_at >= v_at and r.first_at <= v_at + interval '3 minutes' and not (r.user_id = any(v_team))
+        and (t.banned_until is null or t.banned_until <= now())
+      order by r.first_at limit 8
+      on conflict do nothing;
+      v_n := (select count(*) from public.ep_first_members m where m.ep = p_ep and m.diff = p_diff);
+    end if;
+  end if;
+  perform public.qz_admin_note(uid, 'hof_del', null, jsonb_build_object('ep', p_ep, 'diff', p_diff, 'at', f.at, 'time', f.clear_time,
+    'team', to_jsonb(v_team), 'refill', v_n), rsn);
+  return jsonb_build_object('ok', true, 'refill', v_n);
 end $$;
 
 revoke all on function public.qz_admin_owner() from public, anon, authenticated;
@@ -3892,6 +4275,8 @@ revoke all on function public.qz_admin_staff_add(text) from public, anon;
 revoke all on function public.qz_admin_staff_remove(uuid) from public, anon;
 revoke all on function public.qz_admin_room_close(text, integer, text) from public, anon;
 revoke all on function public.qz_admin_suspects(text) from public, anon;
+revoke all on function public.qz_admin_hof_del(integer, integer, boolean, text) from public, anon;
+grant execute on function public.qz_admin_hof_del(integer, integer, boolean, text) to authenticated;
 grant execute on function public.qz_mails() to authenticated;
 grant execute on function public.qz_mail_claim(bigint) to authenticated;
 grant execute on function public.qz_coupon_redeem(text) to authenticated;
@@ -4197,6 +4582,8 @@ grant execute on function public.qz_admin_inquiry_del(bigint) to authenticated;
 -- taken out), the gifts it sent (the friend keeps the gun), error reports (never tied to an account). Its nickname is also taken out of
 -- the gift and invite-reward lines in other players' coin logs. An admin account cannot (take it off the staff first; an owner through
 -- the SQL Editor). p_confirm must be 'delete': the game asks the player to type 탈퇴 (an e-mail account its password too) before it calls.
+-- v6.74: before it goes, its e-mail and its Google / Kakao accounts are kept as hashes (deleted_ids, see qz_idhs): 30 days, or until a
+-- suspension it is under ends when that is later. Someone signing up again with one of them gets no sign-up rewards and the suspension goes on.
 create or replace function public.qz_account_delete(p_confirm text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -4204,6 +4591,9 @@ declare
   v_nick text;
   v_sid text;
   v_fresh boolean := false;
+  v_hs text[];
+  v_ban timestamptz;
+  v_rsn text;
 begin
   if uid is null then raise exception 'not_signed_in'; end if;
   if coalesce(p_confirm, '') <> 'delete' then raise exception 'confirm_needed'; end if;
@@ -4219,6 +4609,25 @@ begin
     v_fresh := coalesce((select u.last_sign_in_at from auth.users u where u.id = uid) > now() - interval '10 minutes', false);
   end;
   if not v_fresh then raise exception 'reauth'; end if;
+  -- (v6.74) what is remembered of it: the e-mail of the account and of each of its sign-ins, and each Google / Kakao account number
+  v_hs := public.qz_idhs((select u.email from auth.users u where u.id = uid), 'email', null);
+  begin
+    v_hs := v_hs || coalesce((select array_agg(q.h) from (select unnest(public.qz_idhs(i.identity_data ->> 'email', i.provider, i.provider_id)) as h
+      from auth.identities i where i.user_id = uid) q), '{}'::text[]);
+  exception when others then null;
+  end;
+  v_ban := (select t.banned_until from public.profiles t where t.id = uid);
+  v_rsn := (select t.ban_reason from public.profiles t where t.id = uid);
+  if v_ban is not null and v_ban <= now() then v_ban := null; v_rsn := null; end if;
+  delete from public.deleted_ids where keep_until < now();
+  insert into public.deleted_ids (h, keep_until, banned_until, ban_reason)
+  select distinct x, greatest(now() + interval '30 days', v_ban), v_ban, v_rsn from unnest(v_hs) x
+  on conflict (h) do update set keep_until = greatest(public.deleted_ids.keep_until, excluded.keep_until),
+    banned_until = case when excluded.banned_until is not null and (public.deleted_ids.banned_until is null or excluded.banned_until > public.deleted_ids.banned_until)
+      then excluded.banned_until else public.deleted_ids.banned_until end,
+    ban_reason = case when excluded.banned_until is not null and (public.deleted_ids.banned_until is null or excluded.banned_until > public.deleted_ids.banned_until)
+      then excluded.ban_reason else public.deleted_ids.ban_reason end,
+    at = now();
   v_nick := (select t.nickname from public.profiles t where t.id = uid);
   update public.admin_log set detail = detail - 'old' - 'new' where target = uid and action = 'rename';
   update public.admin_log set detail = detail - 'host_name' where target = uid and action = 'room_close';

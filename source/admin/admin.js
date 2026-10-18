@@ -58,7 +58,7 @@ function errText(e){const m=String(e&&e.message||e||''),c=String(e&&e.code||'');
   const T=[[/network|Failed to fetch/i,'서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요'],[/invalid_credentials|Invalid login credentials/i,'이메일 또는 비밀번호가 맞지 않아요'],
     [/email_not_confirmed|Email not confirmed/i,'메일함에서 인증 링크를 먼저 눌러 주세요'],[/rate limit|too many/i,'요청이 너무 많아요. 잠시 후 다시 해 주세요'],
     [/not_admin/,'이 계정은 관리자가 아니에요'],[/not_signed_in|JWT|refresh_token/i,'다시 로그인해 주세요'],[/reason_required/,'사유를 적어 주세요'],
-    [/bad_amount/,'수량을 확인해 주세요 (1 ~ 1억)'],[/bad_kind/,'지급할 수 없는 항목이에요'],[/no_profile/,'플레이어를 찾을 수 없어요'],
+    [/bad_amount/,'수량을 확인해 주세요 (1 ~ 1억)'],[/bad_kind/,'지급할 수 없는 항목이에요'],[/no_profile/,'플레이어를 찾을 수 없어요'],[/nick_taken/,'다른 플레이어가 쓰는 닉네임이에요 (대소문자 구분 없이 한 명만)'],[/no_record/,'이미 없는 기록이에요'],
     [/already_owned/,'이미 가진 무기예요'],[/not_owned/,'가지고 있지 않은 무기예요'],[/free_gun/,'모두가 처음부터 가진 기본 무기예요'],[/no_gun/,'목록에 없는 무기가 있어요'],
     [/ban_admin/,'관리자 계정은 정지할 수 없어요'],[/bad_days/,'정지 기간을 확인해 주세요'],[/not_banned/,'정지 중인 계정이 아니에요'],
     [/bad_price/,'가격을 확인해 주세요 (0 ~ 1,000만)'],[/gacha_only/,'근하신년 무기는 상점에서 팔 수 없어요'],[/trans_only/,'초월 무기는 상점에서 팔 수 없어요'],
@@ -298,6 +298,7 @@ const CFG_G=[
   ['보조무기 해독기',[['side_cost1','1개 가격','코인'],['side_cost10','10개 가격','코인'],['side_hi','숫자 범위 (1 ~ 이 값)','25 이상'],['side_frag_min','해독 조각 최소','1개당'],['side_frag_max','해독 조각 최대','1개당'],
     ['side_owned_coins','이미 가진 무기 줄 대신 주는 코인',''],['side_lines','빙고 줄 보상','한 줄에 하나, 12개']]],
   ['초월',[['trans_frag_min','해독기 1개당 초월 조각 최소',''],['trans_frag_max','해독기 1개당 초월 조각 최대',''],['trans_cost','초월 무기 교환에 드는 조각',''],['trans_guns','교환할 수 있는 초월 무기','무기 ID, 한 줄에 하나']]],
+  ['랭킹 하루 상한',[['rank_day_kills','하루 처치','계정마다 · 한국 시간 하루'],['rank_day_inf','하루 감염',''],['rank_day_xp','하루 경험치','판 + 라운드']]],
   ['초대',[['ref_new_coins','새 계정이 링크로 바로 받는 코인',''],['ref_new_tickets','새 계정이 판을 채우면 받는 해독기',''],['ref_coins','초대한 사람이 받는 코인',''],['ref_tickets','초대한 사람이 받는 해독기',''],
     ['ref_matches','보상까지 새 계정이 끝내야 하는 판',''],['ref_cap','초대 보상을 받는 최대 인원',''],['ref_days','링크를 쓸 수 있는 가입 후 일수','']]],
   ['예전 행운 주머니 (지금은 안 써요)',[['cost1','1번 가격',''],['cost10','10번 가격',''],['rate_s','S 확률','0 ~ 1'],['rate_a','A 확률','0 ~ 1'],['rate_coin','코인 확률','0 ~ 1'],['pity','천장 (이 번째에 S)',''],
@@ -377,7 +378,8 @@ function renderNList(){const B=$('nList');if(!B)return;const L=ST.notices||[];
     :'<div class="empty">아직 올린 공지가 없어요. 왼쪽에서 첫 공지를 써 보세요.</div>'}`}
 
 // ---------- 기록 (the admin log) ----------
-const ACT={mail_send:'우편 보냄',mail_on:'우편 켬',mail_off:'우편 끔',coupon_add:'쿠폰 만듦',coupon_edit:'쿠폰 고침',room_close:'방 내림',staff_add:'부운영자 추가',staff_remove:'부운영자 해제',grant:'지급',gun_give:'무기 지급',gun_take:'무기 회수',rename:'닉네임 변경',ban:'이용 정지',unban:'정지 해제',price:'가격 변경',price_reset:'가격 되돌림',config:'설정 변경',mission:'미션 저장',notice_add:'공지 올림',notice_edit:'공지 고침',notice_delete:'공지 삭제',err_clear:'오류 기록 지움',inq_reply:'문의 답변',inq_done:'문의 닫음',inq_open:'문의 다시 엶',inq_del:'문의 삭제'};
+const DIFFN=['쉬움','보통','어려움','전문가'];
+const ACT={mail_send:'우편 보냄',mail_on:'우편 켬',mail_off:'우편 끔',coupon_add:'쿠폰 만듦',coupon_edit:'쿠폰 고침',room_close:'방 내림',staff_add:'부운영자 추가',staff_remove:'부운영자 해제',grant:'지급',gun_give:'무기 지급',gun_take:'무기 회수',rename:'닉네임 변경',ban:'이용 정지',unban:'정지 해제',price:'가격 변경',price_reset:'가격 되돌림',config:'설정 변경',mission:'미션 저장',notice_add:'공지 올림',notice_edit:'공지 고침',notice_delete:'공지 삭제',err_clear:'오류 기록 지움',inq_reply:'문의 답변',inq_done:'문의 닫음',inq_open:'문의 다시 엶',inq_del:'문의 삭제',hof_del:'명예의 전당 기록 지움',ban_carry:'탈퇴 전 정지 이어짐'};
 const CFGL=k=>{for(const g of CFG_G)for(const f of g[1])if(f[0]===k)return f[1];return k};
 const short=v=>{const s=typeof v==='string'?v:JSON.stringify(v);return s.length>60?s.slice(0,57)+'…':s};
 function logWhat(l){const d=l.detail||{};let a=ACT[l.action]||l.action,x='';
@@ -396,6 +398,8 @@ function logWhat(l){const d=l.detail||{};let a=ACT[l.action]||l.action,x='';
   else if(l.action==='err_clear')x=d.fp?`한 가지 (${N(d.n)}개)`:`전부 (${N(d.n)}가지)`;
   else if(/^inq_/.test(l.action))x=`#${d.id}${d.kind?' '+(IQK[d.kind]||d.kind):''}${l.action==='inq_reply'&&d.done===false?' (열어 둠)':''}`;
   else if(l.action==='room_close')x=`${d.code} (${d.host_name||''}) ${d.minutes>=60?Math.round(d.minutes/60)+'시간':d.minutes+'분'}`;
+  else if(l.action==='hof_del')x=`${d.ep}챕터 ${DIFFN[d.diff]||d.diff} — ${Array.isArray(d.team)?d.team.length:0}명${d.refill?`, 다음 팀 ${N(d.refill)}명으로 채움`:''}`;
+  else if(l.action==='ban_carry')x=`탈퇴했던 사람이 다시 가입 — ${d.until&&String(d.until).startsWith('infinity')?'영구':dt(d.until)}까지`;
   return `<b style="font-weight:600">${esc(a)}</b>${x?` <span class="dim">${esc(x)}</span>`:''}`}
 async function vLogs(target){const M=$('main'),G=ST.logs;if(G.target!==target){G.rows=[];G.done=false;G.target=target}
   M.innerHTML=head('기록','관리자가 한 일이 전부 남아요. 지우거나 고칠 수 없어요.',target?'<a class="btn sm" href="#/logs">전체 보기</a>':'')+`<div class="panel" id="logB"><div class="empty">불러오는 중…</div></div>`;
@@ -405,7 +409,7 @@ async function loadLogs(){const G=ST.logs;if(G.busy)return;G.busy=true;try{const
 function renderLogs(){const B=$('logB'),G=ST.logs;if(!B)return;if(!G.rows.length){B.innerHTML='<div class="empty">아직 기록이 없어요.</div>';return}
   const who=G.target&&G.rows[0]?G.rows[0].target_name:null;
   B.innerHTML=`${G.target?`<h2><span>${esc(who||'이 플레이어')}에게 한 일</span></h2>`:''}<div class="tw"><table class="tbl"><thead><tr><th>시각</th><th>관리자</th><th>대상</th><th>작업</th><th class="hm">사유</th></tr></thead><tbody>
-    ${G.rows.map(l=>`<tr><td class="mute" style="white-space:nowrap">${esc(dt(l.at))}</td><td style="white-space:nowrap">${esc(l.by||'-')}</td><td style="white-space:nowrap">${l.target?`<a href="#/players/${esc(l.target)}">${esc(l.target_name||'(지워진 계정)')}</a>`:`<span class="mute">${/^mail_/.test(l.action)?'우편':/^coupon_/.test(l.action)?'쿠폰':/^notice_/.test(l.action)?'공지':/^inq_/.test(l.action)?'게스트 문의':/^err_/.test(l.action)?'오류 기록':'게임 설정'}</span>`}</td><td>${logWhat(l)}</td><td class="hm">${esc(l.reason||'')}</td></tr>`).join('')}
+    ${G.rows.map(l=>`<tr><td class="mute" style="white-space:nowrap">${esc(dt(l.at))}</td><td style="white-space:nowrap">${esc(l.by||(l.action==='ban_carry'?'자동':'-'))}</td><td style="white-space:nowrap">${l.target?`<a href="#/players/${esc(l.target)}">${esc(l.target_name||'(지워진 계정)')}</a>`:`<span class="mute">${/^mail_/.test(l.action)?'우편':/^coupon_/.test(l.action)?'쿠폰':/^notice_/.test(l.action)?'공지':/^inq_/.test(l.action)?'게스트 문의':/^err_/.test(l.action)?'오류 기록':/^hof_/.test(l.action)?'명예의 전당':'게임 설정'}</span>`}</td><td>${logWhat(l)}</td><td class="hm">${esc(l.reason||'')}</td></tr>`).join('')}
     </tbody></table></div><div class="more"><span>${N(G.rows.length)}개</span>${G.done?'':'<button class="btn sm" data-a="morelogs">더 보기</button>'}</div>`}
 
 // ---------- 문의 (v6.66; staff too — a guest's way to reach them and deleting are the owner's) ----------
@@ -533,14 +537,22 @@ function couponListHtml(){const L=ST.coupons||[];if(!L.length)return '<div class
 const SUS=[['cut','잘린 기록','최근 14일 동안 판 · 라운드 결과로 플레이 시간에 비해 너무 큰 숫자(처치 · 감염 · 점수 · 하루 경험치)를 보내서 서버가 잘라낸 계정이에요. 보낸 값 → 남긴 값.'],
   ['score','한 판 점수','최근 14일 동안 한 판 점수(보낸 그대로)가 가장 높았던 판이에요. 지난 판 보상 뒤 지난 시간도 같이 봐 주세요.'],['cap','보상 상한','최근 14일 동안 판 · 라운드 보상이 하루 상한(20,000)에 닿은 날이 많은 계정이에요.'],['kills','한 판 처치','최근 14일 동안 한 판에 처치가 가장 많았던 판이에요.'],
   ['damage','한 라운드 피해량','최근 14일 동안 한 라운드에 피해량이 가장 컸던 라운드예요.'],['rate','시간당 코인','최근 14일 동안 판 플레이 1시간에 번 코인이에요 (1시간 넘게 플레이한 계정만).'],
-  ['refs','초대 링크','최근 30일 동안 다른 계정을 많이 데려온 플레이어예요. 데려온 계정이 판을 거의 안 했다면 부계정일 수 있어요.']];
+  ['refs','초대 링크','최근 30일 동안 다른 계정을 많이 데려온 플레이어예요. 데려온 계정이 판을 거의 안 했다면 부계정일 수 있어요.'],
+  ['hof','명예의 전당','챕터 × 난이도마다 서버에서 처음 클리어한 팀이에요. 클리어 시간이 서버가 받는 최소 시간에 가깝거나 팀이 이상하면 플레이어 기록을 열어 보세요. 만든 기록이면 주인이 지울 수 있고, 지우면서 그 칸을 그다음에 먼저 깬 팀으로 채울 수 있어요.']];
 async function vSuspects(kind){if(!SUS.some(x=>x[0]===kind))kind='cut';ST.sus.kind=kind;const M=$('main'),S=SUS.find(x=>x[0]===kind);
   M.innerHTML=head('의심 유저','수치가 튀는 계정을 모아 봐요. 여기 뜬다고 모두 부정은 아니니까 기록을 열어 보고 판단해 주세요.')+
     `<div class="sub">${SUS.map(([k,t])=>`<a class="chip${k===kind?' on':''}" href="#/suspects/${k}"${k===kind?' aria-current="page"':''}>${t}</a>`).join('')}</div><p class="mute" style="font-size:13px;margin:-4px 0 12px">${S[2]}</p>
     <div class="panel" id="susB">${ST.sus.data[kind]?'':'<div class="empty">불러오는 중…</div>'}</div>`;
   if(ST.sus.data[kind])renderSus(kind);
   try{const r=await API.rpc('qz_admin_suspects',{p_kind:kind});ST.sus.data[kind]=r;if(parse().v==='suspects'&&ST.sus.kind===kind)renderSus(kind)}catch(e){if($('susB'))$('susB').innerHTML=errBox(e,'resus')}}
-function renderSus(kind){const B=$('susB');if(!B)return;const r=ST.sus.data[kind]||{},L=r.rows||[];if(!L.length){B.innerHTML='<div class="empty">걸리는 계정이 없어요.</div>';return}
+function renderSus(kind){const B=$('susB');if(!B)return;const r=ST.sus.data[kind]||{},L=r.rows||[];if(!L.length){B.innerHTML=kind==='hof'?'<div class="empty">아직 명예의 전당 기록이 없어요.</div>':'<div class="empty">걸리는 계정이 없어요.</div>';return}
+  // (v6.74) the hall of fame: one row a chapter × difficulty, its team linked to each player; the owner can take a record down
+  if(kind==='hof'){const SRC={match:'',past:'<span class="tag">v6.24 전</span>',refill:'<span class="tag">다시 채움</span>'},mmss=v=>v==null?'-':Math.floor(v/60)+':'+String(v%60).padStart(2,'0');
+    B.innerHTML=`<div class="tw"><table class="tbl"><thead><tr><th>챕터</th><th class="num">클리어</th><th class="num hm">최소</th><th class="hm">시각</th><th>팀</th>${isOwner()?'<th></th>':''}</tr></thead><tbody>
+      ${L.map(x=>`<tr><td><b>${N(x.ep)}챕터</b> ${esc(DIFFN[x.diff]||x.diff)} ${SRC[x.src]||''}</td><td class="num">${esc(mmss(x.time))}${x.time!=null&&x.time<x.min*1.15?' <span class="tag ban">빠름</span>':''}</td><td class="num hm">${esc(mmss(x.min))}</td><td class="hm">${esc(dt(x.at))}</td>
+        <td>${(x.team||[]).map(m=>`<a href="#/players/${esc(m.id)}">${esc(m.nickname)}</a>${m.banned?' <span class="tag ban">정지</span>':''}`).join(', ')||'-'}</td>
+        ${isOwner()?`<td><button class="btn sm kill" data-a="hofdel" data-v="${N(x.ep)}:${N(x.diff)}">지우기</button></td>`:''}</tr>`).join('')}
+      </tbody></table></div>`;return}
   const CUTN={kills:'처치',infects:'감염',score:'점수',day_kills:'하루 처치',day_infects:'하루 감염',day_xp:'하루 경험치'};
   const cutTxt=c=>Object.entries(c||{}).map(([k,v])=>`${CUTN[k]||k} ${N(v[0])} → ${N(v[1])}`).join(', ')||'-';
   const cols={cut:[['잘린 횟수','num',x=>N(x.n)+'번'],['마지막','',x=>esc(dt(x.at))],['마지막에 잘린 것','hm',x=>esc(cutTxt(x.cut))]],
@@ -592,6 +604,10 @@ async function onSubmit2(f,k,sub){
   return false}
 async function onClick2(t,a,v,e){
   switch(a){
+  case 'hofdel':{const [ep,df]=String(v).split(':').map(Number);const r=await ask({title:'명예의 전당 기록 지우기',eff:`${ep}챕터 ${DIFFN[df]||df}`,
+      body:'그 팀의 명예의 전당 칭호가 없어져요 (각자 받은 첫 클리어 보상과 챕터 기록은 남아요). 다음 팀으로 채우면, 그 팀 말고 그 칸을 가장 먼저 깬 플레이어와 3분 안에 같이 깬 플레이어(최대 8명)가 들어가요 — 정지된 계정은 빼고요.',
+      ok:'지우기',danger:true,input:{placeholder:'사유 (관리 기록에 남아요)',required:true},choices:[[1,'다음 팀으로 채우기'],[0,'비워 두기']],choice:1});
+    if(!r)return;try{const x=await API.rpc('qz_admin_hof_del',{p_ep:ep,p_diff:df,p_refill:r.choice===1,p_reason:r.text});toast(x.refill?`지우고 다음 팀 ${x.refill}명으로 채웠어요`:'기록을 지웠어요','ok');delete ST.sus.data.hof;vSuspects('hof')}catch(x){toast(errText(x),'bad')}return}
   case 'roomclose':{const r=await ask({title:'공개 방 내리기',eff:`${v} — ${t.dataset.n||''}`,body:'목록에서 바로 내려가고, 그 방장은 정한 시간 동안 공개 방을 다시 못 올려요. 방은 비공개로 계속돼요.',ok:'내리기',danger:true,
       input:{placeholder:'사유 (관리 기록에 남아요)',required:true},choices:[[10,'10분'],[30,'30분'],[60,'1시간'],[1440,'하루']],choice:30});
     if(!r)return;try{await API.rpc('qz_admin_room_close',{p_code:v,p_minutes:r.choice,p_reason:r.text});toast(`${v} 방을 목록에서 내렸어요`,'ok');vDash(true)}catch(x){toast(errText(x),'bad')}return}

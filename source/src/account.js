@@ -64,7 +64,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     catch(e){if(!/already_imported/.test(e.message))this.ls('qz_recFor',null)}},// not done (offline, or the database not updated yet): try again next time
   // ---- the player's actions ----
   async signIn(email,pw){const s=await this.req('POST','/auth/v1/token?grant_type=password',{email,password:pw},false);this.setSes(s);this.signedNow();await this.loadMe();return this.me},
-  async signUp(email,pw,nick){const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';
+  // (v6.74: a nickname is one player's — asked first, so the form can say so; a database before v6.74 cannot be asked)
+  async nickFree(n){try{return await this.req('POST','/rest/v1/rpc/qz_nick_free',{p_nick:n},false)}catch(e){if(e.net||/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||'')))return null;throw e}},
+  async signUp(email,pw,nick){const f=await this.nickFree(nick);if(f&&!f.ok)throw new Error(f.why==='nick_short'?'nick_short':'nick_taken');
+    const q=this.here()?'?redirect_to='+encodeURIComponent(this.here()):'';
     const s=await this.req('POST','/auth/v1/signup'+q,{email,password:pw,data:{nickname:nick,terms:LEGAL.ver}},false);// (terms: the version of the terms agreed to)
     if(s&&s.access_token){this.setSes(s);this.signedNow();await this.loadMe();return {ok:1}}return {confirm:1}},// e-mail confirmation is on: the link brings the player back signed in
   // (Google: the account picker every time — a shared computer, a PC방, never signs the next player in as the last one)
@@ -129,19 +132,28 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
       p_won:!!st.won,p_mvp:!!st.mvp,p_stage:st.stage|0,p_cleared:!!st.cleared,p_score:st.score|0,p_hs:st.hs|0};let r;
     if(st.ep)Object.assign(a,{p_ep:st.ep|0,p_diff:st.diff|0,p_time:st.time|0,p_lives:st.lives|0,p_bonus:!!st.bonus,p_match:String(st.match||'')});
     if(st.ach&&typeof st.ach==='object'){const o={};for(const k of ['kn','cu','mk','cr','pl','df'])o[k]=Math.max(0,st.ach[k]|0);a.p_ach=o}
+    if(st.tok)a.p_token=String(st.tok);// (v6.74: the match's ticket, matchStart)
     const old=e=>/Could not find the function|PGRST202/i.test(e.message+' '+e.code);
-    // a database before v6.57 (no p_ach), before v6.24 (no p_match), before v6.20 (no episode fields), then before v6.12 (no p_hs)
-    for(const drop of [null,['p_ach'],['p_match'],['p_ep','p_diff','p_time','p_lives','p_bonus'],['p_hs']]){if(drop){if(!drop.some(k=>k in a))continue;for(const k of drop)delete a[k]}
+    // a database before v6.74 (no p_token), before v6.57 (no p_ach), before v6.24 (no p_match), before v6.20 (no episode fields), then before v6.12 (no p_hs)
+    for(const drop of [null,['p_token'],['p_ach'],['p_match'],['p_ep','p_diff','p_time','p_lives','p_bonus'],['p_hs']]){if(drop){if(!drop.some(k=>k in a))continue;for(const k of drop)delete a[k]}
       try{r=await this.rpc('qz_claim',a);break}catch(e){if(!old(e)||drop&&drop[0]==='p_hs')throw e}}
     if(Array.isArray(r.firsts)&&this.me)this.me.firsts=r.firsts.map(v=>v|0);
     if(r.missions){let all=!!(this.mis&&this.mis.missions);for(const x of r.missions){const m=all&&this.mis.missions.find(y=>y.slot===x.slot&&y.kind===x.kind&&y.goal===x.goal);if(m)m.progress=x.progress;else all=false}
       if(!all)this.loadMissions().catch(()=>{})}
     if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;if(r.rec)this.me.rec=r.rec;if(Array.isArray(r.eps))this.me.eps=r.eps;if(r.tickets!=null)this.me.tickets=r.tickets|0;
       this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts})}this.emit();try{HOF.claimed(st,r)}catch(e){console.error(e)}return r},
+  // v6.74: a match starts: the server's ticket for it ({mode, ep, diff, mt}: the scenario's chapter and difficulty, the match's own id) —
+  // its claim and its rounds' claims bring it back, and the server counts the match's minutes from it. '' on a database before v6.74
+  async matchStart(o){if(this.noTicket||!this.signed())return '';let r;
+    try{r=await this.rpc('qz_match_start',{p_mode:String(o.mode||''),p_ep:o.ep|0,p_diff:o.diff|0,p_match:String(o.mt||'')})}
+    catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noTicket=true;return ''}throw e}
+    return r&&typeof r.token==='string'?r.token:''},
   // a finished round (v6.17): {got,coins,raw,xp_got,day_left,rec}; null when the server has no round rewards yet (an older schema.sql)
   async roundClaim(st){const a={p_mode:st.mode,p_round:st.round|0,p_kills:st.kills|0,p_infects:st.infects|0,p_damage:Math.round(st.damage||0),
-      p_won:!!st.won,p_survived:!!st.survived,p_mvp:!!st.mvp,p_score:st.score|0,p_hs:st.hs|0};let r;
-    try{r=await this.rpc('qz_round_claim',a)}catch(e){if(/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''))){this.noRound=true;return null}throw e}
+      p_won:!!st.won,p_survived:!!st.survived,p_mvp:!!st.mvp,p_score:st.score|0,p_hs:st.hs|0};let r;if(st.tok&&!this.oldRound)a.p_token=String(st.tok);
+    const old=e=>/Could not find the function|PGRST202/i.test((e.message||'')+' '+(e.code||''));
+    // (v6.74: the match's ticket; a database before it has no p_token — asked without it from then on)
+    try{r=await this.rpc('qz_round_claim',a)}catch(e){if(!old(e))throw e;if('p_token' in a){this.oldRound=true;delete a.p_token;try{r=await this.rpc('qz_round_claim',a)}catch(e2){if(old(e2)){this.noRound=true;return null}throw e2}}else{this.noRound=true;return null}}
     const me=this.me;if(me){me.coins=r.coins;me.dayLeft=r.day_left;if(r.rec)me.rec=r.rec;this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:me.rec})}this.emit();return r},
   // ---- friends and gifts (v6.18) ----
   // {code (mine), friends:[{code,nickname,xp,last,since}], incoming:[{code,nickname,xp,at}], outgoing:[…], gifts_new}; ids never come out
@@ -151,6 +163,11 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async friendAdd(who){const r=await this.rpc('qz_friend_add',{p_who:who});this.frGot(r);return r},
   async friendAnswer(code,yes){return this.frGot(await this.rpc('qz_friend_answer',{p_who:code,p_yes:!!yes}))},
   async friendRemove(code){return this.frGot(await this.rpc('qz_friend_remove',{p_who:code}))},
+  // v6.74: blocks — someone blocked (by code) is cut off both ways: the friendship and requests go, and no requests, messages, invites or
+  // gifts cross after that. blk = the players I blocked [{code,nickname,at}]
+  async block(code){return this.frGot(await this.rpc('qz_block',{p_who:code}))},
+  async blocks(){const r=await this.rpc('qz_blocks');this.blk=Array.isArray(r&&r.blocked)?r.blocked:[];if(this.fr)this.fr.blocked=this.blk.length;return this.blk},
+  async unblock(code){const r=await this.rpc('qz_unblock',{p_who:code});this.blk=Array.isArray(r&&r.blocked)?r.blocked:[];if(this.fr)this.fr.blocked=this.blk.length;this.emit();return this.blk},
   // v6.25: 'I am here' (profiles.last_seen; friends read it as online / last seen) and the friend chat. dm_new = unread messages.
   // qz_dm_list → {msgs:[{id,mine,text,at}], seen, dm_new}; asking for a talk marks what the friend wrote as read. Old databases: no ping, no chat.
   // v6.42: play = seconds of a match since the last beat, fresh = the game just came into view (a new stretch of play time starts);
@@ -248,6 +265,12 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/friend_pending/.test(m))return T2('이미 친구 요청을 보냈어요','Request already sent');
     if(/friend_full/.test(m))return T2('친구가 너무 많아요 (친구 100명 · 보낸 요청 30개까지)','Too many friends (100 friends, 30 requests waiting)');
     if(/nick_many/.test(m))return T2('같은 닉네임이 여러 명이에요. 친구 코드로 추가해 주세요','Several players have that nickname — use their friend code');
+    if(/nick_taken/.test(m))return T2('이미 다른 플레이어가 쓰는 닉네임이에요 (대소문자 구분 없이 한 명만 써요)','Another player has that nickname (any case) — pick another');
+    if(/nick_short/.test(m))return T2('닉네임은 2~16자로 정해 주세요','Pick a nickname of 2–16 characters');
+    if(/you_blocked/.test(m))return T2('내가 차단한 플레이어예요. 친구 창의 차단 목록에서 먼저 풀어 주세요','You blocked that player — unblock them first (Friends → Blocked)');
+    if(/friend_blocked/.test(m))return T2('이 플레이어에게는 친구 요청을 보낼 수 없어요','You cannot send that player a request');
+    if(/block_full/.test(m))return T2('차단 목록이 가득 찼어요 (500명까지)','Your block list is full (500 at most)');
+    if(/ref_reborn/.test(m))return T2('탈퇴했다가 다시 만든 계정은 초대 보상을 받을 수 없어요','An account made again after deleting one cannot take an invite');
     if(/not_found/.test(m))return T2('그 친구 코드나 닉네임을 가진 플레이어가 없어요','No player with that friend code or nickname');
     if(/no_request/.test(m))return T2('친구 요청이 없어요 (이미 처리됐을 수 있어요)','No such request (it may be answered already)');
     if(/not_friends/.test(m))return T2('친구에게만 선물할 수 있어요','Gifts go to friends only');
@@ -258,7 +281,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/ref_already/.test(m))return T2('이미 초대 코드를 적용한 계정이에요','This account already used an invite');
     if(/ref_old/.test(m))return T2('초대 링크는 가입하고 7일 안에만 쓸 수 있어요','Invite links work for new accounts only (first 7 days)');
     if(/ref_loop/.test(m))return T2('서로를 초대할 수는 없어요','You cannot invite each other');
-    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_invite|qz_ref_|qz_mission|qz_ranking|qz_trans|qz_mail|qz_coupon|qz_gun_|qz_ach|qz_title|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
+    if(/qz_friend|qz_gift|qz_ny_|qz_round_|qz_decode|qz_bingo|qz_season|qz_side|qz_invite|qz_ref_|qz_mission|qz_ranking|qz_trans|qz_mail|qz_coupon|qz_gun_|qz_ach|qz_title|qz_block|qz_unblock|Could not find the function/i.test(m))return T2('서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)','The database needs the new schema.sql');
     if(/already_owned/.test(m))return T2('이미 가진 총이에요','You already own it');
     if(/not_for_sale/.test(m))return T2('상점에서 팔지 않는 총이에요','Not sold in the shop');
     if(/too_soon/.test(m))return T2('보상은 조금 뒤에 다시 받을 수 있어요','Too soon for another reward');

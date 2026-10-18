@@ -8,6 +8,8 @@
 // 2.5 minutes shows as online), and every friend has a chat button: a small direct-message panel (qz_dm_send / qz_dm_list, polled every
 // 4 s while it is open; an unread count on the friend's row and on the lobby button's red dot).
 // The database decides everything (schema.sql v6.18: qz_friends, qz_friend_add / _answer / _remove, qz_gift, qz_gift_inbox).
+// v6.74: blocking — 차단 on a request or (behind 삭제) on a friend asks once, then cuts that player off both ways (qz_block: no requests,
+// messages, invites or gifts); the 차단 목록 at the bottom lists them with 해제 (qz_blocks / qz_unblock).
 const SVG_FRIEND='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M6 2a2.6 2.6 0 110 5.2A2.6 2.6 0 016 2zM1 13.6c.3-2.8 2.4-4.4 5-4.4s4.7 1.6 5 4.4zM12.2 4.5h1.4v2h2v1.4h-2v2h-1.4v-2h-2V6.5h2z"/></svg>';
 const SVG_CHAT='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 2.5h12a1 1 0 011 1v7a1 1 0 01-1 1H7.2L4 14.2v-2.7H2a1 1 0 01-1-1v-7a1 1 0 011-1z"/></svg>';
 const SVG_GIFT='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M2 6h12v3H2zM3 9.6h4.3V15H3zM8.7 9.6H13V15H8.7zM8 5.4C6.6 3 4.2 2.6 4.2 4.1c0 1 1.6 1.3 3.8 1.3zm0 0c1.4-2.4 3.8-2.8 3.8-1.3 0 1-1.6 1.3-3.8 1.3z"/></svg>';
@@ -20,15 +22,17 @@ function frOn(f){const t=f&&f.seen?Date.parse(f.seen):0;return !!t&&Date.now()-t
 function frSub(f){const L=LI();return frOn(f)?(L?'● online':'● 접속 중'):frAgo(f.last)}
 function dmTime(t){const d=new Date(t);if(isNaN(d))return '';const p=n=>(n<10?'0':'')+n,hm=p(d.getHours())+':'+p(d.getMinutes()),n=new Date();
   return d.toDateString()===n.toDateString()?hm:(d.getMonth()+1)+'/'+d.getDate()+' '+hm}
-const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,chat:null,
+const FR={msg:'',ok:false,busy:false,del:null,blk:null,showBlk:false,lastLoad:0,chat:null,
   open(){let o=$('frWin');if(!o){o=document.createElement('div');o.id='frWin';document.body.appendChild(o);
       o.addEventListener('click',e=>{if(e.target===o){this.close();return}const t=e.target.closest('[data-fr]');if(t)this.act(t.dataset.fr,t.dataset.v)});
       o.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='frIn'){e.preventDefault();this.act('add')}
         if(e.key==='Enter'&&e.target.id==='fcIn'&&!e.isComposing){e.preventDefault();this.act('csend')}})}
-    if($('nbWin')&&typeof NBAN!=='undefined')NBAN.close();this.msg='';this.del=null;this.chat=null;this.render();AU.play('ui',{vol:.35});
+    if($('nbWin')&&typeof NBAN!=='undefined')NBAN.close();this.msg='';this.del=null;this.blk=null;this.showBlk=false;this.chat=null;this.render();AU.play('ui',{vol:.35});
     if(ACC.signed()){this.lastLoad=Date.now();ACC.loadFriends().then(()=>this.render()).catch(e=>{this.msg=ACC.errText(e);this.ok=false;this.render()})}},
-  close(){const o=$('frWin');if(o)o.remove();this.del=null;this.chat=null},
+  close(){const o=$('frWin');if(o)o.remove();this.del=null;this.blk=null;this.chat=null},
   render(){const o=$('frWin');if(!o)return;if(this.chat){this.renderChat();return}const L=LI(),signed=ACC.signed(),F=ACC.fr,inp=$('frIn'),keep=inp?inp.value:'';
+    const blkAsk=f=>`<button class="bad" data-fr="blkok" data-v="${esc(f.code)}">${L?'Block':'차단'}</button><button data-fr="blkno">${L?'Cancel':'취소'}</button>`,
+      blkNote=L?'block: no requests, messages, invites or gifts either way':'차단하면 서로 친구 요청 · 메시지 · 초대 · 선물이 막혀요';
     const row=(f,btns,sub)=>`<div class="frr"><span class="frlv">Lv.${recLevel(f.xp|0).l}</span><span class="frnm"><b>${esc(f.nickname)}${TTL.chip(TTL.row(f),'sm')}</b><small>#${esc(f.code||'')}${sub?' · ':''}${sub?(f.seen&&frOn(f)?'<em class="on">'+esc(sub)+'</em>':esc(sub)):''}</small></span><span class="frbt">${btns}</span></div>`;
     let body;
     if(!ACC.on)body=`<p class="frn">${L?'Accounts are not set up yet.':'계정 서버가 아직 연결되지 않았어요.'}</p>`;
@@ -37,12 +41,16 @@ const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,chat:null,
       body=`<div class="frme"><span>${L?'My friend code':'내 친구 코드'}</span><b class="frc">#${esc(code||'······')}</b><button data-fr="copy">${L?'Copy':'복사'}</button><small>${L?'Give it to a friend — they can add you at once.':'친구에게 알려 주면 바로 나를 추가할 수 있어요.'}</small></div>
         <div class="fradd"><input id="frIn" maxlength="24" placeholder="${L?'Friend code or nickname':'친구 코드 또는 닉네임'}" autocomplete="off" spellcheck="false"><button data-fr="add"${this.busy?' disabled':''}>${SVG_FRIEND}<span>${L?'Send request':'친구 요청'}</span></button></div>
         ${this.msg?`<div class="frm ${this.ok?'ok':'bad'}">${esc(this.msg)}</div>`:''}
-        ${inc.length?`<h5>${L?'Requests for you':'받은 요청'} <i>${inc.length}</i></h5>${inc.map(f=>row(f,`<button class="ok" data-fr="yes" data-v="${esc(f.code)}">${L?'Accept':'수락'}</button><button data-fr="no" data-v="${esc(f.code)}">${L?'Decline':'거절'}</button>`,L?'wants to be friends':'친구 요청')).join('')}`:''}
-        <h5>${L?'Friends':'친구'} <i>${fr.length}</i></h5>${fr.length?fr.map(f=>row(f,this.del===f.code
-            ?`<button class="bad" data-fr="delok" data-v="${esc(f.code)}">${L?'Remove':'삭제'}</button><button data-fr="delno">${L?'Keep':'취소'}</button>`
+        ${inc.length?`<h5>${L?'Requests for you':'받은 요청'} <i>${inc.length}</i></h5>${inc.map(f=>this.blk===f.code?row(f,blkAsk(f),blkNote)
+            :row(f,`<button class="ok" data-fr="yes" data-v="${esc(f.code)}">${L?'Accept':'수락'}</button><button data-fr="no" data-v="${esc(f.code)}">${L?'Decline':'거절'}</button><button data-fr="blk" data-v="${esc(f.code)}">${L?'Block':'차단'}</button>`,L?'wants to be friends':'친구 요청')).join('')}`:''}
+        <h5>${L?'Friends':'친구'} <i>${fr.length}</i></h5>${fr.length?fr.map(f=>this.blk===f.code?row(f,blkAsk(f),blkNote):row(f,this.del===f.code
+            ?`<button class="bad" data-fr="delok" data-v="${esc(f.code)}">${L?'Remove':'삭제'}</button><button data-fr="blk" data-v="${esc(f.code)}">${L?'Block':'차단'}</button><button data-fr="delno">${L?'Keep':'취소'}</button>`
             :`<button class="chat" data-fr="chat" data-v="${esc(f.code)}">${SVG_CHAT}<span>${L?'Chat':'채팅'}</span>${f.dm>0?`<i class="dmn">${f.dm>9?'9+':f.dm}</i>`:''}</button><button class="gift" data-fr="gift" data-v="${esc(f.code)}">${SVG_GIFT}<span>${L?'Gift':'선물'}</span></button><button data-fr="del" data-v="${esc(f.code)}">${L?'Remove':'삭제'}</button>`,frSub(f))).join('')
           :`<p class="frn">${L?'No friends yet — add one by their friend code.':'아직 친구가 없어요. 친구 코드로 추가해 보세요.'}</p>`}
-        ${out.length?`<h5>${L?'Sent':'보낸 요청'} <i>${out.length}</i></h5>${out.map(f=>row(f,`<button data-fr="cancel" data-v="${esc(f.code)}">${L?'Cancel':'취소'}</button>`,L?'waiting':'수락 대기 중')).join('')}`:''}`}
+        ${out.length?`<h5>${L?'Sent':'보낸 요청'} <i>${out.length}</i></h5>${out.map(f=>row(f,`<button data-fr="cancel" data-v="${esc(f.code)}">${L?'Cancel':'취소'}</button>`,L?'waiting':'수락 대기 중')).join('')}`:''}
+        ${(F&&F.blocked>0)||this.showBlk?`<h5>${L?'Blocked':'차단 목록'} <i>${F&&F.blocked|0}</i> <button class="frtg" data-fr="blist">${this.showBlk?(L?'Hide':'접기'):(L?'Show':'보기')}</button></h5>
+          ${this.showBlk?(ACC.blk?(ACC.blk.length?ACC.blk.map(f=>`<div class="frr"><span class="frnm"><b>${esc(f.nickname)}</b><small>#${esc(f.code||'')}</small></span><span class="frbt"><button data-fr="unblk" data-v="${esc(f.code)}">${L?'Unblock':'해제'}</button></span></div>`).join('')
+            :`<p class="frn">${L?'Nobody blocked.':'차단한 플레이어가 없어요.'}</p>`):`<p class="frn">${L?'Loading…':'불러오는 중…'}</p>`):''}`:''}`}
     o.innerHTML=`<div class="frw"><div class="frh">${SVG_FRIEND}<b>${L?'Friends':'친구'}</b><small>FRIENDS</small><span class="sgap"></span><button class="frx" data-fr="x" aria-label="close">×</button></div><div class="frb">${body}</div></div>`;
     const ni=$('frIn');if(ni)ni.value=keep},
   // ---- the chat panel (v6.25) ----
@@ -88,6 +96,11 @@ const FR={msg:'',ok:false,busy:false,del:null,lastLoad:0,chat:null,
     if(a==='del'){this.del=v;this.msg='';this.render();return}
     if(a==='delno'){this.del=null;this.render();return}
     if(a==='delok'){this.del=null;this.run(async()=>{await ACC.friendRemove(v);return L?'Removed from your friends':'친구에서 삭제했어요'});return}
+    if(a==='blk'){this.blk=v;this.del=null;this.msg='';this.render();return}
+    if(a==='blkno'){this.blk=null;this.render();return}
+    if(a==='blkok'){this.blk=null;this.run(async()=>{await ACC.block(v);if(this.showBlk)await ACC.blocks();return L?'Blocked':'차단했어요'});return}
+    if(a==='blist'){this.showBlk=!this.showBlk;this.render();if(this.showBlk)ACC.blocks().then(()=>this.render()).catch(e=>{this.msg=ACC.errText(e);this.ok=false;this.render()});return}
+    if(a==='unblk'){this.run(async()=>{await ACC.unblock(v);return L?'Unblocked':'차단을 풀었어요'});return}
     if(a==='gift'){const f=(F.friends||[]).find(x=>x.code===v);if(!f)return;this.close();SHOP.giftTo(f.code,f.nickname);return}},
   async run(fn){if(this.busy)return;this.busy=true;this.msg='';this.render();
     try{this.msg=await fn();this.ok=true;AU.play('uiok',{vol:.45})}catch(e){this.msg=ACC.errText(e);this.ok=false;AU.play('dry',{vol:.4})}

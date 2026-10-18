@@ -21,7 +21,7 @@ const ses=(db,uid,born)=>{born=born||Date.now();const a='at_'+uuid(),r='rt_'+uui
 const REC=Q=>Object.assign({g:0,k:0,inf:0,best:0,xp:0,imported:false},Q.rec||{});
 // v6.66: an account that picked no nickname (Google / Kakao) starts as 생존자 + 4 digits (schema.sql qz_auto_nick)
 const autoNick=()=>'생존자'+String(Math.floor(Math.random()*10000)).padStart(4,'0');
-const newProfile=(db,uid,nick)=>{if(db.prof[uid])return;db.prof[uid]={nickname:clean(nick),coins:3000,earned:0,matches:0,last:null,day:null,dayE:0,frags:0,pity:0,freeDay:null,created:Date.now()};db.own[uid]=[];db.glog=db.glog||[];db.log.push([uid,3000,'welcome'])};
+const newProfile=(db,uid,nick)=>{if(db.prof[uid])return;let nk=clean(nick);if(Object.values(db.prof).some(q=>String(q.nickname).toLowerCase()===nk.toLowerCase()))nk=autoNick();db.prof[uid]={nickname:nk,coins:3000,earned:0,matches:0,last:null,day:null,dayE:0,frags:0,pity:0,freeDay:null,created:Date.now()};db.own[uid]=[];db.glog=db.glog||[];db.log.push([uid,3000,'welcome'])};
 const GCFG={id:1,dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,cost1:500,cost10:4500,rate_s:0.02,rate_a:0.08,rate_coin:0.3,pity:60,coin_table:[[100,30],[200,30],[300,20],[500,15],[1000,5]],frag_min:2,frag_max:5,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
   season_lines:['gun:bhole','gun:skull9','gun:salamander','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3'],
@@ -123,6 +123,9 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     // the ranking: anyone (a guest too); nicknames and records only, accounts without a finished match left out
     // v6.42: the server notices showing now (anyone): window.__MOCK_NOTICES = [{id,title,body,level,popup,starts_at,ends_at}]
     if(fn==='qz_notices')return res(200,window.__MOCK_NOTICES||[]);
+    // v6.74: is a nickname free, any case (qz_nick_free; anyone may ask)
+    if(fn==='qz_nick_free'){const raw=String((body||{}).p_nick||'').replace(/[\u0000-\u001f]/g,'').trim(),n=clean(raw);if(raw.length<2)return res(200,{ok:false,why:'nick_short',nick:n});
+      return res(200,{ok:!Object.keys(db.prof).some(id=>id!==uid&&String(db.prof[id].nickname).toLowerCase()===n.toLowerCase()),nick:n})}
     if(fn==='qz_ranking'){const k=['level','kills','infects','best'].includes(body&&body.p_kind)?body.p_kind:'level',ids=Object.keys(db.prof);
       const all=ids.map((id,i)=>({id,i,R:REC(db.prof[id]),n:db.prof[id].nickname})).filter(x=>x.R.g>0).map(x=>({...x,v:rankV(x.R,k)}));
       all.sort((a,b)=>b.v-a.v||b.R.xp-a.R.xp||a.i-b.i);const rk=v=>1+all.filter(x=>x.v>v).length;
@@ -134,6 +137,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     // ---- friends and gifts (v6.18; same rules as schema.sql) ----
     const FC=id=>{const Q=db.prof[id];if(Q&&!Q.fcode){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c;do{c='';for(let i=0;i<6;i++)c+=A[Math.floor(Math.random()*31)]}while(Object.values(db.prof).some(x=>x.fcode===c));Q.fcode=c}return Q?Q.fcode:null};
     const FRL=()=>db.fr||(db.fr=[]),GFL=()=>db.gifts||(db.gifts=[]),pair=(x,y)=>FRL().find(f=>f.a===x&&f.b===y||f.a===y&&f.b===x);
+    // v6.74: blocks (db.blk = [{a, b, at}]: a blocked b)
+    const BLK=()=>db.blk||(db.blk=[]),blocked=(x,y)=>BLK().some(k=>k.a===x&&k.b===y||k.a===y&&k.b===x);
     const find=w=>{w=String(w||'').trim();if(!w)throw 'not_found';const c=w.toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.length===6)for(const id in db.prof){FC(id);if(db.prof[id].fcode===c)return id}
       const ids=Object.keys(db.prof).filter(id=>db.prof[id].nickname.toLowerCase()===w.toLowerCase());if(!ids.length)throw 'not_found';if(ids.length>1)throw 'nick_many';return ids[0]};
     const card=(id,x)=>{const Q=db.prof[id];FC(id);return Object.assign({code:Q.fcode,nickname:Q.nickname,xp:REC(Q).xp,ft:hofBest(id),tt:titleWorn(id)},x||{})};
@@ -145,7 +150,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       n:RFL().filter(r=>r.referrer===uid).length,paid:RFL().filter(r=>r.referrer===uid&&r.rewarded).length,new:RFL().filter(r=>r.referrer===uid&&!r.seen).length});
     const frJ=()=>{FC(uid);touch();const L=FRL(),last=Q=>{const t=Math.max(Q.last||0,Q.lastR||0,Q.seenT||0);return t?new Date(t).toISOString():null};
       return {code:db.prof[uid].fcode,friends:L.filter(f=>f.acc&&(f.a===uid||f.b===uid)).map(f=>{const o=f.a===uid?f.b:f.a;return card(o,{last:last(db.prof[o]),seen:db.prof[o].seenT?new Date(db.prof[o].seenT).toISOString():null,since:f.accAt,dm:DML().filter(m=>m.to===uid&&m.from===o&&!m.seen).length})}),
-        incoming:L.filter(f=>!f.acc&&f.b===uid).map(f=>card(f.a,{at:f.at})),outgoing:L.filter(f=>!f.acc&&f.a===uid).map(f=>card(f.b,{at:f.at})),gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,dm_new:dmNew(),inv:invN()}};
+        incoming:L.filter(f=>!f.acc&&f.b===uid).map(f=>card(f.a,{at:f.at})),outgoing:L.filter(f=>!f.acc&&f.a===uid).map(f=>card(f.b,{at:f.at})),gifts_new:GFL().filter(g=>g.to===uid&&!g.seen).length,dm_new:dmNew(),inv:invN(),blocked:BLK().filter(k=>k.a===uid).length}};
+    const blkJ=()=>({blocked:BLK().filter(k=>k.a===uid&&db.prof[k.b]).sort((x,y)=>x.at<y.at?1:-1).map(k=>card(k.b,{at:k.at}))});
     // v6.43: the mailbox and coupons (same answers as qz_mails / qz_mail_claim / qz_coupon_redeem): window.__MOCK_MAILS = [{id,title,body,rewards,expires_at}]
     // (each account takes each letter once), window.__MOCK_COUPONS = {CODE: rewards} (once per account)
     const MCL=()=>db.mclaim||(db.mclaim={}),MAILS=()=>(window.__MOCK_MAILS||[]).filter(m=>!MCL()[uid+':'+m.id]&&(!m.expires_at||new Date(m.expires_at)>Date.now()))
@@ -166,6 +172,10 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_coupon_redeem'){if(window.__MOCK_BAN)return pgerr('banned');const c=String(body.p_code||'').toUpperCase().replace(/[^A-Z0-9]/g,''),C=window.__MOCK_COUPONS||{};
       if(!C[c])return res(200,{error:'coupon_not_found'});const U=db.cuse||(db.cuse={});if(U[uid+':'+c])return res(200,{error:'coupon_used'});
       U[uid+':'+c]=1;const got=GIVE(C[c],'coupon');save(db);return res(200,Object.assign({code:c,got},WAL()))}
+    // v6.74: the match's ticket (qz_match_start): window.__mockTickets = what was asked; window.__MOCK_NOTICKET = a database before v6.74
+    if(fn==='qz_match_start'){if(window.__MOCK_NOTICKET)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_match_start in the schema cache'});
+      if(window.__MOCK_BAN)return pgerr('banned');const t='tk'+uuid();(window.__mockTickets=window.__mockTickets||[]).push(Object.assign({token:t,at:Date.now()},body||{}));
+      (db.tks||(db.tks={}))[t]={uid,mode:String((body||{}).p_mode||''),at:Date.now()};save(db);return res(200,{token:t})}
     if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length,gun:GNS().length,inq:(db.inq||[]).filter(q=>q.uid===uid&&q.reply&&!q.seen).length})}
     // v6.42: a ban (window.__MOCK_BAN) refuses what qz_guard refuses in schema.sql
     if(window.__MOCK_BAN&&['qz_buy','qz_claim','qz_round_claim','qz_import_rec','qz_ny_add','qz_ny_exchange','qz_mission_claim','qz_decode','qz_bingo_reset','qz_bingo_shuffle',
@@ -181,7 +191,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(fn==='qz_ref_set'){const c=String(body.p_code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(P.refBy)throw 'ref_already';if(Date.now()-(P.created||Date.now())>g.ref_days*864e5)throw 'ref_old';
         if(c.length!==6)throw 'not_found';const t=Object.keys(db.prof).find(id=>FC(id)===c);if(!t)throw 'not_found';if(t===uid)throw 'friend_self';if(db.prof[t].refBy===uid)throw 'ref_loop';
         P.refBy=t;P.coins+=g.ref_new_coins;RFL().push({referee:uid,referrer:t,at:Date.now(),paid:false,rewarded:false,seen:true});db.log.push([uid,g.ref_new_coins,'ref_welcome']);
-        const f=pair(uid,t);if(f){f.acc=true;f.accAt=f.accAt||new Date().toISOString()}else if(FRL().filter(x=>x.a===t||x.b===t).length<100)FRL().push({a:t,b:uid,acc:true,at:new Date().toISOString(),accAt:new Date().toISOString()});
+        if(P.reborn)throw 'ref_reborn';const f=pair(uid,t);if(!f&&!blocked(uid,t)&&FRL().filter(x=>x.a===t||x.b===t).length<100)FRL().push({a:uid,b:t,acc:false,at:new Date().toISOString(),accAt:null});
         save(db);return res(200,{by:db.prof[t].nickname,bonus:g.ref_new_coins,coins:P.coins,left:Math.max(0,g.ref_matches-(P.matches|0)),tickets:g.ref_new_tickets})}
       if(fn==='qz_ref_check'){if(!P.refBy)return res(200,{state:'none'});if(P.refDone)return res(200,{state:'done'});if((P.matches|0)<g.ref_matches)return res(200,{state:'wait',left:g.ref_matches-(P.matches|0)});
         P.refDone=true;P.tickets=(P.tickets|0)+g.ref_new_tickets;const R=db.prof[P.refBy],row=RFL().find(r=>r.referee===uid),n=RFL().filter(r=>r.referrer===P.refBy&&r.rewarded).length;let paid=false;
@@ -196,16 +206,20 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       for(const m of DML())if(m.to===uid&&m.from===t)m.seen=true;save(db);
       return res(200,{msgs:DML().filter(m=>(m.from===uid&&m.to===t||m.from===t&&m.to===uid)&&m.id>(body.p_after|0)).slice(-60).map(m=>({id:m.id,mine:m.from===uid,text:m.text,at:new Date(m.at).toISOString()})),seen:db.prof[t].seenT?new Date(db.prof[t].seenT).toISOString():null,dm_new:dmNew()})}
     catch(e){if(typeof e==='string')return pgerr(e);throw e}}
-    if(['qz_friends','qz_friend_add','qz_friend_answer','qz_friend_remove','qz_gift','qz_gift_inbox'].includes(fn)){try{
+    if(['qz_friends','qz_friend_add','qz_friend_answer','qz_friend_remove','qz_gift','qz_gift_inbox','qz_block','qz_blocks','qz_unblock'].includes(fn)){try{
       if(fn==='qz_friends'){save(db);return res(200,frJ())}
-      if(fn==='qz_friend_add'){const t=find(body.p_who);if(t===uid)throw 'friend_self';const f=pair(uid,t);
+      if(fn==='qz_block'){const t=find(body.p_who);if(t===uid)throw 'friend_self';if(!BLK().some(k=>k.a===uid&&k.b===t)){if(BLK().filter(k=>k.a===uid).length>=500)throw 'block_full';BLK().push({a:uid,b:t,at:new Date().toISOString()})}
+        db.fr=FRL().filter(x=>!(x.a===uid&&x.b===t||x.a===t&&x.b===uid));db.inv=IVL().filter(i=>!(i.from===uid&&i.to===t||i.from===t&&i.to===uid));save(db);return res(200,frJ())}
+      if(fn==='qz_blocks')return res(200,blkJ());
+      if(fn==='qz_unblock'){const t=find(body.p_who);db.blk=BLK().filter(k=>!(k.a===uid&&k.b===t));save(db);return res(200,blkJ())}
+      if(fn==='qz_friend_add'){const t=find(body.p_who);if(t===uid)throw 'friend_self';if(BLK().some(k=>k.a===uid&&k.b===t))throw 'you_blocked';if(BLK().some(k=>k.a===t&&k.b===uid))throw 'friend_blocked';const f=pair(uid,t);
         if(f){if(f.acc)throw 'friend_already';if(f.a===uid)throw 'friend_pending';f.acc=true;f.accAt=new Date().toISOString();save(db);return res(200,{...frJ(),done:'accepted'})}
         if(FRL().filter(x=>x.a===uid||x.b===uid).length>=100||FRL().filter(x=>x.a===uid&&!x.acc).length>=30)throw 'friend_full';
         FRL().push({a:uid,b:t,acc:false,at:new Date().toISOString(),accAt:null});save(db);return res(200,{...frJ(),done:'sent'})}
       if(fn==='qz_friend_answer'){const t=find(body.p_who),f=FRL().find(x=>x.a===t&&x.b===uid&&!x.acc);if(!f)throw 'no_request';
         if(body.p_yes){f.acc=true;f.accAt=new Date().toISOString()}else db.fr=FRL().filter(x=>x!==f);save(db);return res(200,frJ())}
       if(fn==='qz_friend_remove'){const t=find(body.p_who);db.fr=FRL().filter(x=>!(x.a===uid&&x.b===t||x.a===t&&x.b===uid));save(db);return res(200,frJ())}
-      if(fn==='qz_gift'){const t=find(body.p_who);if(t===uid)throw 'friend_self';const f=pair(uid,t);if(!f||!f.acc)throw 'not_friends';
+      if(fn==='qz_gift'){const t=find(body.p_who);if(t===uid)throw 'friend_self';const f=pair(uid,t);if(!f||!f.acc||blocked(uid,t))throw 'not_friends';
         const r=PM[body.p_gun];if(r&&r.tier)throw 'gacha_only';if(!r||!r.sold)throw 'not_for_sale';if(r.free)throw 'friend_has_it';if(P.coins<r.price)throw 'not_enough_coins';
         db.own[t]=db.own[t]||[];if(db.own[t].includes(body.p_gun))throw 'friend_has_it';db.own[t].push(body.p_gun);P.coins-=r.price;
         GFL().push({from:uid,to:t,gun:body.p_gun,price:r.price,at:new Date().toISOString(),seen:false});db.log.push([uid,-r.price,'gift']);save(db);return res(200,{coins:P.coins,gun:body.p_gun,to:db.prof[t].nickname})}
@@ -224,9 +238,12 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       db.inq=(db.inq||[]).filter(q=>q.uid!==uid);db.fr=FRL().filter(f=>f.a!==uid&&f.b!==uid);db.dms=DML().filter(m=>m.from!==uid&&m.to!==uid);db.gifts=GFL().filter(g=>g.to!==uid);
       db.log=db.log.filter(l=>l[0]!==uid);if(db.mis)delete db.mis[uid];if(db.bingo)delete db.bingo[uid];if(db.season)delete db.season[uid];if(db.side)delete db.side[uid];
       (window.__mockDeleted=window.__mockDeleted||[]).push(uid);save(db);return res(200,{ok:true})}
-    if(fn==='qz_set_nickname'){P.nickname=clean(body.p_nick);save(db);return res(200,P.nickname)}
+    if(fn==='qz_set_nickname'){const raw=String(body.p_nick||'').replace(/[\u0000-\u001f]/g,'').trim(),n=clean(raw);if(raw.length<2)return pgerr('nick_short');
+      if(Object.keys(db.prof).some(id=>id!==uid&&String(db.prof[id].nickname).toLowerCase()===n.toLowerCase()))return pgerr('nick_taken');P.nickname=n;save(db);return res(200,P.nickname)}
     if(fn==='qz_buy'){const r=PM[body.p_gun];if(r&&r.tier)return pgerr('gacha_only');if(!r||!r.sold)return pgerr('not_for_sale');if(r.free||db.own[uid].includes(body.p_gun))return pgerr('already_owned');
       if(P.coins<r.price)return pgerr('not_enough_coins');P.coins-=r.price;db.own[uid].push(body.p_gun);db.log.push([uid,-r.price,'buy']);save(db);return res(200,{coins:P.coins,gun:body.p_gun})}
+    if((fn==='qz_claim'||fn==='qz_round_claim')&&window.__MOCK_NOTOKEN&&'p_token' in (body||{}))return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+'(p_token, ...) in the schema cache'});
+    if(fn==='qz_claim'||fn==='qz_round_claim')(window.__mockClaimBodies=window.__mockClaimBodies||[]).push(Object.assign({fn},body||{}));
     if(fn==='qz_claim'){if(window.__MOCK_NOMATCH&&'p_match' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_bonus, p_cleared, p_match, ...) in the schema cache'});
       if(window.__MOCK_NOACH&&'p_ach' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_ach, p_bonus, ...) in the schema cache'});
       if(window.__MOCK_NOHS&&'p_hs' in body)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_claim(p_cleared, p_damage, p_hs, ...) in the schema cache'});
