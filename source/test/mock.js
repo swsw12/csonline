@@ -139,7 +139,7 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     const FRL=()=>db.fr||(db.fr=[]),GFL=()=>db.gifts||(db.gifts=[]),pair=(x,y)=>FRL().find(f=>f.a===x&&f.b===y||f.a===y&&f.b===x);
     // v6.74: blocks (db.blk = [{a, b, at}]: a blocked b)
     const BLK=()=>db.blk||(db.blk=[]),blocked=(x,y)=>BLK().some(k=>k.a===x&&k.b===y||k.a===y&&k.b===x);
-    const find=w=>{w=String(w||'').trim();if(!w)throw 'not_found';const c=w.toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.length===6)for(const id in db.prof){FC(id);if(db.prof[id].fcode===c)return id}
+    const find=w=>{w=String(w||'').trim();if(!w)throw 'not_found';if(/^k:[0-9a-f]{20}$/i.test(w)){const c=(db.ckeys||{})[w.slice(2).toLowerCase()];if(!c)throw 'not_found';return c.uid}const c=w.toUpperCase().replace(/[^A-Z0-9]/g,'');if(c.length===6)for(const id in db.prof){FC(id);if(db.prof[id].fcode===c)return id}
       const ids=Object.keys(db.prof).filter(id=>db.prof[id].nickname.toLowerCase()===w.toLowerCase());if(!ids.length)throw 'not_found';if(ids.length>1)throw 'nick_many';return ids[0]};
     const card=(id,x)=>{const Q=db.prof[id];FC(id);return Object.assign({code:Q.fcode,nickname:Q.nickname,xp:REC(Q).xp,ft:hofBest(id),tt:titleWorn(id)},x||{})};
     const DML=()=>db.dms||(db.dms=[]),dmNew=()=>DML().filter(m=>m.to===uid&&!m.seen).length,touch=()=>{if(P)P.seenT=Date.now()};
@@ -176,7 +176,17 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_match_start'){if(window.__MOCK_NOTICKET)return err(404,{code:'PGRST202',message:'Could not find the function public.qz_match_start in the schema cache'});
       if(window.__MOCK_BAN)return pgerr('banned');const t='tk'+uuid();(window.__mockTickets=window.__mockTickets||[]).push(Object.assign({token:t,at:Date.now()},body||{}));
       (db.tks||(db.tks={}))[t]={uid,mode:String((body||{}).p_mode||''),at:Date.now()};save(db);return res(200,{token:t})}
-    if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length,gun:GNS().length,inq:(db.inq||[]).filter(q=>q.uid===uid&&q.reply&&!q.seen).length})}
+    // v6.75: the global chat's keys (qz_chat_key / qz_chat_who; db.ckeys[kid] = {uid, pub, at}; a profile's bannedT in the future = suspended) and qz_online
+    if(fn==='qz_chat_key'){if(window.__MOCK_BAN)return pgerr('banned');if(window.__MOCK_CHAT_OFF)return pgerr('chat_off');const pub=String((body||{}).p_pub||'');if(!/^[A-Za-z0-9_-]{86,88}$/.test(pub))return pgerr('bad_key');
+      const CK=db.ckeys||(db.ckeys={});if(Object.values(CK).some(k=>k.uid===uid&&Date.now()-k.at<5e3))return pgerr('too_soon');
+      let h='',x=0;for(let r=0;r<3;r++){for(const ch of pub+':'+uid+':'+r)x=(Math.imul(x^ch.charCodeAt(0),16777619)+r)>>>0;h+=x.toString(16).padStart(8,'0')}const kid=h.slice(0,20);
+      CK[kid]={uid,pub,at:Date.now()};const mine=Object.entries(CK).filter(([,k])=>k.uid===uid).sort((a,b)=>b[1].at-a[1].at);for(const [k] of mine.slice(3))delete CK[k];
+      save(db);return res(200,{kid,nickname:P.nickname,ms:Date.now()+(window.__MOCK_SKEW||0)})}
+    if(fn==='qz_chat_who'){const CK=db.ckeys||{},o={};for(const k of (Array.isArray((body||{}).p_kids)?body.p_kids:[]).slice(0,20)){const c=CK[k],Q=c&&db.prof[c.uid];if(!Q)continue;
+        o[k]={pub:c.pub,n:Q.nickname,tt:titleWorn(c.uid),ft:hofBest(c.uid),b:!!(Q.bannedT&&Q.bannedT>Date.now()),me:c.uid===uid,x:(db.blk||[]).some(z=>z.a===uid&&z.b===c.uid)}}
+      (window.__mockWho=window.__mockWho||[]).push((body||{}).p_kids);return res(200,o)}
+    if(fn==='qz_online')return res(200,{n:Object.values(db.prof).filter(q=>q.seenT&&Date.now()-q.seenT<150e3).length,ms:Date.now()+(window.__MOCK_SKEW||0),on:!window.__MOCK_CHAT_OFF});
+    if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length,gun:GNS().length,inq:(db.inq||[]).filter(q=>q.uid===uid&&q.reply&&!q.seen).length,chat:!window.__MOCK_CHAT_OFF})}
     // v6.42: a ban (window.__MOCK_BAN) refuses what qz_guard refuses in schema.sql
     if(window.__MOCK_BAN&&['qz_buy','qz_claim','qz_round_claim','qz_import_rec','qz_ny_add','qz_ny_exchange','qz_mission_claim','qz_decode','qz_bingo_reset','qz_bingo_shuffle',
       'qz_season_decode','qz_season_reset','qz_season_shuffle','qz_side_decode','qz_side_reset','qz_side_shuffle','qz_exchange','qz_trans_exchange','qz_friend_add','qz_friend_answer',
@@ -387,4 +397,31 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(db.own[uid].includes(body.p_gun))return pgerr('already_owned');if((P.frags|0)<c)return pgerr('not_enough_frags');P.frags-=c;db.own[uid].push(body.p_gun);
       db.glog=db.glog||[];db.glog.push({uid,at:new Date().toISOString(),src:'exchange',kind:'gun',tier:r.tier,gun_id:body.p_gun,amount:-c,pity_hit:false});save(db);return res(200,{gun:body.p_gun,fragments:P.frags})}
     return err(404,{code:'PGRST202',message:'function not found'})}
-  return err(404,{message:'not found '+p})}catch(e){return err(500,{message:String(e)})}}})();
+  return err(404,{message:'not found '+p})}catch(e){return err(500,{message:String(e)})}};
+// v6.75: Supabase Realtime for the global chat — a socket to wss://mock.supabase.test/realtime/... speaks the Phoenix messages the game
+// sends (join, heartbeat, broadcast, access_token, leave); a broadcast goes to every other socket of this page and, through a
+// BroadcastChannel, of this browser's other pages (private and public channels apart). window.__mockRt = the frames this page sent;
+// __MOCK_RT_DENY_PRIVATE refuses a private join (no policies); __MOCK_RT_MUTE: the server answers nothing (a dead link); __mockRtInject(frame) hands this page's sockets a frame; __mockRtKill() drops them
+(function(){const OW=window.WebSocket;if(!OW)return;const bc=typeof BroadcastChannel!=='undefined'?new BroadcastChannel('__mockrt'):null;const socks=new Set();
+  if(bc)bc.onmessage=e=>{for(const s of socks)s._in(e.data)};
+  class MockWS{constructor(url){this.url=String(url);this.readyState=0;this.topics=new Map();socks.add(this);(window.__mockRtUrls=window.__mockRtUrls||[]).push(this.url);
+      setTimeout(()=>{if(this.readyState!==0)return;this.readyState=1;if(this.onopen)this.onopen({})},20)}
+    send(d){if(this.readyState!==1)throw new Error('InvalidStateError');const m=JSON.parse(d);(window.__mockRt=window.__mockRt||[]).push(m);if(window.__MOCK_RT_MUTE)return;
+      const rep=p=>this._emit({topic:m.topic,event:'phx_reply',payload:p,ref:m.ref});
+      if(m.event==='heartbeat'){rep({status:'ok',response:{}});return}
+      if(m.event==='phx_join'){const cfg=(m.payload&&m.payload.config)||{};
+        if(cfg.private&&window.__MOCK_RT_DENY_PRIVATE){rep({status:'error',response:{reason:'Unauthorized: You do not have permissions to read from this Channel topic: qz-lobby'}});return}
+        this.topics.set(m.topic,{priv:!!cfg.private,self:!!(cfg.broadcast&&cfg.broadcast.self),tok:m.payload&&m.payload.access_token});rep({status:'ok',response:{postgres_changes:[]}});return}
+      if(m.event==='phx_leave'){this.topics.delete(m.topic);rep({status:'ok',response:{}});return}
+      if(m.event==='access_token'){const t=this.topics.get(m.topic);if(t)t.tok=m.payload&&m.payload.access_token;return}
+      if(m.event==='broadcast'){const t=this.topics.get(m.topic);if(!t)return;const f={topic:m.topic,event:'broadcast',payload:{type:'broadcast',event:m.payload.event,payload:m.payload.payload},ref:null,priv:t.priv};
+        if(bc)bc.postMessage(f);for(const s of socks)if(s!==this)s._in(f);if(t.self)this._in(f)}}
+    _in(f){const t=this.topics.get(f.topic);if(!t||t.priv!==!!f.priv||this.readyState!==1)return;const o=Object.assign({},f);delete o.priv;this._emit(o)}
+    _emit(o){setTimeout(()=>{if(this.readyState===1&&this.onmessage)this.onmessage({data:JSON.stringify(o)})},5)}
+    close(){if(this.readyState===3)return;this.readyState=3;socks.delete(this);setTimeout(()=>{if(this.onclose)this.onclose({code:1000})},5)}}
+  window.__mockRtInject=f=>{for(const s of socks)s._in(Object.assign({priv:true},f))};
+  window.__mockRtKill=()=>{for(const s of [...socks])s.close()};
+  window.__mockRtSocks=()=>socks.size;
+  const W=function(url,p){if(String(url).startsWith('wss://mock.supabase.test/'))return new MockWS(url);return p===undefined?new OW(url):new OW(url,p)};
+  W.prototype=OW.prototype;W.CONNECTING=0;W.OPEN=1;W.CLOSING=2;W.CLOSED=3;window.WebSocket=W})();
+})();

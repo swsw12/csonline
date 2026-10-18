@@ -59,6 +59,10 @@
 --     구글 · 카카오 계정 번호는 되돌릴 수 없는 해시로 30일(정지 중에 탈퇴했으면 정지가 끝날 때까지) deleted_ids에 남아, 같은 사람이 다시 가입하면
 --     정지가 이어지고 가입 보상(코인 · 기초 훈련 · 초대 · 새 계정 우편)이 없습니다. 명예의 전당 기록은 관리자 페이지 「의심 유저 → 명예의 전당」에서
 --     주인이 지울 수 있습니다(qz_admin_hof_del).
+--   * 전체 채팅(v6.75): 로비에서 지금 접속한 플레이어끼리 — 채팅 내용은 저장하지 않고 Supabase Realtime Broadcast(비공개 채널 qz-lobby)로
+--     바로 주고받습니다. 줄마다 브라우저가 만든 키로 서명하고(공개 키만 chat_keys, qz_chat_key), 받는 쪽이 qz_chat_who로 누구 키인지 확인한 뒤
+--     보여 줘서 남의 이름으로는 못 씁니다. 채널 정책 두 개(realtime.messages)는 이 파일 끝에서 만듭니다. 관리자 페이지
+--     「게임 설정 → 해독기 · 초대 · 채팅 → 전체 채팅」(gacha_config.chat_on)으로 끌 수 있습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -342,6 +346,8 @@ alter table public.gacha_config add column if not exists ny_day_cap      integer
 alter table public.gacha_config add column if not exists rank_day_kills  integer not null default 2000 check (rank_day_kills between 0 and 100000);
 alter table public.gacha_config add column if not exists rank_day_inf    integer not null default 400 check (rank_day_inf between 0 and 100000);
 alter table public.gacha_config add column if not exists rank_day_xp     integer not null default 100000 check (rank_day_xp between 0 and 10000000);
+-- v6.75: the lobby's 전체 채팅 on or off (off: no new keys, nothing sent on the channel, and the pages close it at their next heartbeat)
+alter table public.gacha_config add column if not exists chat_on         boolean not null default true;
 -- who brought whom (one row per new player); rewarded = the inviter was paid (false once over ref_cap); seen = the inviter saw the reward
 create table if not exists public.referrals (
   referee  uuid primary key references auth.users(id) on delete cascade,
@@ -2601,7 +2607,9 @@ create or replace function public.qz_blocked(x uuid, y uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (select 1 from public.blocks k where (k.a = x and k.b = y) or (k.a = y and k.b = x))
 $$;
--- whom a request or a gift is for: a friend code (with or without #, any case), else a nickname only one player has
+-- whom a request or a gift is for: a friend code (with or without #, any case), else a nickname only one player has; v6.75: or k: and a
+-- global-chat key id (22 characters, so never a nickname): that key's player (the chat's name menu, exact even where a nickname reads
+-- like someone's friend code)
 create or replace function public.qz_find_player(p_who text) returns uuid
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -2611,6 +2619,11 @@ declare
   n integer;
 begin
   if w = '' then raise exception 'not_found'; end if;
+  if lower(w) ~ '^k:[0-9a-f]{20}$' then
+    r := (select k.user_id from public.chat_keys k where k.kid = lower(substr(w, 3)));
+    if r is null then raise exception 'not_found'; end if;
+    return r;
+  end if;
   if char_length(c) = 6 then
     r := (select t.id from public.profiles t where t.fcode = c);
     if r is not null then return r; end if;
@@ -2854,7 +2867,8 @@ begin
     'inv', (select count(*) from public.room_invites i where i.to_id = uid and i.at > now() - interval '3 minutes'),
     'mail', (select count(*) from public.qz_mail_open(uid)),
     'gun', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen),
-    'inq', (select count(*) from public.inquiries q where q.user_id = uid and q.reply is not null and not q.seen));   -- (v6.66: answers not read yet)
+    'inq', (select count(*) from public.inquiries q where q.user_id = uid and q.reply is not null and not q.seen),   -- (v6.66: answers not read yet)
+    'chat', coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true));   -- (v6.75: the lobby's chat on or off)
 end $$;
 
 -- a message to a friend (p_who = their code). Friends only; 1..200 characters; at most 20 a minute and 300 an hour; each pair keeps its newest 100.
@@ -4670,3 +4684,96 @@ begin
 end $$;
 revoke all on function public.qz_tut_claim() from public, anon;
 grant execute on function public.qz_tut_claim() to authenticated;
+
+-- ============================================================================================================
+-- 전체 채팅 (v6.75): 지금 접속한 플레이어끼리 로비에서 — 채팅 내용은 어디에도 저장하지 않아요
+-- ============================================================================================================
+-- A line goes page to page over Supabase Realtime Broadcast on the private channel qz-lobby: nothing is written for it, here or in
+-- realtime.messages (Realtime only runs the two policies below as a page joins, and rolls that back). So that nobody can write as someone
+-- else, every page signs its lines with a key pair it made itself (ECDSA P-256 in the browser; the private half never leaves the page):
+-- the public half is put with the account here (chat_keys, qz_chat_key), and every page that shows a line asks whose key it is
+-- (qz_chat_who: nickname, titles, suspended) and checks the signature first. An account keeps its three newest keys (a tab each). A
+-- suspended account cannot add a key or send, and its lines are not shown. The lobby's 「접속 N명」 is qz_online (the game's heartbeat).
+-- The admin page can switch the chat off (gacha_config.chat_on): no new keys, the send policy refuses, and qz_ping / qz_online tell the
+-- pages, which close it.
+create table if not exists public.chat_keys (
+  kid     text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  pub     text not null,
+  at      timestamptz not null default now()
+);
+create index if not exists chat_keys_user on public.chat_keys (user_id, at desc);
+alter table public.chat_keys enable row level security;
+revoke all on table public.chat_keys from public, anon, authenticated;
+-- the chat is on (the admin page's 게임 설정), and the player signed in and not suspended (the channel's send policy asks it)
+create or replace function public.qz_chat_ok() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select auth.uid() is not null and coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true)
+    and not exists (select 1 from public.profiles p where p.id = auth.uid() and p.banned_until > now())
+$$;
+-- this page's public key (a raw P-256 point, base64url) → its id (kid), the nickname its lines will carry and the server's clock in ms
+-- (lines carry the time they were sent by that clock, so a computer whose own clock is wrong still gets through); one every 5 s
+create or replace function public.qz_chat_key(p_pub text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_pub text := left(coalesce(p_pub, ''), 200);
+  v_kid text;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  if not coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true) then raise exception 'chat_off'; end if;
+  if v_pub !~ '^[A-Za-z0-9_-]{86,88}$' then raise exception 'bad_key'; end if;
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  if exists (select 1 from public.chat_keys k where k.user_id = uid and k.at > now() - interval '5 seconds') then raise exception 'too_soon'; end if;
+  v_kid := left(encode(sha256(convert_to(v_pub || ':' || uid::text, 'UTF8')), 'hex'), 20);
+  insert into public.chat_keys (kid, user_id, pub) values (v_kid, uid, v_pub) on conflict (kid) do update set at = now();
+  delete from public.chat_keys k where k.user_id = uid
+    and k.kid not in (select k2.kid from public.chat_keys k2 where k2.user_id = uid order by k2.at desc limit 3);
+  return jsonb_build_object('kid', v_kid, 'nickname', (select p.nickname from public.profiles p where p.id = uid),
+    'ms', floor(extract(epoch from clock_timestamp()) * 1000)::bigint);
+end $$;
+-- whose keys these are (20 at most): {kid: {pub, n: nickname, tt: the title worn, ft: the hall-of-fame title, b: suspended, me: mine,
+-- x: I blocked them}}; a key not in the answer is nobody's (its lines are dropped)
+create or replace function public.qz_chat_who(p_kids text[]) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_object_agg(k.kid, jsonb_build_object('pub', k.pub, 'n', p.nickname, 'tt', public.qz_title_worn(p.id), 'ft', public.qz_first_best(p.id),
+      'b', coalesce(p.banned_until > now(), false), 'me', p.id = auth.uid(),
+      'x', exists (select 1 from public.blocks bl where bl.a = auth.uid() and bl.b = k.user_id))), '{}'::jsonb)
+  from public.chat_keys k join public.profiles p on p.id = k.user_id
+  where k.kid = any((coalesce(p_kids, '{}'::text[]))[1:20])
+$$;
+-- how many players have the game open right now (a heartbeat in the last 150 s), the server's clock in ms, and whether the chat is on
+create or replace function public.qz_online() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('n', (select count(*) from public.profiles p where p.last_seen > now() - interval '150 seconds'),
+    'ms', floor(extract(epoch from now()) * 1000)::bigint, 'on', coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true))
+$$;
+revoke all on function public.qz_chat_ok() from public, anon;
+revoke all on function public.qz_chat_key(text) from public, anon;
+revoke all on function public.qz_chat_who(text[]) from public, anon;
+revoke all on function public.qz_online() from public, anon;
+grant execute on function public.qz_chat_ok() to authenticated;
+grant execute on function public.qz_chat_key(text) to authenticated;
+grant execute on function public.qz_chat_who(text[]) to authenticated;
+grant execute on function public.qz_online() to authenticated;
+-- the channel's two policies (Realtime Authorization): signed-in players may read qz-lobby's broadcasts, unsuspended ones send them.
+-- Skipped with a notice where the project has no realtime schema (or an older one); the game then uses a public channel of the same name.
+do $$
+begin
+  if to_regclass('realtime.messages') is null then
+    raise notice 'realtime.messages not found: the chat policies are skipped';
+    return;
+  end if;
+  begin
+    execute 'drop policy if exists "qz lobby chat read" on realtime.messages';
+    execute 'drop policy if exists "qz lobby chat send" on realtime.messages';
+    execute $p$create policy "qz lobby chat read" on realtime.messages for select to authenticated
+      using (realtime.messages.extension = 'broadcast' and realtime.topic() in ('qz-lobby', 'realtime:qz-lobby') and (select auth.uid()) is not null)$p$;
+    execute $p$create policy "qz lobby chat send" on realtime.messages for insert to authenticated
+      with check (realtime.messages.extension = 'broadcast' and realtime.topic() in ('qz-lobby', 'realtime:qz-lobby') and public.qz_chat_ok())$p$;
+  exception when others then
+    raise notice 'the chat policies could not be made: %', sqlerrm;
+  end;
+end $$;

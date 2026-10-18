@@ -299,13 +299,14 @@ const CFG_G=[
     ['side_owned_coins','이미 가진 무기 줄 대신 주는 코인',''],['side_lines','빙고 줄 보상','한 줄에 하나, 12개']]],
   ['초월',[['trans_frag_min','해독기 1개당 초월 조각 최소',''],['trans_frag_max','해독기 1개당 초월 조각 최대',''],['trans_cost','초월 무기 교환에 드는 조각',''],['trans_guns','교환할 수 있는 초월 무기','무기 ID, 한 줄에 하나']]],
   ['랭킹 하루 상한',[['rank_day_kills','하루 처치','계정마다 · 한국 시간 하루'],['rank_day_inf','하루 감염',''],['rank_day_xp','하루 경험치','판 + 라운드']]],
+  ['전체 채팅',[['chat_on','로비 전체 채팅','끄면 아무도 못 보내고 열린 채팅도 30초 안에 닫혀요']]],
   ['초대',[['ref_new_coins','새 계정이 링크로 바로 받는 코인',''],['ref_new_tickets','새 계정이 판을 채우면 받는 해독기',''],['ref_coins','초대한 사람이 받는 코인',''],['ref_tickets','초대한 사람이 받는 해독기',''],
     ['ref_matches','보상까지 새 계정이 끝내야 하는 판',''],['ref_cap','초대 보상을 받는 최대 인원',''],['ref_days','링크를 쓸 수 있는 가입 후 일수','']]],
   ['예전 행운 주머니 (지금은 안 써요)',[['cost1','1번 가격',''],['cost10','10번 가격',''],['rate_s','S 확률','0 ~ 1'],['rate_a','A 확률','0 ~ 1'],['rate_coin','코인 확률','0 ~ 1'],['pity','천장 (이 번째에 S)',''],
     ['frag_min','조각 최소',''],['frag_max','조각 최대',''],['coin_table','코인 표','[[코인, 가중치], …]']],true]];
 const lineWords=s=>{const m=/^(gun|coins|frags|tickets):(.+)$/.exec(s);if(!m)return {t:s+' (알 수 없는 꼴)',g:false};const v=m[2];
   return m[1]==='gun'?{t:GN(v),g:true}:m[1]==='coins'?{t:'코인 '+N(v)}:m[1]==='frags'?{t:'해독 조각 '+N(v)}:{t:'근하신년 해독기 '+N(v)}};
-async function vSettings(sub){const M=$('main');const S=[['prices','무기 가격'],['gacha','해독기 · 초월 · 초대'],['missions','일일 미션']];if(!S.some(x=>x[0]===sub))sub='prices';
+async function vSettings(sub){const M=$('main');const S=[['prices','무기 가격'],['gacha','해독기 · 초대 · 채팅'],['missions','일일 미션']];if(!S.some(x=>x[0]===sub))sub='prices';
   M.innerHTML=head('게임 설정','바로 게임에 반영돼요. 바꾼 값은 schema.sql을 다시 실행해도 그대로예요.')+`<div class="sub">${S.map(([k,t])=>`<a class="chip${k===sub?' on':''}" href="#/settings/${k}"${k===sub?' aria-current="page"':''}>${t}</a>`).join('')}</div><div id="setB"><div class="empty">불러오는 중…</div></div>`;
   try{if(sub==='prices'){const [p,c]=await Promise.all([API.rpc('qz_admin_prices'),ST.cfg?Promise.resolve(ST.cfg):API.rpc('qz_admin_config_get')]);ST.prices=p;ST.cfg=c;renderPrices()}
     else if(sub==='gacha'){ST.cfg=await API.rpc('qz_admin_config_get');ST.cfgDraft={};renderCfg()}

@@ -6,7 +6,7 @@ FONTS = os.path.join(R, 'fonts')  # Galmuri11 (SIL OFL 1.1); subsetting needs: p
 os.makedirs(os.path.join(D, 'assets'), exist_ok=True)
 os.makedirs(os.path.join(D, 'standalone', 'assets'), exist_ok=True)
 order = ['util', 'sb', 'errlog', 'i18n', 'design', 'world', 'tex', 'shaders', 'map', 'mapsub', 'mapit_data', 'mapit', 'mapmil_data', 'mapmil', 'maprest', 'mapbt', 'mapport', 'mapbz', 'mapho_tex', 'mapho', 'mapep1', 'mapep2', 'mapep3', 'mapep4', 'mapep5', 'nav', 'models', 'gunart', 'vm', 'vmdraw', 'vmrel', 'vmknife', 'audio', 'fx',
-         'weapons', 'nyw', 'skull9', 'salamander', 'newguns', 'balrog', 'crateguns', 'katana', 'game', 'ai', 'render', 'ui', 'csoguns', 'realguns', 'minimap', 'net', 'coffin', 'drops', 'supply', 'lobby', 'main', 'scenario', 'range', 'account', 'shop', 'rank', 'newsban', 'loadout', 'inv', 'friends', 'touch', 'hskill', 'chat', 'ping', 'epbase', 'aleph', 'argus', 'khepri', 'lyrebird', 'tiamat', 'episode', 'hof', 'invite', 'fireman', 'janus', 'janus2', 'sentinel', 'q7vac', 'bhound', 'crowbar', 'thanatos', 'm4dk', 'm4dk2', 'glock', 'realguns2', 'srvnote', 'mailbox', 'gunpop', 'inquiry', 'pvp', 'bomb', 'race', 'smoke', 'ach', 'tutorial']
+         'weapons', 'nyw', 'skull9', 'salamander', 'newguns', 'balrog', 'crateguns', 'katana', 'game', 'ai', 'render', 'ui', 'csoguns', 'realguns', 'minimap', 'net', 'coffin', 'drops', 'supply', 'lobby', 'main', 'scenario', 'range', 'account', 'shop', 'rank', 'newsban', 'loadout', 'inv', 'friends', 'touch', 'hskill', 'chat', 'ping', 'epbase', 'aleph', 'argus', 'khepri', 'lyrebird', 'tiamat', 'episode', 'hof', 'invite', 'fireman', 'janus', 'janus2', 'sentinel', 'q7vac', 'bhound', 'crowbar', 'thanatos', 'm4dk', 'm4dk2', 'glock', 'realguns2', 'srvnote', 'mailbox', 'gunpop', 'inquiry', 'pvp', 'bomb', 'race', 'smoke', 'ach', 'tutorial', 'gchat']
 parts = []
 for f in order:
     p = os.path.join(S, f + '.js')
@@ -73,7 +73,9 @@ standalone = ('<!doctype html>\n<html lang="ko"><head><meta charset="utf-8">\n'
               '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'
               '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
               + head_sa + '</head><body>\n' + body + '\n<script>\n' + three + '\n</script>\n' + peer + '<script>\n' + js + '\n</script>\n</body></html>\n')
-standalone = with_csp(standalone, [SB_URL] + PEER_HOSTS, 3 if peer else 2, 'index')
+# (v6.75: the global chat's socket — Supabase Realtime, only its websocket path)
+SB_RT = SB_URL.replace('https://', 'wss://', 1) + '/realtime/v1/websocket'
+standalone = with_csp(standalone, [SB_URL, SB_RT] + PEER_HOSTS, 3 if peer else 2, 'index')
 open(os.path.join(D, 'standalone', 'index.html'), 'w', encoding='utf8').write(standalone)
 # sound files (design.js SOUND_DESIGN[...].file = 'sound/…') sit next to the page: copy sound/ into both builds
 if os.path.isdir(os.path.join(R, 'sound')):
