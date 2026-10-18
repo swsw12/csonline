@@ -682,6 +682,6 @@ function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||AC
     if(ACC.signed()&&kind){shopToast((L?'Welcome, ':'환영해요, ')+ACC.me.nickname);return}
     // first visit: offer to sign in once the lobby is on screen (the boot can still be painting characters)
     let seen=null;try{seen=LS.get('accSeen',null)}catch(e){}
-    const ask=n=>{if($('nbWin')){if(n<120)setTimeout(()=>ask(n+1),700);return}if(ACC.ses||ACC.signed()||$('accWin')||$('shopWin')||$('rkWin')||G.st!=='menu')return;if(UI.open==='menu')ACCW.open('in');else if(n<60)setTimeout(()=>ask(n+1),700)};
+    const ask=n=>{if($('nbWin')||$('pwaWin')){if(n<120)setTimeout(()=>ask(n+1),700);return}if(ACC.ses||ACC.signed()||$('accWin')||$('shopWin')||$('rkWin')||G.st!=='menu')return;if(UI.open==='menu')ACCW.open('in');else if(n<60)setTimeout(()=>ask(n+1),700)};
     if(ACC.on&&!ACC.signed()&&!seen)setTimeout(()=>ask(0),700)}).catch(e=>console.error(e));
 })();

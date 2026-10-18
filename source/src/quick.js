@@ -21,7 +21,7 @@ const QM={on:false,tried:[],n:0,t:0,step:'',noteT:0,MAX:3,WAIT:15000,
   name(){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(typeof ACC!=='undefined'&&ACC.signed()&&String(ACC.me.nickname||'').slice(0,14))||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg()},
   what(r){const L=LI(),E=MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&typeof EPS!=='undefined'?EPS[MAPDEFS[r.map].ep]:null;
     return `${String(r.host_name||'?').slice(0,14)} · ${E?(L?'Scenario: ':'시나리오: ')+E.n[L]:T(r.mode)+' · '+mapName(r.map)} · ${r.players|0}/${r.max_players|0}`},
-  async go(){if(this.on||NET.on||!this.can())return;if(UI.open!=='mp')UI.act('mp');this.name();this.on=true;this.tried=[];this.n=0;await this.next()},
+  async go(){if(this.on||NET.on)return;if(!this.can()){if(UI.open!=='mp')UI.act('mp');return}if(UI.open!=='mp')UI.act('mp');this.name();this.on=true;this.tried=[];this.n=0;await this.next()},
   // the list as it is now (a load already on its way is waited for, then one more)
   async fresh(){const idle=async()=>{for(let i=0;i<50&&ROOMS.busy;i++)await new Promise(r=>setTimeout(r,150))};await idle();await ROOMS.load();await idle()},
   async next(){if(!this.on)return;const L=LI();NET.msg='';if(UI.mpRender)UI.mpRender();this.say(L?'Looking for an open room…':'열린 방 찾는 중…');

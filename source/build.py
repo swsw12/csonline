@@ -6,7 +6,7 @@ FONTS = os.path.join(R, 'fonts')  # Galmuri11 (SIL OFL 1.1); subsetting needs: p
 os.makedirs(os.path.join(D, 'assets'), exist_ok=True)
 os.makedirs(os.path.join(D, 'standalone', 'assets'), exist_ok=True)
 order = ['util', 'sb', 'errlog', 'i18n', 'design', 'world', 'tex', 'shaders', 'map', 'mapsub', 'mapit_data', 'mapit', 'mapmil_data', 'mapmil', 'maprest', 'mapbt', 'mapport', 'mapbz', 'mapho_tex', 'mapho', 'mapep1', 'mapep2', 'mapep3', 'mapep4', 'mapep5', 'nav', 'models', 'gunart', 'vm', 'vmdraw', 'vmrel', 'vmknife', 'audio', 'fx',
-         'weapons', 'nyw', 'skull9', 'salamander', 'newguns', 'balrog', 'crateguns', 'katana', 'game', 'ai', 'render', 'ui', 'csoguns', 'realguns', 'minimap', 'net', 'coffin', 'drops', 'supply', 'lobby', 'main', 'scenario', 'range', 'account', 'shop', 'rank', 'newsban', 'loadout', 'inv', 'friends', 'touch', 'hskill', 'chat', 'ping', 'epbase', 'aleph', 'argus', 'khepri', 'lyrebird', 'tiamat', 'episode', 'hof', 'invite', 'fireman', 'janus', 'janus2', 'sentinel', 'q7vac', 'bhound', 'crowbar', 'thanatos', 'm4dk', 'm4dk2', 'glock', 'realguns2', 'srvnote', 'mailbox', 'gunpop', 'inquiry', 'pvp', 'bomb', 'race', 'smoke', 'ach', 'tutorial', 'gchat', 'moblob', 'mobroom', 'mobres', 'quick']
+         'weapons', 'nyw', 'skull9', 'salamander', 'newguns', 'balrog', 'crateguns', 'katana', 'game', 'ai', 'render', 'ui', 'csoguns', 'realguns', 'minimap', 'net', 'coffin', 'drops', 'supply', 'lobby', 'main', 'scenario', 'range', 'account', 'shop', 'rank', 'newsban', 'loadout', 'inv', 'friends', 'touch', 'hskill', 'chat', 'ping', 'epbase', 'aleph', 'argus', 'khepri', 'lyrebird', 'tiamat', 'episode', 'hof', 'invite', 'fireman', 'janus', 'janus2', 'sentinel', 'q7vac', 'bhound', 'crowbar', 'thanatos', 'm4dk', 'm4dk2', 'glock', 'realguns2', 'srvnote', 'mailbox', 'gunpop', 'inquiry', 'pvp', 'bomb', 'race', 'smoke', 'ach', 'tutorial', 'gchat', 'moblob', 'mobroom', 'mobres', 'quick', 'pwa']
 parts = []
 for f in order:
     p = os.path.join(S, f + '.js')
@@ -30,7 +30,7 @@ def with_csp(doc, connect, n_scripts, what):
         raise SystemExit('csp ' + what + ': expected %d inline scripts, found %d' % (n_scripts, len(bodies)))
     hs = ' '.join("'sha256-" + base64.b64encode(hashlib.sha256(b.encode('utf8')).digest()).decode() + "'" for b in bodies)
     pol = ("default-src 'self'; script-src " + hs + "; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; "
-           "media-src 'self' data: blob:; connect-src " + ' '.join(["'self'"] + connect) + "; worker-src blob:; object-src 'none'; "
+           "media-src 'self' data: blob:; connect-src " + ' '.join(["'self'"] + connect) + "; worker-src 'self' blob:; object-src 'none'; "
            "base-uri 'none'; form-action 'self'")
     tag = '<meta charset="utf-8">'
     if doc.count(tag) != 1:
@@ -39,6 +39,12 @@ def with_csp(doc, connect, n_scripts, what):
 LG = os.path.join(R, 'legal')
 LCFG = json.load(open(os.path.join(LG, 'legal.json'), encoding='utf8')) if os.path.isdir(LG) else {'effective': ''}
 js = js.replace("'%LEGAL_VER%'", json.dumps(str(LCFG.get('effective', ''))))
+# v6.81: the page's build id (pwa.js PWA.bid) — version.json beside the page carries it, so a page left open for long can tell a
+# newer build is out; the id is the sources' hash, the version the patch notes' newest
+BID = hashlib.sha256((js + open(os.path.join(S, 'style.css'), encoding='utf8').read() + open(os.path.join(S, 'body.html'), encoding='utf8').read()).encode('utf8')).hexdigest()[:12]
+_VM = _re.search(r"\['(v\d+(?:\.\d+)+)','\d{4}-\d\d-\d\d',\[", open(os.path.join(S, 'lobby.js'), encoding='utf8').read())
+VER = _VM.group(1) if _VM else ''
+js = js.replace("'%BUILD_ID%'", json.dumps(BID))
 css = open(os.path.join(S, 'style.css'), encoding='utf8').read()
 body = open(os.path.join(S, 'body.html'), encoding='utf8').read()
 # font subset: every non-ASCII char used anywhere + ASCII
@@ -72,11 +78,23 @@ if os.path.exists(pj):
 standalone = ('<!doctype html>\n<html lang="ko"><head><meta charset="utf-8">\n'
               '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'
               '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+              # (v6.81: the game as an app — pwa.js; relative, so the file opened from disk just finds nothing)
+              '<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0e0f12"><link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">'
+              '<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="QUARANTINE Z">\n'
               + head_sa + '</head><body>\n' + body + '\n<script>\n' + three + '\n</script>\n' + peer + '<script>\n' + js + '\n</script>\n</body></html>\n')
 # (v6.75: the global chat's socket — Supabase Realtime, only its websocket path)
 SB_RT = SB_URL.replace('https://', 'wss://', 1) + '/realtime/v1/websocket'
 standalone = with_csp(standalone, [SB_URL, SB_RT] + PEER_HOSTS, 3 if peer else 2, 'index')
 open(os.path.join(D, 'standalone', 'index.html'), 'w', encoding='utf8').write(standalone)
+# v6.81: the app's files at the site's root, beside the page (pwa/: sw.js, manifest.webmanifest, icons/) and version.json
+PW = os.path.join(R, 'pwa')
+if os.path.isdir(PW):
+    for _n in ('sw.js', 'manifest.webmanifest'):
+        shutil.copy(os.path.join(PW, _n), os.path.join(D, 'standalone', _n))
+    os.makedirs(os.path.join(D, 'standalone', 'icons'), exist_ok=True)
+    for _n in sorted(os.listdir(os.path.join(PW, 'icons'))):
+        shutil.copy(os.path.join(PW, 'icons', _n), os.path.join(D, 'standalone', 'icons', _n))
+    open(os.path.join(D, 'standalone', 'version.json'), 'w', encoding='utf8').write(json.dumps({'v': VER, 'b': BID}) + '\n')
 # sound files (design.js SOUND_DESIGN[...].file = 'sound/…') sit next to the page: copy sound/ into both builds
 if os.path.isdir(os.path.join(R, 'sound')):
     for out in (D, os.path.join(D, 'standalone')):

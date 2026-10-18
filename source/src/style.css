@@ -2075,3 +2075,27 @@ html[data-lob="l"] #mp .mpw .mpbox{flex-direction:row;flex-wrap:wrap;align-conte
 html[data-lob="l"] #mp .mpw .mpbox>*{flex:1 1 100%;min-width:0;box-sizing:border-box}
 html[data-lob="l"] #mp .mpw .mpbox>.qmbox,html[data-lob="l"] #mp .mpw .mpbox>.mpmk{flex:1 1 calc(50% - 4px)}
 html[data-lob="l"] #mp .mpw .mpbox>.mpmk{margin-top:0;align-self:flex-start}
+/* ============ v6.81: the game as an app (pwa.js): the how-to window, the phone's tip, the new version's banner, the utility button ============ */
+#pwaWin{position:fixed;inset:0;z-index:9100;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.62)}
+#pwaWin .pwin{width:min(420px,100%);max-height:100%;overflow:auto;background:#23262c;border:1px solid #4a4e58;box-shadow:0 10px 40px #000}
+#pwaWin .pwh{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#2c2f36;border-bottom:2px solid #e8a33a;color:#ffd890;font-size:15px}
+#pwaWin .pwh svg{width:20px;height:20px;flex:none}
+#pwaWin .pwh .x{margin-left:auto;min-width:0;width:34px;height:34px;padding:0;box-shadow:none}
+#pwaWin .pwb{margin:0;padding:14px 16px 6px 34px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5;color:#e8e4d8}
+#pwaWin .pwb b{color:#ffd890}
+#pwaWin .pwb svg{width:18px;height:18px;vertical-align:-4px;color:#9fd6ff}
+#pwaWin .pwn{margin:0;padding:4px 16px 14px;font-size:12px;color:#8a9098}
+#pwaTip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom));z-index:50;display:flex;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 20px);box-sizing:border-box;padding:6px 6px 6px 12px;background:rgba(14,16,20,.96);border:1px solid #4aa8e8;border-radius:4px;box-shadow:0 6px 22px rgba(0,0,0,.6);font-size:12px;color:#d8ecff}
+#pwaTip svg{width:18px;height:18px;flex:none;color:#9fd6ff}
+#pwaTip span{min-width:0}
+#pwaTip button{font:inherit;font-size:12px;min-width:0;box-shadow:none;cursor:pointer}
+#pwaTip button[data-pwa="go"]{padding:6px 10px;color:#04121e;background:#4aa8e8;border:1px solid #9fd6ff;border-radius:3px;font-weight:bold;white-space:nowrap}
+#pwaTip .x{padding:4px 6px;background:none;border:0;color:#8a9098}
+html[data-lob="l"] #pwaTip{bottom:calc(10px + env(safe-area-inset-bottom))}
+html:not([data-lob]) #pwaTip{bottom:24px}
+#pwaNew{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:50;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 20px);box-sizing:border-box;padding:6px 6px 6px 14px;background:rgba(20,24,16,.96);border:1px solid #5aa84a;border-radius:4px;box-shadow:0 6px 22px rgba(0,0,0,.6);font-size:13px;color:#d8f0c8}
+#pwaNew.off{display:none}
+#pwaNew .x{padding:4px 6px;font-size:12px;font-weight:normal;color:#8a9a88;background:none;border:0}
+#pwaNew button{font:inherit;font-size:12px;font-weight:bold;min-width:0;padding:6px 12px;color:#0c1a08;background:#7ad06a;border:1px solid #b8f0a8;border-radius:3px;box-shadow:none;cursor:pointer;white-space:nowrap}
+#pwaWin .pwo{margin:0;padding:16px;font-size:14px;color:#e8e4d8}
+#nbWin .nba .nbi svg{display:block;width:1em;height:1em}
