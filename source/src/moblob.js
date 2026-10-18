@@ -18,7 +18,7 @@ const MOBL={seg:null,obs:null,
     // (a phone's keyboard makes the window short while one types: nothing turns sideways under the fingers; leaving the field catches up)
     if(was&&(r.classList.contains('gtype')||this.typing()))return;
     if(m)r.dataset.lob=m;else delete r.dataset.lob;if(document.querySelector('#menu .lobBot'))this.pick(this.cur(),true);
-    try{if(typeof MROOM!=='undefined')MROOM.relay()}catch(e){}
+    try{if(typeof MROOM!=='undefined')MROOM.relay()}catch(e){}try{if(typeof MRES!=='undefined')MRES.relay()}catch(e){}
     try{if(typeof lobFit==='function')lobFit()}catch(e){}},
   // the tabs there are: the chat (when it can run here), the missions and record, the notices
   have(){const B=document.querySelector('#menu .lobBot');if(!B)return [];return ['chat','rec','news'].filter(s=>B.querySelector(`:scope>.lp[data-seg="${s}"]`))},
