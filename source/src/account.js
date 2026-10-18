@@ -53,7 +53,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async loadMe(){const r=await this.rpc('qz_me');this.me={nickname:r.nickname,coins:r.coins,earned:r.earned,matches:r.matches,dayLeft:r.day_left,owned:new Set(r.owned||[]),
       frags:r.fragments|0,tfrags:r.tfrags|0,pity:r.pity|0,tickets:r.tickets|0,fcode:r.fcode||'',giftsNew:r.gifts_new|0,friendReq:r.friend_req|0,ny:Array.isArray(r.ny)?r.ny.map(v=>v|0):[0,0,0,0],sTickets:r.season_tickets|0,freeToday:!!r.free_today,rec:r.rec||null,eps:Array.isArray(r.eps)?r.eps:[],firsts:Array.isArray(r.firsts)?r.firsts.map(v=>v|0):[],ref:r.ref||null,invN:0,email:this.ses&&this.ses.user&&this.ses.user.email||'',admin:!!r.admin,ban:r.ban||null,mailN:r.mail_new|0,gunNew:r.gun_new|0,inqN:r.inq_new|0,
       // (v6.57: the title worn as everyone sees it — undefined on a database from before it —, as set (null: automatic), achievement rewards waiting)
-      title:r.title===undefined?undefined:(r.title||null),titleSet:r.title_set||null,achReady:r.ach_ready|0};
+      title:r.title===undefined?undefined:(r.title||null),titleSet:r.title_set||null,achReady:r.ach_ready|0,
+      tut:r.tut===undefined?undefined:!!r.tut};// (v6.70: 기초 훈련 finished and its reward taken — undefined on a database from before it)
     this.ls('qz_me',{nickname:this.me.nickname,coins:this.me.coins,owned:[...this.me.owned],rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts,title:this.me.title,email:this.me.email,uid:this.ses&&this.ses.user&&this.ses.user.id});this.emit();
     this.importRec();this.loadMissions().catch(()=>{});return this.me},
   // the record this browser kept before accounts goes to the first account that signs in here (once; the server clamps it)

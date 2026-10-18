@@ -131,7 +131,7 @@ const RANGE={on:false,move:true,st:null,el:null,uiT:0,
   // leaving
   const tt=Main.toTitle.bind(Main);Main.toTitle=function(){RANGE.end();return tt()};
   // keys (only on the range, while playing)
-  addEventListener('keydown',e=>{if(G.mode!=='range'||!RANGE.on||G.st==='menu'||Main.paused||Main.overlay||e.repeat)return;if(e.code==='KeyK')RANGE.reset();else if(e.code==='KeyJ')RANGE.toggleMove()});
+  addEventListener('keydown',e=>{if(G.mode!=='range'||!RANGE.on||G.st==='menu'||Main.paused||Main.overlay||e.repeat||typeof TUT!=='undefined'&&TUT.on)return;if(e.code==='KeyK')RANGE.reset();else if(e.code==='KeyJ')RANGE.toggleMove()});
 })();
 // the lobby card and the start
 Main.startRange=async function(){AU.init();if(MAP.id!=='range'){await loadMapUI('range');if(MAP.id!=='range')return}this.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);

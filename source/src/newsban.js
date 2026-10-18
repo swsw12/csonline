@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'feature',ico:'▶',act:'tut',btn:['기초 훈련 시작','Start basic training'],tag:['신규 기능','New'],t:['기초 훈련','Basic training'],
+    d:['사격장에서 2분이면 끝나는 튜토리얼. 둘러보기 · 이동 · 점프와 앉기 · 사격과 헤드샷 · 재장전 · 무기 고르기 · 칼 · 수류탄 · 다가오는 좀비 막기 · 좀비 모드 규칙을 하나씩 직접 해 봐요. 로그인한 채 끝내면 1,000 코인 (계정마다 한 번). 로비의 사격장 카드에서 언제든 다시 할 수 있어요.','A two-minute tutorial on the shooting range: looking round, moving, jumping and crouching, shooting and headshots, reloading, picking a weapon, the knife, grenades, holding off zombies and the zombie-mode rules, one at a time. Finish it signed in for 1,000 coins (once an account). Any time again from the shooting range card in the lobby.']},
   {kind:'weapon',ref:'m4dk2',tag:['보급 무기 · 특수','Crate weapon · special'],t:['M4A1 다크나이트-2','M4A1 Dark Knight-2'],
     d:['용의 턱 핸드가드와 가시 곤봉 총구, 금빛 뿔과 붉은 구형 눈을 단 M4A1. 50발 자동 (헤드 150 · 몸통 90 · 팔다리 50), 경직이 아주 좋아요. 우클릭하면 B모드: 눈이 더 밝게 빛나고 시야가 살짝 좁아지며, 한 발에 2발씩 써서 데미지 2배 관통탄을 분당 600발로 — 좀비 3마리까지 뚫고 (뒤로 갈수록 0.75배), 흰 궤적이 남아요. 들고 있으면 확인사살 +1초.','An M4A1 with a dragon\'s-jaw handguard, a spiked-club muzzle, gold horns and red round eyes. 50 rounds full auto (head 150, body 90, arms and legs 50) with a very strong stagger. Right click for B: the eyes glow brighter and the view narrows a little; two rounds a shot, double damage, 600 a minute, through up to three zombies (each next one ×0.75), leaving a white trail. Carrying it adds a second to the Deadshot.']},
   {kind:'weapon',ref:'spas12d',tag:['보급 무기 · 산탄총','Crate weapon · shotgun'],t:['SPAS-12 드래곤브레스','SPAS-12 Dragon’s Breath'],
@@ -141,7 +143,7 @@ const NBAN={i:0,timer:null,shown:false,
   open(){const L=this.list();if(!L.length)return;this.close();this.i=0;const o=document.createElement('div');o.id='nbWin';document.body.appendChild(o);
     o.addEventListener('click',ev=>{const t=ev.target.closest('[data-nb]');if(!t){if(ev.target===o)this.close();return}const a=t.dataset.nb;
       if(a==='x')this.close();else if(a==='hide'){LS.set('nbHide',Date.now());this.close()}else if(a==='p')this.go(this.i-1,1);else if(a==='n')this.go(this.i+1,1);
-      else if(a==='d')this.go(+t.dataset.v,1);else if(a==='shop'){const id=t.dataset.v;this.close();if(typeof SHOP!=='undefined')SHOP.open(id)}});
+      else if(a==='d')this.go(+t.dataset.v,1);else if(a==='shop'){const id=t.dataset.v;this.close();if(typeof SHOP!=='undefined')SHOP.open(id)}else if(a==='act'){const v=t.dataset.v;this.close();UI.act(v)}});// (act: a feature's own button, e.g. v6.70 기초 훈련)
     this.render();this.timer=setInterval(()=>{if(!this.hold)this.go(this.i+1)},6500);AU.play&&AU.play('ui',{vol:.4})},
   go(i,user){const n=this.list().length;this.i=(i+n)%n;if(user){this.hold=true;setTimeout(()=>this.hold=false,9000)}this.render()},
   render(){const o=$('nbWin');if(!o)return;const L=LI(),A=this.list(),e=A[this.i],n=A.length;if(!e){this.close();return}
@@ -149,7 +151,7 @@ const NBAN={i:0,timer:null,shown:false,
     o.innerHTML=`<div class="nbw0"><div class="nbh"><b>${L?'NEW':'신규 소개'}</b><small>${L?'What\'s new in QUARANTINE Z':'새로 들어온 무기 · 기능'}</small><button class="nbx" data-nb="x" aria-label="close">×</button></div>
       <div class="nbb"><button class="nbar l" data-nb="p"${n<2?' disabled':''}>‹</button><div class="nbc k${e.kind}" key="${this.i}"><div class="nba">${this.art(e)}<i class="nbg"></i></div>
         <div class="nbt"><span class="nbtag">${esc(e.tag?e.tag[L]:'')}</span>${kn?`<span class="nbk">${esc(kn)}</span>`:''}<h3>${esc(e.t[L])}</h3><p>${esc(e.d[L])}</p>
-        ${W&&typeof SHOP!=='undefined'?`<button class="nbgo" data-nb="shop" data-v="${e.ref}">${L?'See it in the shop':'상점에서 보기'} ›</button>`:''}</div></div><button class="nbar r" data-nb="n"${n<2?' disabled':''}>›</button></div>
+        ${W&&typeof SHOP!=='undefined'?`<button class="nbgo" data-nb="shop" data-v="${e.ref}">${L?'See it in the shop':'상점에서 보기'} ›</button>`:''}${e.act&&e.btn?`<button class="nbgo" data-nb="act" data-v="${e.act}">${esc(e.btn[L])} ›</button>`:''}</div></div><button class="nbar r" data-nb="n"${n<2?' disabled':''}>›</button></div>
       <div class="nbf">${n<=12?`<div class="nbd">${A.map((_,k)=>`<i class="${k===this.i?'on':''}" data-nb="d" data-v="${k}"></i>`).join('')}</div>`:`<div class="nbn"><b>${this.i+1}</b><span>/ ${n}</span><i><u style="width:${((this.i+1)/n*100).toFixed(1)}%"></u></i></div>`}<button class="nbh2" data-nb="hide">${L?'Don\'t show for 2 hours':'2시간 동안 보지 않기'}</button></div></div>`},
   close(){const o=$('nbWin');if(o)o.remove();clearInterval(this.timer);this.timer=null},
   // first lobby of this page load: wait for the lobby and for a sign-in window already open to close

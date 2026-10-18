@@ -1761,3 +1761,64 @@ html.touch #inqWin .pwf button,html.touch #inqWin .ikinds button,html.touch #inq
 #accWin label b{color:#ff9a8a}
 .lob .foot a{color:#7a786e;text-decoration:underline;margin:0 2px}.lob .foot a:hover{color:#ffd890}
 #inqWin .inote a{color:#9ab8e8;text-decoration:underline}
+/* ---------- v6.70: 기초 훈련 — the tutorial's panel, markers and windows (tutorial.js); the range card's button (lobby.js) ---------- */
+#hTut{position:absolute;top:86px;left:50%;transform:translateX(-50%);z-index:8;width:min(470px,92vw);pointer-events:none;box-sizing:border-box;
+  background:linear-gradient(rgba(16,18,22,.88),rgba(10,12,15,.84));border:1px solid rgba(255,255,255,.12);border-top:2px solid #e8c21a;border-radius:3px;
+  padding:8px 12px 9px;color:#e8e4d8;text-shadow:1px 1px 0 #000;box-shadow:0 6px 20px rgba(0,0,0,.45);transition:border-color .2s,background .2s}
+#hTut.ok{border-top-color:#7ee06a;background:linear-gradient(rgba(18,32,18,.9),rgba(10,18,10,.86))}
+#hTut .tuH{display:flex;align-items:center;gap:8px;font-size:10px;color:#9a968c;letter-spacing:.06em}
+#hTut .tuH b{color:#e8c21a}
+#hTut .tuSeg{display:flex;gap:3px;margin-left:auto}
+#hTut .tuSeg u{display:block;width:13px;height:4px;background:rgba(255,255,255,.16);border-radius:1px}
+#hTut .tuSeg u.y{background:#e8c21a}#hTut .tuSeg u.c{background:#fff;animation:tuBlink 1s steps(2) infinite}
+#hTut .tuT{font-size:17px;font-weight:bold;color:#ffd890;margin:5px 0 3px;letter-spacing:.02em}
+#hTut.ok .tuT{color:#9cf08a}
+#hTut .tuD{font-size:13px;line-height:1.55}
+#hTut .tuS{font-size:11px;color:#a8a49a;margin-top:5px;line-height:1.45}
+#hTut kbd,.tuW kbd{min-width:0;display:inline-block;padding:0 4px;margin:0 1px;border:1px solid #6a6860;border-bottom-width:2px;border-radius:3px;background:#1c1d22;color:#ffe2a0;font:11px/15px var(--font);text-align:center;text-shadow:none}
+#hTut .tuP{display:flex;align-items:center;gap:8px;margin-top:7px}
+#hTut .tuP i{flex:1;height:6px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
+#hTut .tuP u{display:block;height:100%;background:#e8c21a;transition:width .15s}
+#hTut.ok .tuP u{background:#7ee06a}
+#hTut .tuP span{font-size:11px;color:#f0eee6;white-space:nowrap}
+#hTut .tuC{display:flex;gap:12px;margin-top:7px;font-size:12px}
+#hTut .tuC span{color:#8f8d86}#hTut .tuC span.y{color:#9cf08a}
+#hTut .tuK{display:flex;justify-content:flex-end;margin-top:6px}
+#hTut .tuB{pointer-events:auto;font:inherit;font-size:11px;color:#e8e4d8;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:3px 9px;cursor:pointer;text-shadow:none}
+#hTut .tuB kbd{margin-right:4px}
+#hTut.info .tuB{background:#e8c21a;color:#1a1608;border-color:#e8c21a;font-weight:bold;font-size:12px;padding:4px 12px}
+#hTut.info .tuB kbd{background:#2a2410;color:#ffe2a0}
+#hTut .tuR{margin:2px 0 0;padding-left:16px;font-size:12px;line-height:1.5}
+#hTut .tuR li{margin:2px 0}
+@keyframes tuBlink{50%{opacity:.35}}
+html.touch #hTut{top:6px;width:min(430px,54vw);padding:6px 10px 7px}
+html.touch #hTut .tuT{font-size:14px;margin:3px 0 2px}html.touch #hTut .tuD{font-size:12px;line-height:1.45}html.touch #hTut .tuS{display:none}
+html.touch #hTut .tuB{font-size:12px;padding:5px 12px}
+html.touch #hTut .tuR{font-size:11px;line-height:1.4}
+@media (max-height:520px){#hTut .tuS{display:none}#hTut .tuR li{margin:0}}
+.tutMk{position:absolute;transform:translate(-50%,-100%);padding:1px 7px;font-size:11px;font-weight:bold;color:#ffd04a;background:rgba(10,8,4,.6);border:1px solid rgba(255,208,74,.65);border-radius:3px;pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px #000;display:none}
+.tutMk::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-4px;border:4px solid transparent;border-top-color:rgba(255,208,74,.85)}
+.tutMk.z{color:#ff9a8a;border-color:rgba(255,90,74,.7)}.tutMk.z::after{border-top-color:rgba(255,90,74,.85)}
+.tutMk.edge{animation:tuBlink 1s steps(2) infinite}.tutMk.edge::after{display:none}
+#tutEnd,#tutAsk{position:fixed;inset:0;z-index:62;display:flex;align-items:center;justify-content:center;background:rgba(4,6,10,.62);backdrop-filter:blur(2px)}
+.tuW{width:min(480px,92vw);max-height:92vh;overflow:auto;background:linear-gradient(#1c2027,#14171c);border:1px solid #3a3f48;border-top:2px solid #e2b54a;box-shadow:0 18px 60px rgba(0,0,0,.6);border-radius:4px;color:#e8e4d8}
+.tuWh{padding:12px 16px;font-size:18px;font-weight:bold;color:#ffd890;border-bottom:1px solid #2c3038;letter-spacing:.02em}
+.tuWb{padding:12px 16px 4px;font-size:13px;line-height:1.55}
+.tuWb p{margin:0 0 10px}
+.tuWs{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:12px;font-size:12px}
+.tuWs span.y{color:#9cf08a}.tuWs span.sk{color:#8f8d86}
+.tuWr{padding:8px 10px;background:rgba(232,194,26,.08);border:1px solid rgba(232,194,26,.25);border-radius:3px}
+.tuG{color:#ffd24a}
+.tuWn{color:#a8a49a;font-size:12px}
+.tuWf{display:flex;justify-content:flex-end;gap:8px;padding:10px 16px;border-top:1px solid #2c3038;background:rgba(0,0,0,.18)}
+.tuBtn{font:inherit;font-size:13px;padding:7px 14px;border-radius:3px;border:1px solid #4a4e56;background:#252930;color:#e8e4d8;cursor:pointer}
+.tuBtn:hover{border-color:#e8a33a}
+.tuBtn.pri{background:#e8a33a;border-color:#e8a33a;color:#1a1206;font-weight:bold}.tuBtn.pri:hover{background:#ffb84a}
+.tuBtn.pri kbd{background:#2a1c08;color:#ffe2a0;border-color:#5a4020;margin-left:4px}
+html.touch .tuBtn kbd{display:none}
+.mc .mtut{position:absolute;top:10px;right:10px;z-index:3;font:inherit;font-size:11px;font-weight:bold;padding:4px 9px;border-radius:3px;border:1px solid #e8c21a;background:rgba(20,16,4,.84);color:#ffd890;cursor:pointer;display:flex;align-items:center;gap:6px;text-shadow:1px 1px 0 #000}
+.mc .mtut:hover{background:#e8c21a;color:#1a1206;text-shadow:none}
+.mc .mtut i{font-style:normal;font-size:10px;color:#1a1206;background:#ffd24a;border-radius:2px;padding:0 4px;text-shadow:none}
+.mc .mtut.new{animation:tuPulse 1.8s ease-out infinite}
+@keyframes tuPulse{0%{box-shadow:0 0 0 0 rgba(232,194,26,.55)}70%{box-shadow:0 0 0 9px rgba(232,194,26,0)}100%{box-shadow:0 0 0 0 rgba(232,194,26,0)}}
+@media (max-height:520px){.mc .mtut{top:6px;right:6px;font-size:9px;padding:2px 6px}.mc .mtut i{display:none}}

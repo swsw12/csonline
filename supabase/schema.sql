@@ -45,6 +45,8 @@
 --     1시간에 60개). 답변은 관리자 페이지 「문의」에서 쓰고, 플레이어는 게임의 「내 문의」에서 봅니다(게스트는 쓴 브라우저에서만). 닫힌 문의는 180일 뒤 지워집니다.
 --   * 회원 탈퇴(v6.67): 게임의 내 계정 → 회원 탈퇴(qz_account_delete)가 auth.users 줄을 지우고, 계정에 딸린 모든 테이블이 같이 지워집니다(on delete cascade).
 --     관리 기록 · 보낸 선물 · 오류 기록은 계정과의 연결 없이 남습니다. 관리자 계정은 탈퇴할 수 없습니다(운영진에서 먼저 빼야 함).
+--   * 기초 훈련(v6.70): 사격장에서 하는 튜토리얼을 로그인한 채 끝내면 qz_tut_claim이 계정마다 한 번 1,000코인을 줍니다(profiles.tut_done).
+--     게스트로 끝낸 사람은 나중에 로그인할 때 게임이 받아 줍니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -491,6 +493,8 @@ alter table public.profiles add column if not exists ban_reason   text;
 alter table public.profiles add column if not exists online_secs  bigint not null default 0;
 alter table public.profiles add column if not exists play_secs    bigint not null default 0;
 alter table public.profiles add column if not exists last_beat    timestamptz;
+-- v6.70: when the account finished 기초 훈련 (the tutorial on the shooting range) and took its one-time reward (qz_tut_claim)
+alter table public.profiles add column if not exists tut_done     timestamptz;
 create table if not exists public.admins (
   user_id  uuid primary key references auth.users(id) on delete cascade,
   role     text not null default 'owner' check (role in ('owner', 'staff')),
@@ -929,6 +933,7 @@ begin
     'mail_new', (select count(*) from public.qz_mail_open(uid)),   -- (v6.43: letters waiting in the mailbox)
     'gun_new', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen),   -- (v6.46: weapons an admin put on the account, not shown yet)
     'inq_new', (select count(*) from public.inquiries q where q.user_id = uid and q.reply is not null and not q.seen),   -- (v6.66: answers to my inquiries not read yet)
+    'tut', p.tut_done is not null,   -- (v6.70: 기초 훈련 finished and its reward taken)
     'ban', case when p.banned_until > now() then jsonb_build_object('until', p.banned_until, 'forever', p.banned_until = 'infinity'::timestamptz, 'reason', p.ban_reason) end,
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
@@ -4186,3 +4191,31 @@ begin
 end $$;
 revoke all on function public.qz_account_delete(text) from public, anon;
 grant execute on function public.qz_account_delete(text) to authenticated;
+
+-- ============================================================================================================
+-- 기초 훈련 (v6.70): the tutorial's one-time reward
+-- ============================================================================================================
+-- The game's tutorial runs on the shooting range by itself (nothing is checked here); finishing it signed in calls this once.
+-- It pays 1,000 coins the first time (profiles.tut_done is set and a 'tutorial' line goes into the coin log); after that it pays
+-- nothing and says so (got 0). A guest who finished it gets it on signing in (the game calls it then). qz_me's tut tells the lobby.
+create or replace function public.qz_tut_claim() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_amt constant integer := 1000;
+  v_done timestamptz;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  v_done := (select t.tut_done from public.profiles t where t.id = uid);
+  if v_done is not null then
+    return jsonb_build_object('got', 0, 'coins', (select t.coins from public.profiles t where t.id = uid));
+  end if;
+  update public.profiles set tut_done = now(), coins = coins + v_amt, earned_total = earned_total + v_amt where id = uid;
+  insert into public.coin_log (user_id, delta, reason) values (uid, v_amt, 'tutorial');
+  return jsonb_build_object('got', v_amt, 'coins', (select t.coins from public.profiles t where t.id = uid));
+end $$;
+revoke all on function public.qz_tut_claim() from public, anon;
+grant execute on function public.qz_tut_claim() to authenticated;
