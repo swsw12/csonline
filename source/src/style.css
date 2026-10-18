@@ -1824,24 +1824,48 @@ html.touch .tuBtn kbd{display:none}
 .mc .mtut.new{animation:tuPulse 1.8s ease-out infinite}
 @keyframes tuPulse{0%{box-shadow:0 0 0 0 rgba(232,194,26,.55)}70%{box-shadow:0 0 0 9px rgba(232,194,26,0)}100%{box-shadow:0 0 0 0 rgba(232,194,26,0)}}
 @media (max-height:520px){.mc .mtut{top:6px;right:6px;font-size:9px;padding:2px 6px}.mc .mtut i{display:none}}
-/* v6.75: 전체 채팅 — a panel at the lobby's right edge (the lobby stays usable under it) */
+/* v6.75 / v6.76: 전체 채팅 — one box (#gchBox) in the lobby's 전체 채팅 panel or in the floating window (#gchWin) */
 #gchWin{position:fixed;right:12px;bottom:12px;z-index:54;width:min(380px,calc(100vw - 24px));height:min(520px,calc(100vh - 90px));display:flex}
 #gchWin .gcw{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;background:linear-gradient(#1c2027,#14171c);border:1px solid #3a3f48;border-top:2px solid #4aa8e8;border-radius:4px;box-shadow:0 18px 60px rgba(0,0,0,.6);overflow:hidden}
 #gchWin .gch{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #2c3038;color:#9fd6ff}#gchWin .gch svg{width:17px;height:17px}#gchWin .gch b{font-size:17px}
 #gchWin .gch small{color:#7a828e;font-size:11px}#gchWin .gch small.on{color:#6fdc8c}#gchWin .sgap{flex:1}
 #gchWin button.gcx{flex:0 0 30px;width:30px;height:30px;min-width:0;padding:0;border:1px solid #4a505a;background:#22262d;color:#cfd5de;font-size:20px;border-radius:3px;cursor:pointer}
-#gchWin .gclog{flex:1;min-height:0;overflow:auto;padding:8px 10px;display:flex;flex-direction:column;gap:3px;background:#101317}
-#gchWin .gl{font-size:13.5px;line-height:1.4;color:#e6eaf0;word-break:break-word}#gchWin .gl .gtm{color:#5d6570;font-size:10.5px;margin-right:5px}
-#gchWin .gl .gn{color:#9fd6ff;font-weight:600;cursor:pointer;margin-right:3px}#gchWin .gl.me .gn{color:#ffd56a;cursor:default}#gchWin .gl .gx{margin-left:4px}
-#gchWin .gl .ttc{vertical-align:middle;margin-right:2px}
-#gchWin .gce{color:#8b93a0;text-align:center;margin:18px 10px;font-size:13px}
-#gchWin .gcmsg{padding:5px 10px;font-size:12px;color:#ffcf8a;background:#2a1f10;border-top:1px solid #4a3a20}
-#gchWin .gcsend{display:flex;gap:6px;padding:8px 10px 4px;border-top:1px solid #2c3038}#gchWin .gcsend input{flex:1;min-width:0;padding:8px 10px;background:#0f1114;border:1px solid #3a3f48;color:#fff;border-radius:3px;font-size:14px}
-#gchWin .gcsend button{width:auto;min-width:60px;padding:7px 12px;border:1px solid #4aa8e8;background:linear-gradient(#173450,#0d1c2b);color:#fff;border-radius:3px;cursor:pointer}
-#gchWin .gcnote{margin:2px 10px 8px;font-size:10.5px;color:#6f7782;line-height:1.35}
-#gchWin button.gcbig{display:block;margin:6px auto 18px;width:auto;min-width:150px;padding:9px 14px;border:1px solid #e2b54a;background:linear-gradient(#5a3e12,#2e200a);color:#fff;border-radius:3px;cursor:pointer}
-#gchWin .gcm{position:absolute;left:12px;z-index:2;display:flex;flex-direction:column;gap:4px;padding:8px;min-width:150px;background:#1a1d22;border:1px solid #4a505a;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
-#gchWin .gcm b{color:#ffd56a;font-size:13px;margin-bottom:2px}#gchWin .gcm button{width:auto;min-width:0;text-align:left;padding:6px 9px;font-size:12.5px;border:1px solid #3a3f48;background:#14171c;color:#cfd5de;border-radius:3px;cursor:pointer}
-#gchWin .gcm button:hover{border-color:#4aa8e8;color:#fff}
-@media (max-width:700px){#gchWin{right:6px;left:6px;bottom:6px;width:auto;height:min(60vh,460px)}}
-.tbtns .tgch{position:relative}.tbtns .tgch .dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+#gchWin.inroom{top:12px;bottom:auto;height:min(520px,calc(100vh - 100px))}
+@media (max-width:700px){#gchWin{right:6px;left:6px;bottom:6px;width:auto;height:min(60vh,460px)}#gchWin.inroom{top:6px;bottom:auto;height:min(52vh,420px)}}
+#gchBox{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+#gchBox .gclog{flex:1 1 auto;height:0;min-height:0;overflow:auto;padding:8px 10px;display:flex;flex-direction:column;gap:3px;background:#101317;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#4a4e56 transparent}
+#gchBox .gl{font-size:13.5px;line-height:1.4;color:#e6eaf0;word-break:break-word}#gchBox .gl .gtm{color:#5d6570;font-size:10.5px;margin-right:5px}
+#gchBox .gl .gn{color:#9fd6ff;font-weight:600;cursor:pointer;margin-right:3px}#gchBox .gl.me .gn{color:#ffd56a;cursor:default}#gchBox .gl .gx{margin-left:4px}
+#gchBox .gl .ttc{vertical-align:middle;margin-right:2px}
+#gchBox .gce{color:#8b93a0;text-align:center;margin:18px 10px;font-size:13px}
+#gchBox .gcmsg{padding:5px 10px;font-size:12px;color:#ffcf8a;background:#2a1f10;border-top:1px solid #4a3a20}
+#gchBox .gcsend{display:flex;gap:6px;padding:8px 10px 4px;border-top:1px solid #2c3038}#gchBox .gcsend input{flex:1;min-width:0;padding:8px 10px;background:#0f1114;border:1px solid #3a3f48;color:#fff;border-radius:3px;font-size:14px}
+#gchBox .gcsend button{width:auto;min-width:60px;padding:7px 12px;border:1px solid #4aa8e8;background:linear-gradient(#173450,#0d1c2b);color:#fff;border-radius:3px;cursor:pointer}
+#gchBox .gcnote{margin:2px 10px 8px;font-size:10.5px;color:#6f7782;line-height:1.35}#gchBox .gcnote .gns{display:none}
+#gchBox button.gcbig{display:block;margin:6px auto 18px;width:auto;min-width:150px;padding:9px 14px;border:1px solid #e2b54a;background:linear-gradient(#5a3e12,#2e200a);color:#fff;border-radius:3px;cursor:pointer}
+/* the name menu, on the page by its name */
+#gcMenu{position:fixed;z-index:70;display:flex;flex-direction:column;gap:4px;padding:8px;min-width:150px;background:#1a1d22;border:1px solid #4a505a;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#gcMenu b{color:#ffd56a;font-size:13px;margin-bottom:2px}#gcMenu button{width:auto;min-width:0;text-align:left;padding:6px 9px;font-size:12.5px;border:1px solid #3a3f48;background:#14171c;color:#cfd5de;border-radius:3px;cursor:pointer}
+#gcMenu button:hover{border-color:#4aa8e8;color:#fff}
+/* the lobby's panel (where the map list was): the log takes what the row leaves; a short note */
+.lp.lchat{min-width:0;padding-bottom:0}.lchat .lpt small.gcst.on{color:#6fdc8c}
+.lchat .lpt .gcpop{flex:none;width:22px;height:22px;min-width:0;padding:0;margin-left:6px;display:flex;align-items:center;justify-content:center;background:#3a3e46;border:1px solid #555a64;border-radius:3px;color:#cfd3da;cursor:pointer}
+.lchat .lpt .gcpop svg{width:12px;height:12px}.lchat .lpt .gcpop:hover{border-color:#e8a33a;color:#ffd890}
+.lchat #gchBox .gclog{background:transparent;padding:6px 10px 4px}.lchat #gchBox .gl{font-size:13px}
+.lchat #gchBox .gcsend{padding:6px 8px 2px;border-top:1px solid #33373e}.lchat #gchBox .gcsend input{padding:6px 9px;font-size:13px}.lchat #gchBox .gcsend button{padding:5px 10px;min-width:54px}
+.lchat #gchBox .gcnote{margin:2px 10px 6px}.lchat #gchBox .gcnote .gnl{display:none}.lchat #gchBox .gcnote .gns{display:inline}
+.lchat #gchBox .gce{margin:12px 10px 8px}.lchat #gchBox button.gcbig{margin:4px auto 10px;padding:7px 14px}
+/* the top bar's 채팅: only where the lobby's lower panels are gone (a short screen) or squeezed (one column) */
+.tbtns .tgch{position:relative;display:none}.tbtns .tgch .dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+@media (max-height:520px),(max-width:900px){.tbtns .tgch{display:flex}}
+/* v6.76 room posts: the card under a line, the room in the composer, the waiting room's button */
+#gchBox .groom{display:flex;align-items:center;gap:8px;margin:5px 0 3px;padding:6px 8px;border:1px solid #2e5a7a;border-radius:4px;background:linear-gradient(#14212d,#0f1922);font-size:12.5px;color:#cfe6ff;line-height:1.35}
+#gchBox .groom .grt{flex:1;min-width:0}#gchBox .groom.old{opacity:.55}#gchBox .groom .grs{flex:none;color:#7f8a96;font-size:11.5px}
+#gchBox button.gjoin{flex:none;width:auto;min-width:0;padding:5px 14px;border:1px solid #4ad07a;background:linear-gradient(#2f7148,#1d4a30);color:#eafff0;border-radius:3px;font-weight:700;font-size:12.5px;cursor:pointer}
+#gchBox button.gjoin:hover{border-color:#90f0b2;color:#fff}
+#gchBox .gcatt{display:flex;align-items:center;gap:8px;margin:6px 10px 0;padding:6px 8px;border:1px dashed #4a8ab8;border-radius:4px;color:#cfe6ff;font-size:12.5px;background:#101b25}
+#gchBox .gcatt b.gab{flex:none;padding:1px 6px;border-radius:3px;background:#e8a33a;color:#1a1206;font-size:11px}#gchBox .gcatt span{flex:1;min-width:0}
+#gchBox .gcatt button{flex:0 0 24px;width:24px;height:24px;min-width:0;padding:0;border:1px solid #4a505a;background:#22262d;color:#cfd3da;border-radius:3px}
+#lobby .dpFoot .gchb{position:relative;display:inline-flex;align-items:center;gap:5px}#lobby .dpFoot .gchb svg{width:14px;height:14px;flex:none}
+#lobby .dpFoot .gchb .dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
+@media (max-width:620px){#lobby .dpFoot .gchb{min-width:0;width:44px;flex:none;padding:8px 0;justify-content:center}#lobby .dpFoot .gchb span{display:none}}
