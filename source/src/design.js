@@ -28,6 +28,8 @@
 //    file : 녹음 파일로 바꾸고 싶을 때 파일 경로.  '' 이면 원래 합성음을 쓴다.
 //           예) file:'sound/ak47.mp3'  → source/sound 폴더에 mp3/ogg/wav 를 넣는다 (빌드 때 게임 옆 sound 폴더로 복사됨).
 //           ['sound/a.ogg','sound/a.mp3'] 처럼 여러 개 적으면 먼저 읽히는 걸 쓴다 (아이폰은 ogg 를 못 읽을 수 있음).
+//           [['sound/a1.ogg','sound/a1.mp3'],['sound/a2.ogg','sound/a2.mp3']] 처럼 묶음을 여러 개 적으면 변형 여러 개 —
+//           나올 때마다 그중 하나를 무작위로 고른다 (같은 소리가 연달아 똑같이 들리지 않게).
 //           파일을 못 읽으면 자동으로 원래 합성음으로 돌아간다.  data:audio/... 형식도 된다.
 //    len  : (선택) 녹음 파일의 앞 몇 초만 쓸지. 예) len:10 → 0~10초만 재생하고 끊음 (끝은 살짝 페이드)
 //  를 정한다.  게임 코드가 소리를 낼 때 붙이는 원래 볼륨·피치에 이 배율이 곱해진다.
@@ -190,7 +192,7 @@ const SOUND_DESIGN={
 
   // ── 좀비 ─────────────────────────────────────────────────────────────────────────────────────
   zgrowl:  {vol:1, rate:1, file:''},  // 좀비 그르렁 (좀비가 가끔, 메뉴 배경, 멀리서 들리는 울음, 보스 도약 전)
-  zpain:   {vol:1, rate:1, file:['sound/zombie_pain.ogg','sound/zombie_pain.mp3']},  // 좀비가 총·칼에 맞을 때 (한 좀비당 0.35초에 한 번까지). ogg 를 못 읽는 아이폰은 mp3. v6.84: 처음부터 합성한 소리 (tools/zombie_pain.py)
+  zpain:   {vol:1, rate:1, file:[['sound/zombie_pain_1.ogg','sound/zombie_pain_1.mp3'],['sound/zombie_pain_2.ogg','sound/zombie_pain_2.mp3'],['sound/zombie_pain_3.ogg','sound/zombie_pain_3.mp3'],['sound/zombie_pain_4.ogg','sound/zombie_pain_4.mp3']]},  // 좀비가 총·칼에 맞을 때 (한 좀비당 0.35초에 한 번까지). 변형 4개 중 하나 무작위, 아이폰은 mp3. v6.85: 처음부터 합성 (tools/zombie_pain.py)
   zdie:    {vol:1, rate:1, file:''},  // 좀비가 죽을 때 길게 우는 소리
   zatk:    {vol:1, rate:1, file:''},  // 좀비 공격 기합 (남의 좀비가 할퀼 때 / 좀비 폭탄 당길 때)
   claw:    {vol:1, rate:1, file:''},  // 좀비 손톱 휘두르는 바람 소리 (내가 좀비일 때)

@@ -344,8 +344,11 @@ const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:
     const c=this.ensureCtx();if(c&&c.sampleRate>0)ASR=clamp(Math.round(c.sampleRate),44100,48000);
     try{makeNoise()}catch(e){console.warn('noise',e);return}
     let k=0;for(const name of SFX_ORDER){const d=SFX[name];const arr=[];
-      // design.js can swap a synthesised sound for a recorded file
-      let fb=soundDesign(name).file?await this.loadFile(soundDesign(name).file):null;if(fb&&soundDesign(name).len>0)fb=trimBuf(fb,soundDesign(name).len);if(fb){this.bank[name]=[fb];this.fromFile[name]=true;k++;if(onProg)onProg(k/SFX_ORDER.length);continue}
+      // design.js can swap a synthesised sound for a recorded file — one (a list: the same sound in other formats, the first one read),
+      // or several ([[…],[…]]: variants, one picked at random each time it plays, as the synthesised ones)
+      const sf=soundDesign(name).file,vars=Array.isArray(sf)&&sf.length&&Array.isArray(sf[0])?sf:sf?[sf]:[],fbs=[];
+      for(const f of vars){let fb=await this.loadFile(f);if(fb&&soundDesign(name).len>0)fb=trimBuf(fb,soundDesign(name).len);if(fb)fbs.push(fb)}
+      if(fbs.length){this.bank[name]=fbs;this.fromFile[name]=true;k++;if(onProg)onProg(k/SFX_ORDER.length);continue}
       for(let v=0;v<d.n;v++){try{let b=await renderSfx(d.dur,d.ch||1,B=>d.fn(B,v));b=finishBuf(b,d.peak||.9);if(d.loop)b=makeLoop(b,d.loop);arr.push(b)}catch(e){console.warn('sfx',name,e)}}this.bank[name]=arr;k++;if(onProg)onProg(k/SFX_ORDER.length)}
     this.ready=true},
   // a recorded replacement (design.js SOUND_DESIGN[name].file): decoded at the bank rate; null when missing or unreadable
