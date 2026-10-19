@@ -2099,3 +2099,10 @@ html:not([data-lob]) #pwaTip{bottom:24px}
 #pwaNew button{font:inherit;font-size:12px;font-weight:bold;min-width:0;padding:6px 12px;color:#0c1a08;background:#7ad06a;border:1px solid #b8f0a8;border-radius:3px;box-shadow:none;cursor:pointer;white-space:nowrap}
 #pwaWin .pwo{margin:0;padding:16px;font-size:14px;color:#e8e4d8}
 #nbWin .nba .nbi svg{display:block;width:1em;height:1em}
+/* ============ v6.82: joining a match under way (latejoin.js): the newcomer's line until they are in; a room under way that takes newcomers ============ */
+#lateBan{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top));transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:3px;
+  width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;padding:8px 16px;background:rgba(10,12,16,.82);border:1px solid #4aa8e8;border-radius:4px;pointer-events:none;text-align:center}
+#lateBan b{font-size:15px;color:#bfe4ff;font-weight:normal}#lateBan span{font-size:12px;color:#8a9aa8}
+html[data-lob="l"] #lateBan{top:calc(52px + env(safe-area-inset-top));padding:6px 12px}html[data-lob="l"] #lateBan b{font-size:13px}
+html.ljw #hSpec{display:none!important}
+.rrow.play.late em{border-color:rgba(90,170,232,.6);color:#9fd6ff}

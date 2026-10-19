@@ -1,8 +1,9 @@
 'use strict';
 // ============ 빠른 매칭 (v6.80): one tap into a room with other players ============
 // The owner's 3번: the open rooms were listed (ROOMS, net.js) but a player had to read the list and pick one. 빠른 매칭 does it:
-// the list is read again and the best room taken — waiting (not playing), a seat free, a map this version has (else it is another
-// version's room), a chapter this player has opened; more players first, the player's own mode a little ahead — and joined. A room
+// the list is read again and the best room taken — waiting, or (v6.82, latejoin.js) a match under way in a mode that takes newcomers;
+// a seat free, a map this version has (else it is another version's room), a chapter this player has opened; more players first, the
+// player's own mode a little ahead, a waiting room a little ahead of a match under way — and joined. A room
 // that turns the player away (full, started, another version, gone, no answer in 15 s) is passed over for the next, three in all;
 // with none left a public room is made with the last room settings, where the next quick matcher comes in.
 // From the lobby (the 멀티플레이 card's 빠른 매칭) or the multiplayer screen, where the steps show under the button (취소 stops).
@@ -11,12 +12,12 @@ const QM={on:false,tried:[],n:0,t:0,step:'',noteT:0,MAX:3,WAIT:15000,
   // a public list exists here (the account server is there; claude.ai's own rooms have none)
   can(){return typeof ACC!=='undefined'&&!!ACC.on&&NET.kind!=='room'},
   mode(){return (CFG.mpCfg&&CFG.mpCfg.mode)||CFG.mode||'mut'},
-  ok(r){if(!r||r.status!=='lobby')return false;const n=r.players|0,mx=r.max_players|0,c=String(r.code||'');
+  ok(r){if(!r||!(r.status==='lobby'||r.status==='playing'&&NET_LATE.includes(r.mode)))return false;const n=r.players|0,mx=r.max_players|0,c=String(r.code||'');
     if(!(mx>0&&n<mx)||!/^[A-Z0-9]{4}$/.test(c)||this.tried.includes(c)||!MAPDEFS[r.map])return false;
     const ep=r.mode==='scen'?MAPDEFS[r.map].ep|0:0;if(ep>1&&typeof EP!=='undefined'&&!EP.unlocked(ep))return false;
     return ['mut','orig','scen','tdm','ffa','bomb','race'].includes(r.mode)},
   pick(list){const m=this.mode(),C=(Array.isArray(list)?list:[]).filter(r=>this.ok(r));if(!C.length)return null;
-    return C.map(r=>[(r.players|0)*10+(r.mode===m?25:0)+Math.random()*4,r]).sort((a,b)=>b[0]-a[0])[0][1]},
+    return C.map(r=>[(r.players|0)*10+(r.mode===m?25:0)-(r.status==='playing'?30:0)+Math.random()*4,r]).sort((a,b)=>b[0]-a[0])[0][1]},
   // the name the room will show (as 방 만들기 / 참가 take it)
   name(){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(typeof ACC!=='undefined'&&ACC.signed()&&String(ACC.me.nickname||'').slice(0,14))||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg()},
   what(r){const L=LI(),E=MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&typeof EPS!=='undefined'?EPS[MAPDEFS[r.map].ep]:null;
@@ -33,7 +34,7 @@ const QM={on:false,tried:[],n:0,t:0,step:'',noteT:0,MAX:3,WAIT:15000,
   // in (the room's waiting room came), turned away (net.js netFatal left the room) or no answer in time
   watch(code){clearInterval(this.t);const t0=Date.now();
     this.t=setInterval(()=>{if(!this.on){clearInterval(this.t);return}
-      if(NET.on&&NET.cli&&NET.ui==='lobby'&&NET.code===code){this.end();this.note(LI()?'Quick match: you are in':'빠른 매칭 — 방에 들어왔어요','');return}
+      if(NET.on&&NET.cli&&(NET.ui==='lobby'||NET.ui==='game')&&NET.code===code){this.end();this.note(LI()?'Quick match: you are in':'빠른 매칭 — 방에 들어왔어요','');return}
       const gone=!NET.on,late=Date.now()-t0>this.WAIT;if(!gone&&!late)return;clearInterval(this.t);if(late&&NET.on)NET.leave();setTimeout(()=>this.next(),gone?350:150)},250)},
   // nobody to join: a public room of one's own with the last room settings
   async make(){const L=LI();this.end();CFG.mpPub=true;saveCfg();await NET.create();if(!(NET.on&&NET.host&&NET.ui==='lobby'))return;
@@ -42,7 +43,7 @@ const QM={on:false,tried:[],n:0,t:0,step:'',noteT:0,MAX:3,WAIT:15000,
   end(){this.on=false;clearInterval(this.t);this.say('')},
   stop(){if(!this.on)return;this.end();if(NET.on&&NET.ui==='join')NET.leave();NET.msg='';if(UI.mpRender)UI.mpRender()},
   say(s){this.step=s;this.render()},
-  note(h,s){const box=netMigBox();box.innerHTML=`<b>${esc(h)}</b>${s?`<span>${esc(s)}</span>`:''}`;box.className='on done'+(NET.ui!=='game'?' atop':'');
+  note(h,s){if(NET.ui==='game'){HUD.note(h+(s?' — '+s:''),3);return}const box=netMigBox();box.innerHTML=`<b>${esc(h)}</b>${s?`<span>${esc(s)}</span>`:''}`;box.className='on done'+(NET.ui!=='game'?' atop':'');
     clearTimeout(this.noteT);this.noteT=setTimeout(()=>{if(!NET.mig&&box.classList.contains('done'))box.className=''},s?5500:3500)},
   // the button and the steps on the multiplayer screen
   html(){const L=LI();return `<div class="qmbox"><button data-act="${this.on?'qmstop':'qm'}" class="big qmgo${this.on?' busy':''}">${this.BOLT}<span>${this.on?(L?'Searching… · Cancel':'찾는 중… · 취소'):(L?'Quick match':'빠른 매칭')}</span></button>

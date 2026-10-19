@@ -12,7 +12,8 @@ const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r11'}// r11: the host checks every claim and holds each link to a message budget (v6.72); r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40); r10: THANATOS-9 states and its slow, the Dark Knight's B and Deadshot (v6.41)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r12'}// r11: the host checks every claim and holds each link to a message budget (v6.72); r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40); r10: THANATOS-9 states and its slow, the Dark Knight's B and Deadshot (v6.41)
+// r12 (v6.82): a player can join a match under way (latejoin.js: 'start' with late, 'jn' to the others)
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
@@ -524,6 +525,8 @@ function netWithEv(f){NET.ev++;try{f()}finally{NET.ev--}}
 // and the results, so every field is made the type and size it should be: modes and maps from the lists, skins and zombie classes
 // from theirs, numbers as numbers, names cut to length (they are escaped where they are shown).
 const NET_MODES=['mut','orig','scen','tdm','ffa','bomb','race'];
+// (v6.82) the modes a player can join while a match is under way (latejoin.js); the scenario's chapters are not among them
+const NET_LATE=['mut','orig','tdm','ffa','race','bomb'];
 const netN=(v,d)=>{v=+v;return Number.isFinite(v)?v:(d||0)};
 const netI=(v,lo,hi,d)=>{v=Math.round(+v);return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):(d==null?lo:d)};
 const netS=(v,n)=>typeof v==='string'?v.slice(0,n):'';
@@ -784,9 +787,9 @@ const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:fals
   html(){const L=LI();if(!this.srv())return `<p class="rempty">${L?'Not connected to the account server yet':'계정 서버 연결 전'}</p>`;
     if(this.err&&!(this.list&&this.list.length))return `<p class="rempty bad">${esc(this.err)}</p>`;if(!this.list)return `<p class="rempty">${L?'Loading…':'불러오는 중…'}</p>`;
     if(!this.list.length)return `<p class="rempty">${L?'No public rooms right now — make one!':'지금 열린 공개 방이 없어요 — 방을 만들어 보세요'}</p>`;
-    return this.list.map(r=>{const pl=r.status==='playing',n=r.players|0,mx=r.max_players|0;
-      return `<div class="rrow${pl?' play':''}${n>=mx?' full':''}" data-act="mproom" data-v="${esc(String(r.code||''))}"><div class="rh"><b>${esc(r.host_name||'?')}</b><i>${esc(String(r.code||''))}</i></div>
-        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(['scen','orig','tdm','ffa','bomb','race'].includes(r.mode)?r.mode:'mut')}</span><span class="rn">${n}/${mx}</span><em>${pl?(L?'Playing':'게임중'):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
+    return this.list.map(r=>{const pl=r.status==='playing',n=r.players|0,mx=r.max_players|0,lj=pl&&n<mx&&NET_LATE.includes(r.mode);
+      return `<div class="rrow${pl?' play':''}${lj?' late':''}${n>=mx?' full':''}" data-act="mproom" data-v="${esc(String(r.code||''))}"><div class="rh"><b>${esc(r.host_name||'?')}</b><i>${esc(String(r.code||''))}</i></div>
+        <span>${esc(MAPDEFS[r.map]?mapName(r.map):(r.map||'?'))}</span><span>${MAPDEFS[r.map]&&MAPDEFS[r.map].ep&&EPS[MAPDEFS[r.map].ep]?(L?'Scenario: ':'시나리오: ')+EPS[MAPDEFS[r.map].ep].n[L]:T(['scen','orig','tdm','ffa','bomb','race'].includes(r.mode)?r.mode:'mut')}</span><span class="rn">${n}/${mx}</span><em${lj?` title="${L?'A match under way: you come in at once, or watch until the next round':'게임 중인 방 — 바로, 또는 관전하다가 다음 라운드부터 함께해요'}"`:''}>${pl?(lj?(L?'Join in':'중간참가'):(L?'Playing':'게임중')):(L?'Waiting':'대기중')}</em></div>`}).join('')+(this.err?`<p class="rempty bad">${esc(this.err)}</p>`:'')},
   render(){const el=$('mpRooms');if(el)el.innerHTML=this.html();const b=document.querySelector('[data-act="mprooms"]');if(b)b.classList.toggle('busy',this.busy)}};
 setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
 
