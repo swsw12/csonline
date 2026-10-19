@@ -190,7 +190,7 @@ const SOUND_DESIGN={
 
   // ── 좀비 ─────────────────────────────────────────────────────────────────────────────────────
   zgrowl:  {vol:1, rate:1, file:''},  // 좀비 그르렁 (좀비가 가끔, 메뉴 배경, 멀리서 들리는 울음, 보스 도약 전)
-  zpain:   {vol:1, rate:1, file:['sound/Zombi_hurt_01.ogg','sound/Zombi_hurt_01.mp3']},  // 좀비가 총·칼에 맞을 때 (한 좀비당 0.35초에 한 번까지). ogg 를 못 읽는 아이폰은 mp3
+  zpain:   {vol:1, rate:1, file:['sound/zombie_pain.ogg','sound/zombie_pain.mp3']},  // 좀비가 총·칼에 맞을 때 (한 좀비당 0.35초에 한 번까지). ogg 를 못 읽는 아이폰은 mp3. v6.84: 처음부터 합성한 소리 (tools/zombie_pain.py)
   zdie:    {vol:1, rate:1, file:''},  // 좀비가 죽을 때 길게 우는 소리
   zatk:    {vol:1, rate:1, file:''},  // 좀비 공격 기합 (남의 좀비가 할퀼 때 / 좀비 폭탄 당길 때)
   claw:    {vol:1, rate:1, file:''},  // 좀비 손톱 휘두르는 바람 소리 (내가 좀비일 때)
