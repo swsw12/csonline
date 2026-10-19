@@ -396,6 +396,23 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_exchange'){const r=PM[body.p_gun];if(!r||!r.tier)return pgerr('not_for_exchange');const c=r.tier==='S'?GCFG.ex_s:GCFG.ex_a;
       if(db.own[uid].includes(body.p_gun))return pgerr('already_owned');if((P.frags|0)<c)return pgerr('not_enough_frags');P.frags-=c;db.own[uid].push(body.p_gun);
       db.glog=db.glog||[];db.glog.push({uid,at:new Date().toISOString(),src:'exchange',kind:'gun',tier:r.tier,gun_id:body.p_gun,amount:-c,pity_hit:false});save(db);return res(200,{gun:body.p_gun,fragments:P.frags})}
+    // v6.83: the global chat's 12 hours (qz_chat_post / qz_chat_recent; db.clines = [{id, uid, kid, ts, t, s, r, at}]); window.__MOCK_NOCHATLOG = a database before v6.83
+    if(fn==='qz_chat_post'||fn==='qz_chat_recent'){if(window.__MOCK_NOCHATLOG)return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+' in the schema cache'});
+      const now=Date.now(),H12=12*3600e3;(window.__mockChat=window.__mockChat||[]).push([fn,body||{}]);
+      if(fn==='qz_chat_recent'){if(window.__MOCK_CHAT_OFF)return res(200,[]);const blk=db.blk||[];
+        const L=(db.clines||[]).filter(l=>now-l.at<H12&&db.prof[l.uid]&&!(db.prof[l.uid].bannedT>now)&&!blk.some(z=>z.a===uid&&z.b===l.uid)).slice(-100);
+        return res(200,L.map(l=>({k:l.kid,ts:l.ts,t:l.t,r:l.r,n:db.prof[l.uid].nickname,tt:titleWorn(l.uid),ft:hofBest(l.uid),me:l.uid===uid})))}
+      if(window.__MOCK_BAN||(P&&P.bannedT>now))return pgerr('banned');if(window.__MOCK_CHAT_OFF)return pgerr('chat_off');
+      const b=body||{},t=b.p_t,ms=now+(window.__MOCK_SKEW||0);
+      if(typeof t!=='string'||[...t].length<1||[...t].length>120||/[\u0000-\u001f\u007f]/.test(t))return pgerr('bad_line');
+      if(typeof b.p_ts!=='number'||Math.abs(b.p_ts-ms)>600e3)return pgerr('bad_time');
+      if(typeof b.p_s!=='string'||!/^[A-Za-z0-9_-]{40,120}$/.test(b.p_s))return pgerr('bad_sig');
+      const CK=db.ckeys||{};if(!CK[b.p_kid]||CK[b.p_kid].uid!==uid)return pgerr('bad_key');
+      let r=null;const R=b.p_r;if(R!=null){if(typeof R!=='object'||!/^[A-Z0-9]{4}$/.test(R.c||'')||!/^[a-z]{2,8}$/.test(R.m||'')||!/^[a-z0-9_]{1,24}$/.test(R.p||'')||!Number.isInteger(R.n)||!Number.isInteger(R.x)||R.n<1||R.x>8||R.n>R.x)return pgerr('bad_room');r={c:R.c,m:R.m,p:R.p,n:R.n,x:R.x}}
+      const mine=(db.clines||[]).filter(l=>l.uid===uid);
+      if(mine.some(l=>now-l.at<700)||mine.filter(l=>now-l.at<14e3).length>=5||r&&mine.some(l=>l.r&&now-l.at<25e3))return pgerr('too_fast');
+      db.clines=(db.clines||[]).filter(l=>now-l.at<H12).slice(-2999);
+      if(!db.clines.some(l=>l.kid===b.p_kid&&l.ts===b.p_ts))db.clines.push({id:(db.clseq=(db.clseq||0)+1),uid,kid:b.p_kid,ts:b.p_ts,t,s:b.p_s,r,at:now});save(db);return res(200,{ok:true,ms})}
     return err(404,{code:'PGRST202',message:'function not found'})}
   return err(404,{message:'not found '+p})}catch(e){return err(500,{message:String(e)})}};
 // v6.75: Supabase Realtime for the global chat — a socket to wss://mock.supabase.test/realtime/... speaks the Phoenix messages the game

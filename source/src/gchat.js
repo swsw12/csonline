@@ -1,9 +1,12 @@
 'use strict';
-// ============ 전체 채팅 (v6.75): the players online right now, from the lobby — nothing is kept anywhere ============
-// The owner's word: a chat room for everyone connected, nothing saved, every line sent on at once. A line goes page to page over
-// Supabase Realtime Broadcast on the private channel qz-lobby (schema.sql v6.75: its two policies let signed-in players read and
-// unsuspended ones send; Realtime writes nothing for a line). If the project has no such policies the private join is refused and the
-// public channel of the same name is used. Nothing here keeps a line past this page: the last 80 live in memory only.
+// ============ 전체 채팅 (v6.75): the players online, from the lobby; v6.83: the last 12 hours kept for whoever comes in ============
+// The owner's word (v6.75): a chat room for everyone connected, every line sent on at once. A line goes page to page over Supabase
+// Realtime Broadcast on the private channel qz-lobby (schema.sql v6.75: its two policies let signed-in players read and unsuspended ones
+// send). If the project has no such policies the private join is refused and the public channel of the same name is used.
+// v6.83 (the owner: 12시간이 지나면 자동 삭제, 그 전에 새로 접속한 사람도 볼 수 있게): a line sent also goes to qz_chat_post, which keeps
+// it 12 hours (schema.sql chat_lines: each post deletes what is older, 3,000 lines at most); a page joining the channel loads the last 100
+// of those hours (qz_chat_recent: oldest first, the sender's nickname and titles now, not a suspended player's or one I blocked) and puts
+// them under the live ones. The page keeps the last 100 lines and lets go of any past 12 hours.
 // Nobody can write as someone else: this page makes an ECDSA P-256 key pair (the private half never leaves it), puts the public half
 // with the account (qz_chat_key → kid) and signs every line it sends (kid, the time it was sent, the text); every page that receives a
 // line asks whose key it is (qz_chat_who: nickname, titles, suspended — kept 2 minutes) and checks the signature before showing it.
@@ -16,7 +19,7 @@
 // players, seats — signed with the text); other pages show it as a card with 참가, which joins by the code (INVT.go, as an invite).
 // One room post every 30 s from a page; a receiver shows one per sender in 20 s, and a card older than 10 minutes cannot be joined.
 const SVG_GCH='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M1.5 2h9a1 1 0 011 1v5a1 1 0 01-1 1H6l-2.6 2.2V9H1.5a1 1 0 01-1-1V3a1 1 0 011-1zm11 3.2h2a1 1 0 011 1V11a1 1 0 01-1 1H13v2.2L10.4 12H7.6a1 1 0 01-1-1v-.6h4a2 2 0 002-2z"/></svg>';
-const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:80,AWAY:120e3,BACK:[1,2,5,10,20,30],HB:25e3,
+const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:100,HOLD:12*3600e3,hBusy:false,AWAY:120e3,BACK:[1,2,5,10,20,30],HB:25e3,
   ws:null,ref:0,jref:'',joined:false,priv:true,hbT:0,hbRef:'',tries:0,nextAt:0,hiddenAt:0,
   key:null,kid:'',keyFor:'',kidP:null,kidU:'',who:new Map(),wq:new Map(),wT:0,
   lines:[],seen:new Map(),last:new Map(),rate:new Map(),vN:0,vT:0,sent:[],open:false,unread:0,msg:'',msgT:0,online:null,onAt:-1e9,menu:null,uid:'',off:0,old:false,shut:false,att:false,roomAt:0,lastRoom:new Map(),
@@ -29,6 +32,7 @@ const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:80,AWAY:120e3,BACK:[1,2,5,1
   tick(){this.sync();
     const w=this.want();if(w&&!this.ws&&performance.now()>=this.nextAt)this.connect();else if(!w&&this.ws)this.close(true);
     if(this.visible()&&ACC.signed()&&!this.old&&!this.shut&&performance.now()-this.onAt>60e3)this.loadOnline();
+    if(this.lines.length&&this.now()-this.lines[0].ts>this.HOLD){this.lines=this.lines.filter(x=>this.now()-x.ts<=this.HOLD);this.renderLog()}
     if(this.boxEl){let ch=false;for(const x of this.lines)if(x.r&&!x.old&&this.now()-x.ts>600e3){x.old=true;ch=true}if(ch)this.renderLog();this.place()}
     if(this.unread&&this.visible()){this.unread=0;gchDot()}},
   // (over the waiting room the window sits at the top, so its 시작 / 나가기 stay in reach)
@@ -55,7 +59,7 @@ const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:80,AWAY:120e3,BACK:[1,2,5,1
   rx(m){if(!m||typeof m!=='object')return;if(m.topic==='phoenix'){if(m.event==='phx_reply'&&m.ref===this.hbRef)this.hbRef='';return}
     if(m.topic!==this.TOPIC)return;const p=m.payload&&typeof m.payload==='object'?m.payload:{};
     if(m.event==='phx_reply'&&m.ref===this.jref){
-      if(p.status==='ok'){this.joined=true;this.tries=0;if(!Array.isArray(ACC.blk))ACC.blocks().catch(()=>{});this.render();return}
+      if(p.status==='ok'){this.joined=true;this.tries=0;if(!Array.isArray(ACC.blk))ACC.blocks().catch(()=>{});this.render();this.history();return}
       const why=String(p.response&&p.response.reason||'');
       // (no policies for the private channel on this project: the public channel of the same name)
       if(this.priv&&/Unauthori|permission|private|polic|denied|not allowed/i.test(why)){this.priv=false;this.join();return}
@@ -123,6 +127,21 @@ const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:80,AWAY:120e3,BACK:[1,2,5,1
       // (a sender's room posts: one in 20 s)
       if(r){if(now-(this.lastRoom.get(k)||-1e9)<20e3)return;this.lastRoom.set(k,now)}
       if(w.x||this.blocked(w.n))return;this.add({n:w.n,k,tt:TTL.row(w),t,ts,me:!!w.me,r})}).catch(()=>{})},
+  // (v6.83) the last 12 hours from the server, under the live lines (every join: what came while this page was away; a server before
+  // v6.83 has no qz_chat_recent and the chat just goes on live). The server vouches for who wrote them (qz_chat_post takes a line only
+  // with its sender's own key), so they are not checked against a key: an account keeps only its three newest.
+  async history(){const u=this.uid;if(!u||this.hBusy)return;this.hBusy=true;let r=null;try{r=await ACC.rpc('qz_chat_recent')}catch(e){r=null}this.hBusy=false;
+    if(this.uid!==u||!Array.isArray(r))return;const now=this.now();let n=0;
+    for(const it of r.slice(-this.KEEP)){if(!it||typeof it!=='object')continue;const k=it.k,ts=it.ts,t=it.t,r0=it.r==null?null:it.r;
+      if(typeof k!=='string'||!/^[0-9a-f]{20}$/.test(k)||typeof ts!=='number'||!Number.isFinite(ts)||typeof t!=='string'||!t||t.length>this.MAXLEN||now-ts>this.HOLD)continue;
+      if(r0!==null&&!this.roomOk(r0))continue;const id=k+':'+ts;if(this.seen.has(id))continue;
+      const me=!!it.me,nm=me?String(ACC.me&&ACC.me.nickname||it.n||'?'):String(it.n||'?').slice(0,16);if(!me&&this.blocked(nm))continue;
+      this.seen.set(id,performance.now());if(ts>(this.last.get(k)||0))this.last.set(k,ts);const rm=r0&&{c:r0.c,m:r0.m,p:r0.p,n:r0.n,x:r0.x};
+      this.lines.push({n:nm,k,tt:me?TTL.mine():TTL.row({tt:typeof it.tt==='string'?it.tt:null,ft:it.ft|0||null}),t,ts,me,r:rm,old:!!rm&&now-ts>600e3});n++}
+    if(!n)return;this.lines.sort((a,b)=>a.ts-b.ts);if(this.lines.length>this.KEEP)this.lines.splice(0,this.lines.length-this.KEEP);this.renderLog()},
+  // (v6.83) a line sent is kept 12 hours for whoever comes in later (refused — too fast, chat off — or a server before v6.83: it still
+  // went to everyone online)
+  keepLine(pl){ACC.rpc('qz_chat_post',{p_kid:pl.k,p_ts:pl.ts,p_t:pl.t,p_s:pl.s,p_r:pl.r||null}).catch(e=>{if(/chat_off/.test(String(e&&e.message||'')))this.setOn(false)})},
   add(x){this.lines.push(x);if(this.lines.length>this.KEEP)this.lines.splice(0,this.lines.length-this.KEEP);
     if(!x.me&&!this.visible()){this.unread=Math.min(99,this.unread+1);gchDot()}this.renderLog()},
   note(t){this.msg=t;this.msgT=performance.now();this.render();setTimeout(()=>{if(performance.now()-this.msgT>=3900){this.msg='';this.render()}},4000)},
@@ -141,7 +160,7 @@ const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:80,AWAY:120e3,BACK:[1,2,5,1
     let sig;try{sig=new Uint8Array(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},this.key,this.data(this.kid,ts,t,R)))}catch(e){this.note(L?'Could not sign the message':'메시지에 서명하지 못했어요');return false}
     const pl={k:this.kid,ts,t,s:this.b64(sig)};if(R)pl.r=R;
     if(!this.push('broadcast',{type:'broadcast',event:'m',payload:pl})){this.note(L?'Not connected':'연결이 끊겼어요');return false}
-    this.sent.push(now);this.last.set(this.kid,ts);this.seen.set(this.kid+':'+ts,now);if(R){this.roomAt=now;this.att=false}
+    this.sent.push(now);this.last.set(this.kid,ts);this.seen.set(this.kid+':'+ts,now);if(R){this.roomAt=now;this.att=false}this.keepLine(pl);
     this.add({n:ACC.me.nickname,tt:TTL.mine(),t,ts,me:true,r:R});if(R)this.render();return true},
   async loadOnline(){this.onAt=performance.now();const t0=Date.now();try{const r=await ACC.rpc('qz_online');this.clock(t0,r);if(r&&typeof r.on==='boolean')this.setOn(r.on);if(r&&Number.isFinite(+r.n)){this.online=r.n|0;this.renderHead()}}catch(e){this.gone(e)}},
   // ---- the window (v6.76): one box, #gchBox, in the lobby's 전체 채팅 panel (lobby.js, where the map list was) or in the floating window
@@ -180,7 +199,7 @@ const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:80,AWAY:120e3,BACK:[1,2,5,1
     if(o){if(this.boxEl&&o.contains(this.boxEl))this.boxEl.remove();o.remove()}this.mount(k);gchDot()},
   // a screen came up: back on the title (with its panel showing) the floating window gives way to the panel
   onShow(){if(this.open&&this.panelShown())this.close2();else this.mount()},
-  time(ts){const d=new Date(ts),p=n=>(n<10?'0':'')+n;return p(d.getHours())+':'+p(d.getMinutes())},
+  time(ts){const d=new Date(ts),p=n=>(n<10?'0':'')+n;return (d.toDateString()===new Date(this.now()).toDateString()?'':(LI()?'Yest. ':'어제 '))+p(d.getHours())+':'+p(d.getMinutes())},
   lineHtml(x){return `<div class="gl${x.me?' me':''}"><span class="gtm">${this.time(x.ts)}</span><b class="gn"${x.me?'':` data-gc="who" data-v="${esc(x.n)}" data-k="${esc(x.k||'')}"`}>${esc(x.n)}</b>${x.tt?TTL.chip(x.tt,'sm'):''}<span class="gx">${esc(x.t)}</span>${x.r?this.roomHtml(x):''}</div>`},
   renderHead(){const L=LI(),st=this.joined?(L?'● live':'● 연결됨'):this.ws?(L?'connecting…':'연결 중…'):(L?'offline':'연결 안 됨');
     const t=this.old||this.shut||!this.can()||!ACC.signed()?'':st+(this.online!=null?(L?` · ${this.online} online`:` · 접속 ${this.online}명`):'');
@@ -205,7 +224,7 @@ const GCH={TOPIC:'realtime:qz-lobby',MAXLEN:120,KEEP:80,AWAY:120e3,BACK:[1,2,5,1
       body=`<div id="gchLog" class="gclog"></div>${this.msg?`<div class="gcmsg">${esc(this.msg)}</div>`:''}
       ${R?`<div class="gcatt"><b class="gab">${L?'ROOM':'모집'}</b><span>${esc(this.roomText(R))}</span><button data-gc="unatt" aria-label="${L?'remove':'빼기'}">×</button></div>`:''}
       <div class="gcsend"><input id="gchIn" maxlength="${this.MAXLEN}" placeholder="${R?(L?'Add a few words (or just send)':'한마디 덧붙이기 (비워도 돼요)'):(L?'Say something to everyone':'모두에게 메시지 보내기')}" autocomplete="off" spellcheck="false"><button data-gc="send">${L?'Send':'보내기'}</button></div>
-      <p class="gcnote"><span class="gnl">${L?'Nothing is saved — only those online now see it. Tap a name to add, block or report.':'채팅 내용은 저장되지 않아요. 지금 접속한 사람에게만 보여요 · 이름을 누르면 친구 요청 · 차단 · 신고'}</span><span class="gns">${L?'Nothing is saved · tap a name to add, block or report':'저장 안 돼요 · 이름을 누르면 친구 요청 · 차단 · 신고'}</span></p>`}
+      <p class="gcnote"><span class="gnl">${L?'Lines stay 12 hours, so players who come in later see them too. Tap a name to add, block or report.':'채팅은 12시간 동안 남아서 나중에 들어온 사람도 볼 수 있어요 · 이름을 누르면 친구 요청 · 차단 · 신고'}</span><span class="gns">${L?'Kept 12 hours · tap a name to add, block or report':'12시간 보관 · 이름을 누르면 친구 요청 · 차단 · 신고'}</span></p>`}
     b.innerHTML=body;this.renderHead();this.renderLog();this.back(k)},
   act(a,v,el){const L=LI();
     if(a==='x'){this.close2();return}

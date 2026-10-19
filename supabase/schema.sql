@@ -59,10 +59,12 @@
 --     구글 · 카카오 계정 번호는 되돌릴 수 없는 해시로 30일(정지 중에 탈퇴했으면 정지가 끝날 때까지) deleted_ids에 남아, 같은 사람이 다시 가입하면
 --     정지가 이어지고 가입 보상(코인 · 기초 훈련 · 초대 · 새 계정 우편)이 없습니다. 명예의 전당 기록은 관리자 페이지 「의심 유저 → 명예의 전당」에서
 --     주인이 지울 수 있습니다(qz_admin_hof_del).
---   * 전체 채팅(v6.75): 로비에서 지금 접속한 플레이어끼리 — 채팅 내용은 저장하지 않고 Supabase Realtime Broadcast(비공개 채널 qz-lobby)로
+--   * 전체 채팅(v6.75): 로비에서 지금 접속한 플레이어끼리 — Supabase Realtime Broadcast(비공개 채널 qz-lobby)로
 --     바로 주고받습니다. 줄마다 브라우저가 만든 키로 서명하고(공개 키만 chat_keys, qz_chat_key), 받는 쪽이 qz_chat_who로 누구 키인지 확인한 뒤
 --     보여 줘서 남의 이름으로는 못 씁니다. 채널 정책 두 개(realtime.messages)는 이 파일 끝에서 만듭니다. 관리자 페이지
 --     「게임 설정 → 해독기 · 초대 · 채팅 → 전체 채팅」(gacha_config.chat_on)으로 끌 수 있습니다.
+--     v6.83: 보낸 줄은 12시간 동안 보관(chat_lines, qz_chat_post)해서 나중에 들어온 사람도 봅니다(qz_chat_recent, 최근 100줄).
+--     12시간이 지난 줄은 새 줄이 올라올 때마다 자동으로 지워지고, 표에는 많아야 3,000줄만 남습니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -4686,10 +4688,10 @@ revoke all on function public.qz_tut_claim() from public, anon;
 grant execute on function public.qz_tut_claim() to authenticated;
 
 -- ============================================================================================================
--- 전체 채팅 (v6.75): 지금 접속한 플레이어끼리 로비에서 — 채팅 내용은 어디에도 저장하지 않아요
+-- 전체 채팅 (v6.75): 지금 접속한 플레이어끼리 로비에서 — v6.83부터 보낸 줄은 12시간 보관(아래 chat_lines)
 -- ============================================================================================================
--- A line goes page to page over Supabase Realtime Broadcast on the private channel qz-lobby: nothing is written for it, here or in
--- realtime.messages (Realtime only runs the two policies below as a page joins, and rolls that back). So that nobody can write as someone
+-- A line goes page to page over Supabase Realtime Broadcast on the private channel qz-lobby: Realtime writes nothing for it in
+-- realtime.messages (it only runs the two policies below as a page joins, and rolls that back). So that nobody can write as someone
 -- else, every page signs its lines with a key pair it made itself (ECDSA P-256 in the browser; the private half never leaves the page):
 -- the public half is put with the account here (chat_keys, qz_chat_key), and every page that shows a line asks whose key it is
 -- (qz_chat_who: nickname, titles, suspended) and checks the signature first. An account keeps its three newest keys (a tab each). A
@@ -4777,3 +4779,82 @@ begin
     raise notice 'the chat policies could not be made: %', sqlerrm;
   end;
 end $$;
+
+-- ============================================================================================================
+-- 전체 채팅 기록 (v6.83): 보낸 줄을 12시간 보관 — 나중에 들어온 사람도 지난 12시간의 대화를 봐요
+-- ============================================================================================================
+-- The owner's word: a line stays 12 hours so that a player who comes in later still sees it, and is deleted on its own after that.
+-- A page sends a line twice: on the channel (at once, signed, as since v6.75) and to qz_chat_post, which keeps it here with the sender's
+-- own key (chat_keys), the time the line carries, the text, the signature and the room card. Every post first deletes what is older than
+-- 12 hours, and anything past the newest 3,000 lines, so the table never holds more than half a day of chat (each line a few hundred
+-- bytes). A page joining the channel asks qz_chat_recent for the last 100 lines of those 12 hours. An account deleted takes its lines.
+create table if not exists public.chat_lines (
+  id      bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  kid     text not null,
+  ts      bigint not null,
+  t       text not null,
+  s       text not null,
+  r       jsonb,
+  at      timestamptz not null default now()
+);
+create unique index if not exists chat_lines_line on public.chat_lines (kid, ts);
+create index if not exists chat_lines_at on public.chat_lines (at);
+create index if not exists chat_lines_user on public.chat_lines (user_id, at desc);
+alter table public.chat_lines enable row level security;
+revoke all on table public.chat_lines from public, anon, authenticated;
+-- a line to keep: this player's own key (kid), the time in the line (the server's ms, 10 minutes either way), 1 to 120 characters
+-- without control characters, the signature, and a room card (code, mode, map, players, seats) or none. 0.7 s apart, five in 14 s,
+-- a room card every 25 s (the page itself asks 1.5 s, five in 15 s and 30 s: a late packet is not refused). The chat switched off or the player suspended: refused
+create or replace function public.qz_chat_post(p_kid text, p_ts bigint, p_t text, p_s text, p_r jsonb default null) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid := auth.uid();
+  v_ms bigint := floor(extract(epoch from clock_timestamp()) * 1000)::bigint;
+  v_r jsonb := null;
+begin
+  if uid is null then raise exception 'not_signed_in'; end if;
+  perform public.qz_guard(uid);
+  if not coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true) then raise exception 'chat_off'; end if;
+  if p_t is null or char_length(p_t) < 1 or char_length(p_t) > 120 or p_t ~ '[[:cntrl:]]' then raise exception 'bad_line'; end if;
+  if p_ts is null or abs(p_ts - v_ms) > 600000 then raise exception 'bad_time'; end if;
+  if p_s is null or p_s !~ '^[A-Za-z0-9_-]{40,120}$' then raise exception 'bad_sig'; end if;
+  if not exists (select 1 from public.chat_keys k where k.kid = p_kid and k.user_id = uid) then raise exception 'bad_key'; end if;
+  if p_r is not null and jsonb_typeof(p_r) <> 'null' then
+    if jsonb_typeof(p_r) <> 'object' or coalesce(p_r ->> 'c', '') !~ '^[A-Z0-9]{4}$' or coalesce(p_r ->> 'm', '') !~ '^[a-z]{2,8}$'
+      or coalesce(p_r ->> 'p', '') !~ '^[a-z0-9_]{1,24}$' or jsonb_typeof(p_r -> 'n') is distinct from 'number' or jsonb_typeof(p_r -> 'x') is distinct from 'number'
+      or coalesce(p_r ->> 'n', '') !~ '^[1-8]$' or coalesce(p_r ->> 'x', '') !~ '^[1-8]$' then raise exception 'bad_room'; end if;
+    if (p_r ->> 'n')::integer > (p_r ->> 'x')::integer then raise exception 'bad_room'; end if;
+    v_r := jsonb_build_object('c', p_r ->> 'c', 'm', p_r ->> 'm', 'p', p_r ->> 'p', 'n', (p_r ->> 'n')::integer, 'x', (p_r ->> 'x')::integer);
+  end if;
+  -- (one player's posts one at a time, so that the limits hold)
+  perform 1 from public.profiles where id = uid for update;
+  if not found then raise exception 'no_profile'; end if;
+  if exists (select 1 from public.chat_lines l where l.user_id = uid and l.at > now() - interval '0.7 seconds') then raise exception 'too_fast'; end if;
+  if (select count(*) from public.chat_lines l where l.user_id = uid and l.at > now() - interval '14 seconds') >= 5 then raise exception 'too_fast'; end if;
+  if v_r is not null and exists (select 1 from public.chat_lines l where l.user_id = uid and l.r is not null and l.at > now() - interval '25 seconds') then
+    raise exception 'too_fast'; end if;
+  -- 12 hours and 3,000 lines at most (this one among them): the oldest go first
+  delete from public.chat_lines l where l.at < now() - interval '12 hours';
+  delete from public.chat_lines l where l.id <= (select l2.id from public.chat_lines l2 order by l2.id desc offset 2999 limit 1);
+  insert into public.chat_lines (user_id, kid, ts, t, s, r) values (uid, p_kid, p_ts, p_t, p_s, v_r) on conflict (kid, ts) do nothing;
+  return jsonb_build_object('ok', true, 'ms', v_ms);
+end $$;
+-- the last 100 lines of the 12 hours, oldest first: [{k: the key, ts, t: the text, r: the room card, n: the sender's nickname now,
+-- tt / ft: the titles (as qz_chat_who), me: mine}]; a suspended player's lines and those of a player I blocked are left out; [] while
+-- the chat is off
+create or replace function public.qz_chat_recent() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select case when auth.uid() is null or not coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true) then '[]'::jsonb
+    else coalesce((select jsonb_agg(x.o order by x.id) from (
+      select l.id, jsonb_build_object('k', l.kid, 'ts', l.ts, 't', l.t, 'r', l.r, 'n', p.nickname, 'tt', public.qz_title_worn(p.id),
+        'ft', public.qz_first_best(p.id), 'me', l.user_id = auth.uid()) as o
+      from public.chat_lines l join public.profiles p on p.id = l.user_id
+      where l.at > now() - interval '12 hours' and not coalesce(p.banned_until > now(), false)
+        and not exists (select 1 from public.blocks bl where bl.a = auth.uid() and bl.b = l.user_id)
+      order by l.id desc limit 100) x), '[]'::jsonb) end
+$$;
+revoke all on function public.qz_chat_post(text, bigint, text, text, jsonb) from public, anon;
+revoke all on function public.qz_chat_recent() from public, anon;
+grant execute on function public.qz_chat_post(text, bigint, text, text, jsonb) to authenticated;
+grant execute on function public.qz_chat_recent() to authenticated;
