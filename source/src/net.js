@@ -683,7 +683,13 @@ NET.start=function(){if(!NET.host||NET.ui!=='lobby'||NET.mig)return;const cfg=Ob
   netEv('start',{cfg,ro});netBegin(cfg,ro)};
 // every page builds the same actors from the host's roster
 function netBegin(cfg,ro){netTables();AU.init();MAP.want=MAPDEFS[cfg.map]?cfg.map:'q7';loadMap(MAP.want);Main.clearDemo();for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);
-  NET.ui='game';NET.k=0;NET.lastK=0;NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.tAcc=0;NET.t0=netNow();UI.hideAll();
+  // v6.90: this page's own tick number (NET.k) only ever grows. It used to start again at 0 with every match while the host kept each
+  // player's last number from the match before (L.lastK) and dropped every state not above it: in a second match in the same room the
+  // players stood still on every screen (and were hit there) while they moved on their own. What each link heard last starts afresh with
+  // the match too (for a page of an older version, whose numbers still start again), and no effects of the last match ride along (the
+  // claude.ai relay's windows).
+  NET.ui='game';NET.lastK=0;NET.fx=[];NET.fxQ=[];NET.hits=[];NET.ids.clear();NET.tAcc=0;NET.t0=netNow();UI.hideAll();
+  for(const L of NET.links.values()){L.lastK=0;L.fxK=0;if(L.fw)L.fw=[]}
   startMatch(Object.assign({},cfg,{ro}));for(const a of G.actors)NET.ids.set(a.id,a);
   HUD.show(true);Main.paused=false;Main.overlay=null;if(NET.host)Main.lock();else HUD.note(T('clickToPlay'),4);window.onbeforeunload=e=>{if(NET.on){e.preventDefault();e.returnValue='';return ''}}}
 function netToLobby(){if(NET.host)netEv('tolobby');for(const a of G.actors)for(const k in a.rigs)R.scene.remove(a.rigs[k].grp);G.actors=[];G.player=null;clearNades();NY.clear();FX.clearDecals();
