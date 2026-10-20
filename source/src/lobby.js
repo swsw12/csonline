@@ -8,6 +8,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.91.1','2026-10-21',[
+ ['FIX','구속복 좀비의 덮치기가 사람 바로 옆을 스쳐 지나가거나, 턱 · 경사에 닿아 짧게 떨어져서 못 잡던 문제 — 날아간 길 전체로 닿았는지 보고, 봇은 처음 노린 사람에게 그대로 덮쳐요','The straitjacket\'s pounce missed a human it flew right past, or came down short on a step or a slope — it now checks the whole way it flew, and a bot leaps at the human it aimed for']]],
 ['v6.91','2026-10-21',[
  ['NEW','구속복 좀비를 직접 고를 수 있어요 (일곱 번째 좀비) — 팔이 묶여 있어 할퀴는 대신 머리로 들이받고, G를 누르면 앞으로 덮쳐서 닿은 인간을 1.6초 동안 붙잡아요. 붙잡힌 인간은 쏘지도 움직이지도 못하고, 동료가 쏴서 떼어 줄 수 있어요 (떼어 준 사람 +1점)','The straitjacket zombie can be picked (the seventh zombie) — its arms strapped, it butts with its head instead of clawing; G: it pounces, and the human it lands on is pinned for 1.6 s — no shooting, no moving, until a teammate shoots it off (+1 to whoever does)'],
  ['UP','1챕터의 구속복 좀비는 체력 · 속도 · 방어력과 덮치기가 예전 그대로예요','Chapter 1\'s straitjackets keep their health, speed, armour and pounce as they were'],
@@ -587,7 +589,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       ${typeof GCH!=='undefined'&&GCH.can()?`<div class="lp lchat" data-seg="chat"><div class="lpt"><b class="on">${L?'CHAT':'전체 채팅'}</b><small class="gcst"></small><button class="gcpop" data-gc="pop" title="${L?'Bigger':'크게 보기'}" aria-label="${L?'Bigger':'크게 보기'}"><svg viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9.5 2.5h4v4M13.5 2.5l-5 5M6.5 13.5h-4v-4M2.5 13.5l5-5"/></svg></button></div></div>`
         :`<div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>`}
     </div>
-    <div class="foot">v6.91<span class="fst"> · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</span>${typeof LEGAL!=='undefined'?' · '+LEGAL.links(L):''}</div></div>`;
+    <div class="foot">v6.91.1<span class="fst"> · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</span>${typeof LEGAL!=='undefined'?' · '+LEGAL.links(L):''}</div></div>`;
   UI.wantSnap();setTimeout(lobFit,0)};
 // (v6.58) the top bar keeps every button in view: past its width the logo gets smaller, then goes, then the main buttons lose
 // their words (a tooltip keeps them); run after every module has put its buttons in, on every resize and when the lobby shows again

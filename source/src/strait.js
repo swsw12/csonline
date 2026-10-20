@@ -60,14 +60,14 @@ SJ.vmPose=function(V,A,dt){const M=V.mel;let k=0,hv=false;
 SJ.start=function(a){const c=a.c;if(!isSj(a)||!a.alive||!sjOn()||a.scen)return false;
   if(a.sjS||a.frozen>0||a.holdT>0||a.rootT>0||a.reviving>0||a.cur==='zbomb'||(!a.pup&&!c.onGround))return false;
   let h=a.yaw;const t=a.bot&&a.bot.target;if(t&&t.alive&&Math.hypot(t.c.x-c.x,t.c.z-c.z)>.5)h=Math.atan2(-(t.c.x-c.x),-(t.c.z-c.z));
-  SJ.begin(a,h);if(NET.host)netEv('sjc',{i:a.id,y:r3(h)});return true};
+  SJ.begin(a,h);a.sjTg=t&&t.alive?t:null;if(NET.host)netEv('sjc',{i:a.id,y:r3(h)});return true};// (a bot leaps at the human it coiled for, even if its eye wanders meanwhile)
 // every page: the wind-up (low, coiled)
 SJ.begin=function(a,h){const c=a.c;a.sjS='wind';a.sjT=SJ.WIND;a.sjH=h;a.sjV=null;a.sjD=0;a.sjFly=false;a.sjG=0;a.an.skill=Math.max(a.an.skill,.5);
   AU.at('zgrowl',c.x,c.y+1.5,c.z,{vol:.9,range:30,rate:1.4});if(a.isPlayer)HUD.note(LI()?'Pounce!':'덮치기!',.8)};
 // every page: off it goes (only the page that owns the body throws it)
 SJ.leap=function(a){const c=a.c;a.sjS='leap';a.sjT=SJ.LEAP;a.sjLx=a.sjLz=null;a.sjSp=0;a.sjG=0;
   AU.at('zleap',c.x,c.y+1.4,c.z,{vol:.9,range:35});if(a.pup)return;
-  let h=a.isPlayer?a.yaw:a.sjH,tx=null,ty=c.y,tz=null;const t=a.bot&&a.bot.target;
+  let h=a.isPlayer?a.yaw:a.sjH,tx=null,ty=c.y,tz=null;const t=a.bot&&a.sjTg;a.sjTg=null;
   if(a.bot&&t&&t.alive&&t.team===TH){const lx=t.c.x+(t.c.vx||0)*.25,lz=t.c.z+(t.c.vz||0)*.25,d=Math.hypot(lx-c.x,lz-c.z);
     if(d<SJ.RANGE+1){const k=Math.min(1,(SJ.RANGE+.3)/Math.max(d,.1));tx=c.x+(lx-c.x)*k;tz=c.z+(lz-c.z)*k;ty=t.c.y}}
   if(tx==null){tx=c.x-Math.sin(h)*SJ.RANGE;tz=c.z-Math.cos(h)*SJ.RANGE}
@@ -78,9 +78,11 @@ SJ.leap=function(a){const c=a.c;a.sjS='leap';a.sjT=SJ.LEAP;a.sjLx=a.sjLz=null;a.
 // the owner: down (on the floor, out of time, frozen, or stopped by a wall); a moment for the host to see what it came down on, a short
 // recovery
 SJ.land=function(a){a.leapV=null;a.kvx*=.2;a.kvz*=.2;a.sjFly=false;a.sjG=.12;a.staggerT=Math.max(a.staggerT||0,.3)};
-// host: did it come down on someone? (the nearest human within reach, at its height, not already held)
-SJ.touch=function(a){let best=null,bd=1e9;
-  for(const h of G.actors){if(!h.alive||h.team!==TH||h.grabT>0||h.sjA)continue;const d=Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z);
+// host: did it come down on someone? (the nearest human within reach of its path since the last frame, at its height, in sight, not
+// already held)
+SJ.touch=function(a,lx,lz){let best=null,bd=1e9;const sx=a.c.x-lx,sz=a.c.z-lz,L2=sx*sx+sz*sz;
+  for(const h of G.actors){if(!h.alive||h.team!==TH||h.grabT>0||h.sjA)continue;const u=L2>1e-6?clamp(((h.c.x-lx)*sx+(h.c.z-lz)*sz)/L2,0,1):1;
+    const d=Math.hypot(h.c.x-(lx+sx*u),h.c.z-(lz+sz*u));
     if(d>a.c.hw+h.c.hw+SJ.REACH||h.c.y>a.c.y+1.6||h.c.y+h.c.h<a.c.y+.2||d>=bd)continue;
     if(!losClear(a.c.x,a.c.y+1,a.c.z,h.c.x,h.c.y+1,h.c.z))continue;bd=d;best=h}// (not through a thin wall)
   if(best)SJ.grab(a,best)};
@@ -115,7 +117,7 @@ SJ.update=function(dt){const host=!NET.cli,on=sjOn();
       // the host watches its own bodies while they fly (and a moment after they land), a player's body while it moves fast on its view
       if(host){const lx=a.sjLx==null?a.c.x:a.sjLx,lz=a.sjLz==null?a.c.z:a.sjLz;a.sjLx=a.c.x;a.sjLz=a.c.z;
         a.sjSp=lerp(a.sjSp||0,Math.hypot(a.c.x-lx,a.c.z-lz)/Math.max(dt,1e-3),Math.min(1,dt*12));
-        if(a.pup?a.sjSp>SJ.SPDP:a.sjFly||a.sjG>0)SJ.touch(a)}
+        if(a.pup?a.sjSp>SJ.SPDP:a.sjFly||a.sjG>0)SJ.touch(a,lx,lz)}
       if(a.sjS==='leap'&&(a.sjT<=0||!a.pup&&!a.sjFly&&!(a.sjG>0)))SJ.clearSt(a);continue}
     if(a.sjS==='grab'){a.sjT-=dt;a.an.skill=Math.max(a.an.skill,.35);const v=a.sjV;
       if(host){if(!v||!v.alive||v.team!==TH||a.frozen>0||a.sjT<=0||Math.hypot(v.c.x-a.c.x,v.c.z-a.c.z)>2.6||Math.abs(v.c.y-a.c.y)>2){SJ.release(a,false);continue}
@@ -131,7 +133,7 @@ SJ.update=function(dt){const host=!NET.cli,on=sjOn();
     if(a.sjS==='leap'){const L=a.leapV;if(!a.sjFly||!L)return ap(a,dt);if(a.frozen>0||a.rootT>0||a.holdT>0){SJ.land(a);return ap(a,dt)}
       a.sjLt+=dt;a.kvx=L.x;a.kvz=L.z;a.mvx=a.mvz=0;c.f=c.s=0;c.jump=c.duck=false;const x0=a.c.x,z0=a.c.z;ap(a,dt);
       if(a.sjLt>.1&&Math.hypot(a.c.x-x0,a.c.z-z0)<Math.hypot(L.x,L.z)*dt*.35)a.sjBlk+=dt;else a.sjBlk=0;
-      if(a.sjLt>=a.sjFT||a.c.onGround&&a.sjLt>.15||a.sjBlk>.06)SJ.land(a);return}
+      if(a.sjLt>=a.sjFT||a.c.onGround&&a.sjLt>a.sjFT*.7||a.sjBlk>.12)SJ.land(a);return}// (an early touch of a step or a slope does not end it)
     if(a.sjS==='grab'){const v=a.sjV;if(v&&v.alive){const fx=-Math.sin(v.yaw),fz=-Math.cos(v.yaw),px=v.c.x+fx*SJ.LOCK,pz=v.c.z+fz*SJ.LOCK;
         if(charFits(a.c,px,v.c.y,pz)){a.c.x=px;a.c.z=pz;a.c.y=v.c.y}a.c.vx=a.c.vz=0;a.kvx=a.kvz=a.mvx=a.mvz=0;
         if(a.bot)a.yaw=Math.atan2(-(v.c.x-a.c.x),-(v.c.z-a.c.z))}

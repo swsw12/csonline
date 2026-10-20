@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ugxstSlRfX4oba3NaNN/9SIKpjjkrCzX/LMWquWAkk0=' 'sha256-fxOwvOwDGDaVBva4Sv7jxhh+04JgL8CeexCtjNHgbJk=' 'sha256-G6JC3qpOsMrA3jomQNzR8caNZPLYWpJ8DQDfXTTVi0w='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' https://qoavmnovajakmfwqixiu.supabase.co wss://qoavmnovajakmfwqixiu.supabase.co/realtime/v1/websocket https://0.peerjs.com wss://0.peerjs.com; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ugxstSlRfX4oba3NaNN/9SIKpjjkrCzX/LMWquWAkk0=' 'sha256-fxOwvOwDGDaVBva4Sv7jxhh+04JgL8CeexCtjNHgbJk=' 'sha256-mG/aQptrGV3aa8z/KyH0rVDWxLF0O3fEWkExNvHI8QQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' https://qoavmnovajakmfwqixiu.supabase.co wss://qoavmnovajakmfwqixiu.supabase.co/realtime/v1/websocket https://0.peerjs.com wss://0.peerjs.com; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0e0f12"><link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="QUARANTINE Z">
@@ -16722,6 +16722,8 @@ const THUMB={};
 // ---------- patch notes (공지사항 ＋ button) ----------
 // newest first: [version, date, [[tag, ko, en], ...]]  tag NEW / UP / FIX
 const PATCH=[
+['v6.91.1','2026-10-21',[
+ ['FIX','구속복 좀비의 덮치기가 사람 바로 옆을 스쳐 지나가거나, 턱 · 경사에 닿아 짧게 떨어져서 못 잡던 문제 — 날아간 길 전체로 닿았는지 보고, 봇은 처음 노린 사람에게 그대로 덮쳐요','The straitjacket\'s pounce missed a human it flew right past, or came down short on a step or a slope — it now checks the whole way it flew, and a bot leaps at the human it aimed for']]],
 ['v6.91','2026-10-21',[
  ['NEW','구속복 좀비를 직접 고를 수 있어요 (일곱 번째 좀비) — 팔이 묶여 있어 할퀴는 대신 머리로 들이받고, G를 누르면 앞으로 덮쳐서 닿은 인간을 1.6초 동안 붙잡아요. 붙잡힌 인간은 쏘지도 움직이지도 못하고, 동료가 쏴서 떼어 줄 수 있어요 (떼어 준 사람 +1점)','The straitjacket zombie can be picked (the seventh zombie) — its arms strapped, it butts with its head instead of clawing; G: it pounces, and the human it lands on is pinned for 1.6 s — no shooting, no moving, until a teammate shoots it off (+1 to whoever does)'],
  ['UP','1챕터의 구속복 좀비는 체력 · 속도 · 방어력과 덮치기가 예전 그대로예요','Chapter 1\'s straitjackets keep their health, speed, armour and pounce as they were'],
@@ -17301,7 +17303,7 @@ UI.buildTitle=function(){const L=LI(),r=recGet(),lv=recLevel(r.xp),skin=HSKINS.i
       ${typeof GCH!=='undefined'&&GCH.can()?`<div class="lp lchat" data-seg="chat"><div class="lpt"><b class="on">${L?'CHAT':'전체 채팅'}</b><small class="gcst"></small><button class="gcpop" data-gc="pop" title="${L?'Bigger':'크게 보기'}" aria-label="${L?'Bigger':'크게 보기'}"><svg viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9.5 2.5h4v4M13.5 2.5l-5 5M6.5 13.5h-4v-4M2.5 13.5l5-5"/></svg></button></div></div>`
         :`<div class="lp"><div class="lpt"><b class="on">${L?'MAPS':'맵 목록'}</b><small>${L?'click to load':'클릭하면 배경 변경'}</small></div><div class="mlist">${MAPLIST().map(id=>`<div class="mli${CFG.map===id?' on':''}" data-act="lobmap" data-v="${id}">${thumb(id,'sm')}<b>${esc(mapName(id))}</b></div>`).join('')}</div></div>`}
     </div>
-    <div class="foot">v6.91<span class="fst"> · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</span>${typeof LEGAL!=='undefined'?' · '+LEGAL.links(L):''}</div></div>`;
+    <div class="foot">v6.91.1<span class="fst"> · ${L?MAPLIST().length+' maps · '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+' weapons':'맵 '+MAPLIST().length+'개 · 무기 '+Object.values(WPN).filter(w=>w.model&&w.kind!=='nade').length+'종'}${typeof TOUCH!=='undefined'&&TOUCH.on?(L?' · touch controls on':' · 터치 조작 켜짐'):''}</span>${typeof LEGAL!=='undefined'?' · '+LEGAL.links(L):''}</div></div>`;
   UI.wantSnap();setTimeout(lobFit,0)};
 // (v6.58) the top bar keeps every button in view: past its width the logo gets smaller, then goes, then the main buttons lose
 // their words (a tooltip keeps them); run after every module has put its buttons in, on every resize and when the lobby shows again
@@ -24874,14 +24876,14 @@ SJ.vmPose=function(V,A,dt){const M=V.mel;let k=0,hv=false;
 SJ.start=function(a){const c=a.c;if(!isSj(a)||!a.alive||!sjOn()||a.scen)return false;
   if(a.sjS||a.frozen>0||a.holdT>0||a.rootT>0||a.reviving>0||a.cur==='zbomb'||(!a.pup&&!c.onGround))return false;
   let h=a.yaw;const t=a.bot&&a.bot.target;if(t&&t.alive&&Math.hypot(t.c.x-c.x,t.c.z-c.z)>.5)h=Math.atan2(-(t.c.x-c.x),-(t.c.z-c.z));
-  SJ.begin(a,h);if(NET.host)netEv('sjc',{i:a.id,y:r3(h)});return true};
+  SJ.begin(a,h);a.sjTg=t&&t.alive?t:null;if(NET.host)netEv('sjc',{i:a.id,y:r3(h)});return true};// (a bot leaps at the human it coiled for, even if its eye wanders meanwhile)
 // every page: the wind-up (low, coiled)
 SJ.begin=function(a,h){const c=a.c;a.sjS='wind';a.sjT=SJ.WIND;a.sjH=h;a.sjV=null;a.sjD=0;a.sjFly=false;a.sjG=0;a.an.skill=Math.max(a.an.skill,.5);
   AU.at('zgrowl',c.x,c.y+1.5,c.z,{vol:.9,range:30,rate:1.4});if(a.isPlayer)HUD.note(LI()?'Pounce!':'덮치기!',.8)};
 // every page: off it goes (only the page that owns the body throws it)
 SJ.leap=function(a){const c=a.c;a.sjS='leap';a.sjT=SJ.LEAP;a.sjLx=a.sjLz=null;a.sjSp=0;a.sjG=0;
   AU.at('zleap',c.x,c.y+1.4,c.z,{vol:.9,range:35});if(a.pup)return;
-  let h=a.isPlayer?a.yaw:a.sjH,tx=null,ty=c.y,tz=null;const t=a.bot&&a.bot.target;
+  let h=a.isPlayer?a.yaw:a.sjH,tx=null,ty=c.y,tz=null;const t=a.bot&&a.sjTg;a.sjTg=null;
   if(a.bot&&t&&t.alive&&t.team===TH){const lx=t.c.x+(t.c.vx||0)*.25,lz=t.c.z+(t.c.vz||0)*.25,d=Math.hypot(lx-c.x,lz-c.z);
     if(d<SJ.RANGE+1){const k=Math.min(1,(SJ.RANGE+.3)/Math.max(d,.1));tx=c.x+(lx-c.x)*k;tz=c.z+(lz-c.z)*k;ty=t.c.y}}
   if(tx==null){tx=c.x-Math.sin(h)*SJ.RANGE;tz=c.z-Math.cos(h)*SJ.RANGE}
@@ -24892,9 +24894,11 @@ SJ.leap=function(a){const c=a.c;a.sjS='leap';a.sjT=SJ.LEAP;a.sjLx=a.sjLz=null;a.
 // the owner: down (on the floor, out of time, frozen, or stopped by a wall); a moment for the host to see what it came down on, a short
 // recovery
 SJ.land=function(a){a.leapV=null;a.kvx*=.2;a.kvz*=.2;a.sjFly=false;a.sjG=.12;a.staggerT=Math.max(a.staggerT||0,.3)};
-// host: did it come down on someone? (the nearest human within reach, at its height, not already held)
-SJ.touch=function(a){let best=null,bd=1e9;
-  for(const h of G.actors){if(!h.alive||h.team!==TH||h.grabT>0||h.sjA)continue;const d=Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z);
+// host: did it come down on someone? (the nearest human within reach of its path since the last frame, at its height, in sight, not
+// already held)
+SJ.touch=function(a,lx,lz){let best=null,bd=1e9;const sx=a.c.x-lx,sz=a.c.z-lz,L2=sx*sx+sz*sz;
+  for(const h of G.actors){if(!h.alive||h.team!==TH||h.grabT>0||h.sjA)continue;const u=L2>1e-6?clamp(((h.c.x-lx)*sx+(h.c.z-lz)*sz)/L2,0,1):1;
+    const d=Math.hypot(h.c.x-(lx+sx*u),h.c.z-(lz+sz*u));
     if(d>a.c.hw+h.c.hw+SJ.REACH||h.c.y>a.c.y+1.6||h.c.y+h.c.h<a.c.y+.2||d>=bd)continue;
     if(!losClear(a.c.x,a.c.y+1,a.c.z,h.c.x,h.c.y+1,h.c.z))continue;bd=d;best=h}// (not through a thin wall)
   if(best)SJ.grab(a,best)};
@@ -24929,7 +24933,7 @@ SJ.update=function(dt){const host=!NET.cli,on=sjOn();
       // the host watches its own bodies while they fly (and a moment after they land), a player's body while it moves fast on its view
       if(host){const lx=a.sjLx==null?a.c.x:a.sjLx,lz=a.sjLz==null?a.c.z:a.sjLz;a.sjLx=a.c.x;a.sjLz=a.c.z;
         a.sjSp=lerp(a.sjSp||0,Math.hypot(a.c.x-lx,a.c.z-lz)/Math.max(dt,1e-3),Math.min(1,dt*12));
-        if(a.pup?a.sjSp>SJ.SPDP:a.sjFly||a.sjG>0)SJ.touch(a)}
+        if(a.pup?a.sjSp>SJ.SPDP:a.sjFly||a.sjG>0)SJ.touch(a,lx,lz)}
       if(a.sjS==='leap'&&(a.sjT<=0||!a.pup&&!a.sjFly&&!(a.sjG>0)))SJ.clearSt(a);continue}
     if(a.sjS==='grab'){a.sjT-=dt;a.an.skill=Math.max(a.an.skill,.35);const v=a.sjV;
       if(host){if(!v||!v.alive||v.team!==TH||a.frozen>0||a.sjT<=0||Math.hypot(v.c.x-a.c.x,v.c.z-a.c.z)>2.6||Math.abs(v.c.y-a.c.y)>2){SJ.release(a,false);continue}
@@ -24945,7 +24949,7 @@ SJ.update=function(dt){const host=!NET.cli,on=sjOn();
     if(a.sjS==='leap'){const L=a.leapV;if(!a.sjFly||!L)return ap(a,dt);if(a.frozen>0||a.rootT>0||a.holdT>0){SJ.land(a);return ap(a,dt)}
       a.sjLt+=dt;a.kvx=L.x;a.kvz=L.z;a.mvx=a.mvz=0;c.f=c.s=0;c.jump=c.duck=false;const x0=a.c.x,z0=a.c.z;ap(a,dt);
       if(a.sjLt>.1&&Math.hypot(a.c.x-x0,a.c.z-z0)<Math.hypot(L.x,L.z)*dt*.35)a.sjBlk+=dt;else a.sjBlk=0;
-      if(a.sjLt>=a.sjFT||a.c.onGround&&a.sjLt>.15||a.sjBlk>.06)SJ.land(a);return}
+      if(a.sjLt>=a.sjFT||a.c.onGround&&a.sjLt>a.sjFT*.7||a.sjBlk>.12)SJ.land(a);return}// (an early touch of a step or a slope does not end it)
     if(a.sjS==='grab'){const v=a.sjV;if(v&&v.alive){const fx=-Math.sin(v.yaw),fz=-Math.cos(v.yaw),px=v.c.x+fx*SJ.LOCK,pz=v.c.z+fz*SJ.LOCK;
         if(charFits(a.c,px,v.c.y,pz)){a.c.x=px;a.c.z=pz;a.c.y=v.c.y}a.c.vx=a.c.vz=0;a.kvx=a.kvz=a.mvx=a.mvz=0;
         if(a.bot)a.yaw=Math.atan2(-(v.c.x-a.c.x),-(v.c.z-a.c.z))}
@@ -30135,7 +30139,7 @@ const QM={on:false,tried:[],n:0,t:0,step:'',noteT:0,MAX:3,WAIT:15000,
 // writes it with the page's build id) when it comes back to the front, at most every 5 minutes, and every 30 minutes while open: a
 // newer build puts a banner up (새 버전 · 새로고침); back after 30 minutes or more on the title with nothing going on, it reloads by
 // itself, once per build. Only on the site (https, or localhost for tests), never in the claude.ai artifact or a file opened from disk.
-const PWA={bid:"7795884208ae",ev:null,newer:null,hidAt:0,askT:0,
+const PWA={bid:"d5cd7af9a5db",ev:null,newer:null,hidAt:0,askT:0,
   ICO:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6.5M9 10.5l3 3 3-3M10 18.5h4" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
   SHARE:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 10H5v11h14V10h-2" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
   site(){try{return window.top===window&&(location.protocol==='https:'||location.protocol==='http:'&&/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))}catch(e){return false}},
