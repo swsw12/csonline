@@ -10,9 +10,16 @@
 
 ## Vercel 배포
 Framework Preset: **Other**, Build Command: 비움, Output Directory: 비움(루트). 그대로 Deploy.
+`api/turn.mjs`는 Vercel이 함수로 같이 배포함 (`/api/turn`, 멀티플레이 중계 서버 로그인).
 
 ## 멀티플레이
-방 만들기 → 4자리 코드를 친구에게. PeerJS 무료 서버로 P2P 연결(공유기에 따라 직접 연결이 막힐 수 있음).
+방 만들기 → 4자리 코드를 친구에게. PeerJS 무료 서버로 연결을 중개하고 P2P로 직접 연결.
+직접 연결이 막히면(기기끼리 막힌 와이파이 · 방화벽 · 공유기) Cloudflare 중계 서버(TURN)로 이어짐. 한 번만 설정:
+1. Cloudflare 대시보드 → Realtime → TURN Server → 키 만들기 → Key ID와 API Token 복사
+2. Vercel 프로젝트 → Settings → Environment Variables에 `TURN_KEY_ID`, `TURN_KEY_API_TOKEN` 추가 → Redeploy
+3. 확인: 게임 멀티플레이 화면 「연결 점검」 → 「중계 서버 됨」 (설정 전이면 「중계 서버 아직 설정 안 됨」)
+
+토큰은 서버(Vercel)에만 있고, 게임은 몇 시간짜리 로그인만 받음. 무료 1,000GB 넘으면 GB당 $0.05 (Cloudflare 대시보드에서 사용량 확인).
 
 ## 관리자 페이지 (`admin.html`, 배포 주소 `/admin`)
 대시보드 · 플레이어 찾기 · 재화와 무기 지급/회수 · 닉네임 변경 · 이용 정지 · 무기 가격 · 해독기 설정 · 일일 미션 · 서버 공지 · 우편 보상 · 쿠폰 · 의심 유저 · 공개 방 내리기 · 운영진 · 관리 기록.

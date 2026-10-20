@@ -4,7 +4,8 @@
 // their own character and judges their own shots (hit claims go to the host). Data travels on WebRTC data channels:
 // 'r' (reliable, ordered) for events and 'u' (unordered, no retransmits) for the 20 Hz state stream.
 // Signalling: inside claude.ai the artifact's room (each page's presence carries a compact SDP); in the standalone file the free
-// PeerJS cloud server. If no direct connection can be made inside claude.ai, the room itself relays the traffic.
+// PeerJS cloud server. If no direct connection can be made inside claude.ai, the room itself relays the traffic; on the site, the
+// site's own relay (TURN) servers do (v6.89: TURN below, api/turn.mjs).
 const NET={on:false,host:false,cli:false,ghost:0,ev:0,kind:null,api:null,code:'',me:'',hostKey:'',ui:'',
   links:new Map(),out:new Map(),inQ:[],fx:[],fxQ:[],hits:[],off:new Map(),ids:new Map(),
   lob:{cfg:{mode:'mut',bots:8,diff:1,rounds:7,time:180},pl:[]},k:0,lastK:0,tAcc:0,msg:'',hostTs:0,hostRx:0,netT:0,gen:0,mig:null};
@@ -28,7 +29,8 @@ Object.assign(STR.ko,{mp:'멀티플레이',mpName:'닉네임',mpCreate:'방 만�
   mpHostGone:'호스트와 연결이 끊겼어요',mpFail:'연결하지 못했어요',mpLobby:'대기실',mpPlayers:'플레이어',mpStart:'시작',mpWait:'호스트가 시작하길 기다리는 중…',mpLeave:'나가기',
   mpCopy:'코드 복사',mpCopied:'복사했어요',mpBots:'봇 수',mpJoined:n=>`${n} 님이 들어왔어요`,mpLeft:n=>`${n} 님이 나갔어요 — 봇이 이어받아요`,mpLeftL:n=>`${n} 님이 나갔어요`,
   mpDirect:'P2P 직접',mpRelay:'claude 중계',mpHost:'호스트',mpToLobby:'대기실로',mpCodeIs:'방 코드',mpShare:'친구에게 코드를 알려 주세요',mpMe:'나',mpSet:'게임 설정',mpOnlyHost:'설정은 호스트가 정해요',
-  mpBad:'코드는 4자리예요',mpNatPJ:'직접 연결이 안 돼요 (공유기/방화벽이 막음) — 서로 다른 인터넷이면 claude.ai 링크로 접속하세요. 거기선 안 될 때 자동으로 중계해요',mpP2POnly:'P2P로만 연결 (claude 중계 안 씀)',mpP2PFail:'P2P 직접 연결에 실패했어요',mpP2PHost:'방장이 P2P 전용으로 설정했는데 직접 연결에 실패했어요',mpPaused:'멀티플레이 중에는 게임이 멈추지 않아요',mpNoRoom:'이 화면에서는 방에 연결할 수 없어요 — claude.ai에 로그인한 채로, 공유받은 링크로 열어 주세요'});
+  mpBad:'코드는 4자리예요',mpNatPJ:'직접 연결이 안 돼요 — 와이파이가 기기끼리 연결을 막았거나(학교·기숙사·카페 와이파이) 방화벽이 막았어요. 지금은 중계 서버를 쓸 수 없어요',
+  mpNatTurnBlk:'직접 연결이 안 되고, 이 네트워크에서는 중계 서버에도 닿지 않아요 — 다른 와이파이나 휴대폰 핫스팟으로 해 보세요',mpNatTurn:'중계 서버로도 연결하지 못했어요 — 방장 쪽 네트워크가 막고 있을 수 있어요',mpTurn:'중계 서버',mpP2POnly:'P2P로만 연결 (claude 중계 안 씀)',mpP2PFail:'P2P 직접 연결에 실패했어요',mpP2PHost:'방장이 P2P 전용으로 설정했는데 직접 연결에 실패했어요',mpPaused:'멀티플레이 중에는 게임이 멈추지 않아요',mpNoRoom:'이 화면에서는 방에 연결할 수 없어요 — claude.ai에 로그인한 채로, 공유받은 링크로 열어 주세요'});
 Object.assign(STR.en,{mp:'Multiplayer',mpName:'Nickname',mpCreate:'Create room',mpJoin:'Join',mpCode:'Join with a room code',mpCodePh:'4-letter code',
   mpChecking:'Checking how to connect…',mpNone:'Multiplayer is not available here (open the claude.ai link, or the file with internet access)',
   mpViaRoom:'Connects inside this claude.ai link — friends must open the same shared link while signed in',mpViaPJ:'Connects through the free PeerJS server — friends must open the same file (same version)',
@@ -36,7 +38,8 @@ Object.assign(STR.en,{mp:'Multiplayer',mpName:'Nickname',mpCreate:'Create room',
   mpHostGone:'Lost the connection to the host',mpFail:'Could not connect',mpLobby:'Lobby',mpPlayers:'Players',mpStart:'Start',mpWait:'Waiting for the host to start…',mpLeave:'Leave',
   mpCopy:'Copy code',mpCopied:'Copied',mpBots:'Bots',mpJoined:n=>`${n} joined`,mpLeft:n=>`${n} left — a bot takes over`,mpLeftL:n=>`${n} left`,
   mpDirect:'P2P direct',mpRelay:'claude relay',mpHost:'Host',mpToLobby:'Back to lobby',mpCodeIs:'Room code',mpShare:'Give your friends the code',mpMe:'you',mpSet:'Match settings',mpOnlyHost:'The host picks the settings',
-  mpBad:'Codes have 4 letters',mpNatPJ:'No direct connection (a router or firewall blocks it) — on different networks, use the claude.ai link instead: it relays automatically when this fails',mpP2POnly:'P2P only (never use the claude relay)',mpP2PFail:'Could not make a direct P2P connection',mpP2PHost:'The host allows P2P only and a direct connection failed',mpPaused:'The game keeps running in multiplayer',mpNoRoom:'This view cannot join rooms — open the shared link while signed in to claude.ai'});
+  mpBad:'Codes have 4 letters',mpNatPJ:'No direct connection — the Wi-Fi keeps its devices apart (common at schools, dorms and cafés) or a firewall blocks it, and no relay server is available right now',
+  mpNatTurnBlk:'No direct connection, and this network does not reach the relay server either — try another Wi-Fi or a phone hotspot',mpNatTurn:'Could not connect through the relay server either — the host’s network may be blocking it',mpTurn:'relay server',mpP2POnly:'P2P only (never use the claude relay)',mpP2PFail:'Could not make a direct P2P connection',mpP2PHost:'The host allows P2P only and a direct connection failed',mpPaused:'The game keeps running in multiplayer',mpNoRoom:'This view cannot join rooms — open the shared link while signed in to claude.ai'});
 // host migration (v6.38)
 Object.assign(STR.ko,{mpMigLeft:'방장이 나갔어요',mpMigConn:'새 방장에게 연결 중…',mpMigWaitP:(a,b)=>`다른 플레이어 기다리는 중… ${a}/${b}`,mpMigIn:'연결됨 — 곧 다시 시작해요',mpMigMe:'이제 내가 방장이에요',mpMigNew:n=>`새 방장: ${n}`,
   mpMigRound:'라운드를 다시 시작해요',mpMigStage:'이 스테이지를 다시 시작해요',mpMigZone:'지금 구역부터 다시 시작해요',mpMigPhase:'보스전을 지금 페이즈부터 다시 시작해요',mpMigGo:'이어서 진행해요',
@@ -157,14 +160,56 @@ function netUseRelay(k,why){if(NET.kind!=='room')return;
   const pd=RSIG.pend.get(k);if(pd){try{pd.pc.close()}catch(e){}RSIG.pend.delete(k)}if(old){old.dead=true;old.close()}
   const L=relayLink(k);NET.links.set(k,L);if(NET.cli){RSIG.set({rq:NET.relayWhy||1,sig:null})}else RSIG.setSig(k,null);L.ok=true;netLinkUp(L)}
 
+// ---------- the site's relay (TURN) servers (v6.89) ----------
+// PeerJS ended its free TURN servers in December 2023, so two pages that could not reach each other directly (a Wi-Fi that keeps its
+// devices apart, a firewall, two strict NATs) had nothing left to try: "직접 연결이 안 돼요". The site's /api/turn (api/turn.mjs) hands
+// out Cloudflare TURN logins that run out after a few hours; the key stays on the server. A page opened from a file, or a site without
+// the key, goes on with STUN only (why: none = no site to ask, unset = no key on the site, net / cf… / http… = the ask failed).
+const TURN={ice:null,exp:0,soon:0,p:null,why:'',failT:0,
+  url(){return typeof window.__turnUrl==='string'?window.__turnUrl:/^https?:$/.test(location.protocol)?'/api/turn':''},
+  // the logins while they last (not in their last 15 minutes: a link made then would lose its relay mid-match)
+  use(){return this.ice&&Date.now()<this.exp-9e5?this.ice:null},
+  get(ms){if(this.ice&&Date.now()<this.soon)return Promise.resolve(this.ice);if(this.p)return this.p;const u=this.url();
+    if(!u){this.why='none';return Promise.resolve(this.use())}if(Date.now()-this.failT<30e3)return Promise.resolve(this.use());
+    const ac=typeof AbortController==='function'?new AbortController():null,t=setTimeout(()=>{try{ac&&ac.abort()}catch(e){}},ms||4000);
+    return this.p=fetch(u,{cache:'no-store',credentials:'omit',signal:ac?ac.signal:undefined}).then(r=>r.json().catch(()=>({ok:false,why:'http'+r.status})))
+      .then(j=>{const ice=j&&j.ok?turnClean(j.iceServers):[];
+        if(ice.some(s=>s.username)){const ttl=Math.max(1800,Math.min(86400,+j.ttl||3600))*1e3,now=Date.now();this.ice=ice;this.exp=now+ttl;this.soon=now+ttl*.75;this.why='';this.apply()}
+        else{this.why=String(j&&j.why||'bad').replace(/[^\w]/g,'').slice(0,12);this.failT=Date.now()}
+        return this.use()},()=>{this.why='net';this.failT=Date.now();return this.use()})
+      .finally(()=>{clearTimeout(t);this.p=null})},
+  // a page that stays long in a room (a host) takes fresh logins before they run out; PeerJS reads its peer's config for each new link
+  tick(){if(NET.on&&NET.kind==='peerjs'&&this.ice&&Date.now()>this.soon)this.get()},
+  apply(){const ice=PJ.ice();for(const p of [PJ.peer,PJ.bellP])if(p&&p.options&&p.options.config)p.options.config.iceServers=ice}};
+setInterval(()=>{try{TURN.tick()}catch(e){}},30e3);
+// only what RTCPeerConnection takes: stun / turn / turns addresses (port 53, which browsers refuse, left out), a login with the turn ones
+function turnClean(a){const res=[];if(!Array.isArray(a))return res;
+  for(const s of a.slice(0,6)){if(!s||typeof s!=='object')continue;
+    const urls=(Array.isArray(s.urls)?s.urls:[s.urls]).filter(u=>typeof u==='string'&&u.length<200&&/^(stun|turns?):[a-z0-9.\-]+(:\d{1,5})?(\?transport=(udp|tcp))?$/i.test(u)&&!/:53(\?|$)/.test(u)).slice(0,8);
+    if(!urls.length)continue;const turn=urls.some(u=>/^turns?:/i.test(u));
+    if(turn&&!(typeof s.username==='string'&&typeof s.credential==='string'&&s.username&&s.credential&&s.username.length<600&&s.credential.length<600))continue;
+    res.push(turn?{urls,username:s.username,credential:s.credential}:{urls})}
+  return res}
+// (whether this page got a relay address for a link: none means its own network keeps it from the relay server)
+function pjWatch(L,c){const pc=c&&c.peerConnection;if(!pc||!pc.addEventListener)return;pc.addEventListener('icecandidate',e=>{if(e.candidate&&/ typ relay/.test(e.candidate.candidate||''))L.relayC=true})}
+// which way a link went: straight, or through the relay server — the waiting room and the game's corner show it
+async function pjVia(L){if(L.dead)return;let v='';
+  for(const c of [L.u,L.r]){const pc=c&&c.peerConnection;if(!pc||!pc.getStats)continue;
+    try{const s=await pc.getStats();let pair=null;s.forEach(x=>{if(x.type==='transport'&&x.selectedCandidatePairId&&s.get(x.selectedCandidatePairId))pair=s.get(x.selectedCandidatePairId)});
+      if(!pair)s.forEach(x=>{if(x.type==='candidate-pair'&&x.nominated&&x.state==='succeeded'&&(!pair||(x.bytesReceived|0)>(pair.bytesReceived|0)))pair=x});
+      if(!pair)continue;const lc=s.get(pair.localCandidateId),rc=s.get(pair.remoteCandidateId);
+      if(lc&&lc.candidateType==='relay'||rc&&rc.candidateType==='relay'){v='turn';break}v='p2p'}catch(e){}}
+  if(v&&L.via!==v&&!L.dead){L.via=v;if(NET.host)netLobbyCast();else UI.mpRender&&UI.mpRender()}}
+
 // ---------- signalling through PeerJS (standalone file) ----------
 // v6.38: every page's peer takes connections (a client may become the host), and a new host also claims the room code's id (the
 // doorbell, bell) so friends can still join with the code; the room's original id may stay taken for a while after a crash.
 const PJ={peer:null,bell:null,bellP:null,bellT:0,bellN:0,onErr:null,
-  // the free PeerJS cloud (its default STUN/TURN servers included); always over TLS, even when this file is opened from disk
-  // more STUN servers than PeerJS's default (one) so a public address is found on more networks; PeerJS's own TURN kept, over UDP and TCP
-  opts(){return Object.assign({debug:0,secure:true,config:{iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'},
-    {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478','turn:eu-0.turn.peerjs.com:3478?transport=tcp','turn:us-0.turn.peerjs.com:3478?transport=tcp'],username:'peerjs',credential:'peerjsp'}],sdpSemantics:'unified-plan'}},window.__peerOpts||{})},
+  // the free PeerJS cloud brokers the links; always over TLS, even when this file is opened from disk
+  // STUN finds this page's public address (more servers than PeerJS's default one, so it is found on more networks); then the site's
+  // TURN when it has one (v6.89: PeerJS's own TURN servers are gone)
+  ice(){const t=TURN.use();return t?[{urls:'stun:stun.l.google.com:19302'}].concat(t):[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]},
+  opts(){return Object.assign({debug:0,secure:true,config:{iceServers:this.ice(),sdpSemantics:'unified-plan'}},window.__peerOpts||{})},
   // this page's own peer: the room code's id for a host, a random one for a client
   mk(id){return new Promise((res,rej)=>{let open=false;const p=id?new Peer(id,this.opts()):new Peer(this.opts());this.peer=p;
     p.on('open',pid=>{if(this.peer!==p)return;open=true;NET.me=pid;res(pid)});p.on('connection',c=>pjAccept(c));
@@ -173,9 +218,10 @@ const PJ={peer:null,bell:null,bellP:null,bellT:0,bellN:0,onErr:null,
   host(){return this.mk('qzg-'+NET.code.toLowerCase())},
   join(){return this.mk().then(()=>new Promise((res,rej)=>{const hk='qzg-'+NET.code.toLowerCase();NET.hostKey=hk;const L=pjLink(hk);NET.links.set(hk,L);let done=false;
     const fin=e=>{if(done)return;done=true;this.onErr=null;if(e)rej(e);else res()};this.onErr=e=>{fin(e);return true};
-    L.attach(this.peer.connect(hk,{label:'r',reliable:true,serialization:'raw'}));L.attach(this.peer.connect(hk,{label:'u',reliable:false,serialization:'raw'}));
-    // a relayed (TURN) path can take a while to come up: wait longer, then say what got stuck
-    setTimeout(()=>{if(done)return;let st='';try{const pc=L.r&&L.r.peerConnection;st=pc?pc.iceConnectionState:''}catch(e){}fin({type:st==='checking'||st==='failed'||st==='disconnected'?'nat':'timeout'})},25000);L.onUp=()=>fin()}))},
+    for(const o of [{label:'r',reliable:true,serialization:'raw'},{label:'u',reliable:false,serialization:'raw'}]){const c=this.peer.connect(hk,o);pjWatch(L,c);L.attach(c)}
+    // a relayed (TURN) path can take a while to come up: wait longer, then say what got stuck (and whether a relay address was had)
+    setTimeout(()=>{if(done)return;let st='';try{const pc=L.r&&L.r.peerConnection;st=pc?pc.iceConnectionState:''}catch(e){}
+      fin({type:st==='checking'||st==='failed'||st==='disconnected'?'nat':'timeout',relay:TURN.use()?!!L.relayC:undefined})},25000);L.onUp=()=>fin()}))},
   // the doorbell: a new host claims the room code's id next to its own (retried every 5 s while someone, or a crashed host's ghost,
   // holds it; after 30 tries the old host is taken to be still there and the code stays its)
   bellOn(){if(this.bellP||this.bellT||!NET.on||!NET.host||NET.kind!=='peerjs'||!NET.code)return;const id='qzg-'+NET.code.toLowerCase();if(this.peer&&this.peer.id===id)return;
@@ -194,6 +240,8 @@ function pjAccept(c){if(!NET.on||NET.kind!=='peerjs'){try{c.close()}catch(e){}re
 
 // ---------- link lifecycle ----------
 function netLinkUp(L){if(L.onUp)L.onUp();
+  // (v6.89: straight or through the relay server — asked once the link has settled, and again a little later)
+  if(NET.kind==='peerjs'&&L.kind==='p2p'){setTimeout(()=>pjVia(L),800);setTimeout(()=>pjVia(L),6000)}
   // the handshake is done: clear it from the room presence (it is small, but many friends at once would not fit)
   if(NET.kind==='room'&&L.kind==='p2p'){if(NET.host)RSIG.setSig(L.key,null);else RSIG.set({sig:null})}
   // a client says hello to its host only (other pages may open links to it while a new host is being found)
@@ -537,7 +585,7 @@ function netCleanCfg(c){const o={};
   if(!NET_MODES.includes(o.mode))o.mode='mut';if(!(typeof o.map==='string'&&Object.prototype.hasOwnProperty.call(MAPDEFS,o.map)))o.map='q7';return o}
 function netCleanPl(p){if(!p||typeof p!=='object')return null;
   return {k:netS(p.k,48),n:netS(p.n,16)||'?',s:HSKINS.includes(p.s)?p.s:'guard',z:netZ(p.z,'rager'),h:p.h?1:0,f:HOF.valid(p.f)?+p.f:0,
-    tt:typeof p.tt==='string'?p.tt.slice(0,24):null,an:netS(p.an,16),t:p.t?1:0,p:netI(p.p,-1,99999,0),r:p.r?1:0}}
+    tt:typeof p.tt==='string'?p.tt.slice(0,24):null,an:netS(p.an,16),t:p.t?1:0,p:netI(p.p,-1,99999,0),r:p.r===2?2:p.r?1:0}}
 function netCleanLob(l){l=l&&typeof l==='object'?l:{};return {cfg:netCleanCfg(l.cfg),pl:Array.isArray(l.pl)?l.pl.slice(0,NET_MAXP).map(netCleanPl).filter(Boolean):[],pub:l.pub?1:0,g:netI(l.g,0,1e9,0)}}
 // the roster: [id, name, skin, zombie class, player key, scenario, hall-of-fame code, account nickname, title] (shorter for bots)
 function netCleanRo(ro){const out=[];if(!Array.isArray(ro))return out;
@@ -593,7 +641,8 @@ function netHandle(L,m){if(NET.cli&&L.key!==NET.hostKey){netMigAsk(L,m);return}c
 
 // ---------- lobby ----------
 function netLobbyCast(){if(!NET.host)return;const me=NET.lob.pl[0];if(me){me.n=CFG.mpName;me.s=CFG.skin;me.z=CFG.zclass;Object.assign(me,TTL.hello());me.t=typeof TOUCH!=='undefined'&&TOUCH.on?1:0}
-  for(const p of NET.lob.pl){const L=NET.links.get(p.k);p.p=L?Math.round(L.rtt):0;p.r=L&&L.kind==='relay'?1:0}
+  // (r: 1 the claude.ai room relays this player, 2 the site's relay server does — v6.89)
+  for(const p of NET.lob.pl){const L=NET.links.get(p.k);p.p=L?Math.round(L.rtt):0;p.r=L?(L.kind==='relay'?1:L.via==='turn'?2:0):0}
   // (every player keeps the list: if this page vanishes they agree on who takes over; pub: whether the room is listed)
   NET.lob.pub=ROOMS.pubOn?1:0;NET.lob.g=NET.gen|0;
   netAll({t:'lobby',lob:NET.lob});UI.mpRender&&UI.mpRender()}
@@ -604,7 +653,8 @@ NET.create=async function(){netTables();const kind=await netDetect();if(!kind){N
   // inside claude.ai the room code is always the same (NET_FIXED_CODE): friends just press create / join.
   // Through PeerJS every room gets a random 4-letter code (no 0/O/1/I); a code someone already holds is redrawn a few times.
   try{if(kind==='room'){NET.code=NET_FIXED_CODE;NET.me='k'+netKey(9);await RSIG.open()}
-    else for(let i=0;;i++){NET.code=netKey(4);try{await PJ.host();break}catch(e){PJ.close();if(!(e&&e.type==='unavailable-id')||i>=4)throw e}}}
+    else{await TURN.get(3500);if(!NET.on||!NET.host)return;
+      for(let i=0;;i++){NET.code=netKey(4);try{await PJ.host();break}catch(e){PJ.close();if(!(e&&e.type==='unavailable-id')||i>=4)throw e}}}}
   catch(e){PJ.close();NET.on=false;NET.ui='';NET.msg=T('mpFail')+(e&&e.type?' ('+e.type+')':'');UI.mpRender();return}
   NET.lob.pl=[{k:NET.me,n:CFG.mpName,s:CFG.skin,z:CFG.zclass,h:1,...TTL.hello()}];NET.msg='';ROOMS.pubOn=kind==='peerjs'&&CFG.mpPub!==false;UI.mpLobby();ROOMS.tick()};
 NET.join=async function(code){netTables();code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){NET.msg=T('mpBad');UI.mpRender();return}
@@ -612,8 +662,10 @@ NET.join=async function(code){netTables();code=String(code||'').toUpperCase().re
   NET.on=true;NET.host=false;NET.cli=true;NET.ui='join';NET.code=code;NET.hostKey='';NET.links.clear();NET.out.clear();NET.inQ=[];NET.lastK=0;NET.msg=T('mpConnecting');NET.gen=0;NET.mig=null;UI.mpRender();
   NET.forceRelay=/[?&]relay=1/.test(location.search);NET.p2pRetry=0;NET.hostP2P=false;NET.relayWhy='';
   try{if(kind==='room'){NET.me='k'+netKey(9);await RSIG.open();setTimeout(()=>{if(NET.on&&NET.cli&&!NET.hostKey)netFatal(T('mpNotFound'))},8000)}
-    else await PJ.join()}
-  catch(e){netFatal(e&&e.type==='peer-unavailable'?T('mpNotFound'):e&&(e.type==='nat'||e.type==='timeout')?T('mpNatPJ'):T('mpFail')+(e&&e.type?' ('+e.type+')':''))}};
+    else{await TURN.get(3500);if(!NET.on||!NET.cli||NET.code!==code)return;await PJ.join()}}
+  catch(e){netFatal(e&&e.type==='peer-unavailable'?T('mpNotFound'):e&&(e.type==='nat'||e.type==='timeout')?netNatMsg(e):T('mpFail')+(e&&e.type?' ('+e.type+')':''))}};
+// (why no link came up, as far as this page can tell: no relay to fall back on; a network that keeps it off the relay too; or the other side)
+function netNatMsg(e){return !TURN.use()?T('mpNatPJ'):e&&e.relay===false?T('mpNatTurnBlk'):T('mpNatTurn')}
 NET.leave=function(){ROOMS.down();if(!NET.on)return;
   // a PeerJS host hands the room on: the order of who takes over goes with the goodbye (clients also keep it from the lobby updates)
   const mg=NET.host&&NET.kind==='peerjs'&&(NET.ui==='lobby'||NET.ui==='game')?netMigOrder(NET.lob.pl,NET.me):null;
@@ -793,10 +845,35 @@ const ROOMS={list:null,err:'',busy:false,refT:0,upT:0,last:'',pub:'',upBusy:fals
   render(){const el=$('mpRooms');if(el)el.innerHTML=this.html();const b=document.querySelector('[data-act="mprooms"]');if(b)b.classList.toggle('busy',this.busy)}};
 setInterval(()=>{try{ROOMS.tick()}catch(e){console.error(e)}},1000);
 
+// ---------- the connection check (v6.89, the multiplayer menu's 연결 점검) ----------
+// A throwaway RTCPeerConnection gathers this device's addresses: a public one (STUN — the network lets UDP out) and relayed ones (the
+// site's TURN, by UDP / TCP / TLS). Nothing is sent to anyone; the line says what a friend's page could reach.
+const NETCHK={busy:false,res:'',
+  wait(){return LI()?'Checking the connection…':'연결 점검 중…'},
+  async run(){if(this.busy||typeof RTCPeerConnection!=='function')return;this.busy=true;this.res='';this.draw();
+    const o={srflx:false,relay:false,via:new Set()};let pc=null;
+    try{await TURN.get(4000);pc=new RTCPeerConnection({iceServers:PJ.ice()});pc.createDataChannel('chk');
+      pc.addEventListener('icecandidate',e=>{const c=e.candidate,m=/ typ (srflx|relay)/.exec(c&&c.candidate||'');if(!m)return;
+        if(m[1]==='srflx')o.srflx=true;else{o.relay=true;const p=String(c.relayProtocol||'').toUpperCase();if(/^(UDP|TCP|TLS)$/.test(p))o.via.add(p)}});
+      await pc.setLocalDescription(await pc.createOffer());
+      // (done when gathering is, or a moment after the answers are in: a public address, and a relayed one when there is a relay)
+      await new Promise(res=>{const t=setTimeout(res,9000),fin=()=>{clearTimeout(t);res()};pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete')fin()});
+        pc.addEventListener('icecandidate',()=>{if(o.srflx&&(o.relay||!TURN.use()))setTimeout(fin,1200)})})}
+    catch(e){console.warn('netchk',e&&e.name)}
+    try{pc&&pc.close()}catch(e){}
+    const L=LI(),via=[...o.via].sort((a,b)=>'UDPTCPTLS'.indexOf(a)-'UDPTCPTLS'.indexOf(b)).join('·');
+    const a=L?(o.srflx?'public address found':'no public address'):(o.srflx?'공인 주소 찾음':'공인 주소 못 찾음');
+    const r=TURN.use()?(o.relay?(L?'relay server OK':'중계 서버 됨')+(via?' ('+via+')':''):(L?'relay server unreachable — this network blocks it':'중계 서버 안 닿음 — 이 네트워크가 막고 있어요'))
+      :TURN.why==='unset'?(L?'relay server not set up yet':'중계 서버 아직 설정 안 됨'):TURN.why==='none'?(L?'no relay server here':'여기선 중계 서버 없음')
+      :(L?'could not get the relay server':'중계 서버 정보를 못 받음')+(TURN.why?' ('+TURN.why+')':'');
+    this.res=(L?'Check: ':'점검: ')+a+' · '+r;this.busy=false;this.draw()},
+  draw(){const el=document.querySelector('#mp .dpFoot .conn');if(el)el.textContent=this.busy?this.wait():this.res||el.textContent;
+    const b=document.querySelector('#mp [data-act="mpchk"]');if(b)b.classList.toggle('busy',this.busy)}};
+
 // ---------- screens ----------
 UI.mpMenu=function(){const L=LI();const inC=NET.kind==='room',inP=NET.kind==='peerjs',pub=CFG.mpPub!==false,noR=inC||NET.detected&&!NET.kind;
   // (v6.58: a window like the room settings: the name, a room of my own and a code on the left, the open rooms on the right, the link state below)
-  const conn=inC?T('mpViaRoom'):inP?T('mpViaPJ'):NET.detecting?T('mpChecking'):NET.detected?T('mpNone'):'';
+  const conn=inC?T('mpViaRoom'):inP?NETCHK.busy?NETCHK.wait():NETCHK.res||T('mpViaPJ'):NET.detecting?T('mpChecking'):NET.detected?T('mpNone'):'';
   $('mp').innerHTML=`<div class="win mpw"><div class="dpHead"><b>${T('mp')}</b><span>${L?`Play together · up to ${NET_MAXP}`:`함께 플레이 · 최대 ${NET_MAXP}명`}</span><button class="x" data-act="back">✕</button></div>
     <div class="mpwrap"><div class="mpbox">
     <label>${T('mpName')}</label><input id="mpName" maxlength="14" value="${esc(CFG.mpName||'')}" placeholder="${esc(myName())}" autocomplete="off" spellcheck="false">
@@ -807,12 +884,15 @@ UI.mpMenu=function(){const L=LI();const inC=NET.kind==='room',inP=NET.kind==='pe
     ${inC?`<label class="ck${CFG.p2pOnly?' on':''}" data-act="mpp2p"><i></i>${T('mpP2POnly')}</label>`:''}
     <p class="mpmsg" id="mpMsg">${esc(NET.msg||'')}</p></div>
     ${noR?'':`<div class="mprooms"><div class="mprh"><b>${L?'Public rooms':'공개 방 목록'}</b><button class="mini" data-act="mprooms">${L?'Refresh':'새로고침'}</button></div><div id="mpRooms" class="rlist">${ROOMS.html()}</div></div>`}</div>
-    <div class="dpFoot"><span class="conn">${conn}</span><button data-act="back">${T('back')}</button></div></div>`;
+    <div class="dpFoot"><span class="conn">${esc(conn)}</span>${inP&&typeof RTCPeerConnection==='function'?`<button class="chk${NETCHK.busy?' busy':''}" data-act="mpchk">${L?'Check connection':'연결 점검'}</button>`:''}<button data-act="back">${T('back')}</button></div></div>`;
   const nm=$('mpName');nm.addEventListener('change',()=>{CFG.mpName=nm.value.trim().slice(0,14)||CFG.mpName;saveCfg()});
   const cd=$('mpCode');cd.addEventListener('keydown',e=>{if(e.key==='Enter'){UI.act('mpjoin')}});cd.addEventListener('input',()=>{cd.value=cd.value.toUpperCase().replace(/[^A-Z0-9]/g,'')})};
 // (the waiting room itself, UI.mpLobby / UI.mpRender: lobby.js; v6.71 took out the older copies that stood here unused)
 UI.mpAct=function(a,v){
-  if(a==='mp'){UI.ret=null;UI.show('mp');UI.mpMenu();ROOMS.load();if(!NET.kind&&!NET.detecting){NET.detecting=true;netDetect().then(()=>{NET.detecting=false;NET.detected=true;if(UI.open==='mp')UI.mpMenu()})}}
+  if(a==='mp'){UI.ret=null;UI.show('mp');UI.mpMenu();ROOMS.load();
+    // (v6.89: the relay logins are asked for as the menu opens, so they are in hand by the time a room is made or joined)
+    if(NET.kind==='peerjs')TURN.get();else if(!NET.kind&&!NET.detecting){NET.detecting=true;netDetect().then(()=>{NET.detecting=false;NET.detected=true;if(NET.kind==='peerjs')TURN.get();if(UI.open==='mp')UI.mpMenu()})}}
+  else if(a==='mpchk'){NETCHK.run()}
   else if(a==='mpcreate'||a==='mpjoin'||a==='mproom'){const nm=$('mpName');CFG.mpName=(nm&&nm.value.trim().slice(0,14))||CFG.mpName||(typeof ACC!=='undefined'&&ACC.signed()&&String(ACC.me.nickname||'').slice(0,14))||(LI()?'Player':'플레이어')+Math.floor(Math.random()*90+10);saveCfg();
     if(NET.on)return;if(a==='mpcreate')NET.create();else if(a==='mproom'){const cd=$('mpCode');if(cd)cd.value=v||'';NET.join(v)}else NET.join(($('mpCode')||{}).value)}
   else if(a==='mppub'){CFG.mpPub=v!=='0';saveCfg();for(const b of document.querySelectorAll('[data-act="mppub"]'))b.classList.toggle('on',(b.dataset.v!=='0')===CFG.mpPub)}
@@ -836,7 +916,7 @@ UI.mpAct=function(a,v){
 // ---------- in-game overlays: connection line, friends' name tags ----------
 const NTAG={pool:[],used:0};
 function netHud(dt){const el=$('hNet');if(!el)return;if(!NET.on||NET.ui!=='game'){el.style.display='none';return}el.style.display='block';
-  NET.hudT=(NET.hudT||0)-dt;if(NET.hudT<=0){NET.hudT=.5;let s;if(NET.host)s=`${T('mpHost')} · ${NET.lob.pl.length}${LI()?'P':'명'}`;else{const L=NET.links.get(NET.hostKey);s=L?`${L.kind==='relay'?T('mpRelay'):T('mpDirect')} · ${Math.round(L.rtt||(G.player&&G.player.ping)||0)}ms`:'…'}
+  NET.hudT=(NET.hudT||0)-dt;if(NET.hudT<=0){NET.hudT=.5;let s;if(NET.host)s=`${T('mpHost')} · ${NET.lob.pl.length}${LI()?'P':'명'}`;else{const L=NET.links.get(NET.hostKey);s=L?`${L.kind==='relay'?T('mpRelay'):L.via==='turn'?T('mpTurn'):T('mpDirect')} · ${Math.round(L.rtt||(G.player&&G.player.ping)||0)}ms`:'…'}
     if(el.textContent!==s)el.textContent=s}
   // names over other players (not bots) within sight
   const lay=$('dmgLayer');if(!lay)return;let n=0;const P=G.player,cam=R.cam.position,W=innerWidth,H=innerHeight;
