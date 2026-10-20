@@ -1,4 +1,4 @@
-"""zombie_pain (v6.86): the zombie's pain grunt, made from numbers — no recording of any kind goes into it.
+"""zombie_pain (v6.87): the zombie's pain grunt, made from numbers — no recording of any kind goes into it.
 
     python3 source/tools/zombie_pain.py   -> source/sound/zombie_pain_1.ogg … _4.ogg and the same as .mp3 (numpy, scipy, ffmpeg)
 
@@ -10,10 +10,11 @@ each a little off in pitch and formants with its own randomness (a thick throat,
 few wet blips; then, at 4x the rate, a slightly lopsided saturation (warmth), the envelope, a gentle limit and a 24 dB/oct
 low-pass that closes as the voice fades; 48 kHz out, a low and a high shelf (body below, a clean top), TPDF-dithered to 16 bits. Four variants: other seeds, pitch, formants and
 length a little apart, so that hits in a row do not sound the same (the game picks one at random each time).
-v6.86, a harder hit: the voice is in within 6 ms (it rose over 37), its first tenth of a second pushed up (x1.75 at the start,
-falling away with a 50 ms time constant), a chest thump under the onset (a sine falling from 130 to 58 Hz in about 50 ms, lightly
-saturated so that phone speakers still hear its overtones), a transient shaper sharpening every attack (at most +6 dB), a soft clip
-at 4x rounding the peaks, and a shorter tail (0.56 s where it was 0.63). With the punch keys at 0 it is v6.85 sample for sample.
+v6.87, closer to the reference: the pitch falls at the end as the reference's does (258 -> 228 Hz where v6.85 rose to 294), a
+matching EQ (peaking filters at the third-octave centres 100 Hz - 6.4 kHz, gains fitted so that the four variants' long-term
+spectrum takes the reference's shape — a statistic of the reference, none of its sound), and the loudness brought to the
+reference's with a gentle soft clip at 4x. The code keeps v6.86's punch stage (a quick attack, an accent, a chest thump, a
+transient shaper); its keys are not in P, so it is off.
 The numbers in P were found by measuring a reference grunt — its loudness every 20 ms, its coarse spectral envelope in 32 mel
 bands, its brightness and roughness frame by frame, its energy in six octaves, the modulation of its envelope and how much its
 spectrum moves from frame to frame — and searching for the settings whose synthesis measures closest. The reference was only
@@ -22,7 +23,7 @@ measured: nothing of it is cut, filtered or mixed into this one.
 import os, subprocess
 import numpy as np, scipy.signal as sg, scipy.io.wavfile as wf
 SR = 48000; OS = 4; FS = SR * OS
-P = {"dur": 0.56, "att": 0.006, "hold": 0.26, "rel": 0.24, "f0a": 177.94904293341023, "f0b": 264.4958664624374, "f0c": 294.30116601316985, "jit": 0.16814495237938948, "shim": 0.36420849825368473, "sub": 0.38295395716734015, "noise": 0.6, "nmod": 1.0, "F1a": 906.4796359383919, "F1b": 278.19274232827604, "F2a": 722.9378002961377, "F2b": 993.2526085939454, "F3a": 2360.928346189763, "F3b": 2173.431443919977, "F4": 3297.3986721587144, "B1": 218.4098278632589, "B2": 500.0, "B3": 649.6145796608546, "B4": 488.6419275956084, "drive": 8.616345417499415, "lpa": 6730.283028002686, "lpb": 1200.0, "tilt": 0.5121943495403207, "dry": 0.0, "Fb": 191.54958100953195, "Bb": 60.0, "gb": 0.6948916252752211, "lpx": 0.9036434233675674, "lpo": 4, "ba": 0.8990762762062428, "bd": 0.06, "bf": 1403.8508116609682, "seed": 7, "g2": 0.37880958152819866, "g3": 0.48962951337140015, "g4": 1.0, "lim": 1.4183687341869464, "oq": 0.558439052738974, "sq": 5.0, "vib": 0.00661746228149186, "vibf": 8.430983010859933, "drift": 0.021886810424222275, "fj": 0.02, "ga": 0.135713830740268, "gr": 70.14477694771197, "v2": 0.8525870929139914, "v3": 0.5446947850416731, "dt": 0.038166981543124416, "ft": 0.02584956398275415, "rat": 0.3995208790215236, "ratf": 33.412496591291216, "asy": 0.03789310068562536, "fjr": 7.956291373055894, "oqj": 0.09767318324566324, "ls_g": 4.248423650066532, "ls_f": 284.6914581982615, "hs_g": -9.584851118947372, "hs_f": 5889.308001338103, "acc_t": 0.05, "th_f0": 130, "th_f1": 58, "th_d": 0.045, "th_sat": 2, "tr_k": 0.6, "clip": 2.9, "th_a": 0.32, "acc": 0.75, "tr_max": 6}
+P = {"dur": 0.63, "att": 0.036742005127489256, "hold": 0.3422048761754711, "rel": 0.2785408140809404, "f0a": 177.94904293341023, "f0b": 258, "f0c": 228, "jit": 0.11300521166777718, "shim": 0.41778738713763336, "sub": 0.38295395716734015, "noise": 0.6, "nmod": 1.0, "F1a": 981.5156774221532, "F1b": 278.19274232827604, "F2a": 722.9378002961377, "F2b": 993.2526085939454, "F3a": 2360.928346189763, "F3b": 2173.431443919977, "F4": 3154.666821545156, "B1": 218.4098278632589, "B2": 500.0, "B3": 700.0, "B4": 488.6419275956084, "drive": 8.616345417499415, "lpa": 6730.283028002686, "lpb": 1200.0, "tilt": 0.38328366356722265, "dry": 0.0, "Fb": 191.54958100953195, "Bb": 60.0, "gb": 0.6948916252752211, "lpx": 0.8050141668780848, "lpo": 4, "ba": 0.8990762762062428, "bd": 0.06, "bf": 1403.8508116609682, "seed": 7, "g2": 0.28765474604720814, "g3": 0.46113308287236665, "g4": 1.0, "lim": 1.4183687341869464, "oq": 0.558439052738974, "sq": 5.0, "vib": 0.00661746228149186, "vibf": 8.430983010859933, "drift": 0.021886810424222275, "fj": 0.02, "ga": 0.135713830740268, "gr": 70.14477694771197, "v2": 0.8525870929139914, "v3": 0.9, "dt": 0.038166981543124416, "ft": 0.02584956398275415, "rat": 0.3995208790215236, "ratf": 33.412496591291216, "asy": 0.03789310068562536, "fjr": 7.956291373055894, "oqj": 0.09767318324566324, "ls_g": 4.248423650066532, "ls_f": 284.6914581982615, "hs_g": -9.584851118947372, "hs_f": 5889.308001338103, "clip": 1.1, "eq": [8.03, -0.25, 4.95, -3.85, -5.73, 1.37, 3.87, -1.09, 1.5, 1.5, -0.33, -6.33, -0.24, -0.97, 3.51, -5.15, 6.41, 3.33, -3.85]}
 # the variants: (seed, pitch ×, formants ×, length ×)
 VARIANTS = [[7, 1.0, 1.0, 1.0], [11, 0.97, 0.99, 1.03], [13, 1.03, 1.02, 0.97], [17, 0.985, 1.0, 0.95]]
 
@@ -144,6 +145,12 @@ def synth4(P, seed=None):
     hb, ha = sg.butter(1, 30 / (SR / 2), 'high'); out = sg.lfilter(hb, ha, out)
     if P.get('ls_g', 0): b, a = shelf(P['ls_f'], P['ls_g'], 'low'); out = sg.lfilter(b, a, out)
     if P.get('hs_g', 0): b, a = shelf(P['hs_f'], P['hs_g'], 'high'); out = sg.lfilter(b, a, out)
+    # a matching EQ (v6.87): peaking filters at the third-octave centres 100 Hz .. 6.4 kHz, Q 4.32, gains P['eq'] in dB
+    if P.get('eq'):
+        for fc, gdb in zip(100 * 2 ** (np.arange(0, 19) / 3), P['eq']):
+            if abs(gdb) > .01:
+                A = 10 ** (gdb / 40); w = 2 * np.pi * fc / SR; al = np.sin(w) / (2 * 4.32); c = np.cos(w)
+                b = np.array([1 + al * A, -2 * c, 1 - al * A]); a = np.array([1 + al / A, -2 * c, 1 - al / A]); out = sg.lfilter(b / a[0], a / a[0], out)
     # the transient shaper: where the fast envelope runs ahead of the slow one (an attack), turn it up — at most tr_max dB
     if P.get('tr_k', 0):
         fe = env_follow(out, .3, 25); se = env_follow(out, 12, 120)
