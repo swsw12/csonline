@@ -1,4 +1,4 @@
-"""zombie_pain (v6.85): the zombie's pain grunt, made from numbers — no recording of any kind goes into it.
+"""zombie_pain (v6.86): the zombie's pain grunt, made from numbers — no recording of any kind goes into it.
 
     python3 source/tools/zombie_pain.py   -> source/sound/zombie_pain_1.ogg … _4.ogg and the same as .mp3 (numpy, scipy, ffmpeg)
 
@@ -10,6 +10,10 @@ each a little off in pitch and formants with its own randomness (a thick throat,
 few wet blips; then, at 4x the rate, a slightly lopsided saturation (warmth), the envelope, a gentle limit and a 24 dB/oct
 low-pass that closes as the voice fades; 48 kHz out, a low and a high shelf (body below, a clean top), TPDF-dithered to 16 bits. Four variants: other seeds, pitch, formants and
 length a little apart, so that hits in a row do not sound the same (the game picks one at random each time).
+v6.86, a harder hit: the voice is in within 6 ms (it rose over 37), its first tenth of a second pushed up (x1.75 at the start,
+falling away with a 50 ms time constant), a chest thump under the onset (a sine falling from 130 to 58 Hz in about 50 ms, lightly
+saturated so that phone speakers still hear its overtones), a transient shaper sharpening every attack (at most +6 dB), a soft clip
+at 4x rounding the peaks, and a shorter tail (0.56 s where it was 0.63). With the punch keys at 0 it is v6.85 sample for sample.
 The numbers in P were found by measuring a reference grunt — its loudness every 20 ms, its coarse spectral envelope in 32 mel
 bands, its brightness and roughness frame by frame, its energy in six octaves, the modulation of its envelope and how much its
 spectrum moves from frame to frame — and searching for the settings whose synthesis measures closest. The reference was only
@@ -18,7 +22,7 @@ measured: nothing of it is cut, filtered or mixed into this one.
 import os, subprocess
 import numpy as np, scipy.signal as sg, scipy.io.wavfile as wf
 SR = 48000; OS = 4; FS = SR * OS
-P = {"dur": 0.63, "att": 0.036742005127489256, "hold": 0.31398811546048255, "rel": 0.28020628212292953, "f0a": 177.94904293341023, "f0b": 264.4958664624374, "f0c": 294.30116601316985, "jit": 0.16814495237938948, "shim": 0.36420849825368473, "sub": 0.38295395716734015, "noise": 0.6, "nmod": 1.0, "F1a": 906.4796359383919, "F1b": 278.19274232827604, "F2a": 722.9378002961377, "F2b": 993.2526085939454, "F3a": 2360.928346189763, "F3b": 2173.431443919977, "F4": 3297.3986721587144, "B1": 218.4098278632589, "B2": 500.0, "B3": 649.6145796608546, "B4": 488.6419275956084, "drive": 8.616345417499415, "lpa": 6730.283028002686, "lpb": 1200.0, "tilt": 0.5121943495403207, "dry": 0.0, "Fb": 191.54958100953195, "Bb": 60.0, "gb": 0.6948916252752211, "lpx": 0.9036434233675674, "lpo": 4, "ba": 0.8990762762062428, "bd": 0.06, "bf": 1403.8508116609682, "seed": 7, "g2": 0.37880958152819866, "g3": 0.48962951337140015, "g4": 1.0, "lim": 1.4183687341869464, "oq": 0.558439052738974, "sq": 5.0, "vib": 0.00661746228149186, "vibf": 8.430983010859933, "drift": 0.021886810424222275, "fj": 0.02, "ga": 0.135713830740268, "gr": 70.14477694771197, "v2": 0.8525870929139914, "v3": 0.5446947850416731, "dt": 0.038166981543124416, "ft": 0.02584956398275415, "rat": 0.3995208790215236, "ratf": 33.412496591291216, "asy": 0.03789310068562536, "fjr": 7.956291373055894, "oqj": 0.09767318324566324, "ls_g": 4.248423650066532, "ls_f": 284.6914581982615, "hs_g": -9.584851118947372, "hs_f": 5889.308001338103}
+P = {"dur": 0.56, "att": 0.006, "hold": 0.26, "rel": 0.24, "f0a": 177.94904293341023, "f0b": 264.4958664624374, "f0c": 294.30116601316985, "jit": 0.16814495237938948, "shim": 0.36420849825368473, "sub": 0.38295395716734015, "noise": 0.6, "nmod": 1.0, "F1a": 906.4796359383919, "F1b": 278.19274232827604, "F2a": 722.9378002961377, "F2b": 993.2526085939454, "F3a": 2360.928346189763, "F3b": 2173.431443919977, "F4": 3297.3986721587144, "B1": 218.4098278632589, "B2": 500.0, "B3": 649.6145796608546, "B4": 488.6419275956084, "drive": 8.616345417499415, "lpa": 6730.283028002686, "lpb": 1200.0, "tilt": 0.5121943495403207, "dry": 0.0, "Fb": 191.54958100953195, "Bb": 60.0, "gb": 0.6948916252752211, "lpx": 0.9036434233675674, "lpo": 4, "ba": 0.8990762762062428, "bd": 0.06, "bf": 1403.8508116609682, "seed": 7, "g2": 0.37880958152819866, "g3": 0.48962951337140015, "g4": 1.0, "lim": 1.4183687341869464, "oq": 0.558439052738974, "sq": 5.0, "vib": 0.00661746228149186, "vibf": 8.430983010859933, "drift": 0.021886810424222275, "fj": 0.02, "ga": 0.135713830740268, "gr": 70.14477694771197, "v2": 0.8525870929139914, "v3": 0.5446947850416731, "dt": 0.038166981543124416, "ft": 0.02584956398275415, "rat": 0.3995208790215236, "ratf": 33.412496591291216, "asy": 0.03789310068562536, "fjr": 7.956291373055894, "oqj": 0.09767318324566324, "ls_g": 4.248423650066532, "ls_f": 284.6914581982615, "hs_g": -9.584851118947372, "hs_f": 5889.308001338103, "acc_t": 0.05, "th_f0": 130, "th_f1": 58, "th_d": 0.045, "th_sat": 2, "tr_k": 0.6, "clip": 2.9, "th_a": 0.32, "acc": 0.75, "tr_max": 6}
 # the variants: (seed, pitch ×, formants ×, length ×)
 VARIANTS = [[7, 1.0, 1.0, 1.0], [11, 0.97, 0.99, 1.03], [13, 1.03, 1.02, 0.97], [17, 0.985, 1.0, 0.95]]
 
@@ -94,10 +98,16 @@ def voice(P, rng, n, t, det, fsc):
         y[s0:s0 + B] = acc
     return y / (np.abs(y).max() + 1e-9)
 
-def synth3(P, seed=None):
+def env_follow(x, a_ms, r_ms, sr=SR):
+    """a peak envelope follower (one pole each way)"""
+    ga = np.exp(-1 / (sr * a_ms / 1000)); gr = np.exp(-1 / (sr * r_ms / 1000)); y = np.zeros(len(x)); v = 0.0; ax = np.abs(x)
+    for i in range(len(x)):
+        s = ax[i]; g = ga if s > v else gr; v = g * v + (1 - g) * s; y[i] = v
+    return y
+
+def synth4(P, seed=None):
     rng = np.random.default_rng(P['seed'] if seed is None else seed)
     T = P['dur']; n = int(T * SR); t = np.arange(n) / SR
-    # the stack: the main voice, then a lower one and a higher one (each its own randomness)
     y = voice(P, rng, n, t, 1.0, 1.0)
     if P['v2'] > 0: y = y + P['v2'] * voice(P, rng, n, t, 1 - P['dt'], 1 - P['ft'])
     if P['v3'] > 0: y = y + P['v3'] * voice(P, rng, n, t, 1 + P['dt'] * .8, 1 + P['ft'] * .7)
@@ -109,12 +119,13 @@ def synth3(P, seed=None):
         for _ in range(rng.poisson(P['gr'] * T * .8)):
             s = int(rng.uniform(.03, T * .8) * SR); fr = rng.uniform(500, 2400); d = rng.uniform(.002, .008); L = min(n - s, int(d * SR * 5))
             tt = np.arange(L) / SR; y[s:s + L] += P['ga'] * rng.uniform(.4, 1) * np.sin(2 * np.pi * fr * tt * (1 + 2 * tt)) * np.exp(-tt / d)
-    # at 4x: a lopsided saturation (warmth: the even harmonics), the envelope, the limit, the closing low-pass; back down
-    N = n * OS; Y = sg.resample_poly(y, OS, 1)[:N]
+    N = n * OS; Y = sg.resample_poly(y, OS, 1)[:N]; TT = np.arange(N) / FS
     dr = P['drive']; asy = P['asy']; Y = np.tanh(dr * (Y + asy)) - np.tanh(dr * asy); Y /= np.abs(Y).max() + 1e-9
-    e = np.ones(N); ka = int(P['att'] * FS); e[:ka] = np.sin(np.linspace(0, np.pi / 2, ka)) ** 2
+    e = np.ones(N); ka = max(1, int(P['att'] * FS)); e[:ka] = np.sin(np.linspace(0, np.pi / 2, ka)) ** 2
     h = int((P['att'] + P['hold']) * FS); r = P['rel'] * FS
     if h < N: e[h:] = np.exp(-np.arange(N - h) / (r / 3.2)) * np.clip(1 - np.arange(N - h) / max(1, N - h), 0, 1) ** .5
+    # the accent: the first moment of the cry pushed up
+    if P.get('acc', 0): e *= 1 + P['acc'] * np.exp(-TT / P['acc_t'])
     Y *= e
     if P['lim'] > 0: Y = np.tanh(P['lim'] * Y) / np.tanh(P['lim'])
     o = np.zeros(N); z = None; BB = 64
@@ -123,10 +134,24 @@ def synth3(P, seed=None):
         if z is None: z = np.zeros((sos.shape[0], 2))
         o[s0:s0 + BB], z = sg.sosfilt(sos, Y[s0:s0 + BB], zi=z)
     out = sg.resample_poly(o, 1, OS)[:n]
+    # the chest thump: a low sine falling th_f0 -> th_f1, 1.5 ms up, th_d to fall away; saturated a little, at 4x
+    if P.get('th_a', 0):
+        f = P['th_f1'] + (P['th_f0'] - P['th_f1']) * np.exp(-TT / (P['th_d'] * .8)); ph = 2 * np.pi * np.cumsum(f) / FS
+        ev = np.minimum(1, TT / .0015) * np.exp(-TT / P['th_d']); th = np.sin(ph) * ev
+        k = P.get('th_sat', 0)
+        if k > 0: th = np.tanh(k * th) / np.tanh(k)
+        out = out + P['th_a'] * np.abs(out).max() * sg.resample_poly(th, 1, OS)[:n]
     hb, ha = sg.butter(1, 30 / (SR / 2), 'high'); out = sg.lfilter(hb, ha, out)
-    # the tone, as a mixing desk would set it: body below, air above
     if P.get('ls_g', 0): b, a = shelf(P['ls_f'], P['ls_g'], 'low'); out = sg.lfilter(b, a, out)
     if P.get('hs_g', 0): b, a = shelf(P['hs_f'], P['hs_g'], 'high'); out = sg.lfilter(b, a, out)
+    # the transient shaper: where the fast envelope runs ahead of the slow one (an attack), turn it up — at most tr_max dB
+    if P.get('tr_k', 0):
+        fe = env_follow(out, .3, 25); se = env_follow(out, 12, 120)
+        g = np.clip((fe / (se + 1e-6)) ** P['tr_k'], 1, 10 ** (P['tr_max'] / 20)); g = sg.filtfilt(*sg.butter(1, 200 / (SR / 2)), g)
+        out = out * g
+    # a soft clip, at 4x (no grit folding back): the onset keeps its weight, the peaks go round
+    if P.get('clip', 0):
+        U = sg.resample_poly(out / (np.abs(out).max() + 1e-9), OS, 1); U = np.tanh(P['clip'] * U) / np.tanh(P['clip']); out = sg.resample_poly(U, 1, OS)[:n]
     fz = int(.004 * SR); out[-fz:] *= np.linspace(1, 0, fz)
     return out / (np.abs(out).max() + 1e-9) * .966
 
@@ -140,7 +165,7 @@ def variant(P, f0x, fx, lx):
 if __name__ == '__main__':
     here = os.path.dirname(os.path.abspath(__file__)); snd = os.path.join(here, '..', 'sound')
     for i, (seed, f0x, fx, lx) in enumerate(VARIANTS, 1):
-        x = synth3(variant(P, f0x, fx, lx), seed); out = os.path.join(snd, 'zombie_pain_%d' % i); wav = out + '.wav'
+        x = synth4(variant(P, f0x, fx, lx), seed); out = os.path.join(snd, 'zombie_pain_%d' % i); wav = out + '.wav'
         wf.write(wav, SR, to16(x, np.random.default_rng(seed)))
         # ogg for most browsers, mp3 for the iPhone (design.js lists both: the first one the browser can read is used)
         subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', wav, '-c:a', 'libvorbis', '-q:a', '8', out + '.ogg'], check=True)

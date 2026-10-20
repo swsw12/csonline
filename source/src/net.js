@@ -394,7 +394,7 @@ function netClaimHit(t,dmg,src,o){if(!G.player||src!==G.player||!t||!t.alive||(G
   if(tk&&!o.he){t.fmFl=.12;return 0}// (the tank flashes, not the body)
   const d=G.pvp?PVP.scale(t,dmg,o):dmg*(1+.1*G.moraleLvl)*(src.wup&&src.wup[o.w]?1+.1*src.wup[o.w]:1),ab=Math.min(Math.max(0,t.armor),d*(G.pvp?1-PVP.ap(o):.5)),dealt=Math.max(0,Math.min(d-ab,Math.max(0,t.hp))+ab);
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
-  HUD.dmgNum(t,dealt,!!o.hs,false);if(!AU.throttle('zp'+t.id,350))AU.at(G.pvp?'hurt':'zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});return dealt}
+  HUD.dmgNum(t,dealt,!!o.hs,false);if(G.pvp){if(!AU.throttle('zp'+t.id,350))AU.at('hurt',t.c.x,t.c.y+1.5,t.c.z,{vol:.7})}else zPain(t,true);return dealt}
 
 // ---------- host: handlers for what clients send ----------
 // ---------- v6.72: the host checks every claim a client makes (security part 2) ----------

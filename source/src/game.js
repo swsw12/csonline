@@ -399,6 +399,8 @@ function zombiesAlive(){let n=0;for(const a of G.actors)if(a.team===TZ&&(a.alive
 // humans together still hold one back) the push stops growing; a single big hit (sniper, launcher) still lands in full
 function kbCap(t,src,kb){const sh=t.kbSh||(t.kbSh={});sh[src?src.id:-1]=G.t;let n=0;for(const k in sh)if(G.t-sh[k]<.6)n++;
   const cp=Math.max(kb,ZBAL.kbCap[t.host?1:0]*(1+.35*(n-1))),v=Math.hypot(t.kvx,t.kvz);if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}
+// the zombie's pain cry, 0.35 s apart per zombie; a hit by this page's own player is louder and carries further (v6.86: you hear what you hit)
+function zPain(t,own){if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,own?{vol:.95,range:80}:{vol:.7})}
 function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==='end'||G.st==='over'?0:netClaimHit(t,dmg,src,o);if(!t.alive||G.st==='end'||G.st==='over')return;
   if(t.team===TH){return G.pvp?PVP.hurt(t,dmg,src,o):undefined}// (대인전: one human shooting another, pvp.js)
   if(t.reviving>0)return;
@@ -416,7 +418,7 @@ function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(o.dir)t.an.flx=clamp((t.an.flx||0)+(o.dir[0]*Math.cos(t.yaw)-o.dir[2]*Math.sin(t.yaw))*.6,-1,1);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
   if(src){src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;src.score+=dealt/100;scEarn(src,Math.round(dealt/8));if(src.isPlayer)HUD.dmgNum(t,dealt,!!o.hs,t.hp<=0)}
   if(t.isPlayer){HUD.hurt(clamp(dmg/600,.15,.8));FX.shake=Math.max(FX.shake,.15)}
-  if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1.5,t.c.z,{vol:.7});
+  zPain(t,!!(src&&src.isPlayer));
   if(t.bot)AI.onHurt(t,src);
   if(t.hp<=0)killZombie(t,src,o);return dealt}
 function hurtHuman(t,dmg,src,o){if(NET.ghost)return;if(NET.cli&&!NET.ev){if(t===G.player&&o.fall)netToHost({t:'fall',d:Math.round(dmg)});return}if(!t.alive||t.team!==TH)return;const hp0=t.hp,ar0=t.armor;if(t.armor>0&&!o.fall){const ab=Math.min(t.armor,dmg*.5);t.armor-=ab;dmg-=ab}
