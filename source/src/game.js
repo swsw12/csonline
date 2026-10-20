@@ -20,7 +20,7 @@ const ZCLASS={
   // flat and throws them back); shooting the tank during the charge breaks it: the charge stops and a smoke cloud billows out
   fireman:{n:['소방관 좀비','Firefighter Zombie'],sk:['산소통 돌진','Tank Charge'],d:['돌격형 · 방화복: 불·폭발 피해 ½ · 스킬 G: 산소통 돌진 (넘어뜨리며 밀어냄 · 돌진 중 산소통을 쏘면 멈추고 연막)','Assault · Turnout coat: fire and blasts ½ · Skill G: Tank Charge (knocks humans flat and back; shoot the tank mid-charge to stop it, smoke bursts out)'],hp:3000,armor:170,speed:5.4,jump:7.1,kb:.75,dmg:60,skill:'charge',cd:15,dur:1.4,hw:.32,h:1.9,eye:1.72},
 };
-const ZLIST=['rager','runner','brute','scream','coffin','fireman'];
+const ZLIST=['rager','runner','brute','scream','coffin','fireman','strait'];// v6.91: the straitjacket zombie can be picked (strait.js)
 // every gun carries twice the spare ammo it used to
 for(const W of Object.values(WPN))if(W.res&&W.kind!=='nade'&&!W.resX2){W.res=Math.round(W.res*2);W.resX2=1}
 // scenario-only zombies (never picked by players). ZALL lists every class; its order is also the network index.
@@ -29,9 +29,11 @@ Object.assign(ZCLASS,{
   spitter:{n:['산성 좀비','Spitter'],sk:['산성 침','Acid spit'],d:['시나리오 전용 · 거리를 두고 산성 침을 뱉는다','Scenario only · keeps its distance and spits acid'],hp:1500,armor:40,speed:5.3,jump:7.4,kb:1.2,dmg:26,skill:'none',cd:99,dur:0,hw:.28,h:1.9,eye:1.74},
   boss:{n:['거대 좀비','The Giant'],sk:['강타','Slam'],d:['시나리오 보스','Scenario boss'],hp:30000,armor:0,speed:4.7,jump:8,kb:.06,dmg:70,skill:'none',cd:99,dur:0,hw:.4,h:2.05,eye:2}});
 // episode 1 (episode.js / aleph.js): ALEPH, the boss (the giant's body in restraints), and the straitjacket zombie that pounces and pins
+// (v6.91: the straitjacket zombie is also the seventh class to pick, strait.js; these are its stats there — in chapter 1 scenario.js keeps
+// the health, speed and armour it had, and aleph.js its own pounce)
 Object.assign(ZCLASS,{
   aleph:{n:['알레프','ALEPH'],sk:['분노','Rage'],d:['1챕터 보스 · Q7-000','Chapter 1 boss · Q7-000'],hp:30000,armor:0,speed:4.7,jump:8,kb:.05,dmg:70,skill:'none',cd:99,dur:0,hw:.4,h:2.05,eye:2},
-  strait:{n:['구속복 좀비','Straitjacket Zombie'],sk:['덮치기','Pounce'],d:['1챕터 · 할퀴지 못하고 덮쳐서 붙잡는다 (동료가 떼어 줘야 함)','Chapter 1 · cannot claw: pounces and pins you (a teammate has to shoot it off)'],hp:1530,armor:40,speed:6.6,jump:7.4,kb:1.2,dmg:0,skill:'none',cd:99,dur:0,hw:.29,h:1.82,eye:1.66}});
+  strait:{n:['구속복 좀비','Straitjacket Zombie'],sk:['덮치기','Pounce'],d:['속박형 · 할퀴는 대신 박치기 · 스킬 G: 덮치기 (덮친 인간을 1.6초 붙잡음: 못 쏘고 못 움직임 · 동료가 쏘면 떨어짐)','Grappler · butts instead of clawing · Skill G: Pounce (pins a human for 1.6 s: no shooting, no moving · teammates can shoot it off)'],hp:2600,armor:110,speed:5.9,jump:7.4,kb:1.2,dmg:50,skill:'pounce',cd:15,dur:1.6,hw:.29,h:1.82,eye:1.66}});
 // chapter 2 (argus.js): ARGUS, RT-1's sniper (a tall soldier's body; its hits are worked out by the chapter), and the RT-1 squad zombie
 Object.assign(ZCLASS,{
   argus:{n:['아르고스','ARGUS'],sk:['저격','Snipe'],d:['2챕터 보스 · RT1-07','Chapter 2 boss · RT1-07'],hp:14000,armor:0,speed:5.5,jump:8.5,kb:.25,dmg:28,skill:'none',cd:99,dur:0,hw:.32,h:1.9,eye:1.76},
@@ -359,7 +361,7 @@ function zombieAttack(a,dt){const cmd=a.cmd,pc=a.pc,Z=ZCLASS[a.zc];
   if(a.drawT>0||G.t<a.nextFire||a.pendingClaw)return;
   if(G.t<(a.clawLock||0)){if(a.isPlayer&&(cmd.fire||cmd.alt)&&!pc.fire&&!pc.alt)HUD.note(LI()?'Still turning — claws in a moment':'아직 변이 중 — 잠시 후 공격 가능',1);return}
   if(cmd.fire||cmd.alt){const heavy=!cmd.fire&&cmd.alt;a.nextFire=G.t+(heavy?1.1:.62);a.an.atk=1;a.an.atkD=heavy?.78:.48;a.an.heavy=heavy;a.an.atkSide=-a.an.atkSide;
-    if(a.isPlayer){VM.claw(heavy,a.an.atkSide);AU.play('claw',{vol:.6})}else AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.7,range:30});
+    if(a.isPlayer){VM.claw(heavy,a.an.atkSide);if(a.zc==='strait')AU.play('zatk',{vol:.5,rate:1.15});else AU.play('claw',{vol:.6})}else AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.7,range:30});
     a.pendingClaw={t:heavy?.4:.19,heavy};NET.on&&netFxPush(['c',a.id,heavy?1:0,a.an.atkSide])}}
 // zombie grenade: press → a hand reaches into the bomb's mouth and yanks the bone pin out (BOMB_PULL s); keep holding to carry it armed,
 // release to throw. Left click = hard throw, right click = underhand lob (drop it at your feet for a bomb jump).
@@ -382,7 +384,7 @@ function clawStrike(a,heavy){const r=meleeHit(a,heavy?CLAW_R[1]:CLAW_R[0],heavy?
 function clawApply(a,t,heavy){aimDir(a.yaw,0,_dv);t.kvx+=_dv.x*(heavy?4:2);t.kvz+=_dv.z*(heavy?4:2);infect(t,a)}
 function useSkill(a){if(NET.cli&&!NET.ev){if(a===G.player&&a.skillCD<=0&&(G.st==='fight'||G.st==='prep'))netToHost({t:'sk'});return}
   if(a.skillCD>0||G.st!=='fight'&&G.st!=='prep')return;const Z=ZCLASS[a.zc];const c=a.c;
-  if(Z.skill==='invis'||Z.skill==='trap'||Z.skill==='heal'||Z.skill==='coffin'||Z.skill==='charge'){if(nySkill(a,Z)){a.skillCD=Z.cd;if(NET.host)netEv('sk',{i:a.id,k:Z.skill})}return}
+  if(Z.skill==='invis'||Z.skill==='trap'||Z.skill==='heal'||Z.skill==='coffin'||Z.skill==='charge'||Z.skill==='pounce'){if(nySkill(a,Z)){a.skillCD=Z.cd;if(NET.host)netEv('sk',{i:a.id,k:Z.skill})}return}
   if(Z.skill==='frenzy'){if(a.hp<a.maxHp*.15)return;a.hp-=a.maxHp*.08;a.skillT=Z.dur;AU.at('zroar',c.x,c.y+1.5,c.z,{vol:1,range:50})}
   else if(Z.skill==='leap'){if(!c.onGround)return;aimDir(a.yaw,0,_dv);a.kvx+=_dv.x*11;a.kvz+=_dv.z*11;c.vy=6.5;c.onGround=false;c.jumped=true;a.skillT=.8;AU.at('zleap',c.x,c.y+1.5,c.z,{vol:1})}
   else if(Z.skill==='harden'){a.skillT=Z.dur;AU.at('zharden',c.x,c.y+1.5,c.z,{vol:1,range:40})}

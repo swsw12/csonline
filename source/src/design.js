@@ -267,6 +267,7 @@ const ARM_DESIGN={
   zs_coffin: ['#282321','#3a1c10'],             // 관짝 좀비 팔 — 거의 검은 피부
   zs_fireman:['#5e4c42','#2a1410'],             // 소방관 좀비 팔 — 그을린 잿빛 피부 (손등)
   sl_fmcoat: ['#8a6c3e'],                       // 소방관 좀비 소매 — 그을린 황갈색 방화복 (손목에 형광 띠: fmRefl, fireman.js)
+  sl_strait: ['#cfc8b4'],                       // 구속복 좀비 소매 (1인칭) — 때 묻은 흰 캔버스, 끝이 막힌 소매 (손목의 가죽 끈 · 버클: strait.js)
 };
 
 // ================================================================================================
@@ -408,7 +409,7 @@ function defHuman(k){
 // ── 좀비 캐릭터 ──────────────────────────────────────────────────────────────────────────────────
 //    k = 'rager' 일반 | 'runner' 라이트 | 'brute' 헤비 | 'coffin' 관짝 | 'scream' 부두
 //        | 'bomber' 자폭(시나리오) | 'spitter' 산성(시나리오) | 'boss' 거대 좀비(시나리오: 헤비 몸에 어두운 색)
-//        | 'strait' 구속복 좀비(1챕터) | 'aleph' 알레프(1챕터 보스: 거대 좀비 몸 + 구속구)
+//        | 'strait' 구속복 좀비(1챕터, v6.91부터 플레이 가능) | 'aleph' 알레프(1챕터 보스: 거대 좀비 몸 + 구속구)
 //        | 'argus' 아르고스(2챕터 보스: 1차 회수팀 저격수) | 'squad' 1차 팀 분대원 좀비(2·4챕터)
 //        | 'larva' 유충 좀비(3·5챕터) | 'scrap' 장갑 고철 좀비(3챕터)
 //        | 'khepri' 케프리(3챕터 보스: 거대 쇠똥구리 — 몸은 khepri.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시)
@@ -536,7 +537,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       handL:{all:[['soak',0,1,'#4a7a10',.85]]},handR:{all:[['soak',0,1,'#4a7a10',.85]]},thL:{all:[['tear',2,19,sk]]},thR:{all:[['grime',.6]]},
       sac:{all:[['veins',4,'#d8f070',1],['glow',.36,.3,.64,.6,'#b8f040']]}};
     extra=H=>{const o=H.o,nY=H.piv[2][1];return [{n:'sac',b:2,c:[0,nY+.03,o.headZ-.1],s:[.2,.16,.15],m:'sac'},{n:'sac',b:2,c:[.05,nY-.05,o.headZ-.07],s:[.13,.1,.1],m:'sac'},{n:'sac',b:1,c:[-.06,nY-.12,-.12],s:[.1,.09,.07],m:'sac'}]}}
-  // ▶ 구속복 좀비 (strait, 1챕터 「알레프」 전용) — Q-7 격리병동 환자
+  // ▶ 구속복 좀비 (strait, 1챕터 「알레프」 · v6.91부터 플레이 가능: strait.js) — Q-7 격리병동 환자
   //    누런 구속복(가죽 띠 3줄, 등에 버클과 'Q7-W'), 가슴 앞에서 X자로 묶인 소매(움직임은 models.js poseZombie), 회청색 환자 바지, 맨발,
   //    꿰맨 자국이 있는 민머리, 입을 막은 가죽 마스크, 희뿌연 눈.
   else if(k==='strait'){// 구속체 — a Q-7 ward patient still in its straitjacket: sleeves strapped across the chest, a leather muzzle, shaved scalp

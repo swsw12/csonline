@@ -501,6 +501,9 @@ const KF={
   // zombie claw swipe (striking arm channels: shoulder X, shoulder Z out, elbow, spine twist, spine pitch, jaw)
   clawA:[[0,[0,0,0,0,0,0]],[.26,[1.5,.55,1.3,.38,.16,.45]],[.34,[1.62,.6,1.4,.4,.18,.55]],[.48,[-.35,-.3,-.9,-.42,-.38,1.05]],[.62,[-.85,-.4,-.75,-.3,-.3,.85]],[.82,[-.3,-.1,-.3,-.1,-.1,.3]],[1,[0,0,0,0,0,0]]],
   clawH:[[0,[0,0,0,0,0,0]],[.36,[1.8,.3,1.2,0,.28,.9]],[.46,[1.9,.32,1.3,0,.3,1.05]],[.58,[-.4,-.2,-.9,0,-.62,1.15]],[.74,[-.75,-.25,-.8,0,-.52,.9]],[.9,[-.2,-.05,-.2,0,-.15,.3]],[1,[0,0,0,0,0,0]]],
+  // the straitjacket zombie's head-butt (v6.91, strait.js): spine pitch over the stroke — back, then driven in as the hit lands; heavy: the
+  // whole body slams in behind it
+  sjA:[[0,0],[.2,.02],[.45,-.5],[.6,-.62],[.74,.24],[.88,.2],[1,0]],sjH:[[0,0],[.18,.03],[.38,-.7],[.5,-.82],[.66,.4],[.84,.32],[1,0]],
 };
 function poseHuman(ch,st){const R=ch.R,A=ch.A,P=A.piv;const sc=P[0][1]/.93;ch.gunOn2=false;setE(R[11],0,0,0);
   if(st.dead>0){poseDead(ch,st);return}
@@ -592,7 +595,10 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   let jaw=JAW0[z]||.12;jaw+=(z==='runner'?.12:.06)*Math.pow(Math.max(0,Math.sin(t*19+sd)),3);if(jH!==0)jaw+=Math.abs(jH)*.35;
   // claw swipe: wind up high and back, whip down across the body, follow through low; heavy: both arms smash down
   // voodoo zombie: both arms raise the doll overhead and club it down
+  let sjHd=0;
   if(a>0&&z==='scream'){const c=kfv(heavy?KF.vdH:KF.vdA,a,_kv2);aL+=c[0];aR+=c[0];fL+=c[1];fR+=c[1];spP+=c[2];jaw+=c[3];twist+=c[4]}
+  // straitjacket: the arms stay strapped; the body rears back and drives the head in (the head nods further than the spine)
+  else if(a>0&&z==='strait'){const k=kf1(heavy?KF.sjH:KF.sjA,a);spP+=k*(heavy?1.2:1);sjHd=k*(heavy?.9:.7);jaw+=Math.max(0,-k)*.2}
   else if(a>0){const c=kfv(heavy?KF.clawH:KF.clawA,a,_kv2);
     if(heavy){aL+=c[0];aR+=c[0];zL-=c[1];zR+=c[1];fL+=c[2]*.8;fR+=c[2]*.8;spP+=c[4]}
     else if(side>0){aR+=c[0];zR+=c[1];fR+=c[2];twist-=c[3];spP+=c[4];aL+=-c[0]*.15}else{aL+=c[0];zL-=c[1];fL+=c[2];twist+=c[3];spP+=c[4];aR+=-c[0]*.15}
@@ -612,7 +618,7 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.skill>0&&z==='brute'){const k=Math.min(1,st.skill*2);aL=lerp(aL,1.45,k);aR=lerp(aR,1.45,k);zL=lerp(zL,.45,k);zR=lerp(zR,-.45,k);fL=fR=lerp(fL,1.6,k);spP=lerp(spP,-.32,k);jaw=lerp(jaw,.7,k)}
   if(turn>0){const j=Math.sin(t*31)*.5+Math.sin(t*17)*.5;aL=.3+j*.8*turn;aR=.4-j*.7*turn;zL=-.9*turn;zR=.9*turn;fL=fR=1.2*turn;spP=-.55*turn+Math.sin(t*23)*.25*turn;twist=Math.sin(t*13)*.4*turn;jaw=.4+Math.abs(Math.sin(t*11))*.8*turn}
   setE(R[0],0,g.twist,g.roll);setE(R[1],spP,-g.twist*1.2+twist,-g.roll*.7+spR-(st.flinchX||0)*.25);
-  const hp=clamp(st.pitch*.6-spP*.85,-.6,.9)+(st.skill>0&&z==='scream'?.6:0)+(turn?Math.sin(t*29)*.5:0)-(st.flinch||0)*.3;
+  const hp=clamp(st.pitch*.6-spP*.85,-.6,.9)+sjHd+(st.skill>0&&z==='scream'?.6:0)+(turn?Math.sin(t*29)*.5:0)-(st.flinch||0)*.3;
   setE(R[2],hp+jH2*.2,Math.sin(t*1.3+sd)*.12+jH*.45+(turn?Math.sin(t*19)*.4:0),Math.sin(t*.9+sd)*.12+jH*.5+(z==='scream'?.25:0));
   setE(R[3],aL,0,zL);setE(R[4],Math.max(-.05,fL),0,0);setE(R[5],aR,0,zR);setE(R[6],Math.max(-.05,fR),0,0);
   setE(R[11],-clamp(jaw,0,1.45),0,0);ch.gunOn=false;ch.gunOn2=false}

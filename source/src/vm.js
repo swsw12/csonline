@@ -196,6 +196,8 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
     // ---- zombie claws: two arms with their own strokes ----
     if(kind==='claw'){const R_=m.armR,L_=m.armL;const A=_vca;A[0].set(CLAW_REST);A[1].set(CLAW_REST);A[1][0]=-A[1][0];A[1][3]=-A[1][3];
       if(m.vd)trailOn=this.vdPose(A,dt,m);
+      // the straitjacket zombie (strait.js): the sleeves stay crossed in front; it butts with its head — a nod of the view, no trail
+      else if(m.sj)SJ.vmPose(this,A,dt);
       else if(this.mel){const M=this.mel;M.t+=dt;const p=clamp(M.t/M.d,0,1);
         if(M.heavy){kfv(VMK.clH,p,_vk);A[0].set(_vk);A[1].set(_vk);A[1][0]=-_vk[0];A[1][3]=-_vk[3];trailOn=p>.47&&p<.74;this.camPitch=-Math.sin(clamp((p-.45)/.3,0,1)*Math.PI)*.05+(p<.45?smooth(p/.45)*.02:0)}
         else{kfv(VMK.clL,p,_vk);const sd=M.side>0?1:-1,S1=A[sd>0?0:1];S1.set(_vk);if(sd<0){S1[0]=-_vk[0];S1[3]=-_vk[3]}

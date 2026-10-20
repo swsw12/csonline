@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'zombie',ref:'strait',tag:['신규 좀비 · 플레이 가능','New zombie · playable'],t:['구속복 좀비','Straitjacket Zombie'],
+    d:['1챕터의 구속복 좀비를 이제 직접 고를 수 있어요. 팔이 묶여 있어 할퀴는 대신 머리로 들이받아요. G를 누르면 앞으로 덮쳐서 닿은 인간을 1.6초 동안 붙잡아요 — 붙잡힌 인간은 쏘지도 움직이지도 못하니, 동료가 쏴서 떼어 줘야 해요. 그동안 다른 좀비가 달려들 수 있어요.','The straitjacket zombie from chapter 1 can now be picked. Its arms are strapped, so it butts with its head instead of clawing. G: it pounces, and the human it lands on is pinned for 1.6 s — no shooting, no moving, until a teammate shoots it off. The other zombies get their chance meanwhile.']},
   {kind:'feature',ico:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6.5M9 10.5l3 3 3-3M10 18.5h4" fill="none" stroke="currentColor" stroke-width="2"/></svg>',act:'pwa',btn:['앱으로 설치하기','Install the app'],tag:['신규 기능','New'],t:['앱으로 설치','Install as an app'],
     d:['홈 화면에 추가하면 주소창 없이 전체 화면으로, 게임 아이콘으로 바로 열려요. 아이폰 · 아이패드는 공유 → 홈 화면에 추가, 안드로이드 · PC 크롬은 「앱 설치」 한 번이에요. 마지막으로 연 게임은 기기에 저장돼서 네트워크가 없어도 사격장 · 혼자 하기가 돼요.','Added to the home screen the game opens full screen from its own icon, no address bar. iPhone and iPad: Share → Add to Home Screen; Android and desktop Chrome: one tap on Install app. The last game you opened is kept on the device, so the range and solo play work without a network too.']},
   {kind:'feature',ico:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h6l-1 8 9-12h-6z" fill="currentColor"/></svg>',act:'qm',btn:['빠른 매칭 시작','Quick match'],tag:['신규 기능','New'],t:['빠른 매칭','Quick match'],
@@ -115,8 +117,6 @@ const NEW_CONTENT=[
     d:['헬멧과 방탄복을 입은 1차 회수팀 대원. 정면에서 쏘면 잘 안 먹히니 머리나 옆을 노려요. 가끔 수류탄을 던지고, 죽으면 탄약 상자를 떨궈요. 2챕터에 나와요.','An RT-1 trooper in a helmet and a plate carrier: bullets from the front do less, so go for the head or the flank. Throws a grenade now and then and drops an ammo box when it dies. Shows up in chapter 2.']},
   {kind:'zombie',ref:'aleph',tag:['좀비 시나리오 1챕터','Zombie scenario · CH.1'],t:['1챕터 「알레프」','Chapter 1 「ALEPH」'],
     d:['격리병원 Q-7 연구동을 뚫고 지하 B4의 최초 감염자 알레프를 쓰러뜨린 뒤 60초 안에 탈출. 맞을수록 분노하는 거대 보스, 등의 혈청 탱크가 약점. 방 만들기 → 좀비 시나리오에서 1챕터를 고르세요.','Fight through the Q-7 research wing, bring down ALEPH, patient zero, in the B4 chamber and escape within 60 s. A giant that gets angrier with every hit; the serum tank on its back is the weak spot. Create a room → Zombie scenario → CH.1.']},
-  {kind:'zombie',ref:'strait',tag:['신규 좀비','New zombie'],t:['구속복 좀비','Straitjacket Zombie'],
-    d:['할퀴지 못하는 대신 덮쳐서 붙잡아요. 붙잡히면 꼼짝 못 하니 동료가 쏴서 떼어 줘야 해요. 1챕터에 나와요.','It cannot claw: it pounces and pins you, and only a teammate shooting it gets you free. Shows up in chapter 1.']},
   {kind:'feature',ico:'✉',tag:['신규 기능','New'],t:['인게임 채팅','In-game chat'],
     d:['매치 중 Enter(또는 Y)로 전체 채팅, U로 우리 편 채팅. 멀티 대기실에서도 바로 대화할 수 있고, 입장 · 퇴장도 채팅창에 떠요. 폰은 위쪽 💬 버튼.','Enter (or Y) talks to everyone and U to your own side, in a match and in the multiplayer waiting room; joins and leaves show in the chat too. On phones, the 💬 button at the top.']},
   {kind:'feature',ico:'♥',tag:['신규 기능','New'],t:['친구 · 선물하기','Friends · gifts'],

@@ -273,6 +273,7 @@ const AI={
       else if(Z.skill==='invis'&&go&&(see||rs)&&dh>4&&dh<26)cmd.skill=true;else if(Z.skill==='trap'&&st!=='retreat'&&dh<12&&Math.random()<.35)cmd.skill=true;
       else if(Z.skill==='coffin'&&go&&see&&dh>4&&dh<22&&(B.hurtAcc>a.maxHp*.04||Math.random()<.02)){cmd.skill=true;B.detour=.9}// then step round the coffin it just stood up in its own way
       else if(Z.skill==='charge'&&go&&see&&B.straight&&dh>3.5&&dh<12.5&&!(a.fmTkT>0))cmd.skill=true;// the firefighter: on a clear, walkable line
+      else if(Z.skill==='pounce'&&go&&see&&G.mode!=='scen'&&B.straight&&dh>2.4&&dh<6.4&&Math.abs(dy)<1.2&&!(t.grabT>0))cmd.skill=true;// the straitjacket (strait.js): close, level, nobody holding the human yet
       else if(Z.skill==='heal'&&(a.hp<a.maxHp*.6||G.actors.some(z=>z!==a&&z.alive&&z.team===TZ&&z.hp<z.maxHp*.5&&dist3(z.c,c)<8)))cmd.skill=true}
     B.hurtAcc=Math.max(0,B.hurtAcc*Math.exp(-dt/2)+(B.lastHp-a.hp>0?B.lastHp-a.hp:0));B.lastHp=a.hp;
     // spore bomb (one a life, on the rush): at groups, at someone up high or out of reach, when taking fire, or now and then on a clear view

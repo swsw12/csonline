@@ -145,7 +145,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     {const ik=zt?(P.cur==='zbomb'?'zbomb':'claw'):P.cur;if(this.wIcon!==ik){this.wIcon=ik;const src=ik==='claw'?miniIcon('claw'):ik&&WPN[ik]&&WPN[ik].model?gunIcon(WPN[ik].model,30):'';if(src)e.hWIcon.src=src;e.hWIcon.style.display=src?'block':'none';e.hWIcon.className=ik==='claw'?'cl':''}}
     e.hLvl.style.display=zt?'block':'none';if(zt){const Z=ZCLASS[P.zc];e.hLvl.innerHTML=`<b>${Z.n[LI()]}</b> ${P.host?'<span class="host">HOST</span> ':''}${T('lvl')}.${P.lvl|0}`}
     // weapon / skill
-    if(zt){e.hAmmo.style.display='none';e.hWName.textContent=P.cur==='zbomb'?T('bomb'):WPN.claw.n[LI()];const Z=ZCLASS[P.zc];
+    if(zt){e.hAmmo.style.display='none';e.hWName.textContent=P.cur==='zbomb'?T('bomb'):P.zc==='strait'?(LI()?'Head-butt':'박치기'):WPN.claw.n[LI()];const Z=ZCLASS[P.zc];
       e.hSkill.style.display='block';e.hSkill.innerHTML=`<span class="k">G</span> ${Z.sk?Z.sk[LI()]:T('skill')}: ${P.skillCD>0?Math.ceil(P.skillCD)+'s':`<b>${T('ready')}</b>`}${P.skillT>0?' ▲':''}<br><span class="k">4</span> ${T('bomb')} ×${P.bombs}  <span class="k">N</span> ${T('nv')} ${P.nv?'ON':'OFF'}`;e.hNades.textContent=''}
     else{e.hSkill.style.display='none';const am=P.ammo[P.cur];const Wn=WPN[P.cur];e.hWName.textContent=Wn?Wn.n[LI()]+(Wn.dual&&P.dualB?(Wn.bRpm?(LI()?' · spray':' · 난사'):(LI()?' · full auto':' · 연사')):'')+(Wn.stance?(P.hamB?(LI()?' · B knock-away':' · B 날리기'):(LI()?' · A pound':' · A 떡찧기')):'')+spTag(P,Wn)+cmbTag(P,Wn):'';
       if(am){e.hAmmo.style.display='flex';e.hMag.textContent=am.mag;e.hRes.textContent='/ '+am.res;e.hMag.className=am.mag<=Math.ceil(Wn.mag*.2)?'low':''}else e.hAmmo.style.display='none';

@@ -13,8 +13,9 @@ const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r12'}// r11: the host checks every claim and holds each link to a message budget (v6.72); r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40); r10: THANATOS-9 states and its slow, the Dark Knight's B and Deadshot (v6.41)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r13'}// r11: the host checks every claim and holds each link to a message budget (v6.72); r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40); r10: THANATOS-9 states and its slow, the Dark Knight's B and Deadshot (v6.41)
 // r12 (v6.82): a player can join a match under way (latejoin.js: 'start' with late, 'jn' to the others)
+// r13 (v6.91): the straitjacket zombie can be picked (strait.js: sjc / sjg / sju), and a class picked in a match reaches the host
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
 const netNow=()=>performance.now();
 function netKey(n){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<n;i++)s+=A[Math.floor(Math.random()*A.length)];return s}
@@ -339,7 +340,7 @@ function netOnState(L,m){if(m.t)return;if(!(m.k>L.lastK))return;L.lastK=m.k;cons
     const r={x:clamp(s[0],-2e5,2e5)/100,y:clamp(s[1],-2e5,2e5)/100,z:clamp(s[2],-2e5,2e5)/100,vx:clamp(s[3],-6e3,6e3)/100,vz:clamp(s[4],-6e3,6e3)/100,yaw:s[5]/1000,pitch:clamp(s[6],-1600,1600)/1000,F:s[7]|0,cur:s[8]|0};a.nraw=r;
     // (v6.74: a move faster than any player can make is taken only as far as its budget goes, ngMove)
     if(a.alive)ngMove(a,r,now);
-    netSample(a,m.ts,r.x,r.y,r.z,r.vx,r.vz,r.yaw,r.pitch,r.F,r.cur);a.frozen=clamp(s[9],0,100)/10;a.rootT=clamp(s[10],0,100)/10;a.nyFree=s[11]|0;a.zpick=ZLIST[s[12]]||a.zpick}
+    netSample(a,m.ts,r.x,r.y,r.z,r.vx,r.vz,r.yaw,r.pitch,r.F,r.cur);a.frozen=clamp(s[9],0,100)/10;a.rootT=clamp(s[10],0,100)/10;a.nyFree=s[11]|0;const zp=ZALL[s[12]];if(ZLIST.includes(zp))a.zpick=zp}// (v6.91: the pick comes as its ZALL index; read as a ZLIST index the firefighter never arrived)
   // its effects go on to everyone: at most 48 a state, each a short list of numbers and short words (a grenade thrown is noted: ngClaim)
   let nf=0;for(const f of netFxList(L,m)){if(!Array.isArray(f)||f[1]!==a.id||f.length>24||++nf>48)continue;
     if(!f.every(v=>typeof v==='number'?Number.isFinite(v):typeof v==='string'?v.length<=24:v===null||typeof v==='boolean'||Array.isArray(v)&&v.length<=8&&v.every(x=>typeof x==='number'&&Number.isFinite(x))))continue;

@@ -8,6 +8,7 @@ const SCEN={POOL:30,STAGES:5,WAVES:3,on:false,stage:1,wave:0,ph:'',t:0,lives:3,q
   H:[],Z:[],pickOpen:false,picked:false,offer:null,best:0,win:false,chkT:0,PH:['prep','wave','break','fail','over']};
 // the horde walks a little slower than infection-mode zombies: there are many more of them
 SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9,argus:1,squad:.86,khepri:1,larva:.86,scrap:.78,lyrebird:1,radioman:.86,spore:.82,mirage:1,tiamat:1,drowned:.86,hazmat:.82,centi:1};
+SCEN.SPD.strait=.9*6.6/ZCLASS.strait.speed;// (v6.91: chapter 1's straitjackets run as fast as before — .9 × the old table speed 6.6; the class that can be picked runs at 5.9)
 const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;
 Object.assign(STR.ko,{scen:'좀비 시나리오',scenD:'협동 PvE — 감염 없이 끝까지 인간으로 싸운다. 스테이지 5개 × 웨이브 3번, 마지막엔 거대 좀비. 팀 목숨 3개: 전멸하면 그 스테이지를 다시 하고, 다 쓰면 게임 오버. 죽어도 다음 웨이브에 부활.',scDead:'다음 웨이브에 부활 — 관전 중',allies:'아군 봇'});
@@ -74,7 +75,8 @@ SCEN.makeWave=function(s,w){const H=SCEN.H.length,d=G.diff||0;let n=Math.round((
   const tot=W.reduce((t,e)=>t+e[1],0);const q=[];
   if(s===SCEN.STAGES&&w===SCEN.WAVES){q.push('boss');n=Math.round(n*.5)}
   for(let i=0;i<n;i++){let r=Math.random()*tot;for(const [k,p] of W){r-=p;if(r<=0){q.push(k);break}}}return q};
-const SC_OLDHP={rager:2400,runner:1700,brute:2700,coffin:2800,scream:2000};// scenario zombies keep their pre-v6.30 HP
+const SC_OLDHP={rager:2400,runner:1700,brute:2700,coffin:2800,scream:2000,strait:1530};// scenario zombies keep their pre-v6.30 HP (the straitjacket: its chapter-only HP, v6.91)
+const SC_OLDARM={strait:40};// (and its chapter-only armour: the class that can be picked wears more)
 SCEN.hpFor=function(zc){const H=SCEN.H.length,d=G.diff||0;
   if(zc==='boss')return Math.round(8000*(.6+.4*H)*SC_DIFF.hp[d]);
   return Math.round((SC_OLDHP[zc]||ZCLASS[zc].hp)*.28*(1+.1*(H-1))*SC_DIFF.hp[d]*(1+.12*(SCEN.stage-1)+.05*(SCEN.wave-1)))};
@@ -96,7 +98,7 @@ SCEN.spawn=function(zc,at){const boss=!!ZBIG[zc];let a=null;for(const z of SCEN.
   a.zpick=zc;a.yaw=Math.random()*TAU;reviveZombie(a,p);return a};
 SCEN.onRevive=function(a){if(!a.scen)return;a.zc=a.zpick;setHull(a);ensureRig(a);a.name=ZCLASS[a.zc].n[LI()];a.lvl=1;a.host=false;a.bombs=0;a.boomT=0;a.sb=null;a.reviving=0;a.turning=0;a.scSeen=G.t;a.spitT=rr(1,2);
   a.hitW=ZBIG[a.zc]?.85:0;a.spdMul=SCEN.SPD[a.zc]||.86;a.scHit=0;a.lastHurt=G.t;
-  if(!NET.cli){a.maxHp=a.hp=SCEN.hpFor(a.zc);a.armor=a.zc==='boss'?0:Math.round(ZCLASS[a.zc].armor*.3);a.skillCD=rr(2,6)}
+  if(!NET.cli){a.maxHp=a.hp=SCEN.hpFor(a.zc);a.armor=a.zc==='boss'?0:Math.round((SC_OLDARM[a.zc]??ZCLASS[a.zc].armor)*.3);a.skillCD=rr(2,6)}
   if(a.zc==='boss'){SCEN.boss=a;SCEN.bossId=a.id;a.sb={pt:4,mode:'',mt:0,hit:false,sumT:0,half:false,lx:a.c.x,lz:a.c.z,stuck:0,far:0}}};
 // ---------- per frame ----------
 SCEN.update=function(dt){if(!SCEN.on)return;SCEN.updateAcid(dt);
