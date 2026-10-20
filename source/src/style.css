@@ -1842,6 +1842,8 @@ html.touch .tuBtn kbd{display:none}
 #gchBox .gcsend{display:flex;gap:6px;padding:8px 10px 4px;border-top:1px solid #2c3038}#gchBox .gcsend input{flex:1;min-width:0;padding:8px 10px;background:#0f1114;border:1px solid #3a3f48;color:#fff;border-radius:3px;font-size:14px}
 #gchBox .gcsend button{width:auto;min-width:60px;padding:7px 12px;border:1px solid #4aa8e8;background:linear-gradient(#173450,#0d1c2b);color:#fff;border-radius:3px;cursor:pointer}
 #gchBox .gcnote{margin:2px 10px 8px;font-size:10.5px;color:#6f7782;line-height:1.35}#gchBox .gcnote .gns{display:none}
+/* v6.88: a guest's line (its 손님 tag) and the guest's 로그인 in the note */
+#gchBox .gl .gtag{display:inline-block;margin:0 3px 0 0;padding:0 4px;border-radius:3px;background:#2a3139;color:#9aa5b0;font-size:9.5px;line-height:14px;vertical-align:1px}#gchBox .gl.gg .gn{color:#c3ced8}#gchBox .gl.gg.me .gn{color:#ffd56a}#gchBox .gcnote .gclg{color:#ffd56a;cursor:pointer;text-decoration:underline;margin-left:6px;white-space:nowrap}
 #gchBox button.gcbig{display:block;margin:6px auto 18px;width:auto;min-width:150px;padding:9px 14px;border:1px solid #e2b54a;background:linear-gradient(#5a3e12,#2e200a);color:#fff;border-radius:3px;cursor:pointer}
 /* the name menu, on the page by its name */
 #gcMenu{position:fixed;z-index:70;display:flex;flex-direction:column;gap:4px;padding:8px;min-width:150px;background:#1a1d22;border:1px solid #4a505a;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.6)}

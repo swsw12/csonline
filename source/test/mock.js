@@ -132,7 +132,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       const top=all.slice(0,50).map(x=>({rank:rk(x.v),nickname:x.n,value:x.v,xp:x.R.xp,games:x.R.g,me:x.id===uid,ft:hofBest(x.id),tt:titleWorn(x.id)}));
       let me=null;if(uid&&db.prof[uid]){const R=REC(db.prof[uid]),v=rankV(R,k);me={nickname:db.prof[uid].nickname,value:v,xp:R.xp,games:R.g,rank:R.g>0?rk(v):null,ft:hofBest(uid),tt:titleWorn(uid)}}
       return res(200,{kind:k,top,me,total:all.length})}
-    if(!uid)return err(401,{code:'PGRST301',message:'JWT expired'});const P=db.prof[uid];
+    // (v6.88: the chat's reading, and a guest's line, answer guests too)
+    if(!uid&&!['qz_online','qz_chat_who','qz_chat_recent','qz_chat_guest_post','qz_chat_glines'].includes(fn))return err(401,{code:'PGRST301',message:'JWT expired'});const P=db.prof[uid];
     // window.__MOCK_OFF = ['qz_season', ...]: a database that has not been updated yet (checked above)
     // ---- friends and gifts (v6.18; same rules as schema.sql) ----
     const FC=id=>{const Q=db.prof[id];if(Q&&!Q.fcode){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let c;do{c='';for(let i=0;i<6;i++)c+=A[Math.floor(Math.random()*31)]}while(Object.values(db.prof).some(x=>x.fcode===c));Q.fcode=c}return Q?Q.fcode:null};
@@ -185,7 +186,26 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_chat_who'){const CK=db.ckeys||{},o={};for(const k of (Array.isArray((body||{}).p_kids)?body.p_kids:[]).slice(0,20)){const c=CK[k],Q=c&&db.prof[c.uid];if(!Q)continue;
         o[k]={pub:c.pub,n:Q.nickname,tt:titleWorn(c.uid),ft:hofBest(c.uid),b:!!(Q.bannedT&&Q.bannedT>Date.now()),me:c.uid===uid,x:(db.blk||[]).some(z=>z.a===uid&&z.b===c.uid)}}
       (window.__mockWho=window.__mockWho||[]).push((body||{}).p_kids);return res(200,o)}
-    if(fn==='qz_online')return res(200,{n:Object.values(db.prof).filter(q=>q.seenT&&Date.now()-q.seenT<150e3).length,ms:Date.now()+(window.__MOCK_SKEW||0),on:!window.__MOCK_CHAT_OFF});
+    if(fn==='qz_online')return res(200,{n:Object.values(db.prof).filter(q=>q.seenT&&Date.now()-q.seenT<150e3).length,ms:Date.now()+(window.__MOCK_SKEW||0),on:!window.__MOCK_CHAT_OFF,guest:!window.__MOCK_GUEST_OFF,gday:window.__MOCK_GUEST_DAY==null?10:window.__MOCK_GUEST_DAY});
+    // v6.88: guests in the global chat (qz_chat_guest_post / qz_chat_glines; a guest's line in db.clines with uid null, gid, gn; db.gday[gid] = {day, n});
+    // __MOCK_GUEST_OFF = gacha_config.chat_guest off, __MOCK_GUEST_DAY = chat_guest_day, __MOCK_RT_NOSEND = a project whose realtime cannot send, __MOCK_NOGUEST = a database before v6.88
+    if(fn==='qz_chat_guest_post'||fn==='qz_chat_glines'){if(window.__MOCK_NOGUEST||window.__MOCK_NOCHATLOG)return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+' in the schema cache'});
+      const now=Date.now(),H12=12*3600e3,b=body||{};(window.__mockChat=window.__mockChat||[]).push([fn,b]);
+      if(fn==='qz_chat_glines'){if(window.__MOCK_CHAT_OFF)return res(200,[]);const ids=(Array.isArray(b.p_ids)?b.p_ids:[]).slice(0,20);
+        return res(200,(db.clines||[]).filter(l=>l.gid&&ids.includes(l.id)&&now-l.at<H12).map(l=>({id:l.id,g:l.gid,n:l.gn,ts:l.ts,t:l.t})))}
+      if(window.__MOCK_CHAT_OFF)return pgerr('chat_off');if(window.__MOCK_GUEST_OFF)return pgerr('guest_off');
+      const sec=String(b.p_sec||''),n=String(b.p_n||'').replace(/\s+/g,' ').trim(),t=b.p_t,ms=now+(window.__MOCK_SKEW||0),cap=window.__MOCK_GUEST_DAY==null?10:window.__MOCK_GUEST_DAY;
+      if(!/^[0-9a-f]{32}$/.test(sec))return pgerr('bad_guest');if([...n].length<1||[...n].length>14||/[\u0000-\u001f\u007f]/.test(n))return pgerr('bad_name');
+      if(typeof t!=='string'||[...t].length<1||[...t].length>120||/[\u0000-\u001f\u007f]/.test(t))return pgerr('bad_line');if(typeof b.p_ts!=='number'||Math.abs(b.p_ts-ms)>600e3)return pgerr('bad_time');
+      if(Object.values(db.prof).some(q=>String(q.nickname).toLowerCase()===n.toLowerCase()))return pgerr('name_taken');
+      const h=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(sec))),gid=[...h.slice(0,6)].map(x=>x.toString(16).padStart(2,'0')).join('');
+      const day=new Date(now+9*3600e3).toISOString().slice(0,10),GD=db.gday||(db.gday={}),cnt=GD[gid]&&GD[gid].day===day?GD[gid].n:0,L0=db.clines||(db.clines=[]);
+      const dup=L0.find(l=>l.kid==='g'+gid&&l.ts===b.p_ts);if(dup)return res(200,{ok:true,id:dup.id,g:gid,ms,left:Math.max(0,cap-cnt)});
+      if(cnt>=cap)return pgerr('guest_limit');const mine=L0.filter(l=>l.gid===gid);
+      if(mine.some(l=>now-l.at<1200)||mine.filter(l=>now-l.at<14e3).length>=5)return pgerr('too_fast');if(L0.filter(l=>l.gid&&now-l.at<60e3).length>=30)return pgerr('guest_busy');
+      db.clines=L0.filter(l=>now-l.at<H12).slice(-2999);const id=(db.clseq=(db.clseq||0)+1);db.clines.push({id,uid:null,gid,gn:n,kid:'g'+gid,ts:b.p_ts,t,s:'',r:null,at:now});
+      GD[gid]={day,n:cnt+1};save(db);if(!window.__MOCK_RT_NOSEND&&window.__mockRtDb)setTimeout(()=>window.__mockRtDb('g',{id}),window.__MOCK_RT_LAG||30);
+      return res(200,{ok:true,id,g:gid,ms,left:Math.max(0,cap-cnt-1)})}
     if(fn==='qz_ping'){touch();(window.__mockPings=window.__mockPings||[]).push(Object.assign({at:Date.now()},body||{}));save(db);return res(200,{dm_new:dmNew(),inv:invN(),mail:MAILS().length,gun:GNS().length,inq:(db.inq||[]).filter(q=>q.uid===uid&&q.reply&&!q.seen).length,chat:!window.__MOCK_CHAT_OFF})}
     // v6.42: a ban (window.__MOCK_BAN) refuses what qz_guard refuses in schema.sql
     if(window.__MOCK_BAN&&['qz_buy','qz_claim','qz_round_claim','qz_import_rec','qz_ny_add','qz_ny_exchange','qz_mission_claim','qz_decode','qz_bingo_reset','qz_bingo_shuffle',
@@ -400,8 +420,10 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     if(fn==='qz_chat_post'||fn==='qz_chat_recent'){if(window.__MOCK_NOCHATLOG)return err(404,{code:'PGRST202',message:'Could not find the function public.'+fn+' in the schema cache'});
       const now=Date.now(),H12=12*3600e3;(window.__mockChat=window.__mockChat||[]).push([fn,body||{}]);
       if(fn==='qz_chat_recent'){if(window.__MOCK_CHAT_OFF)return res(200,[]);const blk=db.blk||[];
-        const L=(db.clines||[]).filter(l=>now-l.at<H12&&db.prof[l.uid]&&!(db.prof[l.uid].bannedT>now)&&!blk.some(z=>z.a===uid&&z.b===l.uid)).slice(-100);
-        return res(200,L.map(l=>({k:l.kid,ts:l.ts,t:l.t,r:l.r,n:db.prof[l.uid].nickname,tt:titleWorn(l.uid),ft:hofBest(l.uid),me:l.uid===uid})))}
+        // (v6.88: guests may ask, and the guests' lines come too; window.__MOCK_RECENT_NOANON = a database before v6.88, where a guest is refused)
+        if(!uid&&window.__MOCK_RECENT_NOANON)return err(401,{code:'42501',message:'permission denied for function qz_chat_recent'});
+        const L=(db.clines||[]).filter(l=>now-l.at<H12&&(l.gid||db.prof[l.uid]&&!(db.prof[l.uid].bannedT>now)&&!blk.some(z=>z.a===uid&&z.b===l.uid))).slice(-100);
+        return res(200,L.map(l=>l.gid?{id:l.id,g:l.gid,n:l.gn,ts:l.ts,t:l.t}:{id:l.id,k:l.kid,ts:l.ts,t:l.t,r:l.r,n:db.prof[l.uid].nickname,tt:titleWorn(l.uid),ft:hofBest(l.uid),me:l.uid===uid}))}
       if(window.__MOCK_BAN||(P&&P.bannedT>now))return pgerr('banned');if(window.__MOCK_CHAT_OFF)return pgerr('chat_off');
       const b=body||{},t=b.p_t,ms=now+(window.__MOCK_SKEW||0);
       if(typeof t!=='string'||[...t].length<1||[...t].length>120||/[\u0000-\u001f\u007f]/.test(t))return pgerr('bad_line');
@@ -428,6 +450,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
       if(m.event==='heartbeat'){rep({status:'ok',response:{}});return}
       if(m.event==='phx_join'){const cfg=(m.payload&&m.payload.config)||{};
         if(cfg.private&&window.__MOCK_RT_DENY_PRIVATE){rep({status:'error',response:{reason:'Unauthorized: You do not have permissions to read from this Channel topic: qz-lobby'}});return}
+        // (v6.88: a guest — no access_token — on a project without the guest policy)
+        if(cfg.private&&!(m.payload&&m.payload.access_token)&&window.__MOCK_RT_ANON_DENY){rep({status:'error',response:{reason:'Unauthorized: You do not have permissions to read from this Channel topic: qz-lobby'}});return}
         this.topics.set(m.topic,{priv:!!cfg.private,self:!!(cfg.broadcast&&cfg.broadcast.self),tok:m.payload&&m.payload.access_token});rep({status:'ok',response:{postgres_changes:[]}});return}
       if(m.event==='phx_leave'){this.topics.delete(m.topic);rep({status:'ok',response:{}});return}
       if(m.event==='access_token'){const t=this.topics.get(m.topic);if(t)t.tok=m.payload&&m.payload.access_token;return}
@@ -437,6 +461,8 @@ window.fetch=async function(input,init){const url=typeof input==='string'?input:
     _emit(o){setTimeout(()=>{if(this.readyState===1&&this.onmessage)this.onmessage({data:JSON.stringify(o)})},5)}
     close(){if(this.readyState===3)return;this.readyState=3;socks.delete(this);setTimeout(()=>{if(this.onclose)this.onclose({code:1000})},5)}}
   window.__mockRtInject=f=>{for(const s of socks)s._in(Object.assign({priv:true},f))};
+  // (v6.88) what realtime.send does for the database: the event on qz-lobby, private and public, to this page and the others
+  window.__mockRtDb=(event,payload)=>{for(const priv of [true,false]){const f={topic:'realtime:qz-lobby',event:'broadcast',payload:{type:'broadcast',event,payload},ref:null,priv};if(bc)bc.postMessage(f);for(const s of socks)s._in(f)}};
   window.__mockRtKill=()=>{for(const s of [...socks])s.close()};
   window.__mockRtSocks=()=>socks.size;
   const W=function(url,p){if(String(url).startsWith('wss://mock.supabase.test/'))return new MockWS(url);return p===undefined?new OW(url):new OW(url,p)};

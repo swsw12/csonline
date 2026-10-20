@@ -65,6 +65,9 @@
 --     「게임 설정 → 해독기 · 초대 · 채팅 → 전체 채팅」(gacha_config.chat_on)으로 끌 수 있습니다.
 --     v6.83: 보낸 줄은 12시간 동안 보관(chat_lines, qz_chat_post)해서 나중에 들어온 사람도 봅니다(qz_chat_recent, 최근 100줄).
 --     12시간이 지난 줄은 새 줄이 올라올 때마다 자동으로 지워지고, 표에는 많아야 3,000줄만 남습니다.
+--     v6.88: 로그인하지 않은 손님도 전체 채팅을 보고(지난 12시간 포함) 하루 10개까지 보냅니다(qz_chat_guest_post → chat_lines,
+--     하루 개수는 chat_guest_day). 손님 줄은 서버를 거쳐서만 올라가고(realtime.send로 채널에 알림, qz_chat_glines로 확인),
+--     가입한 계정의 닉네임은 쓸 수 없습니다. 관리자 페이지 같은 곳에서 손님 채팅을 끄거나(chat_guest) 하루 개수(chat_guest_day)를 바꿉니다.
 --   * 함수 안에서 값을 읽을 때는 전부 `변수 := (...)` 대입으로 씁니다. 다른 꼴은 SQL Editor의 "새 테이블 RLS 자동 켜기"가
 --     테이블 만들기로 착각해서 함수 중간에 문장을 끼워 넣고 "unterminated dollar-quoted string" 오류가 납니다.
 -- ============================================================================================================
@@ -350,6 +353,9 @@ alter table public.gacha_config add column if not exists rank_day_inf    integer
 alter table public.gacha_config add column if not exists rank_day_xp     integer not null default 100000 check (rank_day_xp between 0 and 10000000);
 -- v6.75: the lobby's 전체 채팅 on or off (off: no new keys, nothing sent on the channel, and the pages close it at their next heartbeat)
 alter table public.gacha_config add column if not exists chat_on         boolean not null default true;
+-- v6.88: guests (not signed in) may send to the global chat, chat_guest_day lines a Korean day
+alter table public.gacha_config add column if not exists chat_guest      boolean not null default true;
+alter table public.gacha_config add column if not exists chat_guest_day  integer not null default 10 check (chat_guest_day between 0 and 1000);
 -- who brought whom (one row per new player); rewarded = the inviter was paid (false once over ref_cap); seen = the inviter saw the reward
 create table if not exists public.referrals (
   referee  uuid primary key references auth.users(id) on delete cascade,
@@ -4747,10 +4753,13 @@ language sql stable security definer set search_path = '' as $$
   where k.kid = any((coalesce(p_kids, '{}'::text[]))[1:20])
 $$;
 -- how many players have the game open right now (a heartbeat in the last 150 s), the server's clock in ms, and whether the chat is on
+-- (v6.88: guests ask too — whether they may send, and how many lines a day)
 create or replace function public.qz_online() returns jsonb
 language sql stable security definer set search_path = '' as $$
   select jsonb_build_object('n', (select count(*) from public.profiles p where p.last_seen > now() - interval '150 seconds'),
-    'ms', floor(extract(epoch from now()) * 1000)::bigint, 'on', coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true))
+    'ms', floor(extract(epoch from now()) * 1000)::bigint, 'on', coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true),
+    'guest', coalesce((select c.chat_guest from public.gacha_config c where c.id = 1), true),
+    'gday', coalesce((select c.chat_guest_day from public.gacha_config c where c.id = 1), 10))
 $$;
 revoke all on function public.qz_chat_ok() from public, anon;
 revoke all on function public.qz_chat_key(text) from public, anon;
@@ -4760,7 +4769,8 @@ grant execute on function public.qz_chat_ok() to authenticated;
 grant execute on function public.qz_chat_key(text) to authenticated;
 grant execute on function public.qz_chat_who(text[]) to authenticated;
 grant execute on function public.qz_online() to authenticated;
--- the channel's two policies (Realtime Authorization): signed-in players may read qz-lobby's broadcasts, unsuspended ones send them.
+-- the channel's policies (Realtime Authorization): signed-in players may read qz-lobby's broadcasts, unsuspended ones send them; v6.88:
+-- guests (anon) read them too, and send nothing (a guest's line goes through qz_chat_guest_post).
 -- Skipped with a notice where the project has no realtime schema (or an older one); the game then uses a public channel of the same name.
 do $$
 begin
@@ -4771,10 +4781,13 @@ begin
   begin
     execute 'drop policy if exists "qz lobby chat read" on realtime.messages';
     execute 'drop policy if exists "qz lobby chat send" on realtime.messages';
+    execute 'drop policy if exists "qz lobby chat read guest" on realtime.messages';
     execute $p$create policy "qz lobby chat read" on realtime.messages for select to authenticated
       using (realtime.messages.extension = 'broadcast' and realtime.topic() in ('qz-lobby', 'realtime:qz-lobby') and (select auth.uid()) is not null)$p$;
     execute $p$create policy "qz lobby chat send" on realtime.messages for insert to authenticated
       with check (realtime.messages.extension = 'broadcast' and realtime.topic() in ('qz-lobby', 'realtime:qz-lobby') and public.qz_chat_ok())$p$;
+    execute $p$create policy "qz lobby chat read guest" on realtime.messages for select to anon
+      using (realtime.messages.extension = 'broadcast' and realtime.topic() in ('qz-lobby', 'realtime:qz-lobby'))$p$;
   exception when others then
     raise notice 'the chat policies could not be made: %', sqlerrm;
   end;
@@ -4840,21 +4853,118 @@ begin
   insert into public.chat_lines (user_id, kid, ts, t, s, r) values (uid, p_kid, p_ts, p_t, p_s, v_r) on conflict (kid, ts) do nothing;
   return jsonb_build_object('ok', true, 'ms', v_ms);
 end $$;
--- the last 100 lines of the 12 hours, oldest first: [{k: the key, ts, t: the text, r: the room card, n: the sender's nickname now,
--- tt / ft: the titles (as qz_chat_who), me: mine}]; a suspended player's lines and those of a player I blocked are left out; [] while
--- the chat is off
+-- (qz_chat_recent, the last 100 lines of the 12 hours: below, in the v6.88 block — it shows the guests' lines too)
+revoke all on function public.qz_chat_post(text, bigint, text, text, jsonb) from public, anon;
+grant execute on function public.qz_chat_post(text, bigint, text, text, jsonb) to authenticated;
+
+-- ============================================================================================================
+-- 손님 채팅 (v6.88): 로그인하지 않은 사람도 전체 채팅을 보고, 하루 10개까지 보내요
+-- ============================================================================================================
+-- The owner's word: 「로그인 안한사람들도 전체채팅을 이용 할 수 있지만 하루 10개 메세지 제한」, and v6.83's 12 hours on the screen of
+-- whoever comes in, guests too. A guest has no account and no key: its page keeps a random secret (32 hex digits) and the server knows
+-- the guest by the first 12 hex digits of the secret's SHA-256 (gid); only qz_chat_guest_post ever sees the secret, so nobody can write
+-- as another guest. A guest's line goes only through qz_chat_guest_post (the channel's send policy is for signed-in players): checked,
+-- counted (chat_guest_day: gacha_config.chat_guest_day lines a Korean day, 10 unless the admin page says otherwise), kept in chat_lines
+-- with the guest's name, and announced on the channel (realtime.send, event 'g', the line's id alone). A page that hears of it asks the
+-- server for the line itself (qz_chat_glines), so a forged 'g' shows nothing. Guests read the live channel (policy "qz lobby chat read
+-- guest"), the last 12 hours (qz_chat_recent), whose keys the account lines carry (qz_chat_who) and how many are online (qz_online).
+-- A guest cannot take a name an account has (whatever the case). gacha_config.chat_guest switches guest lines off (reading goes on).
+-- (gacha_config.chat_guest / chat_guest_day: with chat_on, near the top)
+alter table public.chat_lines alter column user_id drop not null;
+alter table public.chat_lines add column if not exists gid text;
+alter table public.chat_lines add column if not exists gn  text;
+create index if not exists chat_lines_gid on public.chat_lines (gid, at desc) where gid is not null;
+-- a guest's lines in a Korean day (the lines themselves go after 12 hours; the count stays until the day after)
+create table if not exists public.chat_guest_day (
+  gid text not null,
+  day date not null,
+  n   integer not null default 0,
+  primary key (gid, day)
+);
+alter table public.chat_guest_day enable row level security;
+revoke all on table public.chat_guest_day from public, anon, authenticated;
+-- a guest's line: the secret (32 hex), the name (1 to 14 characters, not an account's), the time in the line (the server's ms, 10
+-- minutes either way) and 1 to 120 characters without control characters. 1.2 s apart, five in 14 s, gacha_config.chat_guest_day a
+-- Korean day; all guests together 30 lines a minute (a flood of new guests waits). The same line again (its time) is not counted twice.
+-- Returns the line's id, the guest's gid, the server's ms and how many lines are left today.
+create or replace function public.qz_chat_guest_post(p_sec text, p_n text, p_ts bigint, p_t text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_ms bigint := floor(extract(epoch from clock_timestamp()) * 1000)::bigint;
+  v_n text := btrim(regexp_replace(coalesce(p_n, ''), '\s+', ' ', 'g'));
+  v_day date := (now() at time zone 'Asia/Seoul')::date;
+  v_cap integer := greatest(coalesce((select c.chat_guest_day from public.gacha_config c where c.id = 1), 10), 0);
+  v_gid text;
+  v_used integer;
+  v_id bigint;
+begin
+  if not coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true) then raise exception 'chat_off'; end if;
+  if not coalesce((select c.chat_guest from public.gacha_config c where c.id = 1), true) then raise exception 'guest_off'; end if;
+  if p_sec is null or p_sec !~ '^[0-9a-f]{32}$' then raise exception 'bad_guest'; end if;
+  if char_length(v_n) < 1 or char_length(v_n) > 14 or v_n ~ '[[:cntrl:]]' then raise exception 'bad_name'; end if;
+  if p_t is null or char_length(p_t) < 1 or char_length(p_t) > 120 or p_t ~ '[[:cntrl:]]' then raise exception 'bad_line'; end if;
+  if p_ts is null or abs(p_ts - v_ms) > 600000 then raise exception 'bad_time'; end if;
+  if exists (select 1 from public.profiles p where lower(p.nickname) = lower(v_n)) then raise exception 'name_taken'; end if;
+  v_gid := left(encode(sha256(convert_to(p_sec, 'UTF8')), 'hex'), 12);
+  -- (one guest's lines one at a time, so that the limits hold)
+  perform pg_advisory_xact_lock(hashtext('qz_chat_guest:' || v_gid));
+  v_used := coalesce((select d.n from public.chat_guest_day d where d.gid = v_gid and d.day = v_day), 0);
+  v_id := (select l.id from public.chat_lines l where l.kid = 'g' || v_gid and l.ts = p_ts);
+  if v_id is not null then
+    return jsonb_build_object('ok', true, 'id', v_id, 'g', v_gid, 'ms', v_ms, 'left', greatest(v_cap - v_used, 0));
+  end if;
+  if v_used >= v_cap then raise exception 'guest_limit'; end if;
+  if exists (select 1 from public.chat_lines l where l.gid = v_gid and l.at > now() - interval '1.2 seconds') then raise exception 'too_fast'; end if;
+  if (select count(*) from public.chat_lines l where l.gid = v_gid and l.at > now() - interval '14 seconds') >= 5 then raise exception 'too_fast'; end if;
+  if (select count(*) from public.chat_lines l where l.gid is not null and l.at > now() - interval '1 minute') >= 30 then raise exception 'guest_busy'; end if;
+  -- 12 hours and 3,000 lines at most, as qz_chat_post; the guests' counts of the days before yesterday
+  delete from public.chat_lines l where l.at < now() - interval '12 hours';
+  delete from public.chat_lines l where l.id <= (select l2.id from public.chat_lines l2 order by l2.id desc offset 2999 limit 1);
+  delete from public.chat_guest_day d where d.day < v_day - 1;
+  insert into public.chat_lines (user_id, kid, ts, t, s, r, gid, gn) values (null, 'g' || v_gid, p_ts, p_t, '', null, v_gid, v_n);
+  v_id := (select l.id from public.chat_lines l where l.kid = 'g' || v_gid and l.ts = p_ts);
+  insert into public.chat_guest_day (gid, day, n) values (v_gid, v_day, 1)
+    on conflict (gid, day) do update set n = public.chat_guest_day.n + 1;
+  -- (the channel hears of it — the id alone, private and public alike; a project whose realtime cannot send goes on without: the
+  -- line still comes with the 12 hours)
+  begin
+    perform realtime.send(jsonb_build_object('id', v_id), 'g', 'qz-lobby', true);
+    perform realtime.send(jsonb_build_object('id', v_id), 'g', 'qz-lobby', false);
+  exception when others then
+    null;
+  end;
+  return jsonb_build_object('ok', true, 'id', v_id, 'g', v_gid, 'ms', v_ms, 'left', greatest(v_cap - v_used - 1, 0));
+end $$;
+-- the last 100 lines of the 12 hours, oldest first: an account's [{id, k: the key, ts, t: the text, r: the room card, n: the sender's
+-- nickname now, tt / ft: the titles (as qz_chat_who), me: mine}] and a guest's [{id, g: the gid, n: the name it wrote under, ts, t}];
+-- a suspended player's lines and those of a player I blocked are left out; [] while the chat is off. Guests may ask (v6.88).
 create or replace function public.qz_chat_recent() returns jsonb
 language sql stable security definer set search_path = '' as $$
-  select case when auth.uid() is null or not coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true) then '[]'::jsonb
+  select case when not coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true) then '[]'::jsonb
     else coalesce((select jsonb_agg(x.o order by x.id) from (
-      select l.id, jsonb_build_object('k', l.kid, 'ts', l.ts, 't', l.t, 'r', l.r, 'n', p.nickname, 'tt', public.qz_title_worn(p.id),
-        'ft', public.qz_first_best(p.id), 'me', l.user_id = auth.uid()) as o
-      from public.chat_lines l join public.profiles p on p.id = l.user_id
-      where l.at > now() - interval '12 hours' and not coalesce(p.banned_until > now(), false)
-        and not exists (select 1 from public.blocks bl where bl.a = auth.uid() and bl.b = l.user_id)
+      select l.id, case when l.gid is not null then jsonb_build_object('id', l.id, 'g', l.gid, 'n', l.gn, 'ts', l.ts, 't', l.t)
+        else jsonb_build_object('id', l.id, 'k', l.kid, 'ts', l.ts, 't', l.t, 'r', l.r, 'n', p.nickname, 'tt', public.qz_title_worn(p.id),
+          'ft', public.qz_first_best(p.id), 'me', coalesce(l.user_id = auth.uid(), false)) end as o
+      from public.chat_lines l left join public.profiles p on p.id = l.user_id
+      where l.at > now() - interval '12 hours' and (l.gid is not null or p.id is not null) and not coalesce(p.banned_until > now(), false)
+        and (auth.uid() is null or l.user_id is null or not exists (select 1 from public.blocks bl where bl.a = auth.uid() and bl.b = l.user_id))
       order by l.id desc limit 100) x), '[]'::jsonb) end
 $$;
-revoke all on function public.qz_chat_post(text, bigint, text, text, jsonb) from public, anon;
-revoke all on function public.qz_chat_recent() from public, anon;
-grant execute on function public.qz_chat_post(text, bigint, text, text, jsonb) to authenticated;
+revoke all on function public.qz_chat_recent() from public;
 grant execute on function public.qz_chat_recent() to authenticated;
+-- guests' lines by id (20 at most, the last 12 hours): [{id, g, n, ts, t}] — what a page shows for a 'g' it heard on the channel
+create or replace function public.qz_chat_glines(p_ids bigint[]) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select case when not coalesce((select c.chat_on from public.gacha_config c where c.id = 1), true) then '[]'::jsonb
+    else coalesce((select jsonb_agg(jsonb_build_object('id', l.id, 'g', l.gid, 'n', l.gn, 'ts', l.ts, 't', l.t) order by l.id)
+      from public.chat_lines l
+      where l.id = any((coalesce(p_ids, '{}'::bigint[]))[1:20]) and l.gid is not null and l.at > now() - interval '12 hours'), '[]'::jsonb) end
+$$;
+revoke all on function public.qz_chat_guest_post(text, text, bigint, text) from public;
+revoke all on function public.qz_chat_glines(bigint[]) from public;
+grant execute on function public.qz_chat_guest_post(text, text, bigint, text) to anon, authenticated;
+grant execute on function public.qz_chat_glines(bigint[]) to anon, authenticated;
+-- (guests read what accounts write: whose key a line carries, the last 12 hours, how many are online and the server's clock)
+grant execute on function public.qz_chat_who(text[]) to anon;
+grant execute on function public.qz_chat_recent() to anon;
+grant execute on function public.qz_online() to anon;
