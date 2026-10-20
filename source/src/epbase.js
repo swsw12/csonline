@@ -89,7 +89,7 @@ function rayHuman(ox,oy,oz,dx,dy,dz,tmax,skip){let best=null,bt=tmax;
     const px=c.x-ox,pz=c.z-oz,hl=dx*dx+dz*dz;if(hl<1e-6)continue;const t=(px*dx+pz*dz)/hl;if(t<0||t>bt)continue;const qx=ox+dx*t-c.x,qz=oz+dz*t-c.z;if(qx*qx+qz*qz>r*r)continue;
     const y=oy+dy*t;if(y<bot||y>top)continue;bt=t;best={h,t,head:y>top-.32}}return best}
 const EBUL={
-  // host: from (x,y,z) toward (tx,ty,tz) with a spread (radians); o: {dmg, kd (knockdown s), w ('s' sniper / 'm' smg / 'r' rifle), src}
+  // host: from (x,y,z) toward (tx,ty,tz) with a spread (radians); o: {dmg, kd (knockdown s), w ('s' sniper / 'm' smg / 'r' rifle / 'g' machine gun), src}
   shot(x,y,z,tx,ty,tz,sp,o){const L0=Math.hypot(tx-x,ty-y,tz-z)||1;let dx=(tx-x)/L0,dy=(ty-y)/L0,dz=(tz-z)/L0;
     if(sp>0){dx+=rr(-sp,sp);dy+=rr(-sp,sp)*.7;dz+=rr(-sp,sp);const l=Math.hypot(dx,dy,dz);dx/=l;dy/=l;dz/=l}
     const R0=140,w=rayCast(x,y,z,dx,dy,dz,R0,SHOT_FILTER),wt=w?w.t:R0,wn=w?[w.nx,w.ny,w.nz,w.box&&w.box.mat||'conc']:null,hh=rayHuman(x,y,z,dx,dy,dz,wt,o.skip);let ex,ey,ez,hit=0;
@@ -100,7 +100,7 @@ const EBUL={
   // every page: the muzzle flash, the tracer, the crack and the impact (and the shooter's recoil)
   draw(m){const f=m.f,e=m.e,x=f[0]/100,y=f[1]/100,z=f[2]/100,X=e[0]/100,Y=e[1]/100,Z=e[2]/100,big=m.w==='s';if(m.s!=null){const a=byIdAny(m.s);if(a)a.epKick=1}
     const L=Math.hypot(X-x,Y-y,Z-z)||1;FX.muzzle(x,y,z,(X-x)/L,(Y-y)/L,(Z-z)/L,big);FX.tracer(x,y,z,X,Y,Z,big?[1,.42,.25]:[1,.78,.45]);DL.add(x,y,z,big?'#ffb070':'#ffd090',big?9:5,big?2.2:1.2,.06);
-    AU.at(big?'r700':m.w==='m'?'um45':'kv47',x,y,z,{vol:big?1:.75,range:big?170:95,rate:big?.92:1});
+    AU.at(big?'r700':m.w==='m'?'um45':m.w==='g'?'mg6':'kv47',x,y,z,{vol:big?1:.75,range:big?170:95,rate:big?.92:1});
     if(m.h){FX.blood(X,Y,Z,(X-x)/L,0,(Z-z)/L,big?1.6:.7);AU.at('hurt',X,Y,Z,{vol:.4,range:20})}
     else if(m.n)FX.impact(X,Y,Z,m.n[0]/100,m.n[1]/100,m.n[2]/100,m.mt);
     // a near miss cracks past the local player

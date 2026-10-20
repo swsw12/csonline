@@ -14,10 +14,13 @@
 // Between stages the next door opens with a supply box; everybody inside the next zone (or 40 s) starts the next stage. The fallen
 // get up when a teammate holds E next to them for 4 s (30 hp); everybody gets up between stages, between waves and at boss phases.
 // Host-authoritative: the host runs the flow; clients get it in the snapshot (SCEN.encState → EP.pack) and as events (eps, epg, ...).
-const EPS={};
+const EPS={},EP_N=6;// (v6.92: the chapters there are — season 2 starts with chapter 6; CHAP[n].season, 1 when not set)
+const EP_IDS=Array.from({length:EP_N},(_,i)=>i+1);
+// a season's tag before a chapter's number (season 2 on: S2)
+const epSz=E=>E&&E.season>1?`<u class="sz">S${E.season}</u>`:'';
 {const SOON=[null,{k:'aleph',n:['알레프','ALEPH'],code:'Q7-000'},{k:'argus',n:['아르고스','ARGUS'],code:'RT1-07'},{k:'khepri',n:['케프리','KHEPRI'],code:'Q7-303'},
-  {k:'lyrebird',n:['라이어버드','LYREBIRD'],code:'RT1-05'},{k:'tiamat',n:['티아마트','TIAMAT'],code:'Q7-Ω'}];
-  for(let n=1;n<=5;n++)EPS[n]=CHAP[n]||Object.assign({id:n,soon:1},SOON[n])}
+  {k:'lyrebird',n:['라이어버드','LYREBIRD'],code:'RT1-05'},{k:'tiamat',n:['티아마트','TIAMAT'],code:'Q7-Ω'},{k:'legatus',n:['레가투스','LEGATUS'],code:'RT1-01',season:2}];
+  for(let n=1;n<=EP_N;n++)EPS[n]=CHAP[n]||Object.assign({id:n,soon:1},SOON[n])}
 // the scenario plays chapter 1 until the player picks another (0 = the free scenario)
 const epSel=c=>c&&c.ep!=null?c.ep|0:1;
 function epMapOf(c){const e=c&&c.mode==='scen'?EPS[epSel(c)]:null;return e&&!e.soon?e.map:(c&&mapOk(c.mode,c.map)?c.map:(mapsFor(c&&c.mode)[0]||'q7'))}
@@ -326,7 +329,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
   // ---------- the title cards ----------
   card(kind){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI(),E=this.C,K=E.cards||{};
     if(kind==='boss')el.innerHTML=`<div class="ec boss"><img src="${portrait('z_'+E.k,150)}"><div class="tx"><small>${E.code} · ${K.who?K.who[L]:''}</small><h2>${E.n[1]}</h2><p>${K.line?K.line[L]:''}</p></div></div>`;
-    else el.innerHTML=`<div class="ec"><img class="sil" src="${portrait('z_'+E.k,150)}"><div class="tx"><small>${L?'CHAPTER '+this.id:this.id+'챕터'} · ${K.place?K.place[L]:''}</small><h1>${E.t[L]}</h1><p>${mapName(E.map)} — ${L?'Recovery Team 2 (RT-2)':'2차 회수팀 RT-2'}</p><b>${E.n[1]} · ${E.code}</b></div></div>`;
+    else el.innerHTML=`<div class="ec"><img class="sil" src="${portrait('z_'+E.k,150)}"><div class="tx"><small>${E.season>1?(L?'SEASON '+E.season+' · ':'시즌 '+E.season+' · '):''}${L?'CHAPTER '+this.id:this.id+'챕터'} · ${K.place?K.place[L]:''}</small><h1>${E.t[L]}</h1><p>${mapName(E.map)} — ${L?'Recovery Team 2 (RT-2)':'2차 회수팀 RT-2'}</p><b>${E.n[1]} · ${E.code}</b></div></div>`;
     el.className='on'+(kind==='boss'?' b':'');clearTimeout(this.cardT);this.cardT=setTimeout(()=>{el.className=''},kind==='boss'?3800:4800)},
   // ---------- the HUD ----------
   barSetup(){const el=$('hEp'),B=this.B(),hd=$('hud');if(hd)hd.classList.remove('epB');if(!el||!B)return;const L=LI(),bb=el.querySelector('.eb');bb.style.display='none';bb.querySelector('.bh b').textContent=B.name[1];bb.querySelector('.bh em').textContent=B.code;
@@ -409,15 +412,15 @@ const _epv=new THREE.Vector3();
 function epCards(act){const L=LI(),cur=epSel(CFG);
   const card=id=>{const E=EPS[id],lk=!!E.soon||!EP.unlocked(id),on=cur===id&&!lk,rc=!E.soon&&EP.rec(id);
     return `<div class="epc${on?' on':''}${lk?' lk':''}"${lk?'':` data-act="${act}" data-v="ep:${id}"`}><div class="pi">${E.soon?'<b class="q">?</b>':`<img src="${portrait('z_'+E.k,56)}">`}</div>
-      <div class="tx"><small>${L?'CH.'+id:id+'챕터'} · ${E.code}</small><b>${E.n[L]}${E.soon?` <i>${L?'coming soon':'준비 중'}</i>`:!EP.unlocked(id)?` <i>${L?'clear CH.'+(id-1)+' first':(id-1)+'챕터를 깨면 열림'}</i>`:''}</b>${E.soon?'':`<span>${mapName(E.map)}</span><em>${E.file[0][L]}</em><em>${E.file[1][L]}</em>`}${E.soon?'':HOF.cardLine(id,CFG.diff|0)}</div>
+      <div class="tx"><small>${epSz(E)}${L?'CH.'+id:id+'챕터'} · ${E.code}</small><b>${E.n[L]}${E.soon?` <i>${L?'coming soon':'준비 중'}</i>`:!EP.unlocked(id)?` <i>${L?'clear CH.'+(id-1)+' first':(id-1)+'챕터를 깨면 열림'}</i>`:''}</b>${E.soon?'':`<span>${mapName(E.map)}</span><em>${E.file[0][L]}</em><em>${E.file[1][L]}</em>`}${E.soon?'':HOF.cardLine(id,CFG.diff|0)}</div>
       ${rc?`<div class="rc"><i class="md m${rc.m}">${rc.m}</i><small>${T('d'+rc.d)}<br>${fmtT(rc.t)}</small></div>`:''}</div>`};
   // the chapters that can be played, then the free scenario, then the locked ones and the ones still to come
-  const ids=[1,2,3,4,5],open=id=>!EPS[id].soon&&EP.unlocked(id);
+  const ids=EP_IDS,open=id=>!EPS[id].soon&&EP.unlocked(id);
   const free=`<div class="epc free${cur===0?' on':''}" data-act="${act}" data-v="ep:0"><div class="pi"><b class="q">∞</b></div><div class="tx"><small>${L?'FREE':'자유'}</small><b>${L?'Free scenario':'자유 시나리오'}</b><span>${L?'Any map · 5 stages × 3 waves · the giant':'맵 선택 · 5스테이지 × 3웨이브 · 거대 좀비'}</span></div></div>`;
   return `<div class="epl">${ids.filter(open).map(card).join('')}${free}${ids.filter(id=>!open(id)).map(card).join('')}</div>`}
-function epOpts(){const L=LI(),o=[];for(const id of [1,2,3,4,5]){const E=EPS[id];if(E&&!E.soon)o.push([id,`${L?'CH.'+id:id+'챕터'} · ${E.n[L]}`])}o.push([0,L?'Free scenario':'자유 시나리오']);return o}
+function epOpts(){const L=LI(),o=[];for(const id of EP_IDS){const E=EPS[id];if(E&&!E.soon)o.push([id,`${L?'CH.'+id:id+'챕터'} · ${E.n[L]}`])}o.push([0,L?'Free scenario':'자유 시나리오']);return o}
 function epPrev(id,d){const L=LI(),E=EPS[id]&&!EPS[id].soon?EPS[id]:EPS[1],rc=EP.rec(id);
-  return `<div class="epPrev"><img src="${portrait('z_'+E.k,120)}"><div><small>${L?'CH.'+id:id+'챕터'} · ${E.code}</small><b>${E.t[L]}</b><span>${mapName(E.map)}</span><em>${E.file[0][L]}</em><em>${E.file[1][L]}</em>${rc?`<p>${L?'Best':'최고 기록'}: <i class="md m${rc.m}">${rc.m}</i> ${T('d'+rc.d)} · ${fmtT(rc.t)}</p>`:''}${HOF.cardLine(E.id||id,d!=null?d|0:CFG.diff|0)}</div></div><div class="rrule"><b>${L?'Rules':'규칙'}</b>${T('epD')}</div>`}
+  return `<div class="epPrev"><img src="${portrait('z_'+E.k,120)}"><div><small>${epSz(E)}${L?'CH.'+id:id+'챕터'} · ${E.code}</small><b>${E.t[L]}</b><span>${mapName(E.map)}</span><em>${E.file[0][L]}</em><em>${E.file[1][L]}</em>${rc?`<p>${L?'Best':'최고 기록'}: <i class="md m${rc.m}">${rc.m}</i> ${T('d'+rc.d)} · ${fmtT(rc.t)}</p>`:''}${HOF.cardLine(E.id||id,d!=null?d|0:CFG.diff|0)}</div></div><div class="rrule"><b>${L?'Rules':'규칙'}</b>${T('epD')}</div>`}
 
 // ---------- hooks ----------
 (function(){

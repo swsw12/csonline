@@ -60,7 +60,12 @@ Object.assign(ZCLASS,{
   drowned:{n:['익사체 좀비','Drowned Zombie'],sk:['발목 잡기','Ankle grab'],d:['5챕터 · 물속에서 기어 나와 발목을 잡는다 (이동 −50%, 쏴서 떼어내기)','Chapter 5 · climbs out of the water and grabs an ankle (−50 % speed until you shoot it off)'],hp:1600,armor:20,speed:5,jump:6.8,kb:1.1,dmg:22,skill:'none',cd:99,dur:0,hw:.3,h:1.82,eye:1.68},
   hazmat:{n:['방호복 연구원 좀비','Hazmat Researcher Zombie'],sk:['포자 가스통','Spore tank'],d:['5챕터 · 방호복이라 단단하다 — 쓰러지면 등의 가스통이 터져 포자가 퍼진다','Chapter 5 · tough in its suit — its back tank bursts into spores when it falls'],hp:2200,armor:80,speed:4.8,jump:6.6,kb:.8,dmg:26,skill:'none',cd:99,dur:0,hw:.32,h:1.86,eye:1.7},
   centi:{n:['새끼 지네','Little Centipede'],sk:['독니','Venom bite'],d:['5챕터 · 끊어진 티아마트의 마디 — 낮고 빠르다','Chapter 5 · a severed piece of TIAMAT — low and fast'],hp:900,armor:0,speed:7.2,jump:6,kb:.6,dmg:24,skill:'none',cd:99,dur:0,hw:.42,h:.9,eye:.6}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 6 (legatus.js, season 2): LEGATUS, RT-1's leader (a big soldier's body; riding his APC TESTUDO in phase 1, his hits are worked out
+// by the chapter), and the RT-1 shield trooper (its ballistic shield stops every bullet from the front)
+Object.assign(ZCLASS,{
+  legatus:{n:['레가투스','LEGATUS'],sk:['지휘','Command'],d:['6챕터 보스 · RT1-01','Chapter 6 boss · RT1-01'],hp:24000,armor:0,speed:5.6,jump:8.5,kb:.15,dmg:30,skill:'none',cd:99,dur:0,hw:.34,h:1.95,eye:1.8},
+  shield:{n:['방패병 좀비','Shield Trooper Zombie'],sk:['방탄 방패','Ballistic shield'],d:['6챕터 · 정면 총알은 방패가 다 막는다 — 옆이나 뒤, 폭발로','Chapter 6 · its shield stops every bullet from the front — go round it, or use a blast'],hp:2000,armor:70,speed:4.9,jump:6.8,kb:.35,dmg:26,skill:'none',cd:99,dur:0,hw:.32,h:1.86,eye:1.7}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={pvp:false,st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};

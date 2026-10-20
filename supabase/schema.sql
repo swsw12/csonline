@@ -478,7 +478,7 @@ create index if not exists gacha_log_user on public.gacha_log(user_id, id desc);
 -- (time in seconds, medal S / A / B, lives lost) and when it was first cleared (the first-clear reward is paid once per row)
 create table if not exists public.ep_records (
   user_id    uuid not null references auth.users(id) on delete cascade,
-  ep         integer not null check (ep between 1 and 5),
+  ep         integer not null check (ep between 1 and 9),
   diff       integer not null check (diff between 0 and 3),
   plays      integer not null default 0,
   clears     integer not null default 0,
@@ -493,7 +493,7 @@ create table if not exists public.ep_records (
 -- gave every page, so its players' separate claims find each other), and the accounts of that match that claimed it within
 -- 15 minutes (at most 8). Read through qz_ep_firsts only.
 create table if not exists public.ep_firsts (
-  ep         integer not null check (ep between 1 and 5),
+  ep         integer not null check (ep between 1 and 9),
   diff       integer not null check (diff between 0 and 3),
   match_id   text not null,
   at         timestamptz not null default now(),
@@ -509,6 +509,11 @@ create table if not exists public.ep_first_members (
   foreign key (ep, diff) references public.ep_firsts (ep, diff) on delete cascade
 );
 create index if not exists ep_first_members_user on public.ep_first_members (user_id);
+-- v6.92: chapter 6 (season 2) — the episode columns take chapters 1–9 (a table made before this one had 1–5); qz_ep_max says which are out
+alter table public.ep_records drop constraint if exists ep_records_ep_check;
+alter table public.ep_records add constraint ep_records_ep_check check (ep between 1 and 9);
+alter table public.ep_firsts drop constraint if exists ep_firsts_ep_check;
+alter table public.ep_firsts add constraint ep_firsts_ep_check check (ep between 1 and 9);
 -- v6.74: the ticket the server hands a page as a match starts there (qz_match_start); the match's claim (qz_claim, once) and its rounds'
 -- (qz_round_claim) bring it back. started_at = when the server saw the match start: the claim counts the minutes from it (not from the
 -- last claim), and a scenario clear can take no longer than that. mode / ep / diff are fixed at the start; mt = the match's own id.
@@ -1069,6 +1074,7 @@ begin
     'gun_new', (select count(*) from public.gun_notices g where g.user_id = uid and not g.seen),   -- (v6.46: weapons an admin put on the account, not shown yet)
     'inq_new', (select count(*) from public.inquiries q where q.user_id = uid and q.reply is not null and not q.seen),   -- (v6.66: answers to my inquiries not read yet)
     'tut', p.tut_done is not null,   -- (v6.70: 기초 훈련 finished and its reward taken)
+    'epmax', public.qz_ep_max(),   -- (v6.92: the last chapter the records take — the game claims a later one as the free scenario)
     'ban', case when p.banned_until > now() then jsonb_build_object('until', p.banned_until, 'forever', p.banned_until = 'infinity'::timestamptz, 'reason', p.ban_reason) end,
     'owned', coalesce((select jsonb_agg(o.gun_id order by o.bought_at) from public.owned_guns o where o.user_id = uid), '[]'::jsonb));
 end $$;
@@ -1149,16 +1155,21 @@ begin
   if exists (select 1 from public.match_tokens t where t.user_id = uid and t.started_at > now() - interval '2 seconds') then raise exception 'too_soon'; end if;
   delete from public.match_tokens t where t.user_id = uid and (t.used_at is null or t.used_at < now() - interval '1 day');
   insert into public.match_tokens (token, user_id, mode, ep, diff, mt) values (v_tok, uid, v_mode,
-    case when v_mode = 'scen' then least(greatest(coalesce(p_ep, 0), 0), 5) else 0 end, least(greatest(coalesce(p_diff, 1), 0), 3),
+    case when v_mode = 'scen' then least(greatest(coalesce(p_ep, 0), 0), public.qz_ep_max()) else 0 end, least(greatest(coalesce(p_diff, 1), 0), 3),
     left(regexp_replace(left(coalesce(p_match, ''), 64), '[^A-Za-z0-9]', '', 'g'), 24));
   return jsonb_build_object('token', v_tok);
 end $$;
+-- v6.92: the last chapter there is (6: season 2's first); a match or a claim for a later one counts as this one's, and qz_me tells the game
+create or replace function public.qz_ep_max() returns integer
+language sql immutable set search_path = '' as $$
+  select 6
+$$;
 -- the shortest clear of each chapter × difficulty (easy, normal, hard, expert) the server counts, in seconds: about 0.7 of the fastest a
--- team of four bots cleared it that could not be hurt and hit three times as hard (v6.74: 3:16 – 6:00 a chapter, 3:53 – 8:29 on expert),
--- so no real team is faster (bots that could be hurt took twice as long and more)
+-- team of four bots cleared it that could not be hurt and hit three times as hard (v6.74: 3:16 – 6:00 a chapter, 3:53 – 8:29 on expert;
+-- v6.92 chapter 6: 2:42 – 4:24, 3:30 on expert), so no real team is faster (bots that could be hurt took twice as long and more)
 create or replace function public.qz_ep_min(p_ep integer, p_diff integer) returns integer
 language sql immutable set search_path = '' as $$
-  select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350]]::integer[])[p_ep][p_diff + 1], 240)
+  select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350], [110, 110, 110, 150]]::integer[])[p_ep][p_diff + 1], 240)
 $$;
 -- v6.74: the most each achievement counter may take in a Korean day (qz_claim, qz_round_claim); the rest of a match's numbers is dropped
 create or replace function public.qz_ach_day() returns jsonb
@@ -1176,7 +1187,7 @@ $$;
 -- the coins for a finished match: worked out here from the match's numbers, every one of them capped. The same numbers
 -- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills).
 -- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them.
--- v6.20: an episode of the zombie scenario (p_ep 1..5) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
+-- v6.20: an episode of the zombie scenario (p_ep 1..qz_ep_max: 6 since v6.92) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
 -- and goes on ep_records (p_time = the clear time in seconds, p_lives = lives lost, p_bonus = escaped in time); the first clear of
 -- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder.
 -- v6.24: p_match = the match's id (the same on every page of it): the first clear of an episode × difficulty starts its hall-of-fame
@@ -1261,7 +1272,7 @@ begin
   v_pvp := v_mode in ('tdm', 'ffa', 'bomb', 'race');
   v_zm := v_mode in ('orig', 'mut');
   v_scn := v_mode = 'scen';
-  if v_scn then v_ep := least(greatest(coalesce(p_ep, 0), 0), 5); end if;
+  if v_scn then v_ep := least(greatest(coalesce(p_ep, 0), 0), public.qz_ep_max()); end if;
   mins := extract(epoch from (now() - coalesce(p.last_claim, now() - interval '15 minutes'))) / 60.0;
   if mins < 1.5 then raise exception 'too_soon'; end if;
   -- v6.74: the ticket: this account's, used once, at most 3 hours old, for this mode (the scenario: this chapter and difficulty)
@@ -2484,6 +2495,7 @@ revoke all on function public.qz_claim(text, integer, integer, integer, integer,
 revoke all on function public.qz_round_claim(text, integer, integer, integer, integer, boolean, boolean, boolean, integer, integer, text) from public, anon;
 revoke all on function public.qz_match_start(text, integer, integer, text) from public, anon;
 revoke all on function public.qz_ep_min(integer, integer) from public, anon, authenticated;
+revoke all on function public.qz_ep_max() from public, anon, authenticated;
 revoke all on function public.qz_ach_day() from public, anon, authenticated;
 revoke all on function public.qz_ach_left(jsonb, jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.qz_bingo_new(uuid) from public, anon, authenticated;

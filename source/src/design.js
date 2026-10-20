@@ -418,6 +418,7 @@ function defHuman(k){
 //        | 'tiamat' 티아마트(5챕터 보스: 거대 지네 — 몸은 tiamat.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시) | 'centi' 새끼 지네(5챕터: 마찬가지)
 //        | 'drowned' 익사체 좀비(5챕터) | 'hazmat' 방호복 연구원 좀비(5챕터)
 //        | 'fireman' 소방관 좀비 (등의 산소통은 몸이 아니라 fireman.js 가 따로 붙인다: 돌진할 때 앞으로 들기 때문)
+//        | 'legatus' 레가투스(6챕터 보스: 1차 회수팀 대장) | 'shield' 방패병 좀비(6챕터: 방패는 legatus.js 가 따로 붙인다)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
 function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
@@ -801,6 +802,59 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
         {n:'plate',b:1,c:[0,sY+o.torsoH*.52,zb+.018],s:[.26,o.torsoH*.86,.03],m:'plate'},
         {n:'mask',b:1,c:[0,sY+o.torsoH*.8,zf-.055],s:[.17,.14,.08],m:'mask'},{n:'strap',b:1,c:[-.1,sY+o.torsoH*.96,zf-.035],s:[.03,.03,.12],m:'strap'}];
       for(const sd of [-1,1])L.push({n:'strap',b:1,c:[sd*.12,sY+o.torsoH*.56,zf-.016],s:[.055,o.torsoH*.8,.022],m:'strap'},{n:'strap',b:1,c:[sd*.12,sY+o.torsoH*1.0,0],s:[.055,.022,o.torsoD+.04],m:'strap'});
+      return L}}
+  // ▶ 레가투스 (legatus, 6챕터 보스 RT1-01) — 감염된 1차 회수팀 대장 (게임이 1.25배로 키운다)
+  //    어깨가 넓은 큰 몸, 올리브 전투복 위에 눈 묻은 흰 겨울 위장 덧옷, 지휘관용 방탄조끼(가슴에 대장 명패 '01', 등에 'RT1-01'),
+  //    목에 걸린 부하들의 군번줄 다발 — 아직 아무도 잃지 않았다고 믿는다, 오른팔에 검은 완장, 고글을 얹은 흰 위장 헬멧(앞에 대장 표식 흰 띠 두 줄),
+  //    목에 감은 검은 방한 목도리, 서리 앉은 청회색 피부, 흐린 은빛 눈. 등의 무전기와 소총·유탄발사기·기관총은 게임이 따로 붙인다(legatus.js).
+  else if(k==='legatus'){// 대장 — RT-1's leader: a big frame in a snow smock over a commander's plate carrier, his squad's dog tags round his neck
+    o={hipY:.97,thigh:.46,legSep:.12,legW:.15,legD:.17,shinW:.13,torsoW:.48,torsoH:.56,torsoD:.27,belly:.02,shX:.28,armW:.125,upper:.32,fore:.3,hand:.125,headW:.23,headH:.26,headD:.25,headZ:-.03,neck:.07,
+      claw:.02,fingL:.52,curl:.45,curlJ:131,ears:[1,1],browH:.032};
+    const sk='#7a868e',sm='#d4d8d4',cm=['#a8aeaa','#eef0ee'],od=['#2c3424','#5a6044'];
+    mats=Object.assign({top:{base:sm,camo:cm},legs:{base:'#465036',camo:od},sleeve:{base:sm,camo:cm},fore:{base:'#4a5438',camo:od},shin:{base:'#465036',camo:od},
+      skin:{base:sk,style:'zskin',blot:'#3a3a4a'},hand:{base:'#26261f',style:'rubber'},boot:{base:'#221e18',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#3a3a4a'},
+      vest:{base:'#3e4430',style:'plate',gloss:242},pouch:{base:'#363c2c'},helm:{base:'#c8ccc8',style:'plate',gloss:243},gog:{base:'#202428',style:'plate',gloss:247},
+      scarf:{base:'#1e2022'},tag:{base:'#c8ccc8',style:'plate',gloss:250},plate:{base:'#c8c4b0',style:'plate',gloss:244}},goreM);
+    decor={torso:{front:[['tear',2,131,sk],['soak',.3,.85,'#4a0606',.5],['grime',.45]],back:[['tear',1,132,sk],['grime',.45]],side:[['grime',.4]]},
+      vest:{front:[['pocket',.06,.06,.3,.42,'#2e3424'],['pocket',.36,.06,.64,.42,'#2e3424'],['pocket',.7,.06,.94,.42,'#2e3424'],['blood',2,133],['grime',.45]],
+        back:[['text','RT1-01',.18,.62,'#c8ccc0'],['grime',.45]],all:[['grime',.35]]},
+      helm:{all:[['grime',.4]],front:[['band',.55,.62,'#f4f4ec'],['band',.7,.77,'#f4f4ec']]},gog:{front:[['rect',.05,.2,.45,.8,'#4a5a66'],['rect',.55,.2,.95,.8,'#4a5a66']]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#d8e2ec',tears:1,cheek:1}]],side:[['blood',1,134]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a0606',.8]]},
+      uaL:{all:[['text','RT-1',.18,.7,'#3a3e34'],['grime',.4]]},uaR:{all:[['band',.3,.44,'#141414'],['grime',.4]]},faL:{all:[['veins',2,'#3a3a5a'],['grime',.5]]},faR:{all:[['tear',2,135,sk],['blood',2,136]]},
+      thL:{side:[['pocket',.15,.35,.85,.7,'#3c4430']],all:[['grime',.55]]},thR:{side:[['pocket',.15,.35,.85,.7,'#3c4430']],all:[['soak',.4,1,'#4a0606',.45]]},
+      pelvis:{fb:[['belt',.72,.94,'#24261c','#8a8a7a']]},scarf:{all:[['grime',.4]]},tag:{all:[['grime',.2]]},plate:{front:[['text','01',.2,.7,'#2a2a22']]}};
+    // the plate carrier, the rank plate on it, the helmet with its goggles pushed up, the scarf round the neck, a fistful of dog tags on the chest
+    extra=H=>{const o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],hc=H.headC,zf=o.belly*.25-(o.torsoD+o.belly)/2;
+      const L=[{n:'vest',b:1,c:[0,sY+o.torsoH*.56,0],s:[o.torsoW*1.1,o.torsoH*.72,o.torsoD*1.26],m:'vest'},
+        {n:'pouch',b:1,c:[-.17,sY+o.torsoH*.3,zf-.05],s:[.08,.11,.05],m:'pouch'},{n:'pouch',b:1,c:[.17,sY+o.torsoH*.3,zf-.05],s:[.08,.11,.05],m:'pouch'},
+        {n:'plate',b:1,c:[-.12,sY+o.torsoH*.8,zf-.042],s:[.09,.04,.012],m:'plate'},
+        {n:'helm',b:2,c:[0,hc[1]+o.headH*.42,o.headZ],s:[o.headW*1.2,o.headH*.48,o.headD*1.18],m:'helm'},
+        {n:'gog',b:2,c:[0,hc[1]+o.headH*.62,o.headZ-o.headD*.42],s:[.21,.055,.06],m:'gog'},
+        {n:'scarf',b:1,c:[0,nY-.02,o.headZ+.02],s:[.3,.1,.29],m:'scarf'}];
+      for(let i=0;i<7;i++)L.push({n:'tag',b:1,c:[.02+i*.017,sY+o.torsoH*(.9-(i%3)*.05),zf-.04-(i%2)*.004],s:[.014,.024,.004],m:'tag'});
+      return L}}
+  // ▶ 방패병 좀비 (shield, 6챕터) — 감염된 1차 회수팀 돌파조 방패병
+  //    짙은 회색 전투복, 어깨 보호대까지 덮는 무거운 방탄복(가슴 'RT-1', 등 'BREACH'), 바이저를 위로 젖힌 둥근 방탄모, 무릎 보호대,
+  //    회녹색 피부, 노란 눈. 몸 앞의 방탄 방패는 게임이 따로 붙인다(legatus.js) — 정면 총알은 다 막는다(게임 쪽 규칙).
+  else if(k==='shield'){// 방패병 — an infected RT-1 breacher: heavy armour with shoulder guards, a ballistic helmet with its visor pushed up
+    o={hipY:.93,thigh:.44,legW:.15,legD:.17,shinW:.13,torsoW:.46,torsoH:.53,torsoD:.27,shX:.26,armW:.12,upper:.3,fore:.28,headW:.23,headH:.25,headD:.25,headZ:-.03,claw:.02,fingL:.5,curl:.55,curlJ:141,ears:[1,1]};
+    const sk='#6e7868';
+    mats=Object.assign({top:{base:'#3a3e40'},legs:{base:'#363a3c'},sleeve:{base:'#3a3e40'},fore:{base:'#3a3e40'},shin:{base:'#363a3c'},
+      skin:{base:sk,style:'zskin',blot:'#3a2a30'},hand:{base:'#222220',style:'rubber'},boot:{base:'#1e1c18',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#3a2a30'},
+      armor:{base:'#2c3032',style:'plate',gloss:242},helm:{base:'#2a2e30',style:'plate',gloss:244},visor:{base:'#1a2228',style:'plate',gloss:250},pad:{base:'#1e2022',style:'rubber'}},goreM);
+    decor={torso:{front:[['tear',2,141,sk],['soak',.3,.9,'#4a0606',.6],['grime',.6]],back:[['grime',.6]],side:[['grime',.5]]},
+      armor:{front:[['text','RT-1',.28,.7,'#8a8e86'],['pocket',.1,.06,.42,.36,'#24282a'],['pocket',.58,.06,.9,.36,'#24282a'],['blood',2,142],['grime',.45]],back:[['text','BREACH',.12,.62,'#8a8e86'],['grime',.45]],all:[['grime',.4]]},
+      helm:{all:[['grime',.45]]},visor:{front:[['rect',.06,.1,.94,.9,'#2a3a46'],['px',.3,.35,'#8aa0b0']]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#e8d860',tears:1}]],side:[['blood',1,143]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a0606',.8]]},
+      uaL:{all:[['grime',.5]]},uaR:{all:[['tear',2,144,sk],['blood',2,145]]},thL:{all:[['grime',.6]]},thR:{all:[['soak',.4,1,'#4a0606',.5]]},pelvis:{fb:[['belt',.72,.94,'#1c1e1c','#6a6a6a']]},pad:{all:[['grime',.4]]}};
+    // the armour (and its shoulder guards), the helmet, its visor pushed up, knee pads
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC;
+      const L=[{n:'armor',b:1,c:[0,sY+o.torsoH*.56,0],s:[o.torsoW*1.12,o.torsoH*.76,o.torsoD*1.3],m:'armor'},
+        {n:'helm',b:2,c:[0,hc[1]+o.headH*.4,o.headZ],s:[o.headW*1.22,o.headH*.52,o.headD*1.2],m:'helm'},
+        {n:'visor',b:2,c:[0,hc[1]+o.headH*.64,o.headZ-o.headD*.56],s:[o.headW*1.12,o.headH*.24,.03],m:'visor'}];
+      for(const sd of [-1,1]){const b=sd<0?3:5,kb=sd<0?8:10;L.push({n:'armor',b,c:[H.piv[b][0]+sd*.02,H.piv[b][1]-.02,0],s:[.17,.08,.19],m:'armor'},{n:'pad',b:kb,c:[sd*o.legSep,H.piv[kb][1]-.03,-.08],s:[.12,.12,.04],m:'pad'})}
       return L}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,

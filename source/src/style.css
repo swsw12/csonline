@@ -1204,7 +1204,9 @@ html.touch #chatBar{left:50%;transform:translateX(-50%);top:8px;bottom:auto;widt
 .epPrev{display:flex;gap:10px;align-items:center;background:linear-gradient(#24282e,#16181c);border:1px solid #4a4e56;padding:8px;box-shadow:0 0 0 1px #000}
 .epPrev img{height:108px;image-rendering:pixelated;filter:drop-shadow(0 0 10px rgba(255,60,30,.45))}
 .epPrev div{display:flex;flex-direction:column;gap:2px;min-width:0}.epPrev small{font-size:10px;color:#a89070;letter-spacing:1px}.epPrev b{font-size:15px;color:#fff}.epPrev span{font-size:12px;color:#c8ccd2}
-.epPrev em{font-style:normal;font-size:11px;color:#9aa0a8}.epPrev p{margin:3px 0 0;font-size:11px;color:#c8c4b8;display:flex;align-items:center;gap:5px}
+.epPrev em{font-style:normal;font-size:11px;color:#9aa0a8}
+/* v6.92: a season's tag before a chapter's number (season 2 on) */
+.epc .tx small u.sz,.epPrev small u.sz{text-decoration:none;color:#d8c8ff;background:rgba(120,90,220,.28);border:1px solid #7a68c8;border-radius:2px;padding:0 3px;margin-right:4px;font-size:9px;letter-spacing:0}.epPrev p{margin:3px 0 0;font-size:11px;color:#c8c4b8;display:flex;align-items:center;gap:5px}
 .sprev .epPrev{grid-row:1/3}
 /* results */
 .epRes{display:flex;flex-direction:column;align-items:center;gap:7px;padding:4px 0;font-weight:normal;text-shadow:none}

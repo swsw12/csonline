@@ -607,7 +607,7 @@ function shopMatchStats(){const P=G.player,A=G.actors.filter(a=>!a.scen&&!a.rg),
     stage:typeof SCEN!=='undefined'?(SCEN.best||SCEN.stage||0):0,cleared:typeof SCEN!=='undefined'&&!!SCEN.win,score:Math.round(P.score||0),hs:P.hsKills|0,
     // an episode (v6.20): which one, the difficulty, the clear time, lives lost and the escape bonus (records and first-clear rewards);
     // the match's id (v6.24: the hall of fame's first-clear team, hof.js)
-    ...(typeof EP!=='undefined'&&EP.on&&EP.res?{ep:EP.id,diff:G.diff|0,time:EP.res.time|0,lives:EP.res.lost|0,bonus:!!EP.res.bonus,match:G.mt||''}:{}),
+    ...(typeof EP!=='undefined'&&EP.on&&EP.res?{ep:ACC.epSrv(EP.id),diff:G.diff|0,time:EP.res.time|0,lives:EP.res.lost|0,bonus:!!EP.res.bonus,match:G.mt||''}:{}),
     tok:G.mtok||''}}// (v6.74: the match's ticket, shopTicket)
 function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.mode==='range')return;const L=LI();
   const box=document.createElement('div');box.className='coinRes';const put=()=>{const fs=res.querySelector('.finalScore');if(fs)fs.after(box);else res.prepend(box)};
@@ -625,7 +625,7 @@ function shopReward(){const P=G.player,res=$('results');if(!P||!res||!ACC.on||G.
 // scenario's chapter and difficulty, the match's id G.mt); the match's claim and its rounds' claims take it back (tok), and the server
 // counts the numbers for the minutes the match ran by it. A database before v6.74 has none (the claims go without one, as before).
 function shopTicket(cfg){G.mtok='';const m=G.mode;if(!ACC.on||!ACC.signed()||!/^(orig|mut|tdm|ffa|bomb|race|scen)$/.test(m||''))return;
-  const key=G.mt,o={mode:m,ep:m==='scen'?(cfg&&cfg.ep|0):0,diff:G.diff|0,mt:G.mt||''};
+  const key=G.mt,o={mode:m,ep:m==='scen'?ACC.epSrv(cfg&&cfg.ep|0):0,diff:G.diff|0,mt:G.mt||''};
   const ask=tries=>ACC.matchStart(o).then(t=>{if(G.mt===key&&G.st!=='menu')G.mtok=t||''})
     .catch(e=>{if(tries>0&&/too_soon|network|Failed to fetch/i.test(String(e&&e.message||e)))setTimeout(()=>{if(G.mt===key&&G.st!=='menu'&&!G.mtok)ask(tries-1)},2500)});
   ask(2)}

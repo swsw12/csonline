@@ -52,7 +52,7 @@ const HOF={list:null,at:0,busy:null,ver:1,err:'',res:null,
     if(!this.on())body=`<div class="rkempty">${L?'The hall of fame opens once accounts are set up.':'계정 서버가 연결되면 명예의 전당을 볼 수 있어요.'}</div>`;
     else if(!this.list&&this.err==='old')body=`<div class="rkempty">${L?'The database needs the new schema.sql':'서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)'}</div>`;
     else if(!this.list)body=`<div class="rkempty">${this.busy||!this.err?(L?'Loading…':'불러오는 중…'):esc(this.err)}</div>`;
-    else{const mine=this.myList();body=[1,2,3,4,5].filter(id=>EPS[id]&&!EPS[id].soon).map(id=>{const E=EPS[id];
+    else{const mine=this.myList();body=EP_IDS.filter(id=>EPS[id]&&!EPS[id].soon).map(id=>{const E=EPS[id];
       return `<div class="hofc"><div class="hch"><img src="${portrait('z_'+E.k,44)}"><div><small>${L?'CH.'+id:id+'챕터'} · ${esc(E.code)}</small><b>${esc(E.n[L])}</b></div></div>
         <div class="hrs">${[0,1,2,3].map(d=>{const e=this.get(id,d),tm=e&&Array.isArray(e.team)?e.team:[],me=mine.includes(id*10+d);
           return `<div class="hr d${d}${e?' on':''}${me?' me':''}"><em>${T('d'+d)}</em>${e?`<span class="tm">${tm.length?tm.map(n=>`<b>${esc(n)}</b>`).join(''):'<b>—</b>'}</span><small>${this.date(e.at,L)}${e.time?' · '+(L?'cleared in ':'클리어 ')+fmtT(e.time):''}</small>`

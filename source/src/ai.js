@@ -227,7 +227,7 @@ const AI={
     // In the pack a human other zombies already go for, or one standing in a group, counts as farther (stragglers first, the pack
     // spreads out); a zombie waiting in position keeps its target, one falling back looks for none.
     B.tgtT-=dt;if(st!=='retreat'&&st!=='stage'&&(B.tgtT<=0||!B.target||!B.target.alive||B.target.team!==TH)){B.tgtT=rr(.8,1.4);const H=G.actors.filter(h=>h.alive&&h.team===TH);
-      const K=new Map();for(const h of H){const d=dist3(h.c,c);let x=0;if(pack&&d>7){for(const o of G.actors)if(o!==a&&o.alive&&o.team===TZ&&o.bot&&o.bot.target===h)x+=ZPACK.share;x+=hNear(h.c.x,h.c.y,h.c.z,5,h)*ZPACK.strag}K.set(h,[d+Math.abs(h.c.y-c.y)*3+x,x])}
+      const K=new Map();for(const h of H){const d=dist3(h.c,c);let x=0;if(pack&&d>7){for(const o of G.actors)if(o!==a&&o.alive&&o.team===TZ&&o.bot&&o.bot.target===h)x+=ZPACK.share;x+=hNear(h.c.x,h.c.y,h.c.z,5,h)*ZPACK.strag}if(h.epMark>G.t)x-=22;K.set(h,[d+Math.abs(h.c.y-c.y)*3+x,x])}// (v6.92: one LEGATUS marked counts as 22 m nearer)
       H.sort((p,q)=>K.get(p)[0]-K.get(q)[0]);
       const s0=navNode(c.x,c.y,c.z);let best=null,bl=1e9;
       for(let i=0;i<H.length&&i<(B.unreach?3:6);i++){if(i>=3&&best)break;const h=H[i];const p=navPath(s0,navNode(h.c.x,h.c.y,h.c.z),cap,bud);if(!p)continue;
