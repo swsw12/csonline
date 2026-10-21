@@ -848,7 +848,7 @@ CHAP[6]={id:6,k:'legatus',map:'ep6',code:'RT1-01',season:2,n:['레가투스','LE
   // after the clear: the signal is still there; a card for the season so far
   ending(){EP.later(3,()=>EP.radio('end0'));EP.later(6.4,()=>EP.radio('end1'));EP.later(8.8,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 6 CLEAR':'6챕터 클리어'}</h1><p>${L?'The signal comes from further north.':'신호는 더 북쪽에서 온다.'}</p><b>${L?'NEXT — COMING SOON':'다음 이야기 — 준비 중'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 6 CLEAR':'6챕터 클리어'}</h1><p>${L?'The signal comes from further north.':'신호는 더 북쪽에서 온다.'}</p><b>${L?'NEXT — CHAPTER 7 「LORELEI」':'다음 이야기 — 7챕터 「로렐라이」'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},6500)},
   radio:{
     start:['2차 회수팀, 북문대교 남단이다. 레가투스의 무전 — "북쪽으로 와라" — 은 다리 건너 검문소에서 나오고 있다.','RT-2, you are at the south end of the North Gate Bridge. LEGATUS\'s broadcast — "come north" — is coming from the checkpoint across it.',0],

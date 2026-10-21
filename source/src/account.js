@@ -144,7 +144,8 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(this.me){this.me.coins=r.coins;this.me.matches=(this.me.matches||0)+1;this.me.dayLeft=r.day_left;if(r.rec)this.me.rec=r.rec;if(Array.isArray(r.eps))this.me.eps=r.eps;if(r.tickets!=null)this.me.tickets=r.tickets|0;
       this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,rec:this.me.rec,eps:this.me.eps,firsts:this.me.firsts})}this.emit();try{HOF.claimed(st,r)}catch(e){console.error(e)}return r},
   // v6.92: the chapter a match is claimed as — a database from before chapter 6 records chapters 1–5 only (it would take a 6 for a 5), so a
-  // later chapter goes to it as the free scenario (paid as one; the record stays on this device, EP.saveLocal)
+  // later chapter goes to it as the free scenario (paid as one; the record stays on this device, EP.saveLocal); the same for chapter 7
+  // (v6.96) until the owner runs schema.sql again (qz_me's epmax 6 → 7)
   epSrv(ep){ep=ep|0;return ep<=5||(this.me&&(this.me.epmax|0)>=ep)?ep:0},
   // v6.74: a match starts: the server's ticket for it ({mode, ep, diff, mt}: the scenario's chapter and difficulty, the match's own id) —
   // its claim and its rounds' claims bring it back, and the server counts the match's minutes from it. '' on a database before v6.74

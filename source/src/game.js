@@ -65,7 +65,12 @@ Object.assign(ZCLASS,{
 Object.assign(ZCLASS,{
   legatus:{n:['레가투스','LEGATUS'],sk:['지휘','Command'],d:['6챕터 보스 · RT1-01','Chapter 6 boss · RT1-01'],hp:24000,armor:0,speed:5.6,jump:8.5,kb:.15,dmg:30,skill:'none',cd:99,dur:0,hw:.34,h:1.95,eye:1.8},
   shield:{n:['방패병 좀비','Shield Trooper Zombie'],sk:['방탄 방패','Ballistic shield'],d:['6챕터 · 정면 총알은 방패가 다 막는다 — 옆이나 뒤, 폭발로','Chapter 6 · its shield stops every bullet from the front — go round it, or use a blast'],hp:2000,armor:70,speed:4.9,jump:6.8,kb:.35,dmg:26,skill:'none',cd:99,dur:0,hw:.32,h:1.86,eye:1.7}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 7 (lorelei.js, season 2): LORELEI, RT-1's negotiator (her song pulls humans in; her hits and the hall's props are the chapter's),
+// and the Listener (a citizen from the shelter, eyes bandaged: it hunts by sound, not by sight)
+Object.assign(ZCLASS,{
+  lorelei:{n:['로렐라이','LORELEI'],sk:['노래','Song'],d:['7챕터 보스 · RT1-03','Chapter 7 boss · RT1-03'],hp:22000,armor:0,speed:5.8,jump:9,kb:.2,dmg:30,skill:'none',cd:99,dur:0,hw:.3,h:1.95,eye:1.82},
+  listener:{n:['청중 좀비','Listener Zombie'],sk:['소리 추적','Hunts by sound'],d:['7챕터 · 눈이 없다 — 총소리와 뛰는 발소리로 쫓아온다 (앉아서 걸으면 못 찾는다)','Chapter 7 · no eyes — it hunts by gunfire and running feet (crouch-walk and it cannot find you)'],hp:1700,armor:20,speed:5.4,jump:6.6,kb:1,dmg:30,skill:'none',cd:99,dur:0,hw:.31,h:1.84,eye:1.7}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield','lorelei','listener'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={pvp:false,st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};

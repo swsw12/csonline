@@ -419,6 +419,7 @@ function defHuman(k){
 //        | 'drowned' 익사체 좀비(5챕터) | 'hazmat' 방호복 연구원 좀비(5챕터)
 //        | 'fireman' 소방관 좀비 (등의 산소통은 몸이 아니라 fireman.js 가 따로 붙인다: 돌진할 때 앞으로 들기 때문)
 //        | 'legatus' 레가투스(6챕터 보스: 1차 회수팀 대장) | 'shield' 방패병 좀비(6챕터: 방패는 legatus.js 가 따로 붙인다)
+//        | 'lorelei' 로렐라이(7챕터 보스: 1차 회수팀 협상 요원 — 확성기는 lorelei.js 가 붙인다) | 'listener' 청중 좀비(7챕터: 눈을 붕대로 감은 시민)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
 function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
@@ -856,6 +857,53 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
         {n:'visor',b:2,c:[0,hc[1]+o.headH*.64,o.headZ-o.headD*.56],s:[o.headW*1.12,o.headH*.24,.03],m:'visor'}];
       for(const sd of [-1,1]){const b=sd<0?3:5,kb=sd<0?8:10;L.push({n:'armor',b,c:[H.piv[b][0]+sd*.02,H.piv[b][1]-.02,0],s:[.17,.08,.19],m:'armor'},{n:'pad',b:kb,c:[sd*o.legSep,H.piv[kb][1]-.03,-.08],s:[.12,.12,.04],m:'pad'})}
       return L}}
+  // ▶ 로렐라이 (lorelei, 7챕터 보스 RT1-03) — 감염된 1차 회수팀 협상 · 대피 유도 요원 (게임이 1.2배로 키운다)
+  //    가늘고 긴 몸, 흰 겨울 위장 덧옷 위에 반사띠 두 줄을 두른 주황 형광 대피 유도 조끼(앞 'EVAC', 등 'RT1-03'),
+  //    목 앞에 부풀어 오른 울음주머니(분홍빛 혈관이 어둠에서 빛난다 — 노래할 때는 게임이 더 밝힌다), 허리까지 늘어진 검은 머리,
+  //    입술이 없어 드러난 이빨, 하얗게 흐린 눈과 피눈물, 왼팔 'RT-1' 패치, 오른팔 흰 완장. 허리의 확성기는 게임이 따로 붙인다(lorelei.js).
+  else if(k==='lorelei'){// 협상 요원 — RT-1's negotiator: drawn long and thin, an orange evacuation vest over a snow smock, a swollen singing sac at the throat
+    o={hipY:1,thigh:.47,legSep:.09,legW:.13,legD:.15,shinW:.11,torsoW:.37,torsoH:.52,torsoD:.21,shX:.22,armW:.095,upper:.33,fore:.33,hand:.12,headW:.21,headH:.25,headD:.23,headZ:-.03,neck:.15,
+      claw:.045,fingL:.64,curl:.35,curlJ:151,ears:[0,0],nose:false};
+    const sk='#a6b0b8',cm=['#b8bcb8','#eef0ee'];
+    mats=Object.assign({top:{base:'#d8dcd8',camo:cm},legs:{base:'#c8ccc8',camo:cm},sleeve:{base:'#d8dcd8',camo:cm},fore:{base:sk,style:'zskin',blot:'#5a3a5a'},shin:{base:'#c8ccc8',camo:cm},
+      skin:{base:sk,style:'zskin',blot:'#5a3a5a'},hand:{base:dk(sk,.15),style:'zskin',blot:'#4a1a2a'},boot:{base:'#26221e',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#5a3a5a'},
+      vest:{base:'#e8681a',style:'plate',gloss:244},hair:{base:'#121216',style:'hair'},sac:{base:'#c8a0b4',style:'tumor'},band:{base:'#e8e8e0'}},goreM);
+    decor={torso:{front:[['tear',2,151,sk],['soak',.35,.9,'#4a0612',.5],['grime',.4]],back:[['grime',.4]],side:[['grime',.35]]},
+      vest:{front:[['band',.18,.26,'#d8dcdc'],['band',.48,.56,'#d8dcdc'],['text','EVAC',.24,.74,'#1a1a1a'],['blood',2,152],['grime',.35]],
+        back:[['band',.18,.26,'#d8dcdc'],['band',.48,.56,'#d8dcdc'],['text','RT1-03',.14,.76,'#1a1a1a'],['grime',.35]],side:[['band',.18,.26,'#d8dcdc'],['band',.48,.56,'#d8dcdc']]},
+      neck:{all:[['veins',5,'#e07ab0',1],['flesh',.25,.2,.75,.5,0]]},sac:{all:[['veins',4,'#ff8ac8',1],['glow',.32,.3,.68,.7,'#ff9ad2'],['rot',1]]},
+      head:{front:[['face','runner',{skin:sk,eye:eyeH||'#f0f6ff',tears:1,lipless:1}],['rect',0,.86,1,1,'#121216']],top:[['rect',0,0,1,1,'#121216']],side:[['rect',0,.25,.7,1,'#121216']],back:[['rect',0,0,1,1,'#121216']],bottom:[['teethrow','bottom',.4]]},
+      jaw:{top:[['teethrow','top',.44]],front:[['teethrow','top',.55],['drip',.5,.5,3,.7]],bottom:[['soak',0,1,'#4a0612',.7]],side:[['flesh',0,.2,1,.9,0]]},
+      uaL:{all:[['text','RT-1',.16,.7,'#3a3e34'],['grime',.35]]},uaR:{all:[['band',.3,.46,'#e8e8e0'],['grime',.35]]},faL:{all:[['veins',2,'#7a4a7a']]},faR:{all:[['veins',2,'#7a4a7a'],['blood',2,153]]},
+      thL:{side:[['pocket',.15,.35,.85,.7,'#a8aca8']],all:[['grime',.45]]},thR:{all:[['soak',.4,1,'#4a0612',.4]]},pelvis:{fb:[['belt',.72,.94,'#24261c','#8a8a7a']]},hair:{all:[['grime',.2]]}};
+    // the vest, the singing sac under the jaw, the hair: a cap of it on the skull, a long fall down the back, two strands in front of the shoulders
+    extra=H=>{const o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],hc=H.headC;
+      return [{n:'vest',b:1,c:[0,sY+o.torsoH*.56,0],s:[o.torsoW*1.12,o.torsoH*.74,o.torsoD*1.3],m:'vest'},
+        {n:'sac',b:2,c:[0,nY+o.neck*.45,o.headZ-o.headD*.32],s:[.13,.1,.1],m:'sac'},
+        {n:'hair',b:2,c:[0,hc[1]+o.headH*.46,o.headZ+.012],s:[o.headW*1.1,.06,o.headD*1.08],m:'hair'},
+        {n:'hair',b:2,c:[0,hc[1]-o.headH*.55,o.headZ+o.headD*.52],s:[o.headW*1.06,o.headH*1.9,.07],m:'hair'},
+        {n:'hair',b:2,c:[-o.headW*.52,hc[1]-o.headH*.32,o.headZ-.01],s:[.045,o.headH*1.25,.09],m:'hair'},{n:'hair',b:2,c:[o.headW*.52,hc[1]-o.headH*.32,o.headZ-.01],s:[.045,o.headH*1.25,.09],m:'hair'},
+        {n:'band',b:5,c:[H.piv[5][0]+.002,H.piv[5][1]-o.upper*.5,0],s:[o.armW*1.06,.05,o.armW*1.06],m:'band'}]}}
+  // ▶ 청중 좀비 (listener, 7챕터) — 대피소에 있던 시민. 로렐라이의 방송을 듣고 모여들었다가 눈을 잃었다
+  //    무릎까지 오는 남색 롱패딩(누빔 줄, 반쯤 열린 지퍼), 빨간 목도리, 손목의 노란 대피소 밴드, 두 눈을 감은 붕대(피가 배어 나옴),
+  //    잿빛 피부, 헝클어진 머리. 눈이 없어 소리로만 쫓는다 — 고개를 기울이고 듣는 포즈는 게임이 준다(lorelei.js).
+  else if(k==='listener'){// 청중 — a citizen from the shelter: a long padded coat, a scarf, the shelter's wristband, bandages over both eyes
+    o={hipY:.92,thigh:.42,legW:.16,legD:.18,shinW:.14,torsoW:.46,torsoH:.52,torsoD:.3,belly:.02,shX:.27,armW:.14,upper:.29,fore:.28,headW:.23,headH:.26,headD:.25,headZ:-.02,claw:.022,fingL:.52,curl:.55,curlJ:161,ears:[1,1]};
+    const sk='#7c807a',pc='#1e2a44';
+    mats=Object.assign({top:{base:pc},legs:{base:'#2a2a30'},sleeve:{base:pc},fore:{base:pc},shin:{base:'#2a2a30'},skin:{base:sk,style:'zskin',blot:'#4a3a40'},hand:{base:dk(sk,.15),style:'zskin',blot:'#5a1a14'},
+      boot:{base:'#1e1a16',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#4a3a40'},scarf:{base:'#8a2228'},coat:{base:pc},wrist:{base:'#e8c820',style:'plate',gloss:246}},goreM);
+    const quilt=[['band',.18,.21,'#141c30'],['band',.38,.41,'#141c30'],['band',.58,.61,'#141c30'],['band',.78,.81,'#141c30']];
+    decor={torso:{front:quilt.concat([['zip',.5],['soak',.45,.95,'#4a0606',.45],['tear',1,161,'#d8d8d0'],['grime',.4]]),back:quilt.concat([['grime',.45]]),side:quilt.concat([['grime',.4]])},
+      coat:{front:quilt.concat([['zip',.5],['grime',.5],['soak',0,.5,'#3a2a20',.4]]),back:quilt.concat([['grime',.5]]),side:quilt.concat([['grime',.45]])},
+      uaL:{all:quilt.concat([['grime',.4]])},uaR:{all:quilt.concat([['tear',2,162,'#d8d8d0']])},faL:{all:[['grime',.5]]},faR:{all:[['blood',2,163],['grime',.4]]},
+      head:{front:[['face','zombie',{skin:sk,eye:'#d8d8d0',tears:1}],['band',.42,.64,'#e4e0d4'],['blood',3,164,'#7a0c0a'],['rect',0,.88,1,1,'#2a2420']],
+        back:[['band',.42,.64,'#e4e0d4'],['rect',0,.6,1,1,'#2a2420']],top:[['rect',0,0,1,1,'#2a2420'],['wounds',1,165]],side:[['band',.42,.64,'#e4e0d4'],['rect',0,.68,1,1,'#2a2420']],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a0606',.8]]},
+      thL:{all:[['grime',.6]]},thR:{all:[['soak',.4,1,'#4a0606',.4]]},scarf:{all:[['grime',.3]]}};
+    // the coat's skirt down to the knees, the scarf, the wristband
+    extra=H=>{const o=H.o,nY=H.piv[2][1];return [{n:'coat',b:0,c:[0,o.hipY-.2,o.belly*.2],s:[o.torsoW*.98,.4,o.torsoD*1.02],m:'coat'},
+      {n:'scarf',b:1,c:[0,nY-.02,o.headZ+.02],s:[.31,.09,.3],m:'scarf'},{n:'scarf',b:1,c:[-.07,nY-.16,o.headZ-o.headD*.5-.02],s:[.08,.2,.03],m:'scarf'},
+      {n:'wrist',b:6,c:[H.piv[6][0],H.piv[6][1]-o.fore+.04,0],s:[o.armW*1.02,.035,o.armW*1.02],m:'wrist'}]}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),

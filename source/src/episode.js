@@ -14,12 +14,13 @@
 // Between stages the next door opens with a supply box; everybody inside the next zone (or 40 s) starts the next stage. The fallen
 // get up when a teammate holds E next to them for 4 s (30 hp); everybody gets up between stages, between waves and at boss phases.
 // Host-authoritative: the host runs the flow; clients get it in the snapshot (SCEN.encState → EP.pack) and as events (eps, epg, ...).
-const EPS={},EP_N=6;// (v6.92: the chapters there are — season 2 starts with chapter 6; CHAP[n].season, 1 when not set)
+const EPS={},EP_N=7;// (v6.92: the chapters there are — season 2 starts with chapter 6; CHAP[n].season, 1 when not set; v6.96: chapter 7)
 const EP_IDS=Array.from({length:EP_N},(_,i)=>i+1);
 // a season's tag before a chapter's number (season 2 on: S2)
 const epSz=E=>E&&E.season>1?`<u class="sz">S${E.season}</u>`:'';
 {const SOON=[null,{k:'aleph',n:['알레프','ALEPH'],code:'Q7-000'},{k:'argus',n:['아르고스','ARGUS'],code:'RT1-07'},{k:'khepri',n:['케프리','KHEPRI'],code:'Q7-303'},
-  {k:'lyrebird',n:['라이어버드','LYREBIRD'],code:'RT1-05'},{k:'tiamat',n:['티아마트','TIAMAT'],code:'Q7-Ω'},{k:'legatus',n:['레가투스','LEGATUS'],code:'RT1-01',season:2}];
+  {k:'lyrebird',n:['라이어버드','LYREBIRD'],code:'RT1-05'},{k:'tiamat',n:['티아마트','TIAMAT'],code:'Q7-Ω'},{k:'legatus',n:['레가투스','LEGATUS'],code:'RT1-01',season:2},
+  {k:'lorelei',n:['로렐라이','LORELEI'],code:'RT1-03',season:2}];
   for(let n=1;n<=EP_N;n++)EPS[n]=CHAP[n]||Object.assign({id:n,soon:1},SOON[n])}
 // the scenario plays chapter 1 until the player picks another (0 = the free scenario)
 const epSel=c=>c&&c.ep!=null?c.ep|0:1;
@@ -60,7 +61,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     if(MAP.gates)for(const k in MAP.gates)gateSet(k,false,true);this.radioDraw()},
   setup(){const C=this.C,B=this.B();this.pow=C.pow0!=null?C.pow0:1;if(C.setup)C.setup();this.card('ep');this.barSetup()},
   begin(){this.t0=G.t;SCEN.on=true;SCEN.lives=3;SCEN.best=0;SCEN.win=false;SCEN.tq=[];G.recDone=false;for(const a of G.actors)a.wup={};this.stageStart(1,'fresh');this.say('start')},
-  off(){if(!this.on)return;this.reset();const e=$('hEp');if(e)e.style.display='none';const u=$('hUse');if(u)u.className='';const m=$('epMk');if(m)m.innerHTML='';this.mk=null},
+  off(){if(!this.on)return;this.reset();const e=$('hEp');if(e)e.style.display='none';const u=$('hUse');if(u){u.className='';if(u.parentNode)u.parentNode.classList.remove('uOn')}const m=$('epMk');if(m)m.innerHTML='';this.mk=null},
   // ---------- a stage starts (host / solo, or a client following the host's plan) ----------
   // kind: fresh (the first), next (after the last one), retry (after a wipe), phase (the boss fight again from its phase);
   // arr: where a transition put each human (id → [x,y,z,yaw])
@@ -376,7 +377,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     else if(P&&P.alive&&U.tg){s=(tch?(L?'Hold ✚ — get ':'✚ 길게 — '):(L?'Hold E — get ':'E 길게 — '))+esc(U.tg.name)+(L?' up':' 일으키기');k=U.t/4;cls='u'}
     else if(P&&P.alive&&U.dev>=0){const v=this.devs()[U.dev];if(v){s=(tch?(L?'Hold ✚ — ':'✚ 길게 — '):(L?'Hold E — ':'E 길게 — '))+v.act[L];k=(this.obj.ps[U.dev]||0)/v.t;cls='u'+(G.t<(P.useBlk||0)?' x':'')}}
     else if(P&&P.alive&&U.bd>=0){const Bo=this.B(),v=Bo&&Bo.useInfo?Bo.useInfo(U.bd,L):null;if(v){s=v.x?v.act:(tch?(L?'Hold ✚ — ':'✚ 길게 — '):(L?'Hold E — ':'E 길게 — '))+v.act;k=v.p;cls='u'+(v.x||G.t<(P.useBlk||0)?' x':'')}}
-    const c=s?'on '+cls:'';if(el.className!==c)el.className=c;if(el.dataset.s!==s){el.dataset.s=s;el.querySelector('span').innerHTML=s}el.querySelector('u').style.width=(clamp(k,0,1)*100).toFixed(1)+'%';
+    const c=s?'on '+cls:'';if(el.className!==c)el.className=c;const hd=el.parentNode;if(hd&&hd.classList.contains('uOn')!==!!s)hd.classList.toggle('uOn',!!s);if(el.dataset.s!==s){el.dataset.s=s;el.querySelector('span').innerHTML=s}el.querySelector('u').style.width=(clamp(k,0,1)*100).toFixed(1)+'%';
     if(typeof TOUCH!=='undefined'&&TOUCH.el){const b=TOUCH.el.querySelector('.tUse');if(b){const on=!!(P&&P.alive&&(U.tg||U.dev>=0||U.bd>=0));if(b.classList.contains('show')!==on)b.classList.toggle('show',on)}}},
   // world markers: the goal, the boss's devices, fallen teammates
   markHud(){const lay=$('epMk'),P=G.player,M=MAP.ez;if(!lay||!P||!M)return;const L=LI(),list=[],ph=this.ph,D=this.S(),C=this.C,Bo=this.B();

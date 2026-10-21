@@ -1222,6 +1222,7 @@ html.touch #hRadio{top:auto;bottom:calc(var(--bs)*2.6 + 7vh);left:8px;width:min(
 /* touch, with a boss bar up: the radio narrows to clear it and keeps its last two lines */
 html.touch #hud.epB #hRadio{width:min(300px,38vw,calc(58vw - 266px))}html.touch #hud.epB #hRadio p:nth-last-child(n+3){display:none}
 html.touch #hUse{top:58%}
+#hud.uOn #hNote{top:calc(60% + 44px)}html.touch #hud.scen.uOn #hNote{top:calc(58% + 44px)}
 @media (max-width:900px){#epCard .ec{gap:12px;padding:14px 18px}#epCard img{height:min(120px,22vh)}}
 
 /* pings (ping.js): a diamond, the name and the distance; pinned to the screen's edge when the spot is off to the side */

@@ -1161,17 +1161,17 @@ begin
     left(regexp_replace(left(coalesce(p_match, ''), 64), '[^A-Za-z0-9]', '', 'g'), 24));
   return jsonb_build_object('token', v_tok);
 end $$;
--- v6.92: the last chapter there is (6: season 2's first); a match or a claim for a later one counts as this one's, and qz_me tells the game
+-- v6.92: the last chapter there is (6: season 2's first; v6.96: 7); a match or a claim for a later one counts as this one's, and qz_me tells the game
 create or replace function public.qz_ep_max() returns integer
 language sql immutable set search_path = '' as $$
-  select 6
+  select 7
 $$;
 -- the shortest clear of each chapter × difficulty (easy, normal, hard, expert) the server counts, in seconds: about 0.7 of the fastest a
 -- team of four bots cleared it that could not be hurt and hit three times as hard (v6.74: 3:16 – 6:00 a chapter, 3:53 – 8:29 on expert;
--- v6.92 chapter 6: 2:42 – 4:24, 3:30 on expert), so no real team is faster (bots that could be hurt took twice as long and more)
+-- v6.92 chapter 6: 2:42 – 4:24, 3:30 on expert; v6.96 chapter 7: 4:55 – 5:11, 6:18 on expert — its foyer holds three points 20 s each), so no real team is faster (bots that could be hurt took twice as long and more)
 create or replace function public.qz_ep_min(p_ep integer, p_diff integer) returns integer
 language sql immutable set search_path = '' as $$
-  select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350], [110, 110, 110, 150]]::integer[])[p_ep][p_diff + 1], 240)
+  select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350], [110, 110, 110, 150], [200, 200, 200, 260]]::integer[])[p_ep][p_diff + 1], 240)
 $$;
 -- v6.74: the most each achievement counter may take in a Korean day (qz_claim, qz_round_claim); the rest of a match's numbers is dropped
 create or replace function public.qz_ach_day() returns jsonb
@@ -1189,7 +1189,7 @@ $$;
 -- the coins for a finished match: worked out here from the match's numbers, every one of them capped. The same numbers
 -- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills).
 -- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them.
--- v6.20: an episode of the zombie scenario (p_ep 1..qz_ep_max: 6 since v6.92) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
+-- v6.20: an episode of the zombie scenario (p_ep 1..qz_ep_max: 7 since v6.96) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
 -- and goes on ep_records (p_time = the clear time in seconds, p_lives = lives lost, p_bonus = escaped in time); the first clear of
 -- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder.
 -- v6.24: p_match = the match's id (the same on every page of it): the first clear of an episode × difficulty starts its hall-of-fame
