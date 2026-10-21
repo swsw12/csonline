@@ -420,6 +420,7 @@ function defHuman(k){
 //        | 'fireman' 소방관 좀비 (등의 산소통은 몸이 아니라 fireman.js 가 따로 붙인다: 돌진할 때 앞으로 들기 때문)
 //        | 'legatus' 레가투스(6챕터 보스: 1차 회수팀 대장) | 'shield' 방패병 좀비(6챕터: 방패는 legatus.js 가 따로 붙인다)
 //        | 'lorelei' 로렐라이(7챕터 보스: 1차 회수팀 협상 요원 — 확성기는 lorelei.js 가 붙인다) | 'listener' 청중 좀비(7챕터: 눈을 붕대로 감은 시민)
+//        | 'charon' 카론(8챕터 보스: 1차 회수팀 조종사 — 헬기와 조명탄 권총은 charon.js 가 만든다) | 'frozen' 동사자 좀비(8챕터: 얼어붙은 지상 근무자)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
 function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
@@ -904,6 +905,57 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
     extra=H=>{const o=H.o,nY=H.piv[2][1];return [{n:'coat',b:0,c:[0,o.hipY-.2,o.belly*.2],s:[o.torsoW*.98,.4,o.torsoD*1.02],m:'coat'},
       {n:'scarf',b:1,c:[0,nY-.02,o.headZ+.02],s:[.31,.09,.3],m:'scarf'},{n:'scarf',b:1,c:[-.07,nY-.16,o.headZ-o.headD*.5-.02],s:[.08,.2,.03],m:'scarf'},
       {n:'wrist',b:6,c:[H.piv[6][0],H.piv[6][1]-o.fore+.04,0],s:[o.armW*1.02,.035,o.armW*1.02],m:'wrist'}]}}
+  // ▶ 카론 (charon, 8챕터 보스 RT1-06) — 감염된 1차 회수팀 조종사 (땅 위에서는 게임이 1.15배로 키운다)
+  //    세이지색 비행복(가슴 지퍼, 주머니), 검은 올리브 생존 조끼(주머니, 등 'RT1-06'), 올리브 비행 헬멧과 위로 올린 검은 바이저,
+  //    헬멧 왼쪽에 늘어진 산소마스크와 호스, 입가의 붐 마이크, 왼쪽 허벅지의 무릎 판(비행 메모), 왼팔 'RT-1' 패치,
+  //    얼어서 푸르스름한 피부, 겁에 질려 크게 뜬 흰 눈과 피눈물. 조명탄 권총은 게임이 따로 붙인다(charon.js).
+  else if(k==='charon'){// 조종사 — RT-1's pilot: a sage flight suit, a dark survival vest, the flight helmet (its visor up), a kneeboard on the thigh
+    o={hipY:.95,thigh:.43,legSep:.1,legW:.15,legD:.17,shinW:.13,torsoW:.42,torsoH:.5,torsoD:.25,shX:.25,armW:.12,upper:.29,fore:.28,hand:.11,headW:.23,headH:.26,headD:.25,headZ:-.02,neck:.08,
+      claw:.03,fingL:.56,curl:.45,curlJ:171,ears:[0,0]};
+    const sk='#9aa6b0',fs='#6a7258';
+    mats=Object.assign({top:{base:fs},legs:{base:fs},sleeve:{base:fs},fore:{base:fs},shin:{base:fs},skin:{base:sk,style:'zskin',blot:'#4a5a72'},hand:{base:'#3a3226',style:'rubber'},
+      boot:{base:'#1e1a16',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#4a5a72'},vest:{base:'#3e4430'},helm:{base:'#59603e',style:'plate',gloss:244},visor:{base:'#141a1e',style:'plate',gloss:252},
+      mask:{base:'#2a2c2a',style:'rubber'},hose:{base:'#2a2c2a',style:'rubber'},board:{base:'#e8e4d8',style:'flat'},mic:{base:'#1a1a1a',style:'plate'}},goreM);
+    decor={torso:{front:[['zip',.5],['pocket',.12,.5,.38,.78,'#5e664c'],['pocket',.62,.5,.88,.78,'#5e664c'],['grime',.45],['blood',2,172]],back:[['grime',.45]],side:[['grime',.4]]},
+      vest:{front:[['pocket',.08,.1,.32,.42,'#343a28'],['pocket',.68,.1,.92,.42,'#343a28'],['pocket',.12,.52,.36,.8,'#343a28'],['vband',.47,.53,'#2a2e20'],['px',.75,.7,'#e8b020',1],['grime',.4],['soak',0,.4,'#3a0a0a',.4]],
+        back:[['text','RT1-06',.14,.62,'#c8ccb8'],['grime',.4]],side:[['grime',.35]]},
+      head:{front:[['face','runner',{skin:sk,eye:eyeH||'#eef4fa',tears:1}],['wounds',1,173]],side:[['rect',0,.55,1,1,'#3a3a30']],back:[['rect',0,.4,1,1,'#3a3a30']],top:[['rect',0,0,1,1,'#3a3a30']],bottom:[['teethrow','bottom',.36]]},
+      jaw:{top:[['teethrow','top',.38]],front:[['teethrow','top',.46],['drip',.5,.5,2,.6]],bottom:[['soak',0,1,'#4a0612',.6]]},
+      helm:{all:[['grime',.3]],front:[['band',.1,.2,'#2a2e20']],back:[['text','06',.32,.6,'#d8d8c8']]},visor:{all:[['line',.05,.7,.95,.7,1,'#6a7a84']]},
+      board:{all:[['rect',.08,.08,.92,.92,'#f4f0e4'],['text','06',.3,.82,'#1a1a1a'],['line',.15,.62,.85,.62,1,'#7a7a7a'],['line',.15,.46,.85,.46,1,'#7a7a7a'],['line',.15,.3,.7,.3,1,'#7a7a7a'],['blood',1,174]]},
+      uaL:{all:[['text','RT-1',.16,.7,'#3a3e34'],['grime',.35]]},uaR:{all:[['grime',.35]]},faL:{all:[['grime',.4]]},faR:{all:[['blood',2,175],['grime',.35]]},
+      thL:{all:[['pocket',.15,.3,.85,.6,'#5e664c'],['grime',.45]]},thR:{all:[['pocket',.15,.3,.85,.6,'#5e664c'],['soak',.4,1,'#4a0612',.35]]},shL:{all:[['grime',.5]]},shR:{all:[['grime',.5]]},pelvis:{fb:[['belt',.72,.94,'#24261c','#8a8a7a']]}};
+    // the survival vest, the helmet and its raised visor, the oxygen mask hanging off the helmet and its hose, the boom mic, the kneeboard
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC;
+      return [{n:'vest',b:1,c:[0,sY+o.torsoH*.55,0],s:[o.torsoW*1.1,o.torsoH*.7,o.torsoD*1.28],m:'vest'},
+        {n:'helm',b:2,c:[0,hc[1]+o.headH*.3,o.headZ+.012],s:[o.headW*1.24,o.headH*.74,o.headD*1.22],m:'helm'},
+        {n:'visor',b:2,c:[0,hc[1]+o.headH*.7,o.headZ-o.headD*.55],s:[o.headW*1.12,o.headH*.22,.04],m:'visor'},
+        {n:'mask',b:2,c:[-o.headW*.56,hc[1]-o.headH*.4,o.headZ-o.headD*.3],s:[.08,.11,.1],m:'mask'},
+        {n:'hose',b:1,c:[-.1,sY+o.torsoH*.86,-o.torsoD*.64],s:[.04,.22,.04],m:'hose'},
+        {n:'mic',b:2,c:[o.headW*.3,hc[1]-o.headH*.3,o.headZ-o.headD*.52],s:[.12,.025,.025],m:'mic'},
+        {n:'board',b:7,c:[H.piv[7][0],H.piv[7][1]-o.thigh*.55,-o.legD*.62],s:[.13,.17,.02],m:'board'}]}}
+  // ▶ 동사자 좀비 (frozen, 8챕터) — 비행장 지상 근무자. 눈보라 속에 쓰러져 눈더미에 묻혀 있다가 일어난다
+  //    반사띠 두 줄의 주황 형광 방한 파카(어깨와 머리에 쌓인 눈), 목 뒤로 넘어간 털 후드, 노란 귀마개, 검은 작업 바지(정강이 반사띠),
+  //    서리 낀 하얀 피부, 얼어붙은 하얀 눈, 하얗게 센 머리. 눈더미와 튀어나온 손은 게임이 따로 붙인다(charon.js).
+  else if(k==='frozen'){// 동사자 — the airfield's ground crew, frozen in the drifts: an orange hi-vis parka, ear defenders, frost on everything
+    o={hipY:.92,thigh:.42,legW:.16,legD:.18,shinW:.14,torsoW:.46,torsoH:.5,torsoD:.3,belly:.02,shX:.27,armW:.14,upper:.29,fore:.28,headW:.23,headH:.26,headD:.25,headZ:-.02,claw:.024,fingL:.5,curl:.6,curlJ:181,ears:[0,0]};
+    const sk='#b8c8d4',pk='#e86a1a',sn='#eef4f8';
+    mats=Object.assign({top:{base:pk},legs:{base:'#22242a'},sleeve:{base:pk},fore:{base:pk},shin:{base:'#22242a'},skin:{base:sk,style:'zskin',blot:'#6a8aa8'},hand:{base:'#2a2e34',style:'rubber'},
+      boot:{base:'#1e1a16',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#6a8aa8'},hood:{base:'#7a6a58',style:'hair'},muff:{base:'#e8b020',style:'plate',gloss:246},band2:{base:'#2a2a2a',style:'plate'},
+      snow:{base:sn,style:'flat'},ice:{base:'#d8eef8',style:'plate',gloss:252}},goreM);
+    const refl=[['band',.3,.36,'#d8dcdc'],['band',.56,.62,'#d8dcdc']],frost=c=>[['rect',0,.86,1,1,sn],['px',.2,.7,sn,0],['px',.7,.4,sn,0],['grime',.25]];
+    decor={torso:{front:refl.concat([['zip',.5],['text','RAMP',.3,.8,'#1a1a1a']],frost()),back:refl.concat([['text','SAF',.3,.78,'#1a1a1a']],frost()),side:refl.concat(frost()),top:[['rect',0,0,1,1,sn]]},
+      head:{front:[['face','zombie',{skin:sk,eye:'#f2f8ff'}],['rect',0,.86,1,1,'#e8eef2']],top:[['rect',0,0,1,1,'#e8eef2']],side:[['rect',0,.7,1,1,'#e8eef2']],back:[['rect',0,.55,1,1,'#e8eef2']],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['px',.3,.2,'#d8eef8',0],['px',.7,.25,'#d8eef8',0]]},
+      uaL:{all:[['band',.4,.5,'#d8dcdc'],['rect',0,.8,1,1,sn]]},uaR:{all:[['band',.4,.5,'#d8dcdc'],['rect',0,.8,1,1,sn]]},faL:{all:[['grime',.35]]},faR:{all:[['grime',.35]]},
+      shL:{all:[['band',.55,.65,'#d8dcdc'],['grime',.4]]},shR:{all:[['band',.55,.65,'#d8dcdc'],['grime',.4]]},thL:{all:[['grime',.5]]},thR:{all:[['grime',.5]]},hood:{all:[['grime',.2]]},snow:{all:[['grime',.08]]}};
+    // the ear defenders and their band, the fur hood behind the neck, the snow on the shoulders, icicles off the parka's hem
+    extra=H=>{const o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],hc=H.headC;
+      return [{n:'muff',b:2,c:[-o.headW*.56,hc[1]-o.headH*.05,o.headZ],s:[.06,.12,.12],m:'muff'},{n:'muff',b:2,c:[o.headW*.56,hc[1]-o.headH*.05,o.headZ],s:[.06,.12,.12],m:'muff'},
+        {n:'band2',b:2,c:[0,hc[1]+o.headH*.53,o.headZ],s:[o.headW*1.16,.03,.04],m:'band2'},
+        {n:'hood',b:1,c:[0,nY-.03,o.headZ+o.headD*.44],s:[o.headW*1.2,.16,.14],m:'hood'},
+        {n:'snow',b:1,c:[-o.shX*.55,sY+o.torsoH+.01,0],s:[.18,.05,o.torsoD*.9],m:'snow'},{n:'snow',b:1,c:[o.shX*.5,sY+o.torsoH+.01,.02],s:[.2,.05,o.torsoD*.8],m:'snow'},
+        {n:'ice',b:0,c:[-.12,o.hipY-.26,-o.torsoD*.46],s:[.025,.1,.025],m:'ice'},{n:'ice',b:0,c:[.07,o.hipY-.28,-o.torsoD*.46],s:[.02,.13,.02],m:'ice'},{n:'ice',b:0,c:[.16,o.hipY-.25,-o.torsoD*.44],s:[.02,.08,.02],m:'ice'}]}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),

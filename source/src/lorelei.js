@@ -678,7 +678,7 @@ CHAP[7]={id:7,k:'lorelei',map:'ep7',code:'RT1-03',season:2,n:['로렐라이','LO
   // after the clear: the roster in her vest; a card for the season so far
   ending(){EP.later(3,()=>EP.radio('end0'));EP.later(7,()=>EP.radio('end1'));EP.later(9.6,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 7 CLEAR':'7챕터 클리어'}</h1><p>${L?'Three of RT-1 are still out there — north, at the airfield.':'1차 회수팀은 아직 셋 남았다 — 북쪽 비행장.'}</p><b>${L?'NEXT — COMING SOON':'다음 이야기 — 준비 중'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 7 CLEAR':'7챕터 클리어'}</h1><p>${L?'Three of RT-1 are still out there — north, at the airfield.':'1차 회수팀은 아직 셋 남았다 — 북쪽 비행장.'}</p><b>${L?'NEXT — CHAPTER 8 「CHARON」':'다음 이야기 — 8챕터 「카론」'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},6500)},
   radio:{
     start:['2차 회수팀, 봉쇄선 밖 한설시다. "북쪽으로 와라" — 그 방송은 저 아트센터 확성기에서 나온다. 대피소였던 곳이다.','RT-2, this is Hanseol, beyond the line. "Come north" — that broadcast is coming from the arts center\'s loudspeakers. It was a shelter.',0],

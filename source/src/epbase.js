@@ -32,7 +32,8 @@ const TELE={list:[],geo:null,tc:null,tr:null,id:0,
   drop(T){for(const m of T.m){R.scene.remove(m);m.material.dispose()}},
   clear(){for(const T of this.list)this.drop(T);this.list=[]},
   // a live warning over this point and the way out of it (bots step out)
-  at(x,z,pad){pad=pad||0;for(const T of this.list){if(T.t>T.d)continue;
+  // (nb: a warning meant for the players only — the bots are told some other way: the boss's danger())
+  at(x,z,pad){pad=pad||0;for(const T of this.list){if(T.t>T.d||T.nb)continue;
       if(T.k==='c'){const dx=x-T.x,dz=z-T.z,d=Math.hypot(dx,dz);if(d<T.r+pad)return {ax:d>.05?dx/d:1,az:d>.05?dz/d:0}}
       else{const fx=-Math.sin(T.yaw),fz=-Math.cos(T.yaw),rx=Math.cos(T.yaw),rz=-Math.sin(T.yaw),dx=x-T.x,dz=z-T.z,al=dx*fx+dz*fz,sd=dx*rx+dz*rz;
         if(al>-pad&&al<T.l+pad&&Math.abs(sd)<T.w/2+pad){const s=sd>=0?1:-1;return {ax:rx*s,az:rz*s}}}}return null}};

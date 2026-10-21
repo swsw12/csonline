@@ -70,7 +70,12 @@ Object.assign(ZCLASS,{
 Object.assign(ZCLASS,{
   lorelei:{n:['로렐라이','LORELEI'],sk:['노래','Song'],d:['7챕터 보스 · RT1-03','Chapter 7 boss · RT1-03'],hp:22000,armor:0,speed:5.8,jump:9,kb:.2,dmg:30,skill:'none',cd:99,dur:0,hw:.3,h:1.95,eye:1.82},
   listener:{n:['청중 좀비','Listener Zombie'],sk:['소리 추적','Hunts by sound'],d:['7챕터 · 눈이 없다 — 총소리와 뛰는 발소리로 쫓아온다 (앉아서 걸으면 못 찾는다)','Chapter 7 · no eyes — it hunts by gunfire and running feet (crouch-walk and it cannot find you)'],hp:1700,armor:20,speed:5.4,jump:6.6,kb:1,dmg:30,skill:'none',cd:99,dur:0,hw:.31,h:1.84,eye:1.7}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield','lorelei','listener'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 8 (charon.js, season 2): CHARON, RT-1's pilot (in the air his helicopter FERRY 06 takes the hits: the chapter works them out),
+// and the Frozen (the airfield's ground crew, buried in the drifts until something comes near)
+Object.assign(ZCLASS,{
+  charon:{n:['카론','CHARON'],sk:['비행','Flight'],d:['8챕터 보스 · RT1-06','Chapter 8 boss · RT1-06'],hp:22000,armor:0,speed:5.6,jump:9,kb:.2,dmg:30,skill:'none',cd:99,dur:0,hw:.3,h:1.9,eye:1.78},
+  frozen:{n:['동사자 좀비','Frozen Zombie'],sk:['눈 속 매복','Buried in the snow'],d:['8챕터 · 눈더미 속에 묻혀 있다가 가까이 오거나 총소리가 나면 튀어나온다 — 불과 폭발에 약하다','Chapter 8 · buried in the drifts until you come near or fire close by — weak to fire and blasts'],hp:1500,armor:30,speed:5,jump:6.6,kb:.9,dmg:30,skill:'none',cd:99,dur:0,hw:.31,h:1.86,eye:1.7}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield','lorelei','listener','charon','frozen'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={pvp:false,st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};
