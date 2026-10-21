@@ -314,7 +314,7 @@ function stRemote(a,f){const S=stS(a),k=f[0];if(a.cur!=='startrack')equip(a,'sta
 // ---------- the reload (the sheet's reloadRule and reloadAnim timeline) ----------
 // times in the sheet's 2.41 s: the drum goes at the throw (with what was in it), the new one is full at the end of insert
 const ST_RL=(()=>{let t=0;const at={};for(const p of STK.reloadAnim){at[p.id]=[t,t+p.sec];t+=p.sec}return {T:t,at}})();
-function stReload(a,W,am){a.zoom=0;a.burstN=0;a.reloadT=W.reload;a.relKind='mag';a.relCh=am.mag>0;if(a.isPlayer)VM.reload(W,W.reload,'mag',am.mag===0)}
+function stReload(a,W,am){a.zoom=0;a.burstN=0;a.reloadT=W.reload;a.relKind='mag';a.relCh=am.mag>0;if(a.isPlayer)VM.reload(W,W.reload,'mag',am.mag===0);else if(typeof SNDV!=='undefined')SNDV.ping(a,'rl',25)}
 function stRelTick(a,W,am){const S=stS(a);if(!(a.reloadT>0&&a.relKind==='mag')){S.rel=null;return}
   if(!S.rel)S.rel={D:a.reloadT,thrown:false,filled:false,si:0};const R0=S.rel,k=R0.D/ST_RL.T,t=(R0.D-a.reloadT)/k;
   if(!R0.thrown&&t>=ST_RL.at.throw[0]){R0.thrown=true;am.mag=0;S.tubes.fill(0)}
@@ -322,6 +322,10 @@ function stRelTick(a,W,am){const S=stS(a);if(!(a.reloadT>0&&a.relKind==='mag')){
   // a bot's reload is heard where it is (the player's from the view model, in step with the hands)
   if(!a.isPlayer)while(R0.si<STK.reloadSounds.length&&t>=STK.reloadSounds[R0.si].at){const e=STK.reloadSounds[R0.si++];AU.at(ST_RSND[e.id],a.c.x,a.c.y+1.2,a.c.z,{vol:1,range:25})}}
 const ST_RSND={clack:'stClack',whoosh:'stWhoosh',tap:'stTap'};
+// another page's body reloading it (v6.95): the sheet's reload sounds where it is, in step (net.js netPuppet; not the engine's magazine)
+function stPupRel(a,W){const k=(W.reload||STS.reload)/ST_RL.T;
+  for(const e of STK.reloadSounds)nyLater(e.at*k,()=>{if(a.alive&&a.cur==='startrack')AU.at(ST_RSND[e.id],a.c.x,a.c.y+1.2,a.c.z,{vol:1,range:25})});
+  if(typeof SNDV!=='undefined')SNDV.ping(a,'rl',25)}
 
 // ---------- what it shows: colours, the glow, the boxes of the flashes, lasers and the beam ----------
 // a colour of the sheet's beam material as a current three.js shows it: base + emissive × intensity, in linear light, back to sRGB

@@ -95,6 +95,7 @@ function equip(a,id,instant){if(!id||a.cur===id&&!instant)return;const W=WPN[id]
   if(a.cur&&a.cur!==id){a.prev=a.cur;a.awayId=a.cur;a.awayT=G.t;if(!instant)a.swapT=G.t}
   a.cur=id;a.reloadT=0;a.relKind=null;a.drawT=instant?0:(W.draw||.5)*(quick?QUICK_DRAW:1)+(fd?fd.x||.5:0);a.zoom=0;a.boltT=0;a.pumpT=0;a.shots=0;a.throwT=0;a.nHold=0;a.bSt=0;a.bT=0;a.hamB=false;a.dualB=false;a.burstN=0;a.nextFire=Math.min(a.nextFire,G.t);// a swing already under way still lands (pendingMelee keeps its weapon)
   if(a.isPlayer){VM.set(id==='claw'?'claw':id,a.team===TZ?'z_'+a.zc:a.skin);if(fd)VM.firstDraw(W.draw||.5,fd.x||.5,fd);else if(quick)VM.draw(a.drawT);if(!instant)AU.play(W.drawS||(W.kind==='melee'?'kdraw':'draw'),{vol:.5,rate:(W.drawS?1:id==='axe'?.72:id==='hammer'?.58:1)*(quick?1.3:1)})}
+  else if(!instant&&a.alive&&a.team===TH&&W.kind!=='claw')othSnd(a,W.drawS||(W.kind==='melee'?'kdraw':'draw'),.45,20);
   // 칼 챈샷 (draw cut): a blade drawn within a second of a gunshot, with an enemy in reach in front, comes out as an instant heavy cut —
   // full heavy damage and knockback on top of the shot that was just fired
   if(!instant&&W.kind==='melee'&&!W.noDC&&a.team===TH&&a.alive&&G.t-(a.lastFire==null?-9:a.lastFire)<DRAW_CUT_WIN){const r=meleeHit(a,W.range[1],.8);
@@ -276,9 +277,12 @@ function headStand(a){const c=a.c;a.onHead=null;if(c.vy>.5||window.__noStack)ret
 const stepName=s=>s==='metal'?'step_metal':s==='dirt'?'step_dirt':s==='wood'?'step_wood':'step_conc';
 function zStepK(a){const Z=ZCLASS[a.zc]||ZCLASS.rager,w=clamp((Z.hw||.3)*(Z.h||1.8)/.54,.75,2.2);return [clamp(1-.3*(w-1),.7,1.15),clamp(.7+.3*w,.85,1.4)]}
 function stepSnd(a,k,rate,dl){const c=a.c,v=k*(CFG.stepVol==null?1:CFG.stepVol);
-  if(a.team===TZ){const z=zStepK(a);if(a.isPlayer)AU.play('zstep',{vol:.35*v,rate:z[0]*rate});else AU.stepAt('zstep',c.x,c.y,c.z,{vol:1.8*z[1]*k,rate:z[0]*rate,range:45,dl});return}
-  const nm=stepName(surfaceAt(c.x,c.y,c.z));if(a.isPlayer)AU.play(nm,{vol:.4*v,rate});else AU.stepAt(nm,c.x,c.y,c.z,{vol:1.7*k,rate,dl})}
+  if(a.team===TZ){const z=zStepK(a);if(a.isPlayer)AU.play('zstep',{vol:.35*v,rate:z[0]*rate});else{AU.stepAt('zstep',c.x,c.y,c.z,{vol:1.8*z[1]*k,rate:z[0]*rate,range:45,dl});if(typeof SNDV!=='undefined')SNDV.ping(a,'step',45)}return}
+  const nm=stepName(surfaceAt(c.x,c.y,c.z));if(a.isPlayer)AU.play(nm,{vol:.4*v,rate});else{AU.stepAt(nm,c.x,c.y,c.z,{vol:1.7*k,rate,dl});if(typeof SNDV!=='undefined')SNDV.ping(a,'step',40)}}
 function footstep(a){if(a.team===TH&&a.cmd.walk||a.duck)return;stepSnd(a,1,1)}
+// another's gear (v6.95): a reload's magazine out / in, a shell, a weapon drawn — heard where it is (25 m), shown by the sound direction
+// display (sndviz.js) to whoever has it on
+function othSnd(a,name,vol,range){AU.at(name,a.c.x,a.c.y+1.2,a.c.z,{vol,range});if(typeof SNDV!=='undefined')SNDV.ping(a,'rl',range)}
 // soft player-vs-player collision (zombies can be body-blocked)
 function separate(dt){const A=G.actors;for(let i=0;i<A.length;i++){const a=A[i];if(!a.alive)continue;for(let j=i+1;j<A.length;j++){const b=A[j];if(!b.alive)continue;
   const dx=b.c.x-a.c.x,dz=b.c.z-a.c.z;const r=a.c.hw+b.c.hw;if(Math.abs(dx)>r||Math.abs(dz)>r)continue;if(a.c.y+a.c.h<b.c.y+.1||b.c.y+b.c.h<a.c.y+.1)continue;
@@ -340,16 +344,16 @@ function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(a.reloadT>0){a.reloadT-=dt;
     if(W.shellRel){if(cmd.fire&&!pc.fire&&am.mag>0&&a.relKind==='shell'){a.reloadT=0;a.relKind=null;if(a.isPlayer)VM.stopReload();if(W.relFire){a.drawT=0;a.nextFire=Math.min(a.nextFire,G.t)}}
       else if(a.reloadT<=0){// one shell in; the view model's clip plays the push and its click, and racks the gun after the last one if it was loaded from empty
-        if(am.mag<W.mag&&am.res>0){am.mag++;am.res--;if(a.isPlayer)VM.shellIn(!(am.mag<W.mag&&am.res>0),W.shellRel)}
+        if(am.mag<W.mag&&am.res>0){am.mag++;am.res--;if(a.isPlayer)VM.shellIn(!(am.mag<W.mag&&am.res>0),W.shellRel);else othSnd(a,'shellin',.45,22)}
         if(am.mag<W.mag&&am.res>0){a.reloadT=W.shellRel;a.relKind='shell'}else a.relKind=null}}
-    else if(a.reloadT<=0){const cap=W.mag+(W.ch&&a.relCh?(W.dual?2:1):0),need=cap-am.mag,take=Math.min(Math.max(0,need),am.res);am.mag+=take;am.res-=take;a.relKind=null}
+    else if(a.reloadT<=0){const cap=W.mag+(W.ch&&a.relCh?(W.dual?2:1):0),need=cap-am.mag,take=Math.min(Math.max(0,need),am.res);am.mag+=take;am.res-=take;a.relKind=null;if(!a.isPlayer&&take>0)othSnd(a,'magin',.5,25)}
     if(!(W.relFire&&a.reloadT<=0&&a.relKind===null&&cmd.fire&&!pc.fire))return}
   const wantReload=(cmd.reload&&!pc.reload)||(am.mag===0&&(cmd.fire||!a.isPlayer));
   if(wantReload&&am.mag<W.mag&&am.res>0&&a.drawT<=0&&a.boltT<=0){a.zoom=0;a.burstN=0;
     // the player's reload sounds come from the view model's clip (vmrel.js), in step with the hands
     if(W.shellRel){a.reloadT=W.relStart;a.relKind='shell';if(a.isPlayer)VM.reload(W,W.relStart,'start',am.mag===0)}
     else{a.reloadT=W.reload;a.relKind='mag';a.relCh=am.mag>0;if(a.isPlayer)VM.reload(W,W.reload,'mag',am.mag===0);
-      else AU.at('magout',a.c.x,a.c.y+1.2,a.c.z,{vol:.4,range:15})}return}
+      else othSnd(a,'magout',.55,25)}return}
   if(W.kind==='saw'){sawUpdate(a,W,dt);return}
   const ready=a.drawT<=0&&a.boltT<=0&&G.t>=a.nextFire;const BW=gbOn(a,W)?gbShot(W):W;
   // a burst keeps going after the trigger is released

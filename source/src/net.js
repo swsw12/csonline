@@ -378,12 +378,14 @@ function netPuppet(a,dt){const B=a.nb,c=a.c;if(!B||!B.length)return;const off=NE
   // discrete state follows the newest sample
   const S=B[B.length-1],F=S.F;const duck=!!(F&4);if(duck!==a.duck){a.duck=duck;setHull(a)}
   const og=!!(F&8),wasOg=c.onGround,air0=a.airT;c.onGround=og;a.airT=og?0:a.airT+dt;a.flash=!!(F&32);a.nv=!!(F&64);a.cmd.walk=!!(F&128);a.zoom=F&1024?1:0;a.spinV=F&16384?1:0;
-  if(a.team===TH&&S.cur>=0&&WL[S.cur]&&a.cur!==WL[S.cur]&&WPN[WL[S.cur]].kind!=='claw')equip(a,WL[S.cur],true);
+  // (v6.95: a weapon drawn, a reload's magazine out / in or a shell, heard where the body is; the StarTrack's reload its own sheet's sounds)
+  if(a.team===TH&&S.cur>=0&&WL[S.cur]&&a.cur!==WL[S.cur]&&WPN[WL[S.cur]].kind!=='claw'){const was=a.cur;equip(a,WL[S.cur],true);const W2=WPN[a.cur];if(was&&a.alive&&W2&&W2.kind!=='claw')othSnd(a,W2.drawS||(W2.kind==='melee'?'kdraw':'draw'),.45,20)}
   else if(a.team===TZ&&a.cur!=='claw'&&a.cur!=='zbomb')equip(a,'claw',true);
   const W=WPN[a.cur]||{};
-  if(F&256&&W.mag){if(!a.nRel){a.nRel=1;a.relKind=W.shellRel?'shell':'mag';a.reloadT=W.shellRel||W.reload||2;AU.at('magout',c.x,c.y+1.2,c.z,{vol:.4,range:15})}
-    else{a.reloadT=Math.max(0,a.reloadT-dt);if(a.reloadT===0)a.reloadT=a.relKind==='shell'?W.shellRel:.001}}
-  else if(a.nRel||a.relKind){a.nRel=0;a.reloadT=0;a.relKind=null}
+  if(F&256&&W.mag){if(!a.nRel){a.nRel=1;a.relKind=W.shellRel?'shell':'mag';a.reloadT=W.shellRel||W.reload||2;
+      if(a.cur==='startrack'&&typeof stPupRel==='function')stPupRel(a,W);else if(a.relKind==='mag')othSnd(a,'magout',.55,25)}
+    else{a.reloadT=Math.max(0,a.reloadT-dt);if(a.reloadT===0){if(a.relKind==='shell')othSnd(a,'shellin',.45,22);a.reloadT=a.relKind==='shell'?W.shellRel:.001}}}
+  else if(a.nRel||a.relKind){if(a.relKind==='mag'&&a.alive&&a.cur!=='startrack')othSnd(a,'magin',.5,25);a.nRel=0;a.reloadT=0;a.relKind=null}
   a.kick=Math.max(0,a.kick-dt*6);a.punchP*=Math.exp(-dt*7);a.punchY*=Math.exp(-dt*7);a.recoilSpread*=Math.exp(-dt*4.5);
   // the Ripper grinding: replayed from the owner's trigger, harmless here
   if(a.cur==='ripper'&&a.team===TH){if(!a.ammo.ripper)a.ammo.ripper={mag:999,res:0};a.ammo.ripper.mag=999;a.cmd.fire=!!(F&512);a.cmd.alt=false;a.drawT=0;NET.ghost++;try{sawUpdate(a,WPN.ripper,dt)}finally{NET.ghost--}a.pc.alt=false}

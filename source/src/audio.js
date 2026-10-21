@@ -391,19 +391,24 @@ const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:
     if(far>.03||o.lp){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=Math.min(o.lp||20000,lerp(17000,1500,Math.pow(far,.8)));f.Q.value=.5;n.connect(f);n=f}
     const g=c.createGain();g.gain.value=vol;n.connect(g);n=g;
     // o.p3: a point in the world, heard through the head (HRTF: front / back / above / below on headphones); the distance is in vol
-    if(o.p3&&c.createPanner){const p=c.createPanner();p.panningModel='HRTF';p.distanceModel='linear';p.rolloffFactor=0;p.refDistance=1;p.maxDistance=1e4;
+    const p3=!!(o.p3&&c.createPanner);if(p3){const p=c.createPanner();p.panningModel='HRTF';p.distanceModel='linear';p.rolloffFactor=0;p.refDistance=1;p.maxDistance=1e4;
       if(p.positionX){p.positionX.value=o.p3[0];p.positionY.value=o.p3[1];p.positionZ.value=o.p3[2]}else p.setPosition(o.p3[0],o.p3[1],o.p3[2]);n.connect(p);n=p}
     else if(c.createStereoPanner&&o.pan){const p=c.createStereoPanner();p.pan.value=clamp(o.pan,-1,1);n.connect(p);n=p}
     n.connect(o.bus||this.sfx);
     const rs=(o.rev!=null?o.rev:(d.rev==null?.12:d.rev))+(o.bus?0:far*.45);if(rs>.01){const sg=c.createGain();sg.gain.value=rs*vol;n.connect(sg);sg.connect(this.revIn)}
-    const t=(o.at||now)+(o.delay||0);s.start(t);this.nvo++;s.onended=()=>{this.nvo--;try{g.disconnect()}catch(e){}};
+    const t=(o.at||now)+(o.delay||0);s.start(t);this.nvo++;if(p3)this.n3=(this.n3|0)+1;s.onended=()=>{this.nvo--;if(p3)this.n3--;try{g.disconnect()}catch(e){}};
     const v={s,g,end:t+s.buffer.duration/s.playbackRate.value};L.push(v);return v},
   // positional: distance attenuation, stereo from the listener's yaw, occlusion muffling
+  // (v6.95: through the head as well — HRTF while there are 3D voices to spare, AU.can3; otherwise left / right with what is behind duller)
   at(name,x,y,z,o){o=o||{};const L=this.L;const dx=x-L.x,dy=y-L.y,dz=z-L.z;const d=Math.hypot(dx,dy,dz);const R0=o.range||45;if(d>R0)return null;
     const att=Math.pow(1-d/R0,1.6)*(1/(1+d*.06));const ang=Math.atan2(dx,dz);const rel=wrapA(ang-(L.yaw+Math.PI));
-    const pan=d<1?0:clamp(Math.sin(rel)*-1,-1,1)*Math.min(1,d/4)*.85;
     let lp=null;if(o.occ!==false&&d>2&&!losClear(L.x,L.y,L.z,x,y+.5,z)){lp=900;o.vol=(o.vol==null?1:o.vol)*.65}
-    return this.play(name,Object.assign({},o,{vol:(o.vol==null?1:o.vol)*att,pan,far:clamp(d/R0,0,1),lp:lp||o.lp,delay:o.delay!=null?o.delay:d/340}))},
+    const q=Object.assign({},o,{vol:(o.vol==null?1:o.vol)*att,far:clamp(d/R0,0,1),lp:lp||o.lp,delay:o.delay!=null?o.delay:d/340});
+    if(d>=1&&this.can3())q.p3=[x,y,z];
+    else{q.pan=d<1?0:clamp(Math.sin(rel)*-1,-1,1)*Math.min(1,d/4)*.85;if(d>=1&&Math.cos(rel)<-.2)q.lp=Math.min(q.lp||2e4,6500)}
+    return this.play(name,q)},
+  // a 3D (HRTF) voice may start: the option on, the browser able, under the cap (32; 16 on a phone or tablet: each one is a convolution)
+  can3(){return CFG.hrtf!==false&&!!(this.ctx&&this.ctx.createPanner)&&(this.n3|0)<(typeof TOUCH!=='undefined'&&TOUCH.on?16:32)},
   // footsteps, jumps and landings (사플, v6.94): loud and far enough to find someone by ear — the level falls 6 dB each time the distance
   // doubles from 2 m and fades out at the range (40 m a human, 45 a zombie); the highs go with distance (air) and through a wall (muffled,
   // half as loud); a little room sound further off. The direction through the head (HRTF, Options: 입체음향) or, without it, left / right
@@ -412,7 +417,7 @@ const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:
     const f=d/R0,sd=SFX[name];let vol=(o.vol==null?1:o.vol)*(CFG.stepVol==null?1:CFG.stepVol)*2/Math.max(2,d)*(1-f*f*f*f),lp=Math.min(o.lp||2e4,lerp(18000,3500,Math.pow(f,.7)));
     if(o.occ!==false&&d>2&&!losClear(L.x,L.y,L.z,x,y+.5,z)){lp=Math.min(lp,750);vol*=.5}
     const q=Object.assign({},o,{vol,lp,far:0,rev:(sd&&sd.rev||.05)+f*.25,delay:o.delay!=null?o.delay:(o.dl||0)+d/340});
-    if(CFG.hrtf!==false&&this.ctx&&this.ctx.createPanner)q.p3=[x,y,z];
+    if(d>=1&&this.can3())q.p3=[x,y,z];
     else{const rel=wrapA(Math.atan2(dx,dz)-(L.yaw+Math.PI));q.pan=d<1?0:clamp(-Math.sin(rel),-1,1)*Math.min(1,d/3)*.9;if(Math.cos(rel)<-.2)q.lp=Math.min(q.lp,5500)}
     return this.play(name,q)},
   // the head that hears (HRTF): where the camera is and which way it faces, every frame (main.js, with AU.L)

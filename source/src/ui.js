@@ -158,7 +158,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
 // ---------------- menus ----------------
 // n small skulls (difficulty rank)
 function skulls(n){const s='<svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 1C4.1 1 1.5 3.6 1.5 7c0 2.1 1 3.6 2.5 4.4V14h2v-1.5h1V14h2v-1.5h1V14h2v-2.6c1.5-.8 2.5-2.3 2.5-4.4C14.5 3.6 11.9 1 8 1zM5.3 9.2a1.6 1.6 0 110-3.2 1.6 1.6 0 010 3.2zm5.4 0a1.6 1.6 0 110-3.2 1.6 1.6 0 010 3.2z"/></svg>';return s.repeat(n)}
-const CFG=Object.assign({mode:'mut',map:'q7',minimap:true,bots:15,diff:1,rounds:7,time:180,skin:'guard',zclass:'rager',sens:1.6,fov:74,scale:'auto',bloom:true,shadow:true,vol:.7,music:true,stepVol:1,hrtf:true,gamma:1,invert:false,gore:1},LS.get('cfg',{}));
+const CFG=Object.assign({mode:'mut',map:'q7',minimap:true,bots:15,diff:1,rounds:7,time:180,skin:'guard',zclass:'rager',sens:1.6,fov:74,scale:'auto',bloom:true,shadow:true,vol:.7,music:true,stepVol:1,hrtf:true,sndViz:false,gamma:1,invert:false,gore:1},LS.get('cfg',{}));
 if(CFG.gore!==0)CFG.gore=1;// (v6.73: 15세 is the most — 원본 is no longer offered)
 function saveCfg(){LS.set('cfg',CFG)}
 // v3 renders at full resolution by default: reset the old half-resolution default once

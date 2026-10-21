@@ -138,7 +138,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.a
   const loud=W.spin?(a.shots%2===0):true;
   if(W.sp){FX.muzzle(mz.x,mz.y,mz.z,base.x,base.y,base.z,true);if(a.isPlayer)AU.play(W.spSnd||W.snd,{vol:.9,rate:.8});else AU.at(W.spSnd||W.snd,eye.x,eye.y,eye.z,{vol:.9,range:70,rate:.8})}
   if(a.isPlayer){if(loud)AU.play(W.snd,{vol:W.spin?.75:.95});if(W.shell&&Math.random()<(W.spin?.25:.6))AU.play(W.kind==='shotgun'?'shellcase':'casing',{vol:.5,delay:rr(.25,.45)});VM.fire(W,a.dualSide);if(hitAny)HUD.hitmark(hsAny)}
-  else if(loud)AU.at(W.snd,eye.x,eye.y,eye.z,{vol:.9,range:70});
+  else if(loud){AU.at(W.snd,eye.x,eye.y,eye.z,{vol:.9,range:70});if(typeof SNDV!=='undefined')SNDV.ping(a,'shot',70)}
   if(W.bolt){a.boltT=.95;a.zoomWas=a.zoom;a.zoom=0}
   if(W.pump){a.pumpT=.55}
   a.lastFire=G.t;alertBots(a,eye.x,eye.z)}
