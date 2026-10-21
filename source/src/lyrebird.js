@@ -119,7 +119,7 @@ const DECOY={list:[],id:0,
   update(dt){const W=SCEN.H.map(h=>WPN[h.cur]).filter(w=>w&&w.snd&&w.kind!=='melee'&&w.kind!=='nade');
     for(let i=this.list.length-1;i>=0;i--){const D=this.list[i];D.t+=dt;D.nx-=dt;if(D.nx<=0){D.nx=rr(.9,2.2);const r=Math.random();
         if(r<.55&&W.length){const w=rpick(W),n=1+Math.floor(Math.random()*3);for(let k=0;k<n;k++)SCEN.later(k*rr(.09,.16),()=>{if(D.m.parent)AU.at(w.snd,D.x,D.y+1,D.z,{vol:.85,range:70})})}
-        else if(r<.85){for(let k=0;k<4;k++)SCEN.later(k*.3,()=>{if(D.m.parent)AU.at('step_conc',D.x+rr(-1,1),D.y,D.z+rr(-1,1),{vol:.7,range:25})})}else AU.at('lyradio',D.x,D.y+.4,D.z,{vol:.7,range:30})}
+        else if(r<.85){for(let k=0;k<4;k++)SCEN.later(k*.3,()=>{if(D.m.parent)AU.stepAt('step_conc',D.x+rr(-1,1),D.y,D.z+rr(-1,1),{vol:1.7})})}else AU.at('lyradio',D.x,D.y+.4,D.z,{vol:.7,range:30})}
       if(Math.random()<dt*3)FX.spawn({x:D.x-.09,y:D.y+.18,z:D.z,life:.15,s0:.06,s1:.04,r:1,g:.5,b:1,a:.9,f:1,add:1});
       if(D.t>D.life&&!NET.cli)this.kill(D,0)}},
   kill(D,shot){const i=this.list.indexOf(D);if(i<0)return;this.list.splice(i,1);worldRemoveDyn(D.box);R.scene.remove(D.m);D.m.material.dispose();

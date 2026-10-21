@@ -141,8 +141,8 @@ SFX_ORDER.push('hsprint','hpant','hdshot','hskoff');
   const ss=SCEN.stageStart;SCEN.stageStart=function(kind,plan){const run=!(NET.cli&&!plan);const r=ss.call(this,kind,plan);if(run)for(const a of G.actors)if(!a.scen)HSK.clear(a);return r};
   // out of breath: heavy, dragging steps
   const fs=footstep;footstep=function(a){const h=a.hsk;if(!h||!(h.ex>0)||a.team!==TH||a.cmd.walk||a.duck)return fs(a);const c=a.c,s=surfaceAt(c.x,c.y,c.z);
-    const nm=s==='metal'?'step_metal':s==='dirt'?'step_dirt':s==='wood'?'step_wood':'step_conc';
-    if(a.isPlayer){AU.play(nm,{vol:.42,rate:.74});AU.play('step_dirt',{vol:.13,rate:.55,delay:.07})}else AU.at(nm,c.x,c.y,c.z,{vol:.8,range:26,rate:.74})};
+    const nm=stepName(s),v=CFG.stepVol==null?1:CFG.stepVol;
+    if(a.isPlayer){AU.play(nm,{vol:.42*v,rate:.74});AU.play('step_dirt',{vol:.13*v,rate:.55,delay:.07})}else AU.stepAt(nm,c.x,c.y,c.z,{vol:1.7,rate:.74})};
   // bots decide after their own logic has run (ai.js keeps AI.human as the entry point)
   const ah=AI.human;AI.human=function(a,dt){ah.call(this,a,dt);HSK.bot(a,dt)};
   // HUD

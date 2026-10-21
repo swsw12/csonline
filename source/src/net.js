@@ -377,7 +377,7 @@ function netPuppet(a,dt){const B=a.nb,c=a.c;if(!B||!B.length)return;const off=NE
   while(B.length>2&&B[1].t<rt-400)B.shift();
   // discrete state follows the newest sample
   const S=B[B.length-1],F=S.F;const duck=!!(F&4);if(duck!==a.duck){a.duck=duck;setHull(a)}
-  const og=!!(F&8);c.onGround=og;a.airT=og?0:a.airT+dt;a.flash=!!(F&32);a.nv=!!(F&64);a.cmd.walk=!!(F&128);a.zoom=F&1024?1:0;a.spinV=F&16384?1:0;
+  const og=!!(F&8),wasOg=c.onGround,air0=a.airT;c.onGround=og;a.airT=og?0:a.airT+dt;a.flash=!!(F&32);a.nv=!!(F&64);a.cmd.walk=!!(F&128);a.zoom=F&1024?1:0;a.spinV=F&16384?1:0;
   if(a.team===TH&&S.cur>=0&&WL[S.cur]&&a.cur!==WL[S.cur]&&WPN[WL[S.cur]].kind!=='claw')equip(a,WL[S.cur],true);
   else if(a.team===TZ&&a.cur!=='claw'&&a.cur!=='zbomb')equip(a,'claw',true);
   const W=WPN[a.cur]||{};
@@ -387,8 +387,9 @@ function netPuppet(a,dt){const B=a.nb,c=a.c;if(!B||!B.length)return;const off=NE
   a.kick=Math.max(0,a.kick-dt*6);a.punchP*=Math.exp(-dt*7);a.punchY*=Math.exp(-dt*7);a.recoilSpread*=Math.exp(-dt*4.5);
   // the Ripper grinding: replayed from the owner's trigger, harmless here
   if(a.cur==='ripper'&&a.team===TH){if(!a.ammo.ripper)a.ammo.ripper={mag:999,res:0};a.ammo.ripper.mag=999;a.cmd.fire=!!(F&512);a.cmd.alt=false;a.drawT=0;NET.ghost++;try{sawUpdate(a,WPN.ripper,dt)}finally{NET.ghost--}a.pc.alt=false}
-  // footsteps from the replayed motion
-  const hs=Math.hypot(c.vx,c.vz);if(og&&hs>1.5){a.stepAcc+=hs*dt;if(a.stepAcc>(a.team===TZ?1.7:1.9)){a.stepAcc=0;footstep(a)}}}
+  // footsteps from the replayed motion; a jump's push-off and its landing (v6.94: the flags run NET_DELAY ahead of the drawn motion)
+  const hs=Math.hypot(c.vx,c.vz);if(og&&hs>1.5){a.stepAcc+=hs*dt;if(a.stepAcc>(a.team===TZ?1.7:1.9)){a.stepAcc=0;footstep(a)}}
+  if(a.alive){if(og&&!wasOg&&air0>.3)stepSnd(a,clamp(air0*1.6,1,2),.85,NET_DELAY/1000);else if(!og&&wasOg&&B.length>1&&S.y>B[B.length-2].y+.02)stepSnd(a,.6,1.1,NET_DELAY/1000)}}
 
 // ---------- cosmetic replays of other players' actions ----------
 function netQueueFx(a,f){NET.fxQ.push({at:netNow()+NET_DELAY,a,f});if(NET.fxQ.length>300)NET.fxQ.splice(0,100)}

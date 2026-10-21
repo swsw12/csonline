@@ -250,7 +250,7 @@ function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy
   const kd=Math.exp(-dt*(c.onGround?4:1.1));a.kvx*=kd;a.kvz*=kd;
   if(a.frozen>0){a.mvx=a.mvz=0;a.kvx*=.5;a.kvz*=.5}
   // jump
-  if(cmd.jump&&(!a.pc.jump||G.t-(a.landT||-9)<.09)&&c.onGround&&a.frozen<=0&&!(a.rootT>0)&&!(a.holdT>0)){if(a.team===TH)a.bhop=G.t-(a.landT||-9)<BHOP_WIN?Math.min(BHOP_MAX,(a.bhop|0)+1):0;c.vy=jumpV(a);c.onGround=false;c.jumped=true;if(a.isPlayer){VM.jumped();if(a.team===TH)AU.play('step_conc',{vol:.35})}}
+  if(cmd.jump&&(!a.pc.jump||G.t-(a.landT||-9)<.09)&&c.onGround&&a.frozen<=0&&!(a.rootT>0)&&!(a.holdT>0)){if(a.team===TH)a.bhop=G.t-(a.landT||-9)<BHOP_WIN?Math.min(BHOP_MAX,(a.bhop|0)+1):0;c.vy=jumpV(a);c.onGround=false;c.jumped=true;if(a.isPlayer){VM.jumped();if(a.team===TH)AU.play('step_conc',{vol:.35*(CFG.stepVol==null?1:CFG.stepVol)})}else stepSnd(a,.6,1.1)}
   c.vx=a.mvx+a.kvx;c.vz=a.mvz+a.kvz;const ox=c.x,oz=c.z;
   moveChar(c,dt);headStand(a);
   // blocked axes lose their velocity
@@ -258,9 +258,9 @@ function actorPhysics(a,dt){const c=a.c,cmd=a.cmd;const wasG=c.onGround,vy0=c.vy
   c.vx=ddx/Math.max(dt,1e-4);c.vz=ddz/Math.max(dt,1e-4);
   if(c.onGround)a.airT=0;else a.airT+=dt;
   if(c.onGround&&a.bhop>0&&G.t-(a.landT||-9)>BHOP_WIN+.1)a.bhop=0;
-  if(!wasG&&c.onGround){a.landT=G.t;const v=-vy0;if(v>2.5){a.an.land=Math.max(a.an.land||0,clamp((v-2)/9,.2,1));if(a.isPlayer)VM.landed(clamp((v-2)/10,.15,1))}if(v>6.5){if(a.isPlayer){AU.play('land',{vol:clamp(v/14,.3,.9)})}else if(a.team===TZ)AU.at('zstep',c.x,c.y,c.z,{vol:.8});
-      // (no fall damage for humans since v6.26)
-    }}
+  if(!wasG&&c.onGround){a.landT=G.t;const v=-vy0;if(v>2.5){a.an.land=Math.max(a.an.land||0,clamp((v-2)/9,.2,1));if(a.isPlayer)VM.landed(clamp((v-2)/10,.15,1))}if(v>3){if(a.isPlayer){if(v>6.5)AU.play('land',{vol:clamp(v/14,.3,.9)});else stepSnd(a,1.1,.9)}else stepSnd(a,clamp(v/5,1,2),.85)}
+    // (no fall damage for humans since v6.26)
+  }
   if(c.y<-20){c.y=2;c.x=0;c.z=5}
   // footsteps
   const hs=Math.hypot(c.vx,c.vz);if(c.onGround&&hs>1.5){a.stepAcc+=hs*dt;const stride=a.team===TZ?1.7:1.9;if(a.stepAcc>stride){a.stepAcc=0;footstep(a)}}}
@@ -270,9 +270,15 @@ function headStand(a){const c=a.c;a.onHead=null;if(c.vy>.5||window.__noStack)ret
   for(const b of G.actors){if(b===a||!b.alive||b.team!==a.team||b.onHead===a)continue;const r=(c.hw+b.c.hw)*.8;if(Math.abs(b.c.x-c.x)>r||Math.abs(b.c.z-c.z)>r)continue;
     const t=b.c.y+b.c.h;if(c.y<t-.45||c.y>t+.02||t<=top)continue;top=t;sb=b}
   if(!sb||!charFits(c,c.x,top,c.z))return;c.y=top;c.vy=0;c.onGround=true;c.jumped=false;a.onHead=sb}
-function footstep(a){const c=a.c;if(a.team===TH&&a.cmd.walk||a.duck)return;const s=surfaceAt(c.x,c.y,c.z);
-  if(a.team===TZ){if(a.isPlayer)AU.play('zstep',{vol:.35});else AU.at('zstep',c.x,c.y,c.z,{vol:.9,range:30});return}
-  const nm=s==='metal'?'step_metal':s==='dirt'?'step_dirt':s==='wood'?'step_wood':'step_conc';if(a.isPlayer)AU.play(nm,{vol:.4});else AU.at(nm,c.x,c.y,c.z,{vol:.8,range:28})}
+// footsteps (v6.94, 사플): a human's by the surface under it, a zombie's by its build (heavier: lower and louder); someone else's are heard
+// where they are (AU.stepAt: up to 40 m a human, 45 a zombie), the player's own quietly. A walking (Shift) or crouching human is silent;
+// a jump's push-off and its landing are heard too. k: how hard (1 a step), rate: its pitch, dl: a delay (a puppet's motion is drawn late)
+const stepName=s=>s==='metal'?'step_metal':s==='dirt'?'step_dirt':s==='wood'?'step_wood':'step_conc';
+function zStepK(a){const Z=ZCLASS[a.zc]||ZCLASS.rager,w=clamp((Z.hw||.3)*(Z.h||1.8)/.54,.75,2.2);return [clamp(1-.3*(w-1),.7,1.15),clamp(.7+.3*w,.85,1.4)]}
+function stepSnd(a,k,rate,dl){const c=a.c,v=k*(CFG.stepVol==null?1:CFG.stepVol);
+  if(a.team===TZ){const z=zStepK(a);if(a.isPlayer)AU.play('zstep',{vol:.35*v,rate:z[0]*rate});else AU.stepAt('zstep',c.x,c.y,c.z,{vol:1.8*z[1]*k,rate:z[0]*rate,range:45,dl});return}
+  const nm=stepName(surfaceAt(c.x,c.y,c.z));if(a.isPlayer)AU.play(nm,{vol:.4*v,rate});else AU.stepAt(nm,c.x,c.y,c.z,{vol:1.7*k,rate,dl})}
+function footstep(a){if(a.team===TH&&a.cmd.walk||a.duck)return;stepSnd(a,1,1)}
 // soft player-vs-player collision (zombies can be body-blocked)
 function separate(dt){const A=G.actors;for(let i=0;i<A.length;i++){const a=A[i];if(!a.alive)continue;for(let j=i+1;j<A.length;j++){const b=A[j];if(!b.alive)continue;
   const dx=b.c.x-a.c.x,dz=b.c.z-a.c.z;const r=a.c.hw+b.c.hw;if(Math.abs(dx)>r||Math.abs(dz)>r)continue;if(a.c.y+a.c.h<b.c.y+.1||b.c.y+b.c.h<a.c.y+.1)continue;

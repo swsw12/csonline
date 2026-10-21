@@ -337,6 +337,7 @@ const mtof=m=>440*Math.pow(2,(m-69)/12);
 const CHORDS=[{n:[48,51,55,58],b:36},{n:[44,48,51,55],b:32},{n:[46,50,53,58],b:34},{n:[43,47,50,55],b:31}];
 const MUS_LV={calm:{pad:.8,bell:.5,bass:0,drum:0,arp:0,perc:0},prep:{pad:.65,bell:.2,bass:.55,drum:0,arp:.45,perc:0},fight:{pad:.55,bell:.1,bass:.8,drum:.85,arp:.5,perc:.2},intense:{pad:.5,bell:0,bass:1,drum:1,arp:.85,perc:.85},dead:{pad:.35,bell:0,bass:0,drum:0,arp:0,perc:0},win:{pad:.8,bell:.8,bass:0,drum:0,arp:0,perc:0}};
 const MU={started:false,bpm:104,step:0,next:0,state:'calm',T:MUS_LV.calm,L:{},pad:[],padF:null,timer:0};
+const _lsF=new THREE.Vector3(),_lsU=new THREE.Vector3();// (AU.listen)
 const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:false,musicOn:true,voices:{},nvo:0,last:{},mufBase:20000,nextBeat:0,ambOn:false,graph:false,L:{x:0,y:0,z:0,yaw:0},
   ensureCtx(){if(this.ctx)return this.ctx;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;
     try{this.ctx=new AC({latencyHint:'interactive'})}catch(e){try{this.ctx=new AC()}catch(e2){this.ctx=null}}return this.ctx},
@@ -389,7 +390,10 @@ const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:
     const far=clamp(o.far||0,0,1);let n=s;
     if(far>.03||o.lp){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=Math.min(o.lp||20000,lerp(17000,1500,Math.pow(far,.8)));f.Q.value=.5;n.connect(f);n=f}
     const g=c.createGain();g.gain.value=vol;n.connect(g);n=g;
-    if(c.createStereoPanner&&o.pan){const p=c.createStereoPanner();p.pan.value=clamp(o.pan,-1,1);n.connect(p);n=p}
+    // o.p3: a point in the world, heard through the head (HRTF: front / back / above / below on headphones); the distance is in vol
+    if(o.p3&&c.createPanner){const p=c.createPanner();p.panningModel='HRTF';p.distanceModel='linear';p.rolloffFactor=0;p.refDistance=1;p.maxDistance=1e4;
+      if(p.positionX){p.positionX.value=o.p3[0];p.positionY.value=o.p3[1];p.positionZ.value=o.p3[2]}else p.setPosition(o.p3[0],o.p3[1],o.p3[2]);n.connect(p);n=p}
+    else if(c.createStereoPanner&&o.pan){const p=c.createStereoPanner();p.pan.value=clamp(o.pan,-1,1);n.connect(p);n=p}
     n.connect(o.bus||this.sfx);
     const rs=(o.rev!=null?o.rev:(d.rev==null?.12:d.rev))+(o.bus?0:far*.45);if(rs>.01){const sg=c.createGain();sg.gain.value=rs*vol;n.connect(sg);sg.connect(this.revIn)}
     const t=(o.at||now)+(o.delay||0);s.start(t);this.nvo++;s.onended=()=>{this.nvo--;try{g.disconnect()}catch(e){}};
@@ -400,6 +404,24 @@ const AU={ctx:null,bank:{},fromFile:{},ready:false,preparing:false,vol:.7,muted:
     const pan=d<1?0:clamp(Math.sin(rel)*-1,-1,1)*Math.min(1,d/4)*.85;
     let lp=null;if(o.occ!==false&&d>2&&!losClear(L.x,L.y,L.z,x,y+.5,z)){lp=900;o.vol=(o.vol==null?1:o.vol)*.65}
     return this.play(name,Object.assign({},o,{vol:(o.vol==null?1:o.vol)*att,pan,far:clamp(d/R0,0,1),lp:lp||o.lp,delay:o.delay!=null?o.delay:d/340}))},
+  // footsteps, jumps and landings (사플, v6.94): loud and far enough to find someone by ear — the level falls 6 dB each time the distance
+  // doubles from 2 m and fades out at the range (40 m a human, 45 a zombie); the highs go with distance (air) and through a wall (muffled,
+  // half as loud); a little room sound further off. The direction through the head (HRTF, Options: 입체음향) or, without it, left / right
+  // with what is behind a little duller. CFG.stepVol scales every step (Options: 발소리 크기)
+  stepAt(name,x,y,z,o){o=o||{};const L=this.L,dx=x-L.x,dy=y-L.y,dz=z-L.z,d=Math.hypot(dx,dy,dz),R0=o.range||40;if(d>R0)return null;
+    const f=d/R0,sd=SFX[name];let vol=(o.vol==null?1:o.vol)*(CFG.stepVol==null?1:CFG.stepVol)*2/Math.max(2,d)*(1-f*f*f*f),lp=Math.min(o.lp||2e4,lerp(18000,3500,Math.pow(f,.7)));
+    if(o.occ!==false&&d>2&&!losClear(L.x,L.y,L.z,x,y+.5,z)){lp=Math.min(lp,750);vol*=.5}
+    const q=Object.assign({},o,{vol,lp,far:0,rev:(sd&&sd.rev||.05)+f*.25,delay:o.delay!=null?o.delay:(o.dl||0)+d/340});
+    if(CFG.hrtf!==false&&this.ctx&&this.ctx.createPanner)q.p3=[x,y,z];
+    else{const rel=wrapA(Math.atan2(dx,dz)-(L.yaw+Math.PI));q.pan=d<1?0:clamp(-Math.sin(rel),-1,1)*Math.min(1,d/3)*.9;if(Math.cos(rel)<-.2)q.lp=Math.min(q.lp,5500)}
+    return this.play(name,q)},
+  // the head that hears (HRTF): where the camera is and which way it faces, every frame (main.js, with AU.L)
+  listen(cam){const c=this.ctx;if(!c||!c.listener||!cam)return;const Lr=c.listener,p=cam.position,q=cam.quaternion;
+    // (the browser loads its head data with the first HRTF panner: made here, early, not on the first step)
+    if(!this.hrtfW){this.hrtfW=1;try{c.createPanner().panningModel='HRTF'}catch(e){}}
+    _lsF.set(0,0,-1).applyQuaternion(q);_lsU.set(0,1,0).applyQuaternion(q);
+    try{if(Lr.positionX){Lr.positionX.value=p.x;Lr.positionY.value=p.y;Lr.positionZ.value=p.z;Lr.forwardX.value=_lsF.x;Lr.forwardY.value=_lsF.y;Lr.forwardZ.value=_lsF.z;Lr.upX.value=_lsU.x;Lr.upY.value=_lsU.y;Lr.upZ.value=_lsU.z}
+      else{Lr.setPosition(p.x,p.y,p.z);Lr.setOrientation(_lsF.x,_lsF.y,_lsF.z,_lsU.x,_lsU.y,_lsU.z)}}catch(e){}},
   // rotary-barrel motor: one looping voice whose pitch and level follow the spin
   spin(v,firing){const c=this.ctx;if(!c||!this.sfx||c.state!=='running')return;const b=this.bank.spinloop;if(!b||!b.length)return;
     if(!this.spinS){if(!(v>.01))return;const s=c.createBufferSource();s.buffer=b[0];s.loop=true;const g=c.createGain();g.gain.value=0;s.connect(g);g.connect(this.sfx);s.start();this.spinS=s;this.spinG=g}

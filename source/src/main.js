@@ -163,7 +163,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     if(Math.abs(cam.fov-fov)>.01){cam.fov=fov;cam.updateProjectionMatrix()}
     cam.updateMatrixWorld();
     // listener
-    AU.L.x=cam.position.x;AU.L.y=cam.position.y;AU.L.z=cam.position.z;const fw=new THREE.Vector3(0,0,-1).applyQuaternion(cam.quaternion);AU.L.yaw=Math.atan2(-fw.x,-fw.z)},
+    AU.L.x=cam.position.x;AU.L.y=cam.position.y;AU.L.z=cam.position.z;const fw=new THREE.Vector3(0,0,-1).applyQuaternion(cam.quaternion);AU.L.yaw=Math.atan2(-fw.x,-fw.z);AU.listen(cam)},
   // ---------- lights & post per frame ----------
   look(dt){const P=G.player;const PU=R.PU;
     // the flashlight rides the gun: a little right of and below the eye, aimed to cross the line of sight ~7 m out, so its shadows show beside things
