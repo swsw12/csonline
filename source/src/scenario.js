@@ -7,7 +7,7 @@
 const SCEN={POOL:30,STAGES:5,WAVES:3,on:false,stage:1,wave:0,ph:'',t:0,lives:3,queue:[],spawnT:0,remain:0,total:0,boss:null,bossId:-1,acid:[],tq:[],
   H:[],Z:[],pickOpen:false,picked:false,offer:null,best:0,win:false,chkT:0,PH:['prep','wave','break','fail','over']};
 // the horde walks a little slower than infection-mode zombies: there are many more of them
-SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9,argus:1,squad:.86,khepri:1,larva:.86,scrap:.78,lyrebird:1,radioman:.86,spore:.82,mirage:1,tiamat:1,drowned:.86,hazmat:.82,centi:1,legatus:1,shield:.86,lorelei:1,listener:.86,charon:1,frozen:.86,daedalus:1,static:.9,sentry:0};
+SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9,argus:1,squad:.86,khepri:1,larva:.86,scrap:.78,lyrebird:1,radioman:.86,spore:.82,mirage:1,tiamat:1,drowned:.86,hazmat:.82,centi:1,legatus:1,shield:.86,lorelei:1,listener:.86,charon:1,frozen:.86,daedalus:1,static:.9,sentry:0,elpis:1,patient:.88,aed:0};
 SCEN.SPD.strait=.9*6.6/ZCLASS.strait.speed;// (v6.91: chapter 1's straitjackets run as fast as before — .9 × the old table speed 6.6; the class that can be picked runs at 5.9)
 const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;

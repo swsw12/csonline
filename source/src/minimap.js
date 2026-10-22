@@ -66,4 +66,4 @@ const RADAR={cv:null,ctx:null,px:170,t:0,band:0,seen:new Map(),rr:0,
     // north = world -z, turned with the view
     const ax=c+(0*cs-(-1)*sn)*(R0-8*d),ay=c+(0*sn+(-1)*cs)*(R0-8*d);x.font=`bold ${Math.round(10*d)}px sans-serif`;x.textAlign='center';x.textBaseline='middle';
     x.fillStyle='rgba(8,10,14,.75)';x.beginPath();x.arc(ax,ay,6.5*d,0,TAU);x.fill();x.fillStyle='#ffd04a';x.fillText('N',ax,ay+.5*d);
-    if(L.layers.length>1){x.fillStyle='rgba(200,210,220,.7)';x.font=`bold ${Math.round(9*d)}px sans-serif`;x.fillText(b?'2F':'1F',c,W-12*d)}}};
+    if(L.layers.length>1){x.fillStyle='rgba(200,210,220,.7)';x.font=`bold ${Math.round(9*d)}px sans-serif`;x.fillText(MAP.miniName&&MAP.miniName[b]||(b?'2F':'1F'),c,W-12*d)}}};// (v6.99: a map may name its bands — 10챕터's B5)

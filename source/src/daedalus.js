@@ -871,7 +871,7 @@ CHAP[9]={id:9,k:'daedalus',map:'ep9',code:'RT1-04',season:2,n:['다이달로스'
   // after the clear: 02's last log; a card for the season so far
   ending(){EP.later(3,()=>EP.radio('end0'));EP.later(6.5,()=>EP.radio('end1'));EP.later(9.5,()=>EP.radio('end2'));EP.later(11,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 9 CLEAR':'9챕터 클리어'}</h1><p>${L?'One of RT-1 left — 02, gone back to Q-7\'s central lab alone.':'1차 회수팀은 이제 하나 — 02, 홀로 격리구역 Q-7 중앙 연구소로.'}</p><b>${L?'NEXT — THE SEASON 2 FINALE · COMING SOON':'다음 이야기 — 시즌 2 최종장 · 준비 중'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 9 CLEAR':'9챕터 클리어'}</h1><p>${L?'One of RT-1 left — 02, gone back to Q-7\'s central lab alone.':'1차 회수팀은 이제 하나 — 02, 홀로 격리구역 Q-7 중앙 연구소로.'}</p><b>${L?'NEXT — CHAPTER 10 「ELPIS」 · THE SEASON 2 FINALE':'다음 이야기 — 10챕터 「엘피스」 · 시즌 2 최종장'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},7000)},
   radio:{
     start:['2차 회수팀, 설령산이다. 기상 레이더 기지는 산꼭대기 — 올라가는 길은 저 케이블카뿐이야. 하부 정류장부터 확보해.','RT-2, this is Mount Seolryeong. The radar station is on the summit — the only way up is that cable car. Secure the valley station first.',0],

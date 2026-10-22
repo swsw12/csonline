@@ -14,13 +14,14 @@
 // Between stages the next door opens with a supply box; everybody inside the next zone (or 40 s) starts the next stage. The fallen
 // get up when a teammate holds E next to them for 4 s (30 hp); everybody gets up between stages, between waves and at boss phases.
 // Host-authoritative: the host runs the flow; clients get it in the snapshot (SCEN.encState → EP.pack) and as events (eps, epg, ...).
-const EPS={},EP_N=9;// (v6.92: the chapters there are — season 2 starts with chapter 6; CHAP[n].season, 1 when not set; v6.96: chapter 7; v6.97: 8; v6.98: 9)
+const EPS={},EP_N=10;// (v6.92: the chapters there are — season 2 starts with chapter 6; CHAP[n].season, 1 when not set; v6.96: chapter 7; v6.97: 8; v6.98: 9; v6.99: 10, season 2's finale)
 const EP_IDS=Array.from({length:EP_N},(_,i)=>i+1);
 // a season's tag before a chapter's number (season 2 on: S2)
 const epSz=E=>E&&E.season>1?`<u class="sz">S${E.season}</u>`:'';
 {const SOON=[null,{k:'aleph',n:['알레프','ALEPH'],code:'Q7-000'},{k:'argus',n:['아르고스','ARGUS'],code:'RT1-07'},{k:'khepri',n:['케프리','KHEPRI'],code:'Q7-303'},
   {k:'lyrebird',n:['라이어버드','LYREBIRD'],code:'RT1-05'},{k:'tiamat',n:['티아마트','TIAMAT'],code:'Q7-Ω'},{k:'legatus',n:['레가투스','LEGATUS'],code:'RT1-01',season:2},
-  {k:'lorelei',n:['로렐라이','LORELEI'],code:'RT1-03',season:2},{k:'charon',n:['카론','CHARON'],code:'RT1-06',season:2},{k:'daedalus',n:['다이달로스','DAEDALUS'],code:'RT1-04',season:2}];
+  {k:'lorelei',n:['로렐라이','LORELEI'],code:'RT1-03',season:2},{k:'charon',n:['카론','CHARON'],code:'RT1-06',season:2},{k:'daedalus',n:['다이달로스','DAEDALUS'],code:'RT1-04',season:2},
+  {k:'elpis',n:['엘피스','ELPIS'],code:'RT1-02',season:2}];
   for(let n=1;n<=EP_N;n++)EPS[n]=CHAP[n]||Object.assign({id:n,soon:1},SOON[n])}
 // the scenario plays chapter 1 until the player picks another (0 = the free scenario)
 const epSel=c=>c&&c.ep!=null?c.ep|0:1;

@@ -478,7 +478,7 @@ create index if not exists gacha_log_user on public.gacha_log(user_id, id desc);
 -- (time in seconds, medal S / A / B, lives lost) and when it was first cleared (the first-clear reward is paid once per row)
 create table if not exists public.ep_records (
   user_id    uuid not null references auth.users(id) on delete cascade,
-  ep         integer not null check (ep between 1 and 9),
+  ep         integer not null check (ep between 1 and 30),
   diff       integer not null check (diff between 0 and 3),
   plays      integer not null default 0,
   clears     integer not null default 0,
@@ -493,7 +493,7 @@ create table if not exists public.ep_records (
 -- gave every page, so its players' separate claims find each other), and the accounts of that match that claimed it within
 -- 15 minutes (at most 8). Read through qz_ep_firsts only.
 create table if not exists public.ep_firsts (
-  ep         integer not null check (ep between 1 and 9),
+  ep         integer not null check (ep between 1 and 30),
   diff       integer not null check (diff between 0 and 3),
   match_id   text not null,
   at         timestamptz not null default now(),
@@ -509,11 +509,12 @@ create table if not exists public.ep_first_members (
   foreign key (ep, diff) references public.ep_firsts (ep, diff) on delete cascade
 );
 create index if not exists ep_first_members_user on public.ep_first_members (user_id);
--- v6.92: chapter 6 (season 2) — the episode columns take chapters 1–9 (a table made before this one had 1–5); qz_ep_max says which are out
+-- v6.92: chapter 6 (season 2) — the episode columns take chapters 1–9 (a table made before this one had 1–5); qz_ep_max says which are out.
+-- v6.99: chapter 10 (season 2's finale) — 1–30, room for the seasons to come
 alter table public.ep_records drop constraint if exists ep_records_ep_check;
-alter table public.ep_records add constraint ep_records_ep_check check (ep between 1 and 9);
+alter table public.ep_records add constraint ep_records_ep_check check (ep between 1 and 30);
 alter table public.ep_firsts drop constraint if exists ep_firsts_ep_check;
-alter table public.ep_firsts add constraint ep_firsts_ep_check check (ep between 1 and 9);
+alter table public.ep_firsts add constraint ep_firsts_ep_check check (ep between 1 and 30);
 -- v6.74: the ticket the server hands a page as a match starts there (qz_match_start); the match's claim (qz_claim, once) and its rounds'
 -- (qz_round_claim) bring it back. started_at = when the server saw the match start: the claim counts the minutes from it (not from the
 -- last claim), and a scenario clear can take no longer than that. mode / ep / diff are fixed at the start; mt = the match's own id.
@@ -1161,19 +1162,22 @@ begin
     left(regexp_replace(left(coalesce(p_match, ''), 64), '[^A-Za-z0-9]', '', 'g'), 24));
   return jsonb_build_object('token', v_tok);
 end $$;
--- v6.92: the last chapter there is (6: season 2's first; v6.96: 7; v6.97: 8; v6.98: 9 — the ep columns take 1–9, a tenth will need them widened); a match or a claim for a later one counts as this one's, and qz_me tells the game
+-- v6.92: the last chapter there is (6: season 2's first; v6.96: 7; v6.97: 8; v6.98: 9; v6.99: 10 — the ep columns take 1–30 since); a match or a claim for a later one counts as this one's, and qz_me tells the game
 create or replace function public.qz_ep_max() returns integer
 language sql immutable set search_path = '' as $$
-  select 9
+  select 10
 $$;
 -- the shortest clear of each chapter × difficulty (easy, normal, hard, expert) the server counts, in seconds: about 0.7 of the fastest a
 -- team of four bots cleared it that could not be hurt and hit three times as hard (v6.74: 3:16 – 6:00 a chapter, 3:53 – 8:29 on expert;
 -- v6.92 chapter 6: 2:42 – 4:24, 3:30 on expert; v6.96 chapter 7: 4:55 – 5:11, 6:18 on expert — its foyer holds three points 20 s each; v6.97 chapter 8: 4:29 – 4:30, 5:08 on hard, 5:30 on expert — the tower's cab is held 80 s), so no real team is faster (bots that could be hurt took twice as long and more).
 -- v6.98 chapter 9: the bots took 6:21 – 6:24, 7:44 on hard, 7:36 on expert, but most of it goes as fast for anyone (the waves' pace, the cable car's 26 s, the
--- prep, the escape's way back through the maze), so its row is what a strong team of four could do (reckoned 4:00 – 5:00) less 15 %
+-- prep, the escape's way back through the maze), so its row is what a strong team of four could do (reckoned 4:00 – 5:00) less 15 %;
+-- v6.99 chapter 10: the bots took 5:20 – 5:56 (5:45 on expert), and most of that goes as fast for anyone — the yard's three waves, the 24 s
+-- ride, the 75 s hold, the preps, the run back to the car come to some 4:30 with the boss's own invulnerable seconds — so its row is
+-- about 0.75 of the bots' (4:00 – 4:20)
 create or replace function public.qz_ep_min(p_ep integer, p_diff integer) returns integer
 language sql immutable set search_path = '' as $$
-  select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350], [110, 110, 110, 150], [200, 200, 200, 260], [180, 180, 210, 230], [200, 210, 230, 250]]::integer[])[p_ep][p_diff + 1], 240)
+  select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350], [110, 110, 110, 150], [200, 200, 200, 260], [180, 180, 210, 230], [200, 210, 230, 250], [240, 240, 250, 260]]::integer[])[p_ep][p_diff + 1], 240)
 $$;
 -- v6.74: the most each achievement counter may take in a Korean day (qz_claim, qz_round_claim); the rest of a match's numbers is dropped
 create or replace function public.qz_ach_day() returns jsonb
@@ -1191,7 +1195,7 @@ $$;
 -- the coins for a finished match: worked out here from the match's numbers, every one of them capped. The same numbers
 -- (clamped the same way) move today's daily missions on (v6.12: p_hs = the player's headshot kills, at most p_kills).
 -- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them.
--- v6.20: an episode of the zombie scenario (p_ep 1..qz_ep_max: 9 since v6.98) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
+-- v6.20: an episode of the zombie scenario (p_ep 1..qz_ep_max: 10 since v6.99) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
 -- and goes on ep_records (p_time = the clear time in seconds, p_lives = lives lost, p_bonus = escaped in time); the first clear of
 -- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder.
 -- v6.24: p_match = the match's id (the same on every page of it): the first clear of an episode × difficulty starts its hall-of-fame

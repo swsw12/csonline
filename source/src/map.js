@@ -366,11 +366,11 @@ function mapOk(mode,id){const D=MAPDEFS[id];if(!D||D.practice||D.ep)return false
 function mapsFor(mode){return MAPLIST().filter(id=>mapOk(mode,id))}
 function buildMapData(id){const D=MAPDEFS[id];
   Object.assign(MAP,{id,gates:{},ez:null,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fires:[],smoke:[],spray:[],dyn:[],moon:null,probe:null,probeY:D.probeY||null,env:D.env,cam:null,spawnYaw:null,
-    ambIn:D.env.ambIn?new THREE.Color(D.env.ambIn):null,ambOut:D.env.ambOut?new THREE.Color(D.env.ambOut):null,bounds:D.bounds||[-30,-30,30,30],miniCut:D.mini||null});
+    ambIn:D.env.ambIn?new THREE.Color(D.env.ambIn):null,ambOut:D.env.ambOut?new THREE.Color(D.env.ambOut):null,bounds:D.bounds||[-30,-30,30,30],miniCut:D.mini||null,miniName:D.miniName||null});
   D.build()}
 // ---------- loading and switching: a built map is kept (GPU meshes, collision grid, nav graph, probes) so switching back is instant ----------
 const MAPCACHE={};
-const MAPKEYS=['gates','ez','mini','miniCut','id','boxes','lights','spawns','camps','zspawns','deco','fires','smoke','spray','dyn','moon','meshes','probe','probeY','env','cam','spawnYaw','ambIn','ambOut','bounds'];
+const MAPKEYS=['gates','ez','mini','miniCut','id','boxes','lights','spawns','camps','zspawns','deco','fires','smoke','spray','dyn','moon','meshes','probe','probeY','env','cam','spawnYaw','ambIn','ambOut','bounds','miniName'];
 function* mapLoader(id){
   if(MAP.id){const C=MAPCACHE[MAP.id]={};for(const k of MAPKEYS)C[k]=MAP[k];C.cells=WORLD.cells;C.grid=[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh];
     C.nav={nodes:NAV.nodes,col:NAV.col,g:NAV.g,f:NAV.f,came:NAV.came,mark:NAV.mark,heap:NAV.heap,hf:NAV.hf,X0:NAV.X0,Z0:NAV.Z0,NX:NAV.NX,NZ:NAV.NZ};C.rainHM=FX.rain?FX.rain.hm:null;

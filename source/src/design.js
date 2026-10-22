@@ -423,9 +423,11 @@ function defHuman(k){
 //        | 'charon' 카론(8챕터 보스: 1차 회수팀 조종사 — 헬기와 조명탄 권총은 charon.js 가 만든다) | 'frozen' 동사자 좀비(8챕터: 얼어붙은 지상 근무자)
 //        | 'daedalus' 다이달로스(9챕터 보스: 1차 회수팀 공병 — 못총 · 렌치 · 토치 · 날개는 daedalus.js 가 붙인다) | 'static' 감전 좀비(9챕터: 번개 맞은 관측소 정비원)
 //        | 'sentry' 자동 포탑(9챕터: 포탑은 daedalus.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시)
+//        | 'elpis' 엘피스(10챕터 보스: 1차 회수팀 의무병 — 다트 권총 · 패들 · 링거 팩 · 군번줄은 elpis.js 가 붙인다) | 'patient' 환자 좀비(10챕터: 지하 병동의 환자)
+//        | 'aed' 제세동기(10챕터: 기계는 elpis.js 가 따로 그리고, 여기 몸은 숨겨 둔 자리표시)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
-function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'||k==='sentry'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
+function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'||k==='sentry'||k==='aed'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
   let o={},mats,decor,extra=()=>[];const vein=host||boss?'#ff3020':null,eyeH=host?'#ff3a1a':boss?'#ff5a20':null;
   // shared gore materials: exposed bone, intestine, tumour flesh, nails
   const goreM={bone:{base:'#d4ccae',style:'plate',gloss:243},guts:{base:'#a03a34',style:'meat'},tumor:{base:'#6a3a48',style:'tumor'},nail:{base:'#cfc4a0',style:'plate',gloss:246},flesh:{base:'#8a1c14',style:'flesh'}};
@@ -1013,6 +1015,73 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       return [{n:'hat',b:2,c:[0,hc[1]+o.headH*.4,o.headZ],s:[o.headW*1.2,o.headH*.38,o.headD*1.2],m:'hat'},{n:'hat',b:2,c:[0,hc[1]+o.headH*.24,o.headZ-o.headD*.08],s:[o.headW*1.32,.025,o.headD*1.36],m:'hat'},
         {n:'lampG',b:2,c:[0,hc[1]+o.headH*.42,o.headZ-o.headD*.63],s:[.065,.05,.035],m:'lampG'},
         {n:'cable',b:0,c:[.21,o.hipY-.03,.05],s:[.06,.15,.15],m:'cable'}]}}
+  // ▶ 엘피스 (elpis, 10챕터 보스 RT1-02) — 감염된 1차 회수팀 의무병 (게임이 1.1배로 키운다)
+  //    회녹색 RT-1 전투복 위에 의무병 조끼(주머니 셋, 가슴과 등의 흰 바탕 초록 십자, 등 'RT1-02'), 왼팔에 흰 완장(초록 십자),
+  //    목에 건 청진기, 턱 밑으로 내린 하늘색 수술용 마스크, 뒤로 틀어 올린 검은 머리(쪽), 피에 젖은 하늘색 니트릴 장갑,
+  //    어깨끈에 꽂은 지혈대, 오른 허벅지의 의무 파우치, 무릎 보호대. 창백한 피부 아래 원액의 초록 혈관(어둠에서 빛난다),
+  //    초록빛 눈과 눈물 자국. 다트 권총 · 제세동 패들 · 링거 팩 · 군번줄 · 마지막 주사기는 게임이 따로 붙인다(elpis.js).
+  else if(k==='elpis'){// 의무병 — RT-1's medic: fatigues under a medic's vest (a green cross), a stethoscope, the surgical mask pulled down, her hair in a bun
+    o={hipY:.95,thigh:.44,legSep:.095,legW:.14,legD:.16,shinW:.12,torsoW:.39,torsoH:.5,torsoD:.23,shX:.235,armW:.105,upper:.3,fore:.29,hand:.11,headW:.215,headH:.255,headD:.235,headZ:-.02,neck:.1,
+      claw:.03,fingL:.56,curl:.4,curlJ:201,ears:[0,0]};
+    const sk='#a8b2a6',fs='#5a6252',gn='#4aff86',wh='#e6e6de',gc='#2a9a4a';
+    // (a cross: two clean bars)
+    const cross=(u,v,s,c)=>[['solid',u-s,v-s*.34,u+s,v+s*.34,c],['solid',u-s*.34,v-s,u+s*.34,v+s,c]];
+    mats=Object.assign({top:{base:fs},legs:{base:fs},sleeve:{base:fs},fore:{base:fs},shin:{base:fs},skin:{base:sk,style:'zskin',blot:'#3a5a44'},hand:{base:'#78aed6',style:'rubber'},
+      boot:{base:'#1e1a16',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#3a5a44'},vest:{base:'#3e4636'},hair:{base:'#16120e',style:'hair'},mask:{base:'#8cbccc'},
+      steth:{base:'#1a1a1a',style:'rubber'},chest:{base:'#c8ccd0',style:'plate',gloss:248},band:{base:wh},tq:{base:'#1c1c1c',style:'rubber'},tqT:{base:'#c83a2a',style:'plate',gloss:246},
+      pad:{base:'#2a2c28',style:'rubber'},pouch:{base:'#4a5240'},pack:{base:'#424a3a'}},goreM);
+    decor={torso:{front:[['zip',.5],['grime',.45],['blood',2,202],['veins',3,gn,1]],back:[['grime',.45]],side:[['grime',.4]]},
+      vest:{front:[['pocket',.06,.08,.3,.4,'#343c2c'],['pocket',.36,.08,.64,.36,'#343c2c'],['pocket',.7,.08,.94,.4,'#343c2c'],['rect',.6,.56,.9,.88,wh],...cross(.75,.72,.11,gc),
+          ['grime',.35],['soak',0,.35,'#3a0a0a',.45],['blood',1,204]],
+        back:[['grime',.4]],side:[['grime',.35]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#a6ffc4',tears:1}],['veins',2,gn,1],['rect',0,.9,1,1,'#16120e']],side:[['rect',0,.6,1,1,'#16120e'],['veins',1,gn,1]],
+        back:[['rect',0,.25,1,1,'#16120e']],top:[['rect',0,0,1,1,'#16120e']],bottom:[['teethrow','bottom',.32]]},
+      jaw:{top:[['teethrow','top',.34]],front:[['teethrow','top',.4],['drip',.5,.5,2,.5]],bottom:[['soak',0,1,'#4a0612',.4]]},
+      uaL:{all:[['grime',.35]]},uaR:{all:[['grime',.35]]},faL:{all:[['grime',.4]]},faR:{all:[['grime',.35],['blood',1,203]]},
+      handL:{all:[['soak',0,.7,'#5a0808',.55]]},handR:{all:[['soak',0,.85,'#5a0808',.6]]},
+      band:{all:cross(.5,.5,.3,gc)},mask:{all:[['band',.28,.34,'#78a6b6'],['band',.62,.68,'#78a6b6'],['grime',.15]]},
+      pouch:{all:[['rect',.3,.55,.7,.85,wh],...cross(.5,.7,.12,gc),['grime',.4]]},
+      pack:{back:[['pocket',.1,.04,.9,.34,'#363e2e'],['rect',.3,.42,.7,.76,wh],...cross(.5,.59,.13,gc),['text','RT1-02',.13,.96,'#c8ccb8'],['grime',.45]],front:[['grime',.3]],side:[['pocket',.15,.1,.85,.6,'#363e2e'],['grime',.4]],top:[['grime',.3]]},
+      thL:{all:[['grime',.5]]},thR:{all:[['grime',.5]]},shL:{all:[['grime',.5]]},shR:{all:[['grime',.5]]},pelvis:{fb:[['belt',.7,.94,'#2a2418','#8a8a7a']]}};
+    // the vest, the medic's pack on her back (the IV bag hangs off it: elpis.js), the hair (a cap of it, the bun), the mask under her chin,
+    // the stethoscope round her neck (its tubes, the chest piece), the armband, the tourniquet on the vest's strap, the thigh pouch, the knee pads
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,nY=H.piv[2][1],shY=H.piv[3][1],hjY=o.hipY-.03,knY=hjY-o.thigh,zf=-o.torsoD*.66;
+      return [{n:'vest',b:1,c:[0,sY+o.torsoH*.55,0],s:[o.torsoW*1.1,o.torsoH*.72,o.torsoD*1.28],m:'vest'},
+        {n:'pack',b:1,c:[0,sY+o.torsoH*.5,o.torsoD*.5+.1],s:[o.torsoW*.84,o.torsoH*.74,.16],m:'pack'},
+        {n:'hair',b:2,c:[0,hc[1]+o.headH*.45,o.headZ+.012],s:[o.headW*1.08,.06,o.headD*1.07],m:'hair'},
+        {n:'hair',b:2,c:[0,hc[1]+o.headH*.05,o.headZ+o.headD*.52],s:[o.headW*1.04,o.headH*.82,.05],m:'hair'},
+        {n:'hair',b:2,c:[0,hc[1]+o.headH*.2,o.headZ+o.headD*.66],s:[.11,.1,.09],m:'hair'},
+        {n:'mask',b:2,c:[0,nY+o.neck-.085,o.headZ-o.headD*.08],s:[o.headW*.96,.06,o.headD*.78],m:'mask'},
+        {n:'steth',b:1,c:[0,sY+o.torsoH+.015,.01],s:[.2,.022,o.torsoD*.92],m:'steth'},
+        {n:'steth',b:1,c:[-.075,sY+o.torsoH*.84,zf],s:[.022,.16,.02],m:'steth'},{n:'steth',b:1,c:[.075,sY+o.torsoH*.8,zf],s:[.022,.2,.02],m:'steth'},
+        {n:'chest',b:1,c:[.075,sY+o.torsoH*.6,zf-.004],s:[.05,.05,.018],m:'chest'},
+        {n:'band',b:3,c:[-o.shX,shY-o.upper*.4,0],s:[o.armW*1.12,.1,o.armW*1.12],m:'band'},
+        {n:'tq',b:1,c:[.15,sY+o.torsoH*.82,zf+.004],s:[.05,.12,.035],m:'tq'},{n:'tqT',b:1,c:[.15,sY+o.torsoH*.9,zf-.01],s:[.055,.025,.02],m:'tqT'},
+        {n:'pouch',b:9,c:[o.legSep+o.legW*.62,hjY-o.thigh*.42,-.01],s:[.06,.15,.13],m:'pouch'},
+        {n:'pad',b:8,c:[-o.legSep,knY-.03,-o.legD*.56],s:[.13,.12,.04],m:'pad'},{n:'pad',b:10,c:[o.legSep,knY-.03,-o.legD*.56],s:[.13,.12,.04],m:'pad'}]}}
+  // ▶ 환자 좀비 (patient, 10챕터) — Q-7 중앙 연구소 지하 병동의 환자. 엘피스가 링거를 꽂아 '살려' 두었다
+  //    옅은 하늘색 잔무늬 환자복(가슴 'Q7-B5', 등 뒤가 벌어져 끈 두 줄만 묶임, 무릎 위까지 내려오는 자락), 맨다리와 맨발,
+  //    손목의 흰 환자 팔찌, 팔오금에 테이프로 붙인 정맥 주삿바늘과 끊어진 수액 줄, 빡빡 민 머리의 봉합 자국,
+  //    창백한 피부 아래 원액의 초록 혈관(어둠에서 빛난다), 초록빛 눈.
+  else if(k==='patient'){// 환자 — a patient from the ward below: a pale blue gown open at the back, bare legs and feet, a wristband, a cannula taped into the arm
+    o={hipY:.92,thigh:.42,legW:.13,legD:.15,shinW:.11,torsoW:.4,torsoH:.5,torsoD:.22,shX:.235,armW:.1,upper:.3,fore:.29,headW:.215,headH:.255,headD:.235,headZ:-.02,claw:.024,fingL:.56,curl:.5,curlJ:205,ears:[1,1]};
+    const sk='#a2aaa0',gw='#aac6ce',gn='#4aff86',zs={base:sk,style:'zskin',blot:'#3a5a44'};
+    mats=Object.assign({top:{base:gw},legs:zs,sleeve:{base:gw},fore:zs,shin:zs,skin:zs,hand:{base:dk(sk,.12),style:'zskin',blot:'#3a5a44'},boot:{base:dk(sk,.2),style:'zskin',blot:'#4a3a32'},jaw:zs,
+      gown:{base:gw},wrist:{base:'#eeeee6',style:'plate',gloss:246},tape:{base:'#e6e2d6'},tube:{base:'#d6eede',style:'plate',gloss:250}},goreM);
+    const dots=['check','#94b2bc',2.2,'#6e8e9a'];
+    decor={torso:{front:[dots,['text','Q7-B5',.16,.84,'#4a6a78'],['soak',.35,.9,'#4a0606',.4],['veins',3,gn,1],['grime',.3]],
+        back:[dots,['rect',.3,0,.7,1,sk],['veins',4,gn,1],['band',.42,.45,'#e8e8e0'],['band',.72,.75,'#e8e8e0'],['grime',.3]],side:[dots,['grime',.3]]},
+      gown:{front:[dots,['soak',.5,1,'#4a0606',.35],['grime',.35]],back:[dots,['rect',.36,0,.64,1,dk(sk,.1)],['grime',.35]],side:[dots,['grime',.3]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#a6ffc4'}],['veins',2,gn,1]],top:[['stitch',.2,.25,.8,.7],['wounds',1,206]],side:[['veins',1,gn,1],['stitch',.2,.6,.8,.75]],back:[['veins',2,gn,1]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.45,2,.5]]},
+      uaL:{all:[dots]},uaR:{all:[dots]},faL:{all:[['veins',4,gn,1],['grime',.3]]},faR:{all:[['veins',3,gn,1],['bite',.5,.6,.2],['grime',.3]]},
+      thL:{all:[['veins',2,gn,1],['grime',.4]]},thR:{all:[['veins',2,gn,1],['grime',.4],['blood',1,207]]},shL:{all:[['grime',.55]]},shR:{all:[['grime',.55]]},
+      handL:{all:[['grime',.4]]},handR:{all:[['soak',0,.6,'#4a0606',.5]]},wrist:{all:[['text','B5',.3,.75,'#4a5a6a']]}};
+    // the gown's skirt to above the knee, the wristband, the cannula (its tape, the cut drip line hanging off it)
+    extra=H=>{const o=H.o,el=H.piv[4];return [{n:'gown',b:0,c:[0,o.hipY-.15,o.belly*.2],s:[o.torsoW*1.0,.34,o.torsoD*1.06],m:'gown'},
+      {n:'wrist',b:6,c:[H.piv[6][0],H.piv[6][1]-o.fore+.045,0],s:[o.armW*1.04,.035,o.armW*1.04],m:'wrist'},
+      {n:'tape',b:4,c:[el[0],el[1]-.05,-o.armW*.5],s:[.07,.06,.012],m:'tape'},
+      {n:'tube',b:4,c:[el[0]-.01,el[1]-.2,-o.armW*.56],s:[.012,.3,.012],m:'tube'}]}}
   // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),

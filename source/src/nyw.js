@@ -342,7 +342,8 @@ function nySkill(a,Z){const c=a.c;
   if(Z.skill==='trap'){if(!c.onGround)return false;const fl=floorBelow(c.x,c.y+.3,c.z,.05);const T0=nyTrapAdd(a,c.x,fl>-50?fl:c.y,c.z,a.yaw);a.an.skill=.4;if(a.isPlayer)HUD.note(T('nyTrapSet'),1.5);
     if(NET.host)netEv('trap',{i:T0.id,o:a.id,x:r2(T0.x),y:r2(T0.y),z:r2(T0.z),r:r3(a.yaw)});return true}
   if(Z.skill==='heal'){a.skillT=Z.dur;a.an.skill=1.2;AU.at('heal',c.x,c.y+1.5,c.z,{vol:1,range:50});FX.spawn({x:c.x,y:c.y+1.2,z:c.z,life:.6,s0:1,s1:12,r:.4,g:1,b:.5,a:.55,f:14,add:1});DL.add(c.x,c.y+1.5,c.z,'#60ff80',9,2,.6);
-    for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;const d=dist3(t.c,c);if(d>8)continue;const k=t===a?.25:.2;t.hp=Math.min(t.maxHp,t.hp+t.maxHp*k);
+    // (v6.99: not on the scenario's boss — a chapter's boss, the free scenario's giant: 20 % of its health was thousands, a phase's worth)
+    for(const t of G.actors){if(!t.alive||t.team!==TZ||t.boss&&G.mode==='scen')continue;const d=dist3(t.c,c);if(d>8)continue;const k=t===a?.25:.2;t.hp=Math.min(t.maxHp,t.hp+t.maxHp*k);
       for(let i=0;i<8;i++)FX.spawn({x:t.c.x+rr(-.3,.3),y:t.c.y+rr(.3,1.8),z:t.c.z+rr(-.3,.3),vy:rr(.4,1),life:rr(.5,.9),s0:.12,s1:.04,r:.5,g:1,b:.55,f:8,add:1});if(t.isPlayer)HUD.note(T('healed'),1.5)}return true}
   return false}
 function nyTrapAdd(a,x,y,z,yaw,id){const mine=NY.traps.filter(t=>t.owner===a);if(mine.length>=3){const o=mine[0];R.scene.remove(o.mesh);NY.traps.splice(NY.traps.indexOf(o),1)}
