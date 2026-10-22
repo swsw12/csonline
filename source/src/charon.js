@@ -824,7 +824,7 @@ CHAP[8]={id:8,k:'charon',map:'ep8',code:'RT1-06',season:2,n:['카론','CHARON'],
   // after the clear: the flight log's last line; a card for the season so far
   ending(){EP.later(3,()=>EP.radio('end0'));EP.later(7,()=>EP.radio('end1'));EP.later(9.6,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 8 CLEAR':'8챕터 클리어'}</h1><p>${L?'Two of RT-1 left — 02 and 04, up at the Seolryeong weather radar station.':'1차 회수팀은 이제 둘 — 02와 04, 설령산 기상 레이더 기지.'}</p><b>${L?'NEXT — COMING SOON':'다음 이야기 — 준비 중'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 8 CLEAR':'8챕터 클리어'}</h1><p>${L?'Two of RT-1 left — 02 and 04, up at the Seolryeong weather radar station.':'1차 회수팀은 이제 둘 — 02와 04, 설령산 기상 레이더 기지.'}</p><b>${L?'NEXT — CHAPTER 9 「DAEDALUS」':'다음 이야기 — 9챕터 「다이달로스」'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},6500)},
   radio:{
     start:['2차 회수팀, 설령 비행장이다. 1차 팀이 빠져나가려던 곳 — 남은 셋 중 하나가 여기 있다. 회전날개 소리가 들리면 바로 알려.','RT-2, this is Seolryeong Airfield — where RT-1 meant to get out. One of the three left is here. If you hear a rotor, call it.',0],

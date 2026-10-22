@@ -29,7 +29,7 @@ const AI={
   mk(a){return {path:null,pi:0,goal:null,repath:0,stuckT:0,lx:0,lz:0,think:Math.random()*.2,target:null,tgtT:0,seen:null,react:0,aimX:0,aimY:0,strafe:0,strafeT:0,nadeCD:rr(4,9),
     camp:null,spot:null,buyT:0,crouchT:0,jumpT:0,lastHp:0,hurtAcc:0,skillT:rr(1,3),bombT:rr(6,14),detour:0,wander:null,fireHold:0,flashOn:Math.random()<.85,growlT:rr(2,8),avoidT:0,roam:Math.random()<.75,roamT:0,scanY:null,seenT:-99}},
   onRound(a){const B=a.bot;B.path=null;B.target=null;B.seen=null;B.buyT=rr(.4,3);B.stuckT=0;B.goal=null;B.roamT=rr(.5,2.5);B.scanY=null;this.pickCamp(a);a.flash=false},
-  onTeam(a){const B=a.bot;B.spot=B.spotC=B.gT=null;B.path=null;B.partial=false;B.target=null;B.seen=null;B.goal=null;B.repath=0;B.stuckT=0;B.wasDirect=0;B.straight=false;B.unreach=0;B.lastHp=a.hp;B.skillT=rr(1,3);B.zp=null;B.pp=null;a.cmd.fire=a.cmd.alt=false},
+  onTeam(a){const B=a.bot;B.spot=B.spotC=B.gT=null;B.epG=null;B.path=null;B.partial=false;B.target=null;B.seen=null;B.goal=null;B.repath=0;B.stuckT=0;B.wasDirect=0;B.straight=false;B.unreach=0;B.lastHp=a.hp;B.skillT=rr(1,3);B.zp=null;B.pp=null;a.cmd.fire=a.cmd.alt=false},
   // per-round state of a human bot (relocation clock, aim settle, panic, bearings), set up on its first update of the round
   hInit(a){const B=a.bot;B.hR=G.round;B.relocT=B.roam?rr(10,20):rr(18,32);B.panicT=0;B.panicZ=null;B.aimT0=G.t;B.aimRT=0;B.aimOX=B.aimOY=0;B.hsT=0;B.hs=false;B.lof=true;B.kd=99;B.kSide=Math.random()<.5?1:-1;B.spotT=0;if(B.brg==null)B.brg=Math.random()*TAU;if(B.scanOff==null)B.scanOff=rr(-1,1)},
   onHurt(a,src){const B=a.bot;if(src&&a.team===TZ&&src.alive&&(!B.target||Math.random()<.25)){B.target=src;B.repath=0}},
@@ -120,7 +120,10 @@ const AI={
     const tgt=B.seen&&B.seen.a.alive?B.seen.a:null;if(tgt)B.seenT=G.t;
     // where to stand
     let moving=false;const close=B.kd<5.5;
-    const last=fight&&humansAlive()===1;
+    // (the last one standing runs for it — except in a chapter on its way to get a fallen teammate up, or with somewhere to be (the
+    // escape, a door, a device: B.epObj) — v6.98: it had run about alone for minutes while the rest lay there, and the escape's last
+    // one ran about the maze till the car left)
+    const last=fight&&humansAlive()===1&&!(EP.on&&(B.epObj||B.epRv&&!B.epRv.alive));
     // roamers (most bots) do not settle: after a short hold they walk on to another camp or a patch of open ground away from the zombies
     const roamer=B.roam&&!last&&spread&&(G.st==='prep'||fight);
     if(B.panicT>0)B.panicT-=dt;

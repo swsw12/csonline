@@ -14,13 +14,13 @@
 // Between stages the next door opens with a supply box; everybody inside the next zone (or 40 s) starts the next stage. The fallen
 // get up when a teammate holds E next to them for 4 s (30 hp); everybody gets up between stages, between waves and at boss phases.
 // Host-authoritative: the host runs the flow; clients get it in the snapshot (SCEN.encState → EP.pack) and as events (eps, epg, ...).
-const EPS={},EP_N=8;// (v6.92: the chapters there are — season 2 starts with chapter 6; CHAP[n].season, 1 when not set; v6.96: chapter 7; v6.97: 8)
+const EPS={},EP_N=9;// (v6.92: the chapters there are — season 2 starts with chapter 6; CHAP[n].season, 1 when not set; v6.96: chapter 7; v6.97: 8; v6.98: 9)
 const EP_IDS=Array.from({length:EP_N},(_,i)=>i+1);
 // a season's tag before a chapter's number (season 2 on: S2)
 const epSz=E=>E&&E.season>1?`<u class="sz">S${E.season}</u>`:'';
 {const SOON=[null,{k:'aleph',n:['알레프','ALEPH'],code:'Q7-000'},{k:'argus',n:['아르고스','ARGUS'],code:'RT1-07'},{k:'khepri',n:['케프리','KHEPRI'],code:'Q7-303'},
   {k:'lyrebird',n:['라이어버드','LYREBIRD'],code:'RT1-05'},{k:'tiamat',n:['티아마트','TIAMAT'],code:'Q7-Ω'},{k:'legatus',n:['레가투스','LEGATUS'],code:'RT1-01',season:2},
-  {k:'lorelei',n:['로렐라이','LORELEI'],code:'RT1-03',season:2},{k:'charon',n:['카론','CHARON'],code:'RT1-06',season:2}];
+  {k:'lorelei',n:['로렐라이','LORELEI'],code:'RT1-03',season:2},{k:'charon',n:['카론','CHARON'],code:'RT1-06',season:2},{k:'daedalus',n:['다이달로스','DAEDALUS'],code:'RT1-04',season:2}];
   for(let n=1;n<=EP_N;n++)EPS[n]=CHAP[n]||Object.assign({id:n,soon:1},SOON[n])}
 // the scenario plays chapter 1 until the player picks another (0 = the free scenario)
 const epSel=c=>c&&c.ep!=null?c.ep|0:1;
@@ -105,7 +105,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
     if(D.k==='waves'){this.ph='prep';this.t=kind==='fresh'?(D.prep||18):10;G.st='prep';G.time=this.t}
     else if(D.k==='boss'){this.ph='prep';this.t=kind==='phase'?8:(D.prep||12);G.st='prep';G.time=this.t;
       if(!NET.cli&&B)B.prepSpawn(kind,this.bossPh);
-      if(kind!=='phase'){SCEN.openPick();for(const a of SCEN.H)if(a.bot)SCEN.applyReward(a,rpick(SCEN.offerFor()),true)}}
+      if(kind!=='phase'){SCEN.openPick();for(const a of SCEN.H)if(a.bot)SCEN.applyReward(a,SCEN.botPick(a),true)}}
     else{this.ph='run';this.t=0;G.st='fight';G.time=D.len||0}
     if(C.stageStart)C.stageStart(n,kind);
     const sn=`${D.n[L]}`,tag=kind==='retry'||kind==='phase'?(L?'RETRY · ':'재도전 · '):'';
@@ -152,7 +152,7 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
   stageClear(){const C=this.C,D=this.S();SCEN.best=Math.max(SCEN.best,this.st);for(const a of SCEN.H)a.money=Math.min(16000,a.money+1500);const nx=this.st+1;
     if(C.stageDone)C.stageDone(this.st);
     this.ph='move';this.t=40;G.st='fight';G.time=40;this.reviveAll();this.setGates(this.gm|this.stageGates(nx,'next'));this.moveFx(this.st);
-    for(const a of SCEN.H)if(a.bot)SCEN.applyReward(a,rpick(SCEN.offerFor()),true);if(NET.host)netEv('epm',{n:this.st,pw:this.pow})},
+    for(const a of SCEN.H)if(a.bot)SCEN.applyReward(a,SCEN.botPick(a),true);if(NET.host)netEv('epm',{n:this.st,pw:this.pow})},
   moveFx(n){const L=LI(),D=this.C.stages[n];HUD.announce(L?'STAGE CLEAR!':'스테이지 클리어!','h',3);AU.play('stingH',{vol:.7});AU.muSet&&AU.muSet('win');if(D&&D.clr)this.radio(D.clr);
     HUD.note(L?'Pick a supply box, then go through the open door':'보급 상자를 고르고 열린 문으로 이동하세요',4);SCEN.openPick()},
   // a wave of infected that never ends: as many on their feet as the team can take, topped up as they fall
@@ -299,9 +299,10 @@ const EP={on:false,id:0,C:null,st:0,ph:'',t:0,w:0,gm:0,gmT:-9,dark:false,dk:0,po
   goalKey(){const D=this.S(),b=D.k==='boss'?this.bossA():null,Bo=this.B();return this.st+':'+this.ph+':'+this.obj.i+':'+(D.k==='act'?this.devLeft():0)+':'+(b?Math.round(b.c.x/6)+','+Math.round(b.c.z/6)+','+Math.floor(G.t/6)+(Bo&&Bo.goalTag?Bo.goalTag(b):''):'')},
   botPre(a,dt){const B=a.bot;B.epT=(B.epT||0)-dt;if(B.epT>0)return;B.epT=.5;const ph=this.ph,D=this.S();B.epObj=ph==='move'||ph==='board'||D.k==='escape'||(D.k==='terms'||D.k==='act'||D.k==='breach')&&ph==='run';
     // a fallen teammate close by with nothing on top of them: go and get them up (not on the way out of a zone, into the lift or in the
-    // escape: the next zone gets everyone up anyway, and the escape only counts the living)
-    let best=null,bd=24;if(this.reviveOK()&&ph!=='move'&&ph!=='board'&&D.k!=='escape')for(const h of SCEN.H){if(h.alive||h===a||h.team!==TH)continue;const d=Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z)+Math.abs(h.c.y-a.c.y)*2;
-      if(d<bd&&!zNearPt(h.c.x,h.c.y,h.c.z,5)&&!this.bossNear(h.c.x,h.c.z,9)&&!TELE.at(h.c.x,h.c.z,.5)){bd=d;best=h}}
+    // escape: the next zone gets everyone up anyway, and the escape only counts the living; nor where the chapter says it is covered:
+    // C.reviveBad); the last one standing looks twice as far
+    let best=null,bd=humansAlive()===1?48:24;if(this.reviveOK()&&ph!=='move'&&ph!=='board'&&D.k!=='escape')for(const h of SCEN.H){if(h.alive||h===a||h.team!==TH)continue;const d=Math.hypot(h.c.x-a.c.x,h.c.z-a.c.z)+Math.abs(h.c.y-a.c.y)*2;
+      if(d<bd&&!zNearPt(h.c.x,h.c.y,h.c.z,5)&&!this.bossNear(h.c.x,h.c.z,9)&&!TELE.at(h.c.x,h.c.z,.5)&&!(this.C.reviveBad&&this.C.reviveBad(h))){bd=d;best=h}}
     // (on the way there, and while holding E, it only backs off from a zombie right on it: B.epObj)
     if(best){if(B.epRv!==best){B.epRv=best;B.rvT=0;B.path=null;B.repath=0}B.spot=[best.c.x,best.c.y,best.c.z];B.camp=null;B.epObj=true;return}
     if(B.epRv){B.epRv=null;B.rvT=0;B.epG=null}

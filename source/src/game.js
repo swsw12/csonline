@@ -75,7 +75,14 @@ Object.assign(ZCLASS,{
 Object.assign(ZCLASS,{
   charon:{n:['카론','CHARON'],sk:['비행','Flight'],d:['8챕터 보스 · RT1-06','Chapter 8 boss · RT1-06'],hp:22000,armor:0,speed:5.6,jump:9,kb:.2,dmg:30,skill:'none',cd:99,dur:0,hw:.3,h:1.9,eye:1.78},
   frozen:{n:['동사자 좀비','Frozen Zombie'],sk:['눈 속 매복','Buried in the snow'],d:['8챕터 · 눈더미 속에 묻혀 있다가 가까이 오거나 총소리가 나면 튀어나온다 — 불과 폭발에 약하다','Chapter 8 · buried in the drifts until you come near or fire close by — weak to fire and blasts'],hp:1500,armor:30,speed:5,jump:6.6,kb:.9,dmg:30,skill:'none',cd:99,dur:0,hw:.31,h:1.86,eye:1.7}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield','lorelei','listener','charon','frozen'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+// chapter 9 (daedalus.js, season 2): DAEDALUS, RT-1's engineer (his patterns, the sentries he sets up and the lightning on his rods are the
+// chapter's), the Static zombie (the station's crew, struck in the storm: its claws daze, it discharges as it dies) and the sentry gun
+// (an actor of its own: it does not move; DAEDALUS sets them up, three stand in the summit's maze)
+Object.assign(ZCLASS,{
+  daedalus:{n:['다이달로스','DAEDALUS'],sk:['공병','Engineer'],d:['9챕터 보스 · RT1-04','Chapter 9 boss · RT1-04'],hp:22000,armor:0,speed:5.6,jump:9,kb:.2,dmg:30,skill:'none',cd:99,dur:0,hw:.3,h:1.9,eye:1.78},
+  static:{n:['감전 좀비','Static Zombie'],sk:['방전','Discharge'],d:['9챕터 · 번개 맞은 정비원 — 할퀴면 어지럽고, 죽을 때 방전된다 (파란 원). 근처에 번개가 치면 한동안 더 빨라진다','Chapter 9 · a crewman struck in the storm — its claws daze, it discharges when it dies (the blue ring); lightning close by makes it faster for a while'],hp:1300,armor:20,speed:5.1,jump:6.8,kb:1,dmg:24,skill:'none',cd:99,dur:0,hw:.3,h:1.82,eye:1.68},
+  sentry:{n:['자동 포탑','Sentry Gun'],sk:['조준 사격','Lock and fire'],d:['9챕터 · 다이달로스의 포탑 — 빨간 레이저가 잡으면 1초 뒤 연사. 폭발에 약하다','Chapter 9 · DAEDALUS\'s gun — once its red laser holds you, it fires a second later. Weak to blasts'],hp:700,armor:0,speed:0,jump:0,kb:0,dmg:0,skill:'none',cd:99,dur:0,hw:.42,h:1.25,eye:1.05}});
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield','lorelei','listener','charon','frozen','daedalus','static','sentry'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={pvp:false,st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};

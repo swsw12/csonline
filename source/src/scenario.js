@@ -7,7 +7,7 @@
 const SCEN={POOL:30,STAGES:5,WAVES:3,on:false,stage:1,wave:0,ph:'',t:0,lives:3,queue:[],spawnT:0,remain:0,total:0,boss:null,bossId:-1,acid:[],tq:[],
   H:[],Z:[],pickOpen:false,picked:false,offer:null,best:0,win:false,chkT:0,PH:['prep','wave','break','fail','over']};
 // the horde walks a little slower than infection-mode zombies: there are many more of them
-SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9,argus:1,squad:.86,khepri:1,larva:.86,scrap:.78,lyrebird:1,radioman:.86,spore:.82,mirage:1,tiamat:1,drowned:.86,hazmat:.82,centi:1,legatus:1,shield:.86,lorelei:1,listener:.86,charon:1,frozen:.86};
+SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter:.9,boss:1,aleph:1,strait:.9,argus:1,squad:.86,khepri:1,larva:.86,scrap:.78,lyrebird:1,radioman:.86,spore:.82,mirage:1,tiamat:1,drowned:.86,hazmat:.82,centi:1,legatus:1,shield:.86,lorelei:1,listener:.86,charon:1,frozen:.86,daedalus:1,static:.9,sentry:0};
 SCEN.SPD.strait=.9*6.6/ZCLASS.strait.speed;// (v6.91: chapter 1's straitjackets run as fast as before — .9 × the old table speed 6.6; the class that can be picked runs at 5.9)
 const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;
@@ -60,7 +60,7 @@ SCEN.breakFx=function(){for(const a of SCEN.H)ldKitReset(a);HUD.announce(LI()?'W
 SCEN.stageClear=function(){SCEN.best=Math.max(SCEN.best,SCEN.stage);for(const a of SCEN.H)a.money=Math.min(16000,a.money+1500);
   if(SCEN.stage>=SCEN.STAGES){SCEN.finish(true);return}
   SCEN.stage++;SCEN.stageStart('next');
-  SCEN.openPick();for(const a of SCEN.H)if(a.bot)SCEN.applyReward(a,rpick(SCEN.offerFor()),true);
+  SCEN.openPick();for(const a of SCEN.H)if(a.bot)SCEN.applyReward(a,SCEN.botPick(a),true);
   if(NET.host)netEv('scr',{s:SCEN.stage})};
 SCEN.stageFail=function(){SCEN.lives--;SCEN.queue=[];
   if(SCEN.lives<=0){SCEN.finish(false);return}
@@ -98,6 +98,9 @@ SCEN.spawn=function(zc,at){const boss=!!ZBIG[zc];let a=null;for(const z of SCEN.
   a.zpick=zc;a.yaw=Math.random()*TAU;reviveZombie(a,p);return a};
 SCEN.onRevive=function(a){if(!a.scen)return;a.zc=a.zpick;setHull(a);ensureRig(a);a.name=ZCLASS[a.zc].n[LI()];a.lvl=1;a.host=false;a.bombs=0;a.boomT=0;a.sb=null;a.reviving=0;a.turning=0;a.scSeen=G.t;a.spitT=rr(1,2);
   a.hitW=ZBIG[a.zc]?.85:0;a.spdMul=SCEN.SPD[a.zc]||.86;a.scHit=0;a.lastHurt=G.t;
+  // (v6.98: what a chapter's own zombie sets on itself every frame goes with it — the bots' aim point, its own hit volume, its muzzle,
+  // hidden from the bots: a body taken over by another kind kept a sentry gun's, and the bots never saw it nor anyone hit its head)
+  a.epAimP=null;a.epAimY=0;a.epPri=0;a.epRay=null;a.epRayZc=null;a.epMuz=null;a.epHide=false;a.epDown=0;
   if(!NET.cli){a.maxHp=a.hp=SCEN.hpFor(a.zc);a.armor=a.zc==='boss'?0:Math.round((SC_OLDARM[a.zc]??ZCLASS[a.zc].armor)*.3);a.skillCD=rr(2,6)}
   if(a.zc==='boss'){SCEN.boss=a;SCEN.bossId=a.id;a.sb={pt:4,mode:'',mt:0,hit:false,sumT:0,half:false,lx:a.c.x,lz:a.c.z,stuck:0,far:0}}};
 // ---------- per frame ----------
@@ -213,6 +216,11 @@ SCEN.pushHuman=function(h,vx,vy,vz){if(h.net&&NET.host&&!h.isPlayer){ngShove(h,M
 SCEN.REW={ammo:{n:['탄약 가득','Full ammo'],d:['모든 무기 탄약 최대 + 수류탄','Every gun fully loaded + grenades'],ic:'▤'},heal:{n:['체력 회복','Heal'],d:['체력 100 + 방탄 50','100 HP and 50 armour'],ic:'✚'},
   armor:{n:['방탄복','Kevlar'],d:['방탄 100','100 armour'],ic:'◆'},weapon:{n:['랜덤 무기','Random gun'],d:['주무기 하나를 받음 (탄약 가득)','A random primary, fully loaded'],ic:'✦'}};
 SCEN.offerFor=()=>shuffle(Object.keys(SCEN.REW)).slice(0,3);
+// a bot's box from its three (v6.98: they took one at random — at 2 hp, the ammo): hurt, the heal; no main gun, a gun; a main gun nearly
+// dry, the ammo; no armour, the kevlar; then the heal if it is not whole, else any
+SCEN.botPick=function(a){const O=SCEN.offerFor(),has=k=>O.includes(k);if(!a)return rpick(O);const p=a.inv&&a.inv[1],am=p&&a.ammo&&a.ammo[p],W=p&&WPN[p];
+  if(a.hp<70&&has('heal'))return 'heal';if(!p&&has('weapon'))return 'weapon';if(am&&W&&W.mag&&am.res<W.mag&&has('ammo'))return 'ammo';
+  if((a.armor||0)<40&&has('armor'))return 'armor';if(a.hp<100&&has('heal'))return 'heal';return rpick(O)};
 SCEN.GUNS=['hmg','mg6','gx6','ar7','kv47','g35','br3','ar5c','hr17','as12','m14','sg8','volc','xbow','gaebolg','mdrill','xdz'];
 SCEN.applyReward=function(a,k,host){if(!a||!a.alive)return;
   if(k==='ammo'){for(const id in a.ammo){const W=WPN[id];if(W)a.ammo[id]={mag:W.mag,res:W.res}}for(const g of ['he','frost','smoke'])a.inv[g]=Math.max(a.inv[g]||0,1)}
