@@ -20,7 +20,7 @@ const HOF={list:null,at:0,busy:null,ver:1,err:'',res:null,
       .then(()=>{this.at=Date.now();this.ver++;this.busy=null;this.changed();return this.list});
     return this.busy},
   get(ep,d){if(!this.list)return null;for(const e of this.list)if(e.ep===ep&&e.diff===d)return e;return null},
-  valid(c){c=+c;return c===Math.floor(c)&&c>=10&&c<=53&&c%10<=3},
+  valid(c){c=+c;return c===Math.floor(c)&&c>=10&&c<=303&&c%10<=3},// (v7.0: chapters 1–30 as the records take them — chapter 6 on, 60–103, was turned away)
   ep(c){return Math.floor(c/10)},dd(c){return c%10},
   // ---- whose title ----
   // mine: what the server says this account is in (qz_me / qz_claim → firsts)
@@ -52,13 +52,14 @@ const HOF={list:null,at:0,busy:null,ver:1,err:'',res:null,
     if(!this.on())body=`<div class="rkempty">${L?'The hall of fame opens once accounts are set up.':'계정 서버가 연결되면 명예의 전당을 볼 수 있어요.'}</div>`;
     else if(!this.list&&this.err==='old')body=`<div class="rkempty">${L?'The database needs the new schema.sql':'서버 업데이트가 필요해요 (supabase/schema.sql 다시 실행)'}</div>`;
     else if(!this.list)body=`<div class="rkempty">${this.busy||!this.err?(L?'Loading…':'불러오는 중…'):esc(this.err)}</div>`;
-    else{const mine=this.myList();body=EP_IDS.filter(id=>EPS[id]&&!EPS[id].soon).map(id=>{const E=EPS[id];
+    // (v7.0: a tab a season — its finishers (epseason.js) over its chapters)
+    else{const mine=this.myList(),Z=typeof EPSZ!=='undefined'?EPSZ:null,sz=Z?Z.hofSz():0;body=(Z?Z.hofTop(sz):'')+EP_IDS.filter(id=>EPS[id]&&!EPS[id].soon&&(!sz||Z.of(id)===sz)).map(id=>{const E=EPS[id];
       return `<div class="hofc"><div class="hch"><img src="${portrait('z_'+E.k,44)}"><div><small>${L?'CH.'+id:id+'챕터'} · ${esc(E.code)}</small><b>${esc(E.n[L])}</b></div></div>
         <div class="hrs">${[0,1,2,3].map(d=>{const e=this.get(id,d),tm=e&&Array.isArray(e.team)?e.team:[],me=mine.includes(id*10+d);
           return `<div class="hr d${d}${e?' on':''}${me?' me':''}"><em>${T('d'+d)}</em>${e?`<span class="tm">${tm.length?tm.map(n=>`<b>${esc(n)}</b>`).join(''):'<b>—</b>'}</span><small>${this.date(e.at,L)}${e.time?' · '+(L?'cleared in ':'클리어 ')+fmtT(e.time):''}</small>`
             :`<span class="no">${L?'Nobody yet — be the first':'아직 없음 — 첫 팀이 되어 보세요'}</span>`}</div>`}).join('')}</div></div>`}).join('')}
-    return `<div class="mbody hofp">${body}</div><div class="sfoot">${L?'The first team to clear each chapter on each difficulty, on the whole server. Everyone in it wears the title next to their name: in the lobby, the waiting room, over their head, in chat, the ranking and friend lists.'
-      :'챕터 × 난이도마다 서버에서 가장 먼저 클리어한 팀이에요. 그 팀원은 로비 · 대기실 · 머리 위 이름 · 채팅 · 랭킹 · 친구 목록에서 이름 옆에 칭호를 달아요.'}</div>`},
+    return `<div class="mbody hofp">${body}</div><div class="sfoot">${L?'The first team to clear each chapter on each difficulty, on the whole server. Everyone in it wears the title next to their name: in the lobby, the waiting room, over their head, in chat, the ranking and friend lists. A season is finished by clearing all five of its chapters — the hardest level counts for the easier ones too.'
+      :'챕터 × 난이도마다 서버에서 가장 먼저 클리어한 팀이에요. 그 팀원은 로비 · 대기실 · 머리 위 이름 · 채팅 · 랭킹 · 친구 목록에서 이름 옆에 칭호를 달아요. 시즌 완주는 그 시즌의 다섯 챕터를 모두 깬 순서예요 (어려운 난이도로 깬 건 쉬운 쪽에도 쳐요).'}</div>`},
   // ---- the lobby: my title under my name (opens the page) ----
   prof(){const pf=document.querySelector('#menu .lobTop .prof > div');if(!pf)return;const el=pf.querySelector('.hoft'),c=this.mine(),L=LI();
     if(!c){if(el)el.remove();return}const n=this.myList().length;

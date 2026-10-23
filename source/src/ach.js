@@ -37,6 +37,10 @@ const ACH_GRP={
   epx:{c:'chapter',n:['전문가','Expert chapters'],d:n=>[`전문가 난이도로 챕터 ${n}개 클리어`,`Clear ${n} chapters on expert`]},
   medal:{c:'chapter',n:['S 메달','S medals'],d:n=>[`챕터 S 메달 ${n}개`,`${n} S medals in the chapters`]},
   hof:{c:'chapter',n:['명예의 전당','Hall of fame'],d:()=>['챕터 최초 클리어 팀에 이름 올리기','Be on a first-clear team']},
+  // (v7.0: the seasons, epseason.js — each tier of 시즌 2 완주 reads a number of its own: any difficulty, hard or expert, expert)
+  s2c:{c:'chapter',n:['시즌 2 완주','Season 2 complete'],d:(n,t)=>t>=3?['6~10챕터를 모두 전문가로 클리어','Clear chapters 6–10, all of them, on expert']
+    :t>=2?['6~10챕터를 모두 어려움 이상으로 클리어','Clear chapters 6–10, all of them, on hard or expert']:['시즌 2 — 6~10챕터를 모두 클리어 (난이도 무관)','Season 2 — clear chapters 6–10, all of them (any difficulty)']},
+  tags:{c:'chapter',n:['1차 회수팀','Recovery Team 1'],d:()=>['1차 회수팀 일곱 명을 모두 쓰러뜨리기 (2 · 4 · 6~10챕터 보스)','Bring down all seven of RT-1 (the bosses of chapters 2, 4 and 6–10)']},
   pk:{c:'pvp',n:['대인전 처치','PvP kills'],d:n=>[`대인전에서 ${n}킬`,`${n} kills in PvP`]},
   pw:{c:'pvp',n:['대인전 승리','PvP wins'],d:n=>[`대인전 매치 ${n}번 승리`,`Win ${n} PvP matches`]},
   rw:{c:'pvp',n:['무기 레이스 우승','Arms race wins'],d:n=>[`무기 레이스 ${n}번 우승`,`Win ${n} arms races`]},
@@ -63,6 +67,7 @@ const TITLES={
   liberator:{n:['Q-7 해방자','Liberator of Q-7'],g:4},hellwalker:{n:['지옥에서 돌아온 자','Back from Hell'],g:4},
   expert:{n:['전문가','Expert'],g:4},nightmare:{n:['Q-7의 악몽','Nightmare of Q-7'],g:5},
   flawless:{n:['완벽주의자','Perfectionist'],g:3},perfect:{n:['무결점','Flawless'],g:5},
+  rt2:{n:['2차 회수팀','Recovery Team 2'],g:3},unyielding:{n:['포기하지 않는 자','The Unyielding'],g:4},dawn:{n:['Q-7의 새벽','Dawn of Q-7'],g:5},dogtags:{n:['일곱 개의 군번줄','Seven Dog Tags'],g:4},
   gunslinger:{n:['총잡이','Gunslinger'],g:2},duelist:{n:['결투의 달인','Duel Master'],g:4},
   merc:{n:['용병','Mercenary'],g:3},warhound:{n:['전쟁의 개','Dog of War'],g:4},armsmaster:{n:['무기 마스터','Arms Master'],g:4},
   demolition:{n:['폭파 전문가','Demolitions Expert'],g:3},
@@ -78,7 +83,7 @@ const SVG_TAG='<svg viewBox="0 0 16 16"><path fill="currentColor" d="M0 2.6A1.6 
 
 // ---------- the titles: what each reads as, and who wears which ----------
 const TTL={vc:{},q:new Set(),qt:0,off:false,ver:1,
-  isHof(t){return typeof t==='string'&&/^hof:\d{2}$/.test(t)&&HOF.valid(+t.slice(4))},
+  isHof(t){return typeof t==='string'&&/^hof:\d{2,3}$/.test(t)&&HOF.valid(+t.slice(4))},// (v7.0: 3 digits — chapter 10 on: hof:103)
   valid(t){return this.isHof(t)||!!(t&&TITLES[t])},
   grade(t){return this.isHof(t)?6:TITLES[t]?TITLES[t].g:0},
   name(t,L){if(this.isHof(t))return HOF.name(+t.slice(4),L);const T0=TITLES[t];return T0?T0.n[L?1:0]:''},
@@ -140,10 +145,12 @@ Object.assign(ACC,{
 // ---------- the achievements page and the titles page (the mission / ranking window, rank.js) ----------
 const ACH={cat:'all',res:null,
   // the ladders as the server lists them, in its order, with what each stands at
+  // (v7.0: each tier reads its own number, d.v — 시즌 2 완주's three read three; the card shows the next tier's)
   groups(){const A=ACC.ach;if(!A||!Array.isArray(A.defs))return [];const S=A.stats||{},cl=new Set(A.claimed||[]),G0=[],gi={};
     for(const d of A.defs){let g=gi[d.grp];if(!g){g=gi[d.grp]={id:d.grp,stat:d.stat,tiers:[]};G0.push(g)}g.tiers.push(d)}
-    for(const g of G0){g.tiers.sort((a,b)=>a.tier-b.tier);g.v=+S[g.stat]||0;g.next=g.tiers.find(d=>!cl.has(d.id))||null;g.done=!g.next;g.ready=!!g.next&&g.v>=g.next.goal;
-      g.nReady=g.tiers.filter(d=>!cl.has(d.id)&&g.v>=d.goal).length;g.got=g.tiers.filter(d=>cl.has(d.id)).length;g.cl=cl}
+    for(const g of G0){g.tiers.sort((a,b)=>a.tier-b.tier);for(const d of g.tiers)d.v=+S[d.stat]||0;g.next=g.tiers.find(d=>!cl.has(d.id))||null;const cur=g.next||g.tiers[g.tiers.length-1];
+      g.stat=cur?cur.stat:g.stat;g.v=cur?cur.v:0;g.done=!g.next;g.ready=!!g.next&&g.next.v>=g.next.goal;
+      g.nReady=g.tiers.filter(d=>!cl.has(d.id)&&d.v>=d.goal).length;g.got=g.tiers.filter(d=>cl.has(d.id)).length;g.cl=cl}
     return G0},
   num(g,v){return g.stat==='lv'?'Lv.'+fmtC(v):g.stat==='hours'?fmtC(v)+(LI()?' h':'시간'):fmtC(v)},
   rw(d,L){if(!d)return '';const t=d.title&&TITLES[d.title]?TTL.chip(d.title,'sm'):'';
@@ -165,8 +172,8 @@ const ACH={cat:'all',res:null,
       <div class="sfoot">${L?'The numbers move when a match (or a round) ends and its reward is paid, with the same limits as the coins; kills, infections, matches, level, time, guns and chapters come from your record as it stands. Achievement coins do not count toward the daily limit.'
         :'진행도는 매치(라운드)가 끝나 보상을 받을 때 코인과 같은 기준으로 올라가고, 킬 · 감염 · 판 수 · 레벨 · 플레이 시간 · 보유 무기 · 챕터는 지금까지의 기록을 그대로 읽어요. 업적 코인은 하루 보상 한도와 따로예요.'}</div>`},
   card(g,L){const M=ACH_GRP[g.id]||{c:'all',n:[g.id,g.id],d:n=>[n,n]},d=g.next||g.tiers[g.tiers.length-1],goal=d?d.goal:1,
-      p=g.done?1:Math.min(1,g.v/Math.max(1,goal)),desc=M.d(this.num(g,goal))[L?1:0];
-    const pips=g.tiers.map(t=>`<i class="${g.cl.has(t.id)?'on':g.v>=t.goal?'rd':''}" title="${ROMAN[t.tier]}"></i>`).join('');
+      p=g.done?1:Math.min(1,g.v/Math.max(1,goal)),desc=M.d(this.num(g,goal),d?d.tier:1)[L?1:0];
+    const pips=g.tiers.map(t=>`<i class="${g.cl.has(t.id)?'on':t.v>=t.goal?'rd':''}" title="${ROMAN[t.tier]}"></i>`).join('');
     return `<div class="achC c${M.c}${g.ready?' ready':''}${g.done?' done':''}"><div class="achI">${achIco(M.c)}</div>
       <div class="achT"><b>${esc(M.n[L?1:0])} <em>${ROMAN[d?d.tier:1]}</em></b><small>${esc(desc)}</small>
         <div class="achP">${pips}</div><div class="achB"><u style="width:${Math.round(p*100)}%"></u></div><span class="achN">${g.done?(L?'All done':'모두 달성'):`${this.num(g,Math.min(g.v,goal))} / ${this.num(g,goal)}`}</span></div>

@@ -21,6 +21,9 @@
 --   * 명예의 전당(v6.24): 챕터 × 난이도마다 서버에서 처음 클리어한 팀(ep_firsts · ep_first_members). 그 판의 계정들이 칭호를
 --     달아요(로비 · 대기실 · 이름표 · 채팅 · 랭킹 · 친구). 기록은 qz_claim이 남기고, 누구나 qz_ep_firsts로 읽습니다.
 --     이 파일을 처음 돌릴 때 v6.24 전의 첫 클리어(ep_records.first_at)도 그대로 옮겨집니다.
+--   * 시즌 완주(v7.0): 챕터 다섯 개가 한 시즌(시즌 1 = 1~5챕터, 시즌 2 = 6~10챕터). 업적 「시즌 2 완주」 I · II · III(6~10챕터를 모두
+--     난이도 무관 / 어려움 이상 / 전문가로 클리어)과 「1차 회수팀」(2 · 4 · 6~10챕터 보스 일곱 명)이 칭호를 주고, 명예의 전당의 시즌 완주
+--     순서(시즌 × 난이도마다 완주한 사람 수 · 처음 10명 · 내 순서)는 누구나 qz_ep_seasons로 읽습니다(ep_records.first_at으로 계산, 정지된 계정 빼고).
 --   * 해독기 숫자(가격 · 숫자 범위 · 조각 · 교환 가격 · 뒤섞기 횟수)는 gacha_config 테이블 한 줄(dec_*, bingo_hi …)에,
 --     시즌 해독기 숫자는 같은 줄의 season_* 칸에, 보조무기 해독기 숫자는 side_* 칸에 있습니다.
 --   * 관리자(v6.42): 관리자 페이지(/admin)는 admins 테이블에 있는 계정만 씁니다. 지정은 이 파일 맨 끝 「admin」 부분의 SQL 한 줄로(SQL Editor).
@@ -207,6 +210,12 @@ insert into public.ach_defs (id, grp, tier, stat, goal, coins, tickets, title, t
   ('medal2', 'medal', 2, 'medal', 5, 3000, 2, null, 0, 130),
   ('medal3', 'medal', 3, 'medal', 15, 6000, 4, 'perfect', 5, 130),
   ('hof1', 'hof', 1, 'hof', 1, 3000, 2, null, 0, 140),
+  -- v7.0: the seasons. 「시즌 2 완주」 reads a number of its own at each tier (s2a: season 2's five chapters, 6–10, cleared on any
+  -- difficulty; s2h: on hard or expert; s2x: on expert); 「1차 회수팀」 the seven of RT-1 brought down (rt1: chapters 2, 4 and 6–10)
+  ('s2c1', 's2c', 1, 's2a', 5, 3000, 2, 'rt2', 3, 101),
+  ('s2c2', 's2c', 2, 's2h', 5, 6000, 3, 'unyielding', 4, 101),
+  ('s2c3', 's2c', 3, 's2x', 5, 10000, 5, 'dawn', 5, 101),
+  ('tags1', 'tags', 1, 'rt1', 7, 4000, 3, 'dogtags', 4, 102),
   ('pk1', 'pk', 1, 'pk', 50, 300, 0, null, 0, 150),
   ('pk2', 'pk', 2, 'pk', 500, 1500, 0, 'gunslinger', 2, 150),
   ('pk3', 'pk', 3, 'pk', 3000, 4000, 2, 'duelist', 4, 150),
@@ -936,7 +945,8 @@ language sql immutable set search_path = '' as $$
     from jsonb_each_text(coalesce(b, '{}'::jsonb)) as e(k, v) where public.qz_big(e.v) <> 0), '{}'::jsonb)
 $$;
 -- every number an achievement reads, for one account: the record (kills, inf, games, lv from xp, hours played in matches, guns owned),
--- the chapters (ep: chapters cleared, eph: on hard or expert, epx: on expert, medal: S medals, hof: first-clear teams) and the counters
+-- the chapters (ep: chapters cleared, eph: on hard or expert, epx: on expert, medal: S medals, hof: first-clear teams; v7.0: s2a / s2h /
+-- s2x season 2's chapters cleared on any difficulty / hard or expert / expert, rt1 RT-1's seven bosses — chapters 2, 4, 6–10) and the counters
 create or replace function public.qz_ach_stats(uid uuid) returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -948,7 +958,11 @@ begin
   e := (select jsonb_build_object('ep', count(distinct r.ep) filter (where r.clears > 0),
       'eph', count(distinct r.ep) filter (where r.clears > 0 and r.diff >= 2),
       'epx', count(distinct r.ep) filter (where r.clears > 0 and r.diff = 3),
-      'medal', count(*) filter (where r.best_medal = 'S'))
+      'medal', count(*) filter (where r.best_medal = 'S'),
+      's2a', count(distinct r.ep) filter (where r.clears > 0 and r.ep between 6 and 10),
+      's2h', count(distinct r.ep) filter (where r.clears > 0 and r.ep between 6 and 10 and r.diff >= 2),
+      's2x', count(distinct r.ep) filter (where r.clears > 0 and r.ep between 6 and 10 and r.diff = 3),
+      'rt1', count(distinct r.ep) filter (where r.clears > 0 and r.ep in (2, 4, 6, 7, 8, 9, 10)))
     from public.ep_records r where r.user_id = uid);
   return coalesce(p.ach, '{}'::jsonb) || coalesce(e, '{}'::jsonb) || jsonb_build_object('kills', p.rec_kills, 'inf', p.rec_infects,
     'games', p.rec_games, 'lv', public.qz_level(p.xp), 'hours', floor(p.play_secs / 3600.0)::bigint,
@@ -1178,6 +1192,34 @@ $$;
 create or replace function public.qz_ep_min(p_ep integer, p_diff integer) returns integer
 language sql immutable set search_path = '' as $$
   select coalesce((array[[200, 200, 200, 270], [150, 150, 150, 160], [200, 200, 200, 210], [170, 170, 170, 270], [260, 260, 260, 350], [110, 110, 110, 150], [200, 200, 200, 260], [180, 180, 210, 230], [200, 210, 230, 250], [240, 240, 250, 260]]::integer[])[p_ep][p_diff + 1], 240)
+$$;
+-- v7.0: the seasons in the hall of fame. Five chapters a season (season 1 = chapters 1–5, season 2 = 6–10; the ones out, by qz_ep_max).
+-- For each season and level (0: any difficulty, 2: hard or expert, 3: expert): how many accounts have cleared all five of its chapters
+-- on that level or harder, the first ten of them (nickname, and when: the clear that made the five, from ep_records.first_at) and where
+-- the account asking stands (me: rank and when, signed in). Accounts suspended now are left out. Anyone may read it, signed in or not.
+create or replace function public.qz_ep_seasons() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  with done as (
+    select x.user_id, x.season, x.lv, max(x.at) as at
+    from (select r.user_id, (r.ep + 4) / 5 as season, l.lv, r.ep, min(r.first_at) as at
+          from public.ep_records r cross join (values (0), (2), (3)) as l(lv)
+          where r.clears > 0 and r.first_at is not null and r.diff >= l.lv and r.ep <= public.qz_ep_max()
+          group by r.user_id, (r.ep + 4) / 5, l.lv, r.ep) x
+    group by x.user_id, x.season, x.lv having count(*) = 5),
+  ok as (
+    select d.season, d.lv, d.user_id, d.at, t.nickname, row_number() over (partition by d.season, d.lv order by d.at, t.nickname) as rk
+    from done d join public.profiles t on t.id = d.user_id
+    where t.banned_until is null or t.banned_until <= now()),
+  slots as (
+    select s.season, l.lv from generate_series(1, public.qz_ep_max() / 5) as s(season) cross join (values (0), (2), (3)) as l(lv))
+  select coalesce(jsonb_agg(jsonb_build_object('season', q.season, 'from', q.season * 5 - 4, 'to', q.season * 5, 'tiers', q.tiers) order by q.season), '[]'::jsonb)
+  from (select z.season, jsonb_agg(jsonb_build_object('lv', z.lv,
+          'n', (select count(*) from ok where ok.season = z.season and ok.lv = z.lv),
+          'first', coalesce((select jsonb_agg(jsonb_build_object('nick', ok.nickname, 'at', ok.at) order by ok.rk) from ok
+            where ok.season = z.season and ok.lv = z.lv and ok.rk <= 10), '[]'::jsonb),
+          'me', (select jsonb_build_object('rank', ok.rk, 'at', ok.at) from ok where ok.season = z.season and ok.lv = z.lv and ok.user_id = (select auth.uid())))
+        order by z.lv) as tiers
+        from slots z group by z.season) q
 $$;
 -- v6.74: the most each achievement counter may take in a Korean day (qz_claim, qz_round_claim); the rest of a match's numbers is dropped
 create or replace function public.qz_ach_day() returns jsonb
@@ -1641,6 +1683,8 @@ revoke all on function public.qz_firsts_of(uuid) from public, anon, authenticate
 revoke all on function public.qz_first_best(uuid) from public, anon, authenticated;
 revoke all on function public.qz_ep_firsts() from public;
 grant execute on function public.qz_ep_firsts() to anon, authenticated;
+revoke all on function public.qz_ep_seasons() from public;
+grant execute on function public.qz_ep_seasons() to anon, authenticated;
 
 -- ---------- daily missions (v6.12) ----------
 -- 3 missions per account per Korean day (Asia/Seoul): one easy (tier 1), one normal (2), one hard (3), each of a different kind, picked

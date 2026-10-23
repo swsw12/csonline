@@ -24,7 +24,7 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
   close(){const o=$('rkWin');if(o)o.remove();clearInterval(this.tick)},
   // what the page on screen needs from the server: the ranking of this kind (kept a minute), today's missions (fetched on every open)
   fetch(force){const L=LI();
-    if(this.page==='hof'){HOF.load(force||Date.now()-HOF.at>20e3).then(()=>this.render());return}
+    if(this.page==='hof'){const f=force||Date.now()-HOF.at>20e3;Promise.all([HOF.load(f),typeof EPSZ!=='undefined'?EPSZ.load(f):null]).then(()=>this.render());return}// (v7.0: the seasons' finishers too)
     if(this.page==='ach'||this.page==='ttl'){if(ACC.signed()&&!this.load.ach){this.load.ach=1;if(this.page==='ttl')HOF.load();ACC.loadAch().catch(e=>{this.msg=ACC.errText(e);this.msgOk=false}).finally(()=>{this.load.ach=0;this.render()})}return}
     if(this.page==='rank'){const k=this.kind;if(this.load[k]||(!force&&this.data[k]&&Date.now()-this.at[k]<60e3))return;this.load[k]=1;
       ACC.ranking(k).then(r=>{this.data[k]=r;this.at[k]=Date.now();if(this.kind===k)this.msg=''},e=>{if(this.kind===k){this.msg=ACC.errText(e);this.msgOk=false}}).finally(()=>{this.load[k]=0;this.render()})}
@@ -81,7 +81,8 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
     if(a==='claim'){this.claim(+v);return}
     if(a==='acat'){if(ACH.cat!==v){ACH.cat=v;this.render();AU.play('ui',{vol:.25});const l=document.querySelector('#rkWin .mbody');if(l)l.scrollTop=0}return}
     if(a==='aclaim'){ACH.claim(v||null);return}
-    if(a==='wear'){ACH.wear(v);return}},
+    if(a==='wear'){ACH.wear(v);return}
+    if(a==='hsz'){if(typeof EPSZ!=='undefined'&&EPSZ.hs!==+v){EPSZ.hs=+v;this.render();AU.play('ui',{vol:.25});const l=document.querySelector('#rkWin .mbody');if(l)l.scrollTop=0}return}},
   async claim(slot){if(this.busy)return;const L=LI();this.busy=true;this.msg='';this.render();
     try{const r=await ACC.misClaim(slot);this.msg=(L?'Reward: ':'보상 — ')+(r.got?`+${fmtC(r.got)} ${L?'coins':'코인'}`:'')+(r.got_tickets?`${r.got?' · ':''}${L?'근하신년 decoder':'근하신년 해독기'} +${r.got_tickets}`:'');this.msgOk=true;AU.play('buy',{vol:.8})}
     catch(e){this.msg=ACC.errText(e);this.msgOk=false;AU.play('dry',{vol:.5});if(/no_mission/.test(String(e.message)))ACC.loadMissions().catch(()=>{})}

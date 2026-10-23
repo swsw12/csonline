@@ -425,7 +425,8 @@ function epCards(act){const L=LI(),cur=epSel(CFG);
   // the chapters that can be played, then the free scenario, then the locked ones and the ones still to come
   const ids=EP_IDS,open=id=>!EPS[id].soon&&EP.unlocked(id);
   const free=`<div class="epc free${cur===0?' on':''}" data-act="${act}" data-v="ep:0"><div class="pi"><b class="q">∞</b></div><div class="tx"><small>${L?'FREE':'자유'}</small><b>${L?'Free scenario':'자유 시나리오'}</b><span>${L?'Any map · 5 stages × 3 waves · the giant':'맵 선택 · 5스테이지 × 3웨이브 · 거대 좀비'}</span></div></div>`;
-  return `<div class="epl">${ids.filter(open).map(card).join('')}${free}${ids.filter(id=>!open(id)).map(card).join('')}</div>`}
+  // (v7.0: the latest season's strip first — epseason.js)
+  return `<div class="epl">${typeof EPSZ!=='undefined'?EPSZ.strip():''}${ids.filter(open).map(card).join('')}${free}${ids.filter(id=>!open(id)).map(card).join('')}</div>`}
 function epOpts(){const L=LI(),o=[];for(const id of EP_IDS){const E=EPS[id];if(E&&!E.soon)o.push([id,`${L?'CH.'+id:id+'챕터'} · ${E.n[L]}`])}o.push([0,L?'Free scenario':'자유 시나리오']);return o}
 function epPrev(id,d){const L=LI(),E=EPS[id]&&!EPS[id].soon?EPS[id]:EPS[1],rc=EP.rec(id);
   return `<div class="epPrev"><img src="${portrait('z_'+E.k,120)}"><div><small>${epSz(E)}${L?'CH.'+id:id+'챕터'} · ${E.code}</small><b>${E.t[L]}</b><span>${mapName(E.map)}</span><em>${E.file[0][L]}</em><em>${E.file[1][L]}</em>${rc?`<p>${L?'Best':'최고 기록'}: <i class="md m${rc.m}">${rc.m}</i> ${T('d'+rc.d)} · ${fmtT(rc.t)}</p>`:''}${HOF.cardLine(E.id||id,d!=null?d|0:CFG.diff|0)}</div></div><div class="rrule"><b>${L?'Rules':'규칙'}</b>${T('epD')}</div>`}
