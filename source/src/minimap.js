@@ -41,7 +41,7 @@ const RADAR={cv:null,ctx:null,px:170,t:0,band:0,seen:new Map(),rr:0,
       if(Math.hypot(a.c.x-P.c.x,a.c.z-P.c.z)<45&&losClear(e.x,e.y,e.z,a.c.x,a.c.y+1.2,a.c.z)&&!(SMK.n&&SMK.blocks(e.x,e.y,e.z,a.c.x,a.c.y+1.2,a.c.z)))this.seen.set(a,G.t)}},
   update(dt){const cv=this.cv,P=G.player;if(!cv)return;const on=CFG.minimap!==false&&!!P&&!!MAP.mini&&G.st!=='menu';cv.style.display=on?'block':'none';if(!on)return;
     this.look(P);this.t+=dt;if(this.t<1/30)return;this.t=0;
-    const tg=(!P.alive&&G.spec&&G.spec.alive)?G.spec:P,x=this.ctx,d=this.dpr,W=cv.width,c=W/2,R0=c-2*d,s=3.4*d,L=MAP.mini;
+    const tg0=(!P.alive&&G.spec&&G.spec.alive)?G.spec:P,F=Main.fc&&!P.alive?Main.fc:null,tg=F?Object.assign(Object.create(tg0),{c:{x:F.x,y:F.y,z:F.z},yaw:F.yaw}):tg0,x=this.ctx,d=this.dpr,W=cv.width,c=W/2,R0=c-2*d,s=3.4*d,L=MAP.mini;
     const yaw=tg.yaw;let b=this.band;const y=tg.c.y;if(miniBand(y-.3)!==b&&miniBand(y+.3)!==b)b=miniBand(y);b=Math.min(b,L.layers.length-1);this.band=b;
     x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,W,W);x.save();x.beginPath();x.arc(c,c,R0,0,TAU);x.clip();x.fillStyle='rgba(8,10,14,.62)';x.fillRect(0,0,W,W);
     x.translate(c,c);x.rotate(yaw);x.scale(s/MINI_S,s/MINI_S);x.translate(-(tg.c.x-L.x0)*MINI_S,-(tg.c.z-L.z0)*MINI_S);x.imageSmoothingEnabled=false;

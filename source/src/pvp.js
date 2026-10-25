@@ -340,7 +340,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     // dead: back in …, who did it (his weapon and the health he has left), who I am watching
     let sp='';if(!P.alive&&(G.st==='fight'||G.st==='prep')){sp=G.mode==='bomb'?(L?'Back next round':'다음 라운드에 다시 시작'):L?`Back in ${Math.max(1,Math.ceil(P.pvpRT==null?this.RESP:P.pvpRT))} s`:`${Math.max(1,Math.ceil(P.pvpRT==null?this.RESP:P.pvpRT))}초 뒤 부활`;
       const k=G.pvpKC||G.killer;if(k&&k!==P){const kw=WPN[k.cur];sp+=`<br><small>${T('killedBy',`<b class="${this.cls(k)}">${esc(k.name)}</b>`)}${kw&&kw.n?' · '+esc(kw.n[L]):''}${k.alive?(L?` · ${Math.ceil(k.hp)} HP left`:` · 남은 체력 ${Math.ceil(k.hp)}`):''}</small>`}
-      if(G.spec)sp+=`<br><small>${T('spec')}: <b class="${this.cls(G.spec)}">${esc(G.spec.name)}</b> — ${T('specHint')}</small>`}
+      if(Main.fc)sp+=`<br><small>${T('spec')}: <b>${T('specFree')}</b> — ${TOUCH.on?T('specFreeT'):T('specFreeK')}</small>`;else if(G.spec)sp+=`<br><small>${T('spec')}: <b class="${this.cls(G.spec)}">${esc(G.spec.name)}</b> — ${TOUCH.on?T('specHintT'):T('specHint')}</small>`}
     set(e.hSpec,sp,1);e.hSpec.style.display=sp?'block':'none';
     // who is under the crosshair: the name in its colour; a teammate's health
     this.aiT-=dt;if(this.aiT<=0){this.aiT=.08;let ai='';if(P.alive&&!G.spec){const ey=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const hw=rayCast(ey.x,ey.y,ey.z,_dv.x,_dv.y,_dv.z,60);let best=null,bt=hw?hw.t:60;

@@ -31,7 +31,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
       ${this.B('fire',I.fire,'tFire')}${this.B('fire',I.fire,'tFireL')}
       ${this.B('alt',I.alt,'tAlt',L?'AIM':'조준')}${this.B('jump',I.jump,'tJump')}${this.B('duck',I.duck,'tDuck')}${this.B('reload',I.rel,'tRel')}${this.B('skill',I.skill,'tSkill',L?'SKILL':'스킬')}
       <div class="tbar"></div>
-      <div class="ttop">${this.B('buy',I.buy,'tBuy',L?'BUY':'구매')}${this.B('zsel',I.buy,'tZsel',L?'CLASS':'클래스')}${this.B('light',I.light,'tLight')}${this.B('nv',L?'NV':'NV','tNV')}${this.B('score',I.score,'tScore')}${this.B('pause',I.menu,'tPause')}</div>
+      <div class="ttop">${this.B('buy',I.buy,'tBuy',L?'BUY':'구매')}${this.B('zsel',I.buy,'tZsel',L?'CLASS':'클래스')}${this.B('light',I.light,'tLight')}${this.B('nv',L?'NV':'NV','tNV')}${this.B('free','👁','tFree')}${this.B('score',I.score,'tScore')}${this.B('pause',I.menu,'tPause')}</div>
       <div class="tlock"></div>
       ${this.B('close','✕','tClose')}
       <div class="trot"><p>${L?'Turn your phone sideways':'휴대폰을 가로로 돌려 주세요'}</p><button data-act="rot" class="trotb">${L?'Switch to landscape & lock':'가로모드로 전환 · 고정'}</button></div>`;
@@ -74,13 +74,14 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     const dx=e.clientX-lk.x,dy=e.clientY-lk.y;lk.x=e.clientX;lk.y=e.clientY;this.turn(dx,dy)},
   up(e){if(e.pointerId===this.stickId){this.stickId=null;this.mv.x=this.mv.y=0;const s=this.stick;s.classList.remove('act','held');s.firstChild.style.transform='';return}
     this.look.delete(e.pointerId);const b=this.btn.get(e.pointerId);if(b){this.btn.delete(e.pointerId);b.el.classList.remove('on');this.press(b.id,false,b.v)}},
-  turn(dx,dy){const P=G.player;if(!P||!P.alive||Main.paused||Main.overlay||G.st==='menu'||G.st==='over')return;this.lastLook=performance.now();
+  turn(dx,dy){const P=G.player;if(P&&!P.alive&&Main.fc&&Main.specOn()&&!Main.paused&&!Main.overlay){const F=Main.fc,k=(CFG.tsens||1)*.0048;F.yaw=wrapA(F.yaw-dx*k);F.pitch=clamp(F.pitch-(CFG.invert?-1:1)*dy*k*.85,-1.53,1.53);return}
+    if(!P||!P.alive||Main.paused||Main.overlay||G.st==='menu'||G.st==='over')return;this.lastLook=performance.now();
     // a little acceleration: slow drags are precise, fast flicks turn far
     const sp=Math.hypot(dx,dy),acc=1+Math.min(1.2,Math.max(0,sp-6)*.05);
     const Wz=WPN[P.cur];const z=P.zoom>0&&Wz&&Wz.zoom?Wz.zoom[P.zoom-1]/CFG.fov:1;const k=(CFG.tsens||1)*.0048*z*acc*(this.tgt?.75:1);
     P.yaw=wrapA(P.yaw-dx*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*dy*k*.85,-1.53,1.53)},
   press(id,on,v){const P=G.player,M=Main;
-    if(id==='fire'){if(on&&M.specOn()){M.nextSpec();return}M.ml=on||[...this.btn.values()].some(b=>b.id==='fire');return}
+    if(id==='fire'){if(on&&M.specOn()){M.specClick();return}M.ml=on||[...this.btn.values()].some(b=>b.id==='fire');return}
     if(id==='alt'){M.mr=on;return}
     if(id==='score'){M.boardOn=on;UI.board(on);return}
     // long press on the weapon in hand = drop it; a short tap still swaps back (quick switch)
@@ -89,6 +90,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     if(!on)return;this.buzz(8);
     if(id==='duck'){this.duck=!this.duck;this.el.querySelector('.tDuck').classList.toggle('lat',this.duck);return}
     if(id==='pause'){if(M.overlay)M.closeOverlay();M.pause();return}
+    if(id==='free'){M.toggleFree();this.st=-1;return}
     if(id==='close'){M.closeOverlay();return}
     if(!P)return;
     if(id==='buy'){if(M.overlay==='buy')M.closeOverlay();else M.openOverlay('buy');return}
@@ -127,8 +129,8 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
   update(){if(!this.el)return;if(!this.on){this.el.classList.add('off');return}const P=G.player,M=Main;const play=!!P&&G.st!=='menu'&&G.st!=='over'&&!M.paused&&UI.open!=='results';
     if(play&&P)this.drawBar(P);
     if(this.lockEl){const on=!!(this.tgt&&play);if(on!==this.lockOn){this.lockOn=on;this.lockEl.classList.toggle('on',on)}}
-    const st=(play?1:0)|(M.overlay?2:0)|(P&&P.team===TZ?4:0)|(P&&P.alive?8:0);if(st===this.st)return;this.st=st;
-    const el=this.el;el.classList.toggle('off',!play);el.classList.toggle('ov',!!M.overlay);el.classList.toggle('zt',!!(st&4));el.classList.toggle('dead',!(st&8));
+    const st=(play?1:0)|(M.overlay?2:0)|(P&&P.team===TZ?4:0)|(P&&P.alive?8:0)|(M.specOn()?16:0)|(M.fc?32:0);if(st===this.st)return;this.st=st;
+    const el=this.el;el.classList.toggle('off',!play);el.classList.toggle('ov',!!M.overlay);el.classList.toggle('zt',!!(st&4));el.classList.toggle('dead',!(st&8));el.classList.toggle('spc',!!(st&16));el.classList.toggle('fcam',!!(st&32));
     if(!play||M.overlay){for(const [pid,b] of this.btn){b.el.classList.remove('on');this.press(b.id,false,b.v)}this.btn.clear();this.look.clear();this.stickId=null;this.mv.x=this.mv.y=0;this.stick.classList.remove('act','held');this.stick.style.left=this.stick.style.top='';this.duck=false;el.querySelector('.tDuck').classList.remove('lat');M.ml=M.mr=false}}};
 const _tdir=new THREE.Vector3();
 (function(){

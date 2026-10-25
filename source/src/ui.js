@@ -153,7 +153,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     {const M=P.nyM||[0,0,0,0];const s=P.team===TH?NY_CH.map((c,i)=>`<b class="${M[i]?'on':''}">${c}${M[i]>1?`<sub>${M[i]}</sub>`:''}</b>`).join('')+(P.nyFree>0?`<small>${T('nyFree')} ×${P.nyFree}</small>`:''):'';if(this.nyS!==s){this.nyS=s;$('hNY').innerHTML=s}}
     // spectate / revive info
     let sp='';if(!P.alive){if(P.team===TZ&&!P.permaDead&&G.st==='fight'){sp=G.mode==='mut'?T('reviveIn',Math.max(1,Math.ceil(P.reviveT))):T('respawnIn',Math.max(1,Math.ceil(P.respawnT)))}else if(G.st==='fight'||G.st==='end')sp=T('permaDead')
-      if(G.spec)sp+=`<br><small>${T('spec')}: <b class="${G.spec.team===TZ?'z':'h'}">${esc(G.spec.name)}</b> — ${T('specHint')}</small>`;else if(G.killer)sp+=`<br><small>${T('killedBy',esc(G.killer.name))}</small>`}
+      if(Main.fc)sp+=`<br><small>${T('spec')}: <b>${T('specFree')}</b> — ${TOUCH.on?T('specFreeT'):T('specFreeK')}</small>`;else if(G.spec)sp+=`<br><small>${T('spec')}: <b class="${G.spec.team===TZ?'z':'h'}">${esc(G.spec.name)}</b> — ${TOUCH.on?T('specHintT'):T('specHint')}</small>`;else if(G.killer)sp+=`<br><small>${T('killedBy',esc(G.killer.name))}</small>`}
     e.hSpec.innerHTML=sp;e.hSpec.style.display=sp?'block':'none'}};
 // ---------------- menus ----------------
 // n small skulls (difficulty rank)
