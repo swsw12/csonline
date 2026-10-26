@@ -221,11 +221,14 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     let t=0;for(const p of prim)t+=p[1];let r=Math.random()*t,p1=prim[0][0];for(const p of prim){r-=p[1];if(r<=0){p1=p[0];break}}
     const pr=Math.random(),p2=pr<.6?'p9':pr<.75?'d50':pr<.85?'f7':pr<.93?'tw9':'r6';
     return {1:p1,2:p2,3:'knife',he:Math.random()<.5?1:0,frost:0,flare:0,smoke:Math.random()<(G.mode==='bomb'?.75:.3)?1:0,armor:1}},
+  CS:[.15,.55,.85,1],// v7.2: the share of bots that counter-strafe (botFight), by difficulty
   diff(){const d=DIFF[G.diff|0]||DIFF[1];if(this._D&&this._D.k===d)return this._D;return this._D={k:d,react:d.react*1.7+.08,err:d.err*1.6,turn:d.turn*.8,hsP:d.hsP*.55,tol:d.tol}},
   botInit(a){const B=a.bot;Object.assign(B,{pm:this.mid,tg:null,lkp:null,rg:null,rgT:0,path:null,pg:null,repath:0,hurtBy:null,hurtT:-9,seenT:-9,react:0,aimX:0,aimY:0,aimOX:0,aimOY:0,aimRT:0,
-    aimT0:0,hs:false,hsT:0,strafe:0,strafeT:0,crouchT:0,nadeCD:rr(6,14),scanY:null,fireHold:false,burstT:0,lof:false,smk:null,retT:0,smkR:0,smkF:0});a.flash=false},
-  botSpawn(a){const B=a.bot;B.tg=null;B.lkp=null;B.rg=null;B.path=null;B.pg=null;B.hurtBy=null;B.scanY=null;B.react=0;B.crouchT=0;B.smk=null;B.retT=0;a.flash=false},
-  botDie(a){const B=a.bot;B.tg=null;B.path=null;B.smk=null;B.retT=0},
+    aimT0:0,hs:false,hsT:0,strafe:0,strafeT:0,crouchT:0,nadeCD:rr(6,14),scanY:null,fireHold:false,burstT:0,lof:false,smk:null,retT:0,smkR:0,smkF:0,
+    cov:null,covCD:0,lookP:null,lookT:0,cs:Math.random()<this.CS[G.diff|0]});a.flash=false},
+  botSpawn(a){const B=a.bot;B.tg=null;B.lkp=null;B.rg=null;B.path=null;B.pg=null;B.hurtBy=null;B.scanY=null;B.react=0;B.crouchT=0;B.smk=null;B.retT=0;a.flash=false;
+    B.cov=null;B.covCD=0;B.lookP=null;B.cs=Math.random()<this.CS[G.diff|0]},
+  botDie(a){const B=a.bot;B.tg=null;B.path=null;B.smk=null;B.retT=0;B.cov=null},
   botHurt(t,src){const B=t.bot;if(!B||!src)return;B.hurtBy=src;B.hurtT=G.t;if(!B.tg||B.tg===src||Math.random()<.5)B.lkp={x:src.c.x,y:src.c.y,z:src.c.z,t:G.t}},
   botHeard(a,t){const B=a.bot;if(B.tg)return;if(!B.lkp||G.t-B.lkp.t>1.5||Math.random()<.3)B.lkp={x:t.c.x+rr(-3,3),y:t.c.y,z:t.c.z+rr(-3,3),t:G.t,h:1}},
   // sight at ~8 Hz: the closest enemy in view (about 140°) with a clear line, one that just hurt it even behind; shots heard give a rough place
@@ -257,18 +260,58 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(!g){const n=navAround(c.x,c.z,12,40)||this.rndOpen();if(n)g={x:n.x,y:n.y,z:n.z}}
     if(g){const n=navSnap(g.x,g.y,g.z,4);if(n)g={x:n.x,y:n.y,z:n.z}}
     B.rg=g;B.rgT=G.t+rr(12,22);return g},
-  // the fight itself: hold a range that suits the gun, strafe, crouch now and then; too far → walk at it
-  botFight(a,tg,dt,W){const B=a.bot,c=a.c,dx=tg.c.x-c.x,dz=tg.c.z-c.z,d=Math.hypot(dx,dz),R=this.range(W),ux=dx/(d||1),uz=dz/(d||1);
-    if(d>R[1]&&!(W.kind==='sniper'&&B.lof))return this.botWalk(a,{x:tg.c.x,y:tg.c.y,z:tg.c.z},dt);
-    B.path=null;let mx=0,mz=0;
+  // the fight itself: hold a range that suits the gun, strafe, crouch now and then; too far → walk at it.
+  // v7.2: counter-strafing — a bot about to shoot (the target in sight, its reaction done, rounds in the gun, not between two long-range bursts)
+  // from 6 m or more moves no faster than a slow sidestep (under the 1.2 m/s past which a gun's aim spreads: curSpread) and does not hop;
+  // it strafes at full speed only while it cannot shoot (reacting, reloading, between bursts), and in its gun's reach from up to 1.4 × the
+  // range it stops and shoots rather than walking closer. How many bots fight like that goes with the difficulty (B.cs, rolled each life:
+  // easy 15 %, normal 55 %, hard 85 %, expert all). Blocked (a wall, a drop) → the strafe the other way at once (it used to stand there).
+  botFight(a,tg,dt,W){const B=a.bot,c=a.c,dx=tg.c.x-c.x,dz=tg.c.z-c.z,d=Math.hypot(dx,dz),R=this.range(W),ux=dx/(d||1),uz=dz/(d||1),am=a.ammo[a.cur];
+    const shoot=!!B.cs&&B.react<=0&&B.lof&&!this.prot(tg)&&a.drawT<=0&&a.reloadT<=0&&!!am&&am.mag>0&&d>=6&&!W.pellets&&W.kind!=='melee'&&!(!W.semi&&!W.burst&&d>18&&(B.burstT||0)>.35);
+    if(d>R[1]&&!(W.kind==='sniper'&&B.lof)&&!(shoot&&d<R[1]*1.4))return this.botWalk(a,{x:tg.c.x,y:tg.c.y,z:tg.c.z},dt);
+    B.path=null;let mx=0,mz=0,sm=0;
     if(W.kind==='melee'){mx=ux;mz=uz}
     else{if(d<R[0]){mx=-ux;mz=-uz}
       B.strafeT-=dt;if(B.strafeT<=0){B.strafeT=rr(.35,1.1);B.strafe=Math.random()<.2?0:(Math.random()<.5?-1:1)}
-      const still=W.kind==='sniper'&&a.zoom>0;if(B.strafe&&!still){mx+=-uz*B.strafe*.9;mz+=ux*B.strafe*.9}
+      sm=W.kind==='sniper'&&a.zoom>0?0:shoot?.2:.9;if(B.strafe&&sm){mx+=-uz*B.strafe*sm;mz+=ux*B.strafe*sm}
       if(B.crouchT>0){B.crouchT-=dt;a.cmd.duck=true}else if(d>14&&Math.random()<dt*.25)B.crouchT=rr(.6,1.6);
-      if(c.onGround&&d<14&&!a.duck&&Math.random()<dt*.12)a.cmd.jump=true}
-    if(mx||mz){const l=Math.hypot(mx,mz);mx/=l;mz/=l;if(this.canStep(a,mx,mz)){AI.moveDir(a,mx,mz);return true}if(B.strafe)B.strafe=-B.strafe}
+      if(c.onGround&&d<14&&!a.duck&&!shoot&&Math.random()<dt*.12)a.cmd.jump=true}
+    for(let k=0;k<2&&(mx||mz);k++){const l=Math.hypot(mx,mz),m=shoot&&d>=R[0]?Math.min(1,l):1;if(this.canStep(a,mx/l,mz/l)){AI.moveDir(a,mx/l*m,mz/l*m);return true}
+      if(!B.strafe||W.kind==='melee')break;mx+=uz*B.strafe*2*sm;mz-=ux*B.strafe*2*sm;B.strafe=-B.strafe}
     return false},
+  // v7.2 — cover to reload. An empty magazine with the enemy 12 m off or more (or nothing in the sidearm), or one nearly empty (15 %) past 10 m,
+  // sends the bot to a spot at most 5 m away that the enemy cannot see (coverSpot); it reloads on the way and there (crouched) and comes
+  // back out 0.2–0.8 s after. Given up when he gets within 4 m, after 3 s on the way, or with no way there; one every 4–8 s. Returns {mv}
+  // while it is on, else false. (Tried against the v7.1 bots and left out: running for cover when badly hurt in the middle of a fight — they
+  // were shot on the way three times in four — and holding the corner the target went round instead of going after it — fewer kills.)
+  botCover(a,tg,dt,W,thk){const B=a.bot,c=a.c,cmd=a.cmd;let K=B.cov;
+    if(!K){if(!thk||!tg||G.t<B.covCD||!W.mag||W.kind==='melee'||a.bAct)return false;const am=a.ammo[a.cur],d=dist3(tg.c,c);if(!am||am.res<=0)return false;
+      const sa=a.inv[2]&&a.ammo[a.inv[2]];if(!(am.mag===0&&(d>=12||!(sa&&sa.mag>0)||a.cur!==a.inv[1])||am.mag<=Math.max(1,W.mag*.15)&&d>10))return false;
+      const n=this.coverSpot(a,tg,5,7);if(!n){B.covCD=G.t+1.5;return false}
+      K=B.cov={x:n.x,y:n.y,z:n.z,why:'rel',t0:G.t,arr:0,out:0,lk:{x:tg.c.x,y:tg.c.y,z:tg.c.z},look:null};B.path=null;B.repath=0}
+    const end=cd=>{B.cov=null;B.path=null;B.repath=0;B.covCD=G.t+(cd||rr(4,8));return false};
+    if(tg&&dist3(tg.c,c)<4)return end(rr(2,4));
+    const am=a.ammo[a.cur],at=Math.hypot(K.x-c.x,K.z-c.z)<.9&&Math.abs(K.y-c.y)<1.3;
+    if(am&&W.mag&&am.mag<W.mag&&am.res>0&&a.reloadT<=0&&!(tg&&B.lof&&am.mag>0))cmd.reload=true;// (not with him in sight and rounds left)
+    if(!K.arr){if(G.t-K.t0>3)return end();
+      if(at){K.arr=G.t;K.look=AI.edgeTo(a,K.lk)}
+      else{B.repath-=dt;if((!B.path||B.pi>=B.path.length)&&B.repath<=0){B.repath=1.2;if(!AI.goTo(a,K.x,K.y,K.z,1.45))return end(1.5)}
+        const mv=AI.follow(a,dt,true);if(mv)return {mv:true};K.arr=G.t;K.look=AI.edgeTo(a,K.lk)}}
+    if(a.reloadT<=0&&(!am||am.mag>=W.mag*.7||am.res===0)){if(!K.out)K.out=G.t+rr(.2,.8);if(G.t>=K.out)return end()}
+    if(a.reloadT>0)cmd.duck=true;B.path=null;return {mv:false}},
+  // somewhere out of his sight: 1.2–r m off on about this level, a node one can reach and stand about on, that his eye sees neither at the
+  // chest nor at the head; the nearest first (one nearer to him counts as farther), the first of three with a path of np steps or fewer
+  coverSpot(a,tg,r,np){const c=a.c,te=actorEye(tg),R=this.hreach(),me=Math.hypot(c.x-tg.c.x,c.z-tg.c.z),C=[];
+    for(let i=0;i<24;i++){const n=navAround(c.x,c.z,1.2,r);if(!n||!R[n.id]||n.e.length<12||Math.abs(n.y-c.y)>1.3)continue;
+      if(losClear(te.x,te.y,te.z,n.x,n.y+1.15,n.z)||losClear(te.x,te.y,te.z,n.x,n.y+1.62,n.z))continue;
+      C.push([Math.hypot(n.x-c.x,n.z-c.z)+Math.max(0,me-Math.hypot(n.x-tg.c.x,n.z-tg.c.z))*2+Math.random()*.6,n])}
+    C.sort((p,q)=>p[0]-q[0]);const s0=navNode(c.x,c.y,c.z);
+    for(let k=0;k<C.length&&k<3;k++){const P=navPath(s0,C[k][1],1.45,2500);if(P&&P.length<=np)return C[k][1]}return null},
+  // on the move with nobody in sight: a fresh last-known place in view → at it; else the corner ahead on the path (AI.edge)
+  botLook(a){const B=a.bot;if(G.t<B.lookT)return B.lookP;B.lookT=G.t+.2+Math.random()*.08;const e=actorEye(a),k=B.lkp;let P=null;
+    if(k&&G.t-k.t<6&&Math.hypot(k.x-a.c.x,k.z-a.c.z)<45&&losClear(e.x,e.y,e.z,k.x,k.y+1.3,k.z))P={x:k.x,y:k.y+1.3,z:k.z};
+    else if(B.path&&B.pi<B.path.length)P=AI.edge(e,B.path,B.pi);
+    return B.lookP=P},
   botGun(a,tg,W){const B=a.bot,am=a.ammo[a.cur],cmd=a.cmd,prim=a.inv[1],pa=prim&&a.ammo[prim],side=a.inv[2],sa=side&&a.ammo[side];
     if(W.kind==='nade'){if(!tg&&a.throwT<=0)equip(a,bestWeapon(a));return}
     if(a.drawT>0)return;
@@ -287,6 +330,9 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     if(B.react>0||!B.lof||this.prot(tg)||a.drawT>0)return;
     if(W.kind==='nade'){if(a.throwT<=0){a.pitch=Math.min(.5,pitch+.08+dist*.012);cmd.fire=true}return}
     const err=Math.abs(wrapA(yaw-a.yaw))+Math.abs(pitch-a.pitch);if(err>D.tol+(W.pellets?.1:0))return;
+    // (v7.2, a counter-strafing bot: past 6 m it lets go of the trigger for the moment it takes to stop — on its own legs, not when knocked back —
+    // with a gun whose aim spreads on the move)
+    if(B.cs&&dist>6&&!W.pellets&&W.kind!=='sniper'&&W.kind!=='melee'&&W.spread&&W.spread[1]>W.spread[0]*3&&(Math.hypot(a.mvx,a.mvz)>1.2||!c.onGround))return;
     if(W.kind==='melee'){if(tdist<2.2){cmd.fire=Math.random()<.65;cmd.alt=!cmd.fire}return}
     if(!a.ammo[a.cur])return;
     if(W.zoom&&a.zoom===0&&dist>(W.kind==='sniper'?7:18)){cmd.alt=true;return}if(a.zoom>0&&dist<6)a.zoom=0;
@@ -295,16 +341,18 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   bot(a,dt){const B=a.bot,cmd=a.cmd,c=a.c;cmd.duck=false;if(B.pm!==this.mid)this.botInit(a);
     if(G.st==='prep'){if(B.scanY==null)B.scanY=a.yaw;AI.turnTo(a,B.scanY+Math.sin(G.t*.6+a.id)*.8,-.03,dt,2);return}
     if(G.st!=='fight')return;
-    const D=this.diff();if(B.think<=0){B.think=.11+Math.random()*.06;this.botSee(a,D);
+    const D=this.diff(),thk=B.think<=0;if(thk){B.think=.11+Math.random()*.06;this.botSee(a,D);
       if(B.tg&&a.inv.he>0&&WPN[a.cur]&&WPN[a.cur].kind!=='nade'&&!B.smk){B.nadeCD-=.14;if(B.nadeCD<=0){B.nadeCD=rr(6,12);const d=dist3(B.tg.c,c);if(d>7&&d<18&&B.lof&&Math.random()<.5)equip(a,'he')}}
       SMK.botThink(a)}
     if(SMK.botThrow(a,dt))return;// (a smoke grenade on its way out: smoke.js)
     const tg=B.tg&&B.tg.alive&&foe(a,B.tg)?B.tg:null,W=WPN[a.cur]||{},bm=G.mode==='bomb';
     if(bm&&BOMB.botAct(a,dt,tg))return;
     this.botGun(a,tg,W);let moving=false;const ret=B.retT>G.t&&B.rg;// (backing off behind its own smoke)
-    if(tg&&!ret)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=ret?B.rg:bm?BOMB.botGoal(a):this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
+    const cv=!ret&&this.botCover(a,tg,dt,W,thk);
+    if(cv)moving=cv.mv;else if(tg&&!ret)moving=this.botFight(a,tg,dt,WPN[a.cur]||W);else{const g=ret?B.rg:bm?BOMB.botGoal(a):this.botGoal(a);if(g)moving=this.botWalk(a,g,dt)}
     if(tg)this.botAim(a,tg,dt,D,WPN[a.cur]||W);
-    else if(moving){const v=Math.hypot(c.vx,c.vz);if(v>.5)AI.turnTo(a,Math.atan2(-c.vx,-c.vz),0,dt,6)}
+    else if(B.cov&&B.cov.arr&&B.cov.look)AI.lookAt(a,B.cov.look,dt,4);// (in cover: the corner he would come round)
+    else if(moving){const L=this.botLook(a);if(L)AI.lookAt(a,L,dt,6);else{const v=Math.hypot(c.vx,c.vz);if(v>.5)AI.turnTo(a,Math.atan2(-c.vx,-c.vz),0,dt,6)}}// (v7.2: the corner ahead, not the feet)
     else if(bm&&B.holdY!=null)AI.turnTo(a,B.holdY+Math.sin(G.t*.45+a.id*1.7)*.42,-.03,dt,2.6);// (holding an angle in 폭파미션)
     else{if(B.scanY==null)B.scanY=a.yaw;AI.turnTo(a,B.scanY+Math.sin(G.t*.5+a.id*1.7)*1.4,-.03,dt,2.4)}},
 

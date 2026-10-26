@@ -97,6 +97,18 @@ const AI={
     return true},
   moveDir(a,dx,dz,run){const fx=-Math.sin(a.yaw),fz=-Math.cos(a.yaw),rx=Math.cos(a.yaw),rz=-Math.sin(a.yaw);a.cmd.f=dx*fx+dz*fz;a.cmd.s=dx*rx+dz*rz},
   turnTo(a,yaw,pitch,dt,rate){const d=wrapA(yaw-a.yaw);const m=rate*dt;a.yaw=wrapA(a.yaw+clamp(d,-m,m));a.pitch+=clamp(pitch-a.pitch,-m*.7,m*.7)},
+  lookAt(a,p,dt,rate){const e=actorEye(a),dx=p.x-e.x,dz=p.z-e.z;this.turnTo(a,Math.atan2(-dx,-dz),clamp(Math.atan2(p.y-e.y,Math.hypot(dx,dz)),-.6,.6),dt,rate)},
+  // v7.2 — where to look on the move: along a path (node ids from index i, every other node, 28 m at most) the first node the eye cannot see
+  // (just round the corner the path turns, where somebody would step out — aiming there is pre-aiming the corner), else the farthest it can if
+  // that is 3 m off or more; chest height. null: nothing worth it (the path ends right here)
+  edge(e,P,i){const N=NAV.nodes;let last=null,ld=0;for(let k=i,n=0;k<P.length&&n<14;k+=2,n++){const m=N[P[k]];if(!m)break;const d=Math.hypot(m.x-e.x,m.z-e.z);if(d>28)break;
+      if(!losClear(e.x,e.y,e.z,m.x,m.y+1.3,m.z))return d>1.2||last?{x:m.x,y:m.y+1.3,z:m.z}:null;last=m;ld=d}
+    return last&&ld>=3?{x:last.x,y:last.y+1.3,z:last.z}:null},
+  // the same toward a place (a last-known position): the point itself when it is in sight, else the corner on the way there
+  edgeTo(a,p){const e=actorEye(a);if(losClear(e.x,e.y,e.z,p.x,p.y+1.3,p.z))return {x:p.x,y:p.y+1.3,z:p.z};
+    const s=navNode(a.c.x,a.c.y,a.c.z),t=navNode(p.x,p.y+.5,p.z),P=s&&t?navPath(s,t,1.45,2500):null;return P&&P.length?this.edge(e,P,0):null},
+  // walking a path with nothing in sight: the corner ahead (edge), worked out ~4 times a second
+  lookAhead(a){const B=a.bot;if(G.t>=(B.lookT||0)){B.lookT=G.t+.22+Math.random()*.06;B.lookP=B.path&&B.pi<B.path.length?this.edge(actorEye(a),B.path,B.pi):null}return B.lookP},
   goTo(a,x,y,z,maxJ,partial,pen){const B=a.bot;const s=navNode(a.c.x,a.c.y,a.c.z),t=navNode(x,y,z);B.path=navPath(s,t,maxJ,0,a.team===TH?4.3:0,partial,pen);
     B.partial=!!(B.path&&B.path.partial);B.pi=0;B.goal=[x,y,z];B.gT=null;return !!B.path},
   // ---------- human bots ----------
@@ -180,7 +192,7 @@ const AI={
       const am=a.ammo[a.cur];if(am&&W&&am.mag<W.mag*.7&&am.res>0)cmd.reload=true;
       if(!moving&&B.camp){const lk=B.camp.look;const scan=Math.sin(G.t*.5+a.id*1.3)*.9+(spread?B.scanOff||0:0);const yaw=Math.atan2(-(lk[0]-c.x),-(lk[2]-c.z))+scan;this.turnTo(a,yaw,-.05,dt,2.5)}// each bot at a camp covers its own side of it
       else if(!moving){if(B.scanY==null)B.scanY=a.yaw;this.turnTo(a,B.scanY+Math.sin(G.t*.45+a.id*1.7)*1.6,-.04,dt,2.2)}// open ground: sweep around the way it came
-      else if(moving){const v=Math.hypot(c.vx,c.vz);if(v>.5)this.turnTo(a,Math.atan2(-c.vx,-c.vz),0,dt,6)}
+      else if(moving){const L=this.lookAhead(a);if(L)this.lookAt(a,L,dt,6);else{const v=Math.hypot(c.vx,c.vz);if(v>.5)this.turnTo(a,Math.atan2(-c.vx,-c.vz),0,dt,6)}}// (v7.2: the corner ahead, not the feet)
       if(G.st==='fight'&&a.inv.flare&&!B.flared&&Math.random()<dt*.02){equip(a,'flare');B.flared=1}
       if(W&&W.kind==='nade'&&a.cur==='flare'&&a.drawT<=0){a.pitch=.35;cmd.fire=true}}
     if(G.st==='prep'&&a.cur==='knife'&&!moving)equip(a,bestWeapon(a))},
@@ -200,17 +212,33 @@ const AI={
   // zombies to back away from (at the perception rate): within r on about this level, in sight or right there, and either close
   // (5.5 m) or coming on — one the guns are holding back is shot at from where the bot stands (moving spoils the aim). The way out is
   // the sum of the away directions (nearer ones count more) plus a little room from teammates, so a group backing off fans out.
-  kiteScan(a,r,e){const B=a.bot,c=a.c;let ax=0,az=0,dm=99;
+  kiteScan(a,r,e){const B=a.bot,c=a.c;let ax=0,az=0,dm=99;const ZL=B.kzl||(B.kzl=[]);ZL.length=0;
     for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0)continue;const dy=z.c.y-c.y;if(dy<-2.4||dy>2.4)continue;const dx=c.x-z.c.x,dz=c.z-z.c.z;if(Math.abs(dx)>r||Math.abs(dz)>r)continue;const d=Math.hypot(dx,dz);if(d>r)continue;
-      if(d>5.5&&(z.c.vx*dx+z.c.vz*dz)/(d||1)<1)continue;if(d>3&&(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)||SMK.n&&SMK.blocks(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)))continue;const w=1/Math.max(1,d*d);ax+=dx/(d||1)*w;az+=dz/(d||1)*w;dm=Math.min(dm,d)}
+      if(d>5.5&&(z.c.vx*dx+z.c.vz*dz)/(d||1)<1)continue;if(d>3&&(!losClear(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)||SMK.n&&SMK.blocks(e.x,e.y,e.z,z.c.x,z.c.y+1.2,z.c.z)))continue;const w=1/Math.max(1,d*d);ax+=dx/(d||1)*w;az+=dz/(d||1)*w;dm=Math.min(dm,d);ZL.push(z)}
     let l=Math.hypot(ax,az);if(dm>=99||l<1e-9){B.kd=99;return}ax/=l;az/=l;
     for(const h of G.actors){if(h===a||!h.alive||h.team!==TH)continue;const dx=c.x-h.c.x,dz=c.z-h.c.z;if(Math.abs(dx)>2.5||Math.abs(dz)>2.5||Math.abs(h.c.y-c.y)>1.5)continue;const d=Math.hypot(dx,dz);if(d>2.5||d<.01)continue;ax+=dx/d*(1-d/2.5)*.5;az+=dz/d*(1-d/2.5)*.5}
     l=Math.hypot(ax,az)||1;B.kx=ax/l;B.kz=az/l;B.kd=dm},
-  // back off along that way; blocked (wall, railing, drop) → 45° then 90° to the side it last got out by. Nowhere to go → false.
-  kite(a){const B=a.bot,c=a.c,sd=B.kSide||1;
-    for(const an of [0,.79*sd,-.79*sd,1.57*sd,-1.57*sd]){const co=Math.cos(an),si=Math.sin(an),bx=B.kx*co-B.kz*si,bz=B.kx*si+B.kz*co;
-      if(charFits(c,c.x+bx*.6,c.y+.3,c.z+bz*.6)&&floorBelow(c.x+bx*.9,c.y+.4,c.z+bz*.9,.2)>c.y-.4){this.moveDir(a,bx,bz);if(an)B.kSide=an>0?1:-1;return true}}
-    B.kSide=-sd;return false},
+  // back off. v7.2: the way out is picked from twelve headings round the way away (B.kx, B.kz), each walked ahead in .6 m steps up to 3.6 m
+  // (the body fits, no drop over .4 m — kRoom): the score is how much farther from the zombies it backs off from (the near ones count more)
+  // the end of that walk is, plus a little for room, for the way away (teammates fan out) and for keeping the last heading. So with a wall
+  // behind it slides along the wall instead of stopping against it, and in a corner it slips out past them at a slant — never on a line that
+  // comes nearer one than it is now and within its reach (1.3 m + 1.2 × its half-width). Kept ~0.18 s (sooner when its first step is blocked).
+  // Nowhere to go → false (stand and shoot). (Before v7.2: straight away, else 45° then 90° to one side, .6 m ahead only — a wall a step
+  // behind left it standing there.)
+  kite(a){const B=a.bot,c=a.c,K=B.kdir;
+    if(K&&G.t<B.kdirT&&this.kRoom(c,K[0],K[1],.6)>=.6){this.moveDir(a,K[0],K[1]);return true}
+    const Z=B.kzl||[];let best=null,bs=-1e9;
+    for(let i=0;i<12;i++){const an=i*.5236,co=Math.cos(an),si=Math.sin(an),bx=B.kx*co-B.kz*si,bz=B.kx*si+B.kz*co;
+      const room=this.kRoom(c,bx,bz,3.6);if(room<.6)continue;let g=0,w=0,ok=true;
+      for(const z of Z){if(!z.alive)continue;const zx=z.c.x-c.x,zz=z.c.z-c.z,d0=Math.hypot(zx,zz),t=clamp(zx*bx+zz*bz,0,room),ca=Math.hypot(zx-bx*t,zz-bz*t);
+        if(ca<Math.min(1.3+z.c.hw*1.2,d0-.2)){ok=false;break}// that line runs past one within reach (a wide one reaches farther)
+        const wi=1/Math.max(1,d0*d0);g+=(Math.min(Math.hypot(zx-bx*room,zz-bz*room),12)-Math.min(d0,12))*wi;w+=wi}
+      if(!ok)continue;const sc=(w?g/w:room)+room*.25+(bx*B.kx+bz*B.kz)*.3+(K&&bx*K[0]+bz*K[1]>.85?.3:0);if(sc>bs){bs=sc;best=[bx,bz]}}
+    if(!best){B.kdir=null;return false}
+    B.kdir=best;B.kdirT=G.t+.18;this.moveDir(a,best[0],best[1]);return true},
+  // how far a body can walk from where it stands along (bx, bz): .6 m steps up to mx — it fits, and the floor .3 m further on is no more than
+  // .4 m down (or up)
+  kRoom(c,bx,bz,mx){let r=0,y=c.y;for(let s=.6;s<=mx+1e-6;s+=.6){if(!charFits(c,c.x+bx*s,y+.3,c.z+bz*s))break;const f=floorBelow(c.x+bx*(s+.3),y+.4,c.z+bz*(s+.3),.2);if(f<=y-.4)break;y=f;r=s}return r},
   // a teammate standing on top of it: the way to step aside, or null
   hSep(a){const c=a.c;let bx=0,bz=0,n=0;for(const h of G.actors){if(h===a||!h.alive||h.team!==TH)continue;const dx=c.x-h.c.x,dz=c.z-h.c.z;if(Math.abs(dx)>.9||Math.abs(dz)>.9||Math.abs(h.c.y-c.y)>1.2)continue;const d=Math.hypot(dx,dz);if(d>.9)continue;
       if(d>.01){bx+=dx/d;bz+=dz/d}else{bx+=Math.cos(a.id);bz+=Math.sin(a.id)}n++}
