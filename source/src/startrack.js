@@ -226,7 +226,7 @@ GUNS.startrackwb=Object.assign({parts:stBakeB()},ST_G);
 
 // ---------- the weapon (the sheet's stats) ----------
 const STS=STK.stats,STA=STK.aMode,STB=STK.bMode;
-WPN.startrack={slot:1,kind:'shotgun',crate:1,cat:'special',n:['스타트랙','StarTrack'],cost:6000,mag:STS.mag,res:STS.res,dmg:STS.dmg,pellets:STS.pellets,
+WPN.startrack={slot:1,kind:'shotgun',crate:1,cat:'shotgun',n:['스타트랙','StarTrack'],cost:6000,mag:STS.mag,res:STS.res,dmg:STS.dmg,pellets:STS.pellets,
   hs:STS.hs,limbK:STA.pelletDamage.limb/STA.pelletDamage.body,rpm:STS.rpm,spread:STS.spread.slice(),rec:STS.rec.slice(),kb:STS.kb,stag:STS.stag,reload:STS.reload,
   draw:STS.draw,speed:STS.speed,snd:'stShotA',drawS:'stDraw',model:'startrack',hold:'rifle',shell:0,ch:STS.ch,alt:'startrack',rail:1,stA:1,
   // (rail: the round goes through tbShot, here the sheet's hit rule; no kick of the whole gun — the barrel that fired kicks, the sheet's
@@ -234,7 +234,7 @@ WPN.startrack={slot:1,kind:'shotgun',crate:1,cat:'special',n:['스타트랙','St
   kickX:[0,0,0],drKey:'drST',range:300,dmgB:STB.perRound.head*STS.mag,bd:[STK.buyDesc.ko,STK.buyDesc.en]};
 VMK.drST=[[0,[0,0,0,0,0,0]],[1,[0,0,0,0,0,0]]];// (the draw's own lift is the sheet's: VMX.startrack)
 VM_POS.startrack={p:[-STK.fp.eye[0],-STK.fp.eye[1],-STK.fp.eye[2]],r:[0,STK.fp.yawRad,0]};
-{const c=BUY_MENU.find(q=>q.k==='special');if(c&&!c.items.includes('startrack'))c.items.push('startrack')}
+{const c=BUY_MENU.find(q=>q.k==='shotgun');if(c&&!c.items.includes('startrack'))c.items.push('startrack')}// v7.3.1: with the shotguns (was 특수 · 근접)
 CRATE_GUNS.push('startrack');
 // first draw (the sheet's): spin, the extra .4 s, heavy .6 — its motor sound left out (the sheet allows its own sounds only)
 GUN_DESIGN.startrack=Object.assign({mag:STS.mag,ch:STS.ch},STK.firstDraw,{snd:['',0,1]});WPN.startrack.fd=GUN_DESIGN.startrack;
