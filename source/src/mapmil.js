@@ -1,12 +1,16 @@
 'use strict';
 // ============ Map "붉은 메사 목장 Red Mesa Ranch": a ranch compound in a red-rock desert canyon at dusk (the map id stays 'militia') ============
-// The canyon plan comes from MIL_DATA (a 0.5 m grid traced from a top-down plan): rock masses are stacks of boxes whose
-// heights grow away from the open ground, the sunken concrete channels are cut into the dirt. The two-storey house,
-// its garage and annex, the deck and outside stair, culvert, tunnel, fences, crates and lamps are built here.
+// The canyon plan comes from MIL_DATA (a 0.5 m grid traced from a top-down plan, edited since): rock masses are stacks of boxes whose
+// heights grow away from the open ground, the one sunken concrete channel left is cut into the dirt. The two-storey house,
+// its garage and annex, the barn (v7.4), fences, crates and lamps are built here.
 // Every texture is painted on first load.
 // v7.3: built mirrored east-west (MAPDEFS.militia.mirror), at dusk (a low warm sun, milDusk sky), and changed in three places (milEdits and
 // the garage, in the unmirrored coordinates of MIL_DATA): a cleft with steps cut through the rock between the east canyon and the east
 // channel, a water tower with a stair in the yard, and the garage turned round (the roll-up door shut, the west wall open wide).
+// v7.4: the ways changed (MIL_DATA's grid edited, then milBarn): the west channels, the culvert and the wash tunnel filled in, so the west
+// side is one open plateau with a barn and its hayloft, where the humans now start (the zombies come from the house side); the south
+// channel filled level into an alley; two gaps cut through the rock ridge between the plateau and the canyons; the north deck and the
+// outside stair gone (the upstairs doors onto them are windows now); a stair up the garage's yard side to its roof.
 Object.assign(MATS,{
   milRock:{t:'milRock',s:4,vo:-2,sv:16,k:'stone'},milRockT:{t:'milRockT',s:3,k:'stone',cs:1},milRockF:{t:'milRock',s:4,vo:-2,sv:16,k:'stone',cs:1},
   milDirt:{t:'milDirt',s:3.5,k:'soft'},milGrav:{t:'milGrav',s:2.5,k:'soft'},
@@ -20,7 +24,7 @@ Object.assign(MATS,{
   milCrate:{t:'milCrate',uv:'box',k:'wood'},milCrateG:{t:'milCrateG',uv:'box',k:'wood'},milTruck:{t:'milTruck',s:2,k:'metal'},milGlass:{t:'milGlass',uv:'box',k:'glass'},
   milPipe:{t:'milPipe',uv:'box',k:'metal'},milCorr:{t:'milCorr',s:1.2,k:'metal'},milLamp:{t:'milLamp',uv:'box',emis:1.4,k:'glass'},milLampW:{t:'milLampW',uv:'box',emis:1.4,k:'glass'},
   milSignA:{t:'milSignA',uv:'box',emis:.12,k:'wood'},milSignB:{t:'milSignB',uv:'box',emis:.12,k:'wood'},milMap:{t:'milMap',uv:'box',emis:.08,k:'soft'},milRadio:{t:'milRadio',uv:'box',emis:.35,k:'metal'},
-  milBag:{t:'milBag',s:1.4,k:'soft'},milCurtain:{t:'milCurtain',s:1,emis:.55,k:'soft'},milCloth:{t:'milCloth',s:1,k:'soft'},milShelf:{t:'milShelf',uv:'box',k:'metal'},
+  milBag:{t:'milBag',s:1.4,k:'soft'},milBarn:{t:'milBarn',s:2.4,k:'wood'},milHay:{t:'milHay',s:1.2,k:'soft'},milCurtain:{t:'milCurtain',s:1,emis:.55,k:'soft'},milCloth:{t:'milCloth',s:1,k:'soft'},milShelf:{t:'milShelf',uv:'box',k:'metal'},
 });
 // ---------- textures ----------
 // sandstone cliff: 4 m wide, 16 m tall (y -2..14 maps to the whole height, so strata, varnish and the dusty foot never repeat vertically)
@@ -174,7 +178,7 @@ function texMilTruck(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++)for(l
     const r=P.n(x,y,24,863,4);if(r>.58)c=mix(c,r>.68?'#4a2412':'#8a4a22',clamp((r-.58)*4,0,.9));if(y%128<2)c='#141a1a';P.set(x,y,c)}
   for(let i=0;i<10;i++)streak(P,Math.floor(hash2(i,1,864)*N),Math.floor(hash2(i,2,864)*N),20+Math.floor(hash2(i,3,864)*60),.2,2)})}
 function texMilGlass(){return paint(64,64,P=>{for(let y=0;y<64;y++)for(let x=0;x<64;x++){let c=mix('#141c26','#2a3a4a',y/64);if((x+y)%24<3)c='#4a5a6a';if(P.n(x,y,16,871,2)>.62)c=mix(c,'#6a6a5a',.4);if(x<3||y<3||x>60||y>60)c='#1a1a1a';P.set(x,y,c)}})}
-// the culvert mouth: corrugated rings closing into darkness
+// a pipe mouth: corrugated rings closing into darkness (the well's mouth; the culvert it was painted for is gone since v7.4)
 function texMilPipe(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){const r=Math.hypot(x-63.5,y-63.5)/62;let c;
     if(r>1)c=mix('#4a4844','#5e5c56',P.n(x,y,16,881,2));else if(r>.86){const s=Math.sin(r*90)*.5+.5;c=mix('#3a3a36','#7a7a70',s);if(P.n(x,y,12,882,2)>.6)c=mix(c,'#7a3a1a',.6)}
     else{const k=Math.pow(r/.86,1.6);c=mix('#020202','#2a2a26',k);if(Math.sin(r*60)>.7)c=lt(c,.08);if(y>100)c=mix(c,'#1a2a2a',.5)}P.set(x,y,c)}})}
@@ -205,6 +209,16 @@ function texMilDusk(){const SU=.07,SV=180;return paint(1024,256,P=>{for(let x=0;
     const cl=fbm(x/150,y/18,947,5,1024/150);const band=clamp(1-Math.abs(y-150)/60,0,1);if(band>0&&cl>.56){const k=clamp((cl-.56)*3,0,1)*band*.8;c=mix(c,mix('#4a2a46','#ff9a6a',near*clamp((y-110)/90,0,1)),k)}
     if(y<120&&hash2(x,y,948)<.0009*(1-t))c=mix(c,'#d8dcf0',.7);
     if(y>214&&y>top)c=mix('#22161e','#2e1c22',(y-top)/12);if(y>=236)c='#22161e';P.set(x,y,c)}}})}
+// v7.4: the barn — barn-red board and batten (30 cm boards, a batten on every joint), weathered to grey wood at the foot and in streaks
+function texMilBarn(){const N=TN;return paint(N,N,P=>{const BW=32;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const b=Math.floor(x/BW),lx=x%BW;const g=Math.sin(y*.05+P.n(x,y,24,1501+b%4,2)*7)*.5+.5;
+    let c=mix('#5e1a14','#9a3226',g*.55+(hash2(b,0,1502)-.5)*.3+(P.n(x,y,40,1503,3)-.5)*.3);
+    const w=P.n(x,y,16,1504,3)+(1-y/N)*.25;if(w>.7)c=mix(c,mix('#5a5046','#7a6e60',g),clamp((w-.7)*3,0,.8));
+    if(lx<5)c=lx<1||lx>3?dk(c,.45):lt(c,.12);if(hash2(x,y,1505)<.03)c=dk(c,.2);P.set(x,y,c)}
+  for(let i=0;i<16;i++)streak(P,Math.floor(hash2(i,1,1506)*N),Math.floor(hash2(i,2,1506)*N*.4),40+Math.floor(hash2(i,3,1506)*120),.14,2)})}
+// straw bales: loose golden stalks along the bale, two twine bands
+function texMilHay(){const N=128;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=.5+Math.sin(y*.9+P.n(x,y,8,1511,2)*6)*.25+(hash2(x,y,1512)-.5)*.3;
+    let c=dith(P,x,y,clamp(t,0,1),['#8a6a2a','#a88438','#c49e48','#d8b45a','#e8c870'],.12);if(Math.abs(x-40)<2||Math.abs(x-88)<2)c='#5a4a2a';P.set(x,y,c)}})}
 function bakeMilTex(){if(TEX.milRock)return;
   TEX.milRock=mkTex(texMilRock());TEX.milRockT=mkTex(texMilRockT());TEX.milDirt=mkTex(texMilDirt());TEX.milGrav=mkTex(texMilGrav());
   TEX.milConc=mkTex(texMilConc());TEX.milConcF=mkTex(texMilConcF());TEX.milWater=mkTex(texMilWater());
@@ -216,7 +230,7 @@ function bakeMilTex(){if(TEX.milRock)return;
   TEX.milPipe=mkTex(texMilPipe(),false);TEX.milCorr=mkTex(texMilCorr());TEX.milLamp=mkTex(texLight('#ffcf7a'),false);TEX.milLampW=mkTex(texLight('#f4f0e4'),false);
   TEX.milSignA=mkTex(texSign([{t:'출입금지'},{t:'NO TRESPASSING',s:8}],'#6a2418','#ece0c4',112,36),false);
   TEX.milSignB=mkTex(texSign([{t:'붉은 메사 목장'},{t:'RED MESA RANCH · EST. 1962',s:7}],'#2e2216','#e8c878',140,34),false);
-  TEX.milCurtain=mkTex(texMilCurtain());TEX.milMap=mkTex(texMilMap(),false);TEX.milRadio=mkTex(texMilRadio(),false);TEX.milBag=mkTex(texMilBag());TEX.milCloth=mkTex(texMilCloth());
+  TEX.milCurtain=mkTex(texMilCurtain());TEX.milMap=mkTex(texMilMap(),false);TEX.milRadio=mkTex(texMilRadio(),false);TEX.milBag=mkTex(texMilBag());TEX.milBarn=mkTex(texMilBarn());TEX.milHay=mkTex(texMilHay());TEX.milCloth=mkTex(texMilCloth());
   TEX.milDrum=mkTex(texMilDrum('#5e6230','DIESEL'));TEX.milDrumR=mkTex(texMilDrum('#7a3a1e','WATER'));TEX.milShelf=mkTex(texMilShelf(),false);
   TEX.milSky=mkTex(texMilSky());TEX.milSky.wrapT=THREE.ClampToEdgeWrapping;TEX.milDusk=mkTex(texMilDusk());TEX.milDusk.wrapT=THREE.ClampToEdgeWrapping;TEX.milDusk.magFilter=THREE.LinearFilter;
   if(!TEX.sunDisc&&typeof texSunDisc==='function'){TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false}
@@ -264,28 +278,12 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
     B(x0-E,y0,z0-E,x1+E,y1,z1+E,y1>5?'milRockF':'milRock',{f:{py:'milRockT',ny:N}});
   // backdrop beyond the playable edge: only the faces turned toward the canyon are drawn
   for(const [x0,z0,x1,z1,h] of D.bk){const f={ny:N,py:'milRockT'};f[(x0+x1)/2>0?'px':'nx']=N;f[(z0+z1)/2>0?'pz':'nz']=N;B(x0,-1,z0,x1,h,z1,'milRockF',{f})}
-  // ================= channels: steps, the culvert, the wash tunnel with its arches, timber cribbing =================
+  // ================= channels (v7.4: only the east channel is left — the west ditches, the wash with its tunnel and the south channel are filled) =================
   const CM='milConc';
   // step edges sit on quarter metres so every 1 m nav cell centre lands in the middle of a step
-  stairs('z',-35.75,-33.25,-1.75,2.25,-1.7,0,8,CM);   // plateau channel, south end
-  stairs('x',-10.25,-7.25,-21.75,-17.75,-1.7,0,8,CM); // its branch into the west canyon
-  stairs('z',-38.75,-33.75,7.75,4.25,-1.7,0,7,CM);    // the wash, down from the plateau
-  stairs('x',18.25,22.75,-23.75,-19.75,-1.7,0,8,CM);  // the wash, up into the south strip
   stairs('z',1.25,4.25,3.75,.25,-1.7,0,7,CM);         // east channel, up to the channel head
-  stairs('z',28.75,31.25,27.25,24.25,-1.7,0,6,CM);    // east channel, up into the yard
-  // culvert: a concrete headwall and the pipe mouth where the plateau channel starts
-  B(-22.4,-1.8,-21.95,-19.1,.5,-21.45,CM,{f:{py:'milCurb'}});B(-21.6,-1.7,-21.47,-19.9,-.05,-21.42,'milPipe',{nosolid:true});B(-22.6,.5,-22.05,-18.9,.75,-21.35,CM,{f:{py:'milCurb'}});
-  B(-21.4,-1.695,-21.4,-20.1,-1.69,-19.6,'milWater',{nosolid:true});B(-26.5,-1.695,-12.6,-25.2,-1.69,-11,'milWater',{nosolid:true});B(-33.2,-1.695,-6.2,-32.1,-1.69,-4.6,'milWater',{nosolid:true});
-  // the wash tunnel: rock bridge with a concrete soffit, arched portals at both ends, a caged bulb
-  B(-38.6,1.05,9.5,-33.4,6.2,15.5,'milRock',{f:{ny:'milConc',py:'milRockT'}});
-  const portal=(z0,z1)=>{const o={f:{py:'milCurb'}};B(-39.1,-1.8,z0,-38.1,1.75,z1,CM,o);B(-34.4,-1.8,z0,-33.3,1.75,z1,CM,o);
-    for(const [u0,u1,y] of [[-38.1,-37.5,.15],[-37.5,-36.9,.55],[-36.9,-35.6,.85],[-35.6,-35,.55],[-35,-34.4,.15]])B(u0,y,z0,u1,1.75,z1,CM,o);B(-39.3,1.75,z0-.06,-33.1,2.0,z1+.06,CM,o)};
-  portal(9.2,9.6);portal(15.4,15.8);
-  B(-36.4,.85,12.3,-36,1.05,12.7,'milLamp',{nosolid:true});LIGHT(-36.2,.6,12.5,'#ffc878',7.5,.9);
-  // timber cribbing along the north wall of the wash
-  for(const x of [-29.6,-27.4,-25.2,-23.8])B(x-.1,-1.75,18.3,x+.1,.95,18.5,'milPost');
-  for(const y of [-1.4,-.7,0,.6])B(-29.8,y,18.38,-23.6,y+.32,18.5,'milFence',{nosolid:true});
-  // ================= the house: two storeys of clapboard on a stone footing, outside stair to the deck =================
+  stairs('z',1.25,4.25,20.75,24.25,-1.7,0,7,CM);      // v7.4: east channel, up to the filled south strip
+  // ================= the house: two storeys of clapboard on a stone footing (v7.4: no outside stair or north deck; the garage roof has a stair from the yard) =================
   const S='milSiding',WI='milWallIn',FR='milFrame';
   // v7.3: each outside wall is built as two storeys (FL..UP, UP..TOP), each with its own openings. Built whole, a ground-floor door or window
   // filled everything above it to the eaves, so the upstairs door onto the garage roof and several upstairs windows were solid wall.
@@ -299,10 +297,10 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   // windows [u0,u1,y0,y1] per wall; doors are plain holes
   const WN=[[11.4,12.4,1.7,W1],[25.4,26.8,W0,W1],[16.6,18,U0,U1],[19.4,20.8,U0,U1],[24,25.4,U0,U1],[26.4,27.8,U0,U1]],WS=[[11,12.4,W0,W1],[11,12.4,U0,U1],[21.6,23,U0,U1],[25.2,26.6,U0,U1]],
     WW=[[-11.2,-10.2,1.7,W1],[-1.6,-.4,W0,W1],[-11,-9.8,U0,U1],[-4.4,-3.2,U0,U1],[-1.6,-.4,U0,U1]],WE=[[-7.4,-6.2,U0,U1],[-3.4,-2.2,U0,U1]];
-  exX(10,28.6,-12.8,-12.58,FL,TOP,WN.concat([[22.4,24.2,FL,DG],[12,13.8,UP,DU]]),-1);
+  exX(10,28.6,-12.8,-12.58,FL,TOP,WN.concat([[22.4,24.2,FL,DG],[12,13.8,U0,U1]]),-1);
   exX(10,28.6,.58,.8,FL,TOP,WS.concat([[17.2,19,FL,DG],[23.4,25.2,FL,DG],[17.2,19,UP,DU]]),1);
   exZ(10,10.22,-12.58,.58,FL,TOP,WW.concat([[-4.6,-2.8,FL,DG]]),-1);
-  exZ(28.38,28.6,-12.58,.58,FL,TOP,WE.concat([[-12.2,-10.4,UP,DU]]),1);
+  exZ(28.38,28.6,-12.58,.58,FL,TOP,WE.concat([[-12.2,-10.4,U0,U1]]),1);
   const CV={nosolid:true};
   for(const [u0,u1,,y1] of WN)B(u0,y1-.32,-12.56,u1,y1,-12.52,'milCurtain',CV);for(const [u0,u1,,y1] of WS)B(u0,y1-.32,.52,u1,y1,.56,'milCurtain',CV);
   for(const [u0,u1,,y1] of WW)B(10.24,y1-.32,u0,10.28,y1,u1,'milCurtain',CV);for(const [u0,u1,,y1] of WE)B(28.32,y1-.32,u0,28.36,y1,u1,'milCurtain',CV);
@@ -343,23 +341,18 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
     B(x-.18,y+.3,z-.18,x+.18,y+.42,z+.18,'milLamp',{nosolid:true});LIGHT(x,y,z,'#ffb468',r,i)}
   B(9.86,2.8,-3.95,10,3.0,-3.45,'milLamp',{nosolid:true});LIGHT(8.9,2.7,-3.7,'#ffcf80',8,.62);
   B(28.6,5.95,-11.55,28.76,6.15,-11.05,'milLamp',{nosolid:true});LIGHT(29.4,5.8,-11.3,'#ffcf80',8.5,.85);
-  // the outside stair along the east wall, its landing, the north deck on posts, rails
-  stairs('z',28.65,31.3,.8,-9,0,UP,15,'milPlank',{f:{px:'milFence',nx:'milFence'}});
-  B(28.6,3.15,-15.95,31.3,UP,-9,'milPlank',{f:{ny:'milPlank'}});B(10.6,3.15,-15.95,28.6,UP,-12.8,'milPlank',{f:{ny:'milPlank'}});
-  for(const x of [11,14.5,18,21.5,25,28.5])B(x-.1,0,-15.9,x+.1,3.15,-15.7,'milPost');for(const z of [-15.8,-12.7,-9.3])B(31,0,z-.1,31.2,3.15,z+.1,'milPost');
-  B(10.6,UP,-15.95,10.68,UP+1,-12.8,'milRail',{pass:1});B(31.22,UP,-15.95,31.3,UP+1,-9,'milRail',{pass:1});
-  for(let k=0;k<5;k++){const z0=.8-k*1.96,y=(k*3)*UP/15;B(31.18,y+.15,z0-1.96,31.3,y+.25,z0,'milPost',{nosolid:true});B(31.18,y+.25,z0-.08,31.3,y+1.1,z0,'milPost',{nosolid:true})}
-  B(19.8,2.95,-14.5,20.2,3.15,-14.1,'milLamp',{nosolid:true});LIGHT(20,2.7,-14.3,'#ffcf80',6.5,.65);
   B(17.4,4.2,.8,20.6,4.95,.84,'milSignB',{nosolid:true});
   // ================= the garage: block walls, open roll-up door, a pickup, shelves; its roof is a sandbagged terrace off the upstairs hall =================
   const BL='milBlock';
   B(13.2,-.3,.8,23.2,.05,13.2,'milGarFl',{f:{ny:N}});
   wallX(13.2,23.2,.8,1.1,0,3.15,BL,[[17.2,19,0,DG]]);wallX(13.2,23.2,12.9,13.2,0,3.15,BL,[[14.2,20.2,0,2.8]]);
   B(14.2,0,12.95,20.2,2.8,13.15,'milShutter',{f:{nz:'metal2'}});// v7.3: the roll-up door is down; the west wall is open wide instead
-  wallZ(13.2,13.5,1.1,12.9,0,3.15,BL,[[2.4,11.4,0,2.8]]);wallZ(22.9,23.2,1.1,12.9,0,3.15,BL,[[4.6,6.4,0,DG],[9,10.4,W0,W1]]);
+  wallZ(13.2,13.5,1.1,12.9,0,3.15,BL,[[2.4,11.4,0,2.8]]);wallZ(22.9,23.2,1.1,12.9,0,3.15,BL,[[4.6,6.4,0,DG]]);
   B(13.2,3.15,.8,23.2,UP,13.2,BL,{f:{py:'milCurb',ny:'milCorr'}});
-  B(13.2,UP,.8,13.45,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(13.45,UP,12.95,23.2,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(22.95,UP,.8,23.2,UP+.9,12.95,BL,{f:{py:'milCurb'}});
-  for(const [x0,z0,x1,z1] of [[14.6,12.9,16.6,13.25],[19.6,12.9,21.6,13.25],[13.15,5,13.5,7.2],[22.9,8,23.25,10.2]])B(x0,UP+.9,z0,x1,UP+1.35,z1,'milBag');
+  B(13.2,UP,.8,13.45,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(13.45,UP,12.95,23.2,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(22.95,UP,.8,23.2,UP+.9,7.2,BL,{f:{py:'milCurb'}});B(22.95,UP,9.2,23.2,UP+.9,12.95,BL,{f:{py:'milCurb'}});
+  for(const [x0,z0,x1,z1] of [[14.6,12.9,16.6,13.25],[19.6,12.9,21.6,13.25],[13.15,5,13.5,7.2],[22.9,10.4,23.25,12.4]])B(x0,UP+.9,z0,x1,UP+1.35,z1,'milBag');
+  // v7.4: the stair from the yard up to the roof terrace (top steps by the gap in the east parapet), a rail on its open side
+  stairs('z',23.2,24.5,12.6,7.6,0,UP,12,'milPlank',{f:{px:'milFence',nx:'milFence'}});B(24.42,UP,7.6,24.5,UP+1,9.2,'milRail',{pass:1});
   B(14,2.75,13.2,20.4,3.15,13.5,'milShutter',{f:{ny:'metal2'}});B(16.8,2.95,13.5,17.6,3.1,13.75,'milLampW',{nosolid:true});LIGHT(17.2,2.75,14.3,'#ffe2b0',13,1.05);
   // pickup truck (front to the west)
   {const x0=14.2,x1=18.9,z0=5.3,z1=7.3;B(x0+.1,.4,z0,x1-.1,1.0,z1,'milTruck');B(x0+.7,1.0,z0+.08,x0+2.1,1.72,z1-.08,'milTruck',{f:{nx:'milGlass',pz:'milGlass',nz:'milGlass'}});
@@ -380,12 +373,12 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   B(25,2.2,3.2,26.3,2.6,3.24,'milLamp',{nosolid:true});LIGHT(25.6,2.4,3.9,'#ffcf80',6.5,.75);
   // ================= props =================
   const mc=(x,z,s,y,g)=>crate(x,z,s,y||0,g?'milCrateG':'milCrate');
-  // plateau: a hay wagon, crates by the channel, plank fences
-  {const x0=-38.1,x1=-36.2,z0=-14.3,z1=-10.3;B(x0,.72,z0,x1,.86,z1,'milPlank');B(x0,.86,z0,x0+.1,1.3,z1,'milPlank');B(x1-.1,.86,z0,x1,1.3,z1,'milPlank');B(x0,.86,z0,x1,1.3,z0+.1,'milPlank');
-    for(const z of [z0+.6,z1-1.4])for(const x of [x0-.12,x1])B(x,0,z,x+.12,.86,z+.86,'milPost');B(x0+.9,.4,z1,x0+1.0,.5,z1+1.6,'milPost');mc(-37.6,-13.4,.75,.86);mc(-36.8,-12.6,.7,.86,1)}
+  // plateau: a hay wagon, a stack of crates, plank fences
+  {const x0=-30.2,x1=-28.3,z0=-16.6,z1=-12.6;B(x0,.72,z0,x1,.86,z1,'milPlank');B(x0,.86,z0,x0+.1,1.3,z1,'milPlank');B(x1-.1,.86,z0,x1,1.3,z1,'milPlank');B(x0,.86,z0,x1,1.3,z0+.1,'milPlank');
+    for(const z of [z0+.6,z1-1.4])for(const x of [x0-.12,x1])B(x,0,z,x+.12,.86,z+.86,'milPost');B(x0+.9,.4,z1,x0+1.0,.5,z1+1.6,'milPost');mc(-29.7,-15.7,.75,.86);mc(-28.9,-14.9,.7,.86,1)}
   mc(-30.2,2.2,1.1);mc(-29.05,2.25,1.0);mc(-29.6,2.2,.95,1.1);mc(-30.3,3.4,1.0,0,1);mc(-28.4,3.7,.9);
-  B(-38.9,0,-.62,-36.7,1.25,-.5,'milFence');B(-32.3,0,-.62,-27.3,1.25,-.5,'milFence');B(-28.1,0,-5.6,-27.98,1.25,-3.4,'milFence');
-  for(const [x,z] of [[-38.9,-.56],[-36.7,-.56],[-32.3,-.56],[-29.8,-.56],[-27.3,-.56],[-28.04,-5.6],[-28.04,-3.4]])B(x-.08,0,z-.08,x+.08,1.45,z+.08,'milPost');
+  B(-38.9,0,-.62,-36.7,1.25,-.5,'milFence');B(-32.3,0,-.62,-27.3,1.25,-.5,'milFence');
+  for(const [x,z] of [[-38.9,-.56],[-36.7,-.56],[-32.3,-.56],[-29.8,-.56],[-27.3,-.56]])B(x-.08,0,z-.08,x+.08,1.45,z+.08,'milPost');
   // west canyon: the well and a hand pump with its trough
   B(-18.4,0,-7.3,-17,.8,-5.9,'milStone',{f:{py:'milPipe'}});B(-18.45,.8,-6.66,-18.3,2.25,-6.54,'milPost');B(-17.1,.8,-6.66,-16.95,2.25,-6.54,'milPost');B(-18.45,2.1,-6.66,-16.95,2.2,-6.54,'milPost',{nosolid:true});
   B(-18.7,2.25,-7.5,-16.7,2.36,-5.7,'milPlank',{nosolid:true});
@@ -395,15 +388,11 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   // east canyon and the wedge
   mc(-7,5.2,1.2);mc(-7,5.2,1.0,1.2);mc(-4.2,6.5,.9,0,1);mc(-.6,6.2,.9);
   mc(8,10.6,1.1);mc(8.9,11.3,.9,0,1);
-  // yard: crates by the garage, by the rock spire and by the channel; drums, tyres
-  mc(22.2,14,1.1,0,1);mc(23.4,14.1,1.1);mc(22.8,14,1.0,1.1,1);mc(22.1,15.3,1.0);mc(24.1,15.6,.9,0,1);
+  // yard: crates by the garage, by the rock spire and by the south alley; drums, tyres
+  mc(25.7,14,1.1,0,1);mc(26.9,14.1,1.1);mc(26.3,14,1.0,1.1,1);mc(25.6,15.3,1.0);mc(27.6,15.6,.9,0,1);
   mc(38.6,8.6,1.1,0,1);mc(38.6,9.8,1.0);mc(39.8,9.2,1.0,0,1);
   mc(16.2,22.4,1.0,0,1);mc(17.2,22.6,.9);
   drum(26.1,3.9,0,'milDrum');drum(26.7,4.25,0,'milDrumR');drum(11.6,3.6,0,'milDrum');tireStack(24.5,4,3);tireStack(25.1,4.6,2);
-  // the fence along the channel edge, a gap over the steps at its east end
-  for(const x of [15.7,17.7,19.7,21.7,23.7,25.7,27.7,28.95,31.05])B(x-.07,0,24.08,x+.07,1.15,24.22,'milPost');
-  for(const y of [.42,.92]){B(15.7,y,24.11,28.95,y+.1,24.19,'milPost');B(31.05,y,24.11,31.5,y+.1,24.19,'milPost')}
-  B(20.2,.5,24.2,21.6,1.0,24.23,'milSignA',{nosolid:true});
   // a plank gate shut in the east cliff
   B(40.38,0,-5.2,40.52,2.7,-1.2,'milFence',{f:{px:N}});B(40.25,0,-5.4,40.52,3.1,-5.15,'milPost');B(40.25,0,-1.25,40.52,3.1,-1,'milPost');B(40.25,2.9,-5.4,40.52,3.15,-1,'milPost');
   B(40.36,1.5,-3.9,40.38,2.1,-2.5,'milSignA',{nosolid:true});
@@ -411,34 +400,34 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   const wlamp=(x,z,ang,h,r,i)=>{h=h||2.5;B(x-.04,0,z-.04,x+.04,h,z+.04,'metal2');for(const [dx,dz] of [[.32,0],[-.16,.28],[-.16,-.28]])B(x+dx-.03,0,z+dz-.03,x+dx+.03,.05,z+dz+.03,'metal2',{nosolid:true});
     const fx=Math.sin(ang),fz=Math.cos(ang);B(x-.2,h,z-.2,x+.2,h+.3,z+.2,'metal2',{nosolid:true});B(x+fx*.18-.16,h+.05,z+fz*.18-.16,x+fx*.18+.16,h+.25,z+fz*.18+.16,'milLampW',{nosolid:true});
     LIGHT(x+fx*.7,h-.1,z+fz*.7,'#fff0d4',r||13,i||1.0)};
-  wlamp(-31.5,-7.5,2.4);wlamp(-35.6,-15.6,.8,2.4,10,.85);wlamp(-19.5,-1,1.6,2.5,12,.9);wlamp(-14.2,9,-2.2,2.5,12,.9);wlamp(-1.5,-3,-2.4);wlamp(-6.2,10.2,0,2.4,11,.85);
+  wlamp(-22.5,-2.5,2.4);wlamp(-35.6,-15.6,.8,2.4,10,.85);wlamp(-19.5,-1,1.6,2.5,12,.9);wlamp(-14.2,9,-2.2,2.5,12,.9);wlamp(-1.5,-3,-2.4);wlamp(-6.2,10.2,0,2.4,11,.85);
   wlamp(6.5,-1.5,-2.6,2.5,12,.9);wlamp(5.2,-11.5,1.6,2.6,13,.95);wlamp(36.8,-9.5,-1.0,2.6,13,.95);wlamp(39.5,20.5,-2.4,2.6,13,1.0);
   {const x=27.5,z=7.5;B(x-.12,0,z-.12,x+.12,6.4,z+.12,'milPost');B(x-.9,5.9,z-.06,x+.9,6.04,z+.06,'milPost');B(x-.04,5.5,z+.12,x+.04,5.58,z+1.0,'metal2',{nosolid:true});
     B(x-.2,5.3,z+.85,x+.2,5.5,z+1.25,'milLamp',{nosolid:true});LIGHT(x,5.1,z+1.05,'#ffc27a',17,1.05)}
   // channel lamps on brackets
-  for(const [x,z] of [[2.2,9],[2.2,19],[12,25.1],[22,25.1]]){B(x-.12,-.35,z-.12,x+.12,-.15,z+.12,'milLamp',{nosolid:true});LIGHT(x,-.5,z,'#ffcf8a',7,.75)}
-  for(const [x,z] of [[-27.5,-15.5],[-24.5,-9]]){B(x-.12,-.35,z-.12,x+.12,-.15,z+.12,'milLamp',{nosolid:true});LIGHT(x,-.5,z,'#ffcf8a',7,.7)}
+  for(const [x,z] of [[2.2,9],[2.2,19]]){B(x-.12,-.35,z-.12,x+.12,-.15,z+.12,'milLamp',{nosolid:true});LIGHT(x,-.5,z,'#ffcf8a',7,.75)}
+  // v7.4: a lamp on the rock over the south alley (the channel there is filled level)
+  B(9.35,2.2,24.5,9.65,2.4,24.8,'milLamp',{nosolid:true});LIGHT(9.5,2.0,25.3,'#ffcf8a',8,.8);
   MAP.fires=[];for(const [x,z] of [[-9.5,19.5],[4.6,-6.6],[38.8,15.6],[-26.5,-1.5]]){drum(x,z,0,'milDrumR');LIGHT(x,1.35,z,'#ff8a3a',8,1.0);MAP.fires.push([x,.9,z])}
   // ================= spawns, camps, title camera, moon =================
-  MAP.spawns=[];for(const x of [24.8,26.6,28.4,30.2])for(const z of [14.2,16.2,18.2,20.2,22.2])MAP.spawns.push([x+rr(-.3,.3),z+rr(-.3,.3),0,Math.PI*.3+rr(-.4,.4)]);
-  MAP.zspawns=[[-37,-12,0],[-30,-15.5,0],[-36,2.5,0],[-27.5,-3,0],[-36.3,12.5,-1.7],[-18,-14,0],[-17,6,0],[-12,19.5,0],[-5,-10,0],[-3.5,9,0],[6.5,-1,0],[5,-13,0],[36.5,-7,0],[2.7,18,-1.7],[39.5,22.5,0],[8,6,0]];
+  // v7.4: the humans start on the west plateau round the barn (facing east, into the canyons); the zombies come from the house side
+  MAP.spawns=[];for(const [x,z] of [[-30.8,-2.2],[-29.4,-2.2],[-28,-2.2],[-37,1.2],[-35.5,1.2],[-34,1.2],[-32.5,1.2],[-31,1.2],[-29.5,1.2],[-28,1.2],[-37,3.2],[-35.5,3.2],[-34,3.2],[-32.5,3.2],
+    [-38,5.5],[-36.5,5.5],[-35,5.5],[-33.5,5.5],[-32,5.5],[-30.5,5.5]])MAP.spawns.push([x+rr(-.2,.2),z+rr(-.2,.2),0,-Math.PI/2+rr(-.4,.4)]);
+  MAP.zspawns=[[25,15,0],[28,17.5,0],[30.5,20.5,0],[26.5,21.5,0],[33,-3,0],[37,3,0],[32.5,5.5,0],[14,-15,0],[22,-15,0],[27,-14.5,0],[8,6,0],[6.5,-1,0],[5,-13,0],[2.7,18,-1.7],[20,25.5,0],[39.5,15,0]];
   MAP.camps=[
     {k:'upstairs',w:.3,p:[[12.4,UP,-11],[12.6,UP,-2.2],[25,UP,-2.2],[27,UP,-9.6],[18.2,UP,-3]],look:[18,UP,-10]},
     {k:'garRoof',w:.2,p:[[15,UP,10.6],[21,UP,10.6],[18,UP,6],[14.6,UP,3.4],[21.6,UP,3.4]],look:[25,1,18]},
     {k:'garage',w:.1,p:[[21.2,.05,3.4],[20.6,.05,11.2],[14.6,.05,9.6]],look:[17.2,1,13]},
-    {k:'deck',w:.08,p:[[13.5,UP,-14.4],[27,UP,-14.4],[30,UP,-11]],look:[20,UP,-14.4]},
     {k:'kitchen',w:.07,p:[[26,FL,-11.2],[23,FL,-7]],look:[21.5,1.5,-5]},
-    {k:'chanE',w:.08,p:[[2.7,-1.7,8.5],[2.7,-1.7,20],[18,-1.7,25.5]],look:[2.7,-1,0]},
+    {k:'chanE',w:.08,p:[[2.7,-1.7,8.5],[2.7,-1.7,17]],look:[2.7,-1,0]},
     {k:'wedge',w:.05,p:[[8.6,0,9.6],[7.2,0,11.6]],look:[6,1,0]},
-    {k:'culvert',w:.06,p:[[-20.8,-1.7,-20],[-21.6,-1.7,-18.6]],look:[-28,-1,-11]},
-    {k:'tunnel',w:.06,p:[[-36.2,-1.7,12.5],[-37.2,-1.7,14]],look:[-36,-1,6]},
   ];
   MAP.spawnYaw=null;
   // v7.3: dusk — the sun low in the west (the milDusk sky has its glow there), warm and long-shadowed
   MAP.moon={d:new THREE.Vector3(-.851,.342,.4).normalize(),c:new THREE.Color('#ffb882'),i:1.2};
   // title backdrop: a slow ellipse over the yard, looking at the lit house
   MAP.cam=(t,cam)=>{const a=Math.sin(t*.045)*.6;cam.position.set(28.5+a*3,8.6+Math.sin(t*.07)*.5,18.5-a);cam.lookAt(18+a*2,2.6,-4)};
-  milEdits();mapFreeSpawns();
+  milEdits();milBarn();mapFreeSpawns();
 }
 // ---------- v7.3: the changes to the canyon (coordinates of MIL_DATA, before the mirror; the garage is changed where it is built) ----------
 function milEdits(){const CM='milConc';
@@ -462,5 +451,30 @@ function milEdits(){const CM='milConc';
   stairs('z',X0-1.3,X0,-.5,-4,0,Y,7,'milPlank',{f:{px:'milFence',nx:'milFence'}});
   B(X0+2.3,T+2.1,Z0+1.8,X0+2.7,T+2.3,Z0+2.2,'milLampW',{nosolid:true});LIGHT(X0+2.5,T+1.8,Z0+2,'#fff0d4',10,.85);
   MAP.camps.push({k:'tower',w:.12,p:[[X1-.5,T,Z0+.5],[X1-.5,T,Z1-.5],[X0+.5,T,Z1-.5],[X0+2.5,T,Z0+2]],look:[24,1,8]})}
-MAPDEFS.militia={n:['붉은 메사 목장','Red Mesa Ranch'],mirror:1,d:['해 질 녘 붉은 협곡의 목장. 2층 목조 주택과 앞뒤로 뚫린 차고, 차고 옥상, 마당의 급수탑, 협곡 사이 좁은 통로와 바위 틈 계단, 콘크리트 배수로와 터널.','A ranch in a red-rock canyon at dusk: a two-storey wooden house, a garage open at the side and its roof terrace, a water tower in the yard, narrow canyon passages and a stair through a cleft in the rock, concrete drainage channels and a culvert tunnel.'],
+// ---------- v7.4: the barn on the west plateau, where the humans start (coordinates of MIL_DATA, before the mirror) ----------
+// 6.5 x 10 m against the west rock, eaves at 5.2 m, a stepped gable roof with its ridge north-south. A double door east onto the plateau,
+// small doors north and south, a hayloft over the north half (3.2 m) up a stair along the west wall, hay bales on both floors.
+// No opening faces the rock, and the loft's only window looks east, so nothing from the barn reaches the rock ledges.
+function milBarn(){const X0=-38,X1=-31.5,Z0=-14,Z1=-4,EV=5.2,LF=3.2,BR='milBarn',N='none';
+  B(X0,-.3,Z0,X1,.1,Z1,'milPlank',{f:{ny:N}});
+  wallZ(X0,X0+.2,Z0,Z1,0,EV,BR);
+  wallZ(X1-.2,X1,Z0,Z1,0,EV,BR,[[-13,-11.8,3.7,4.7],[-10.5,-7.5,0,3.1],[-6.2,-5,1.2,2.2]]);
+  wallX(X0+.2,X1-.2,Z0,Z0+.2,0,EV,BR,[[-35,-33.8,0,2.3]]);
+  wallX(X0+.2,X1-.2,Z1-.2,Z1,0,EV,BR,[[-36,-34.4,0,2.4]]);
+  // the roof: a slab over the walls, four steps up to the ridge; the steps' ends are the barn-red gables
+  B(X0-.3,EV,Z0-.4,X1+.3,EV+.2,Z1+.4,'milRoof',{f:{ny:'milPlank'}});
+  for(let k=1;k<=4;k++)B(X0-.3+k*.75,EV+.2+(k-1)*.55,Z0-.4,X1+.3-k*.75,EV+.2+k*.55,Z1+.4,'milRoof',{f:{ny:N,pz:BR,nz:BR}});
+  // the hayloft, its edge rail (a gap where the stair arrives), the stair along the west wall
+  B(X0+.2,LF-.2,Z0+.2,X1-.2,LF,-9,'milPlank');
+  B(X0+1.4,LF,-9.06,X1-.2,LF+1,-9,'milRail',{pass:1});
+  stairs('z',X0+.2,X0+1.4,-5,-9,.1,LF,11,'milPlank',{f:{px:'milFence'}});
+  // hay: a stack on the floor, two bales in the loft, one outside by the door
+  B(-33.4,.1,-13.6,-32,.9,-12.2,'milHay');B(-33.2,.9,-13.4,-32.1,1.7,-12.4,'milHay');B(-33.2,.1,-5.8,-31.8,.9,-4.4,'milHay');
+  B(-37.6,LF,-13.7,-36.2,LF+.8,-12.3,'milHay');B(-35.8,LF,-13.7,-34.4,LF+.8,-12.3,'milHay');B(-31,0,-12.8,-29.8,.8,-11.6,'milHay');
+  // lamps: one over the floor, one in the loft, one over the double door outside
+  B(-34.9,EV-.2,-6.9,-34.5,EV-.05,-6.5,'milLamp',{nosolid:true});LIGHT(-34.7,EV-.6,-6.7,'#ffcf8a',9,.9);
+  B(-35.6,EV-.2,-11.7,-35.2,EV-.05,-11.3,'milLamp',{nosolid:true});LIGHT(-35.4,EV-.6,-11.5,'#ffcf8a',7,.75);
+  B(X1,3.3,-9.2,X1+.16,3.5,-8.8,'milLamp',{nosolid:true});LIGHT(X1+.8,3.1,-9,'#ffcf80',8,.75);
+  MAP.camps.push({k:'loft',w:.25,p:[[-33,LF,-11],[-36,LF,-10],[-33.5,LF,-13.2]],look:[-24,1,-9]},{k:'barn',w:.1,p:[[-34.5,.1,-6.5],[-35,.1,-8.5],[-33,.1,-10.5]],look:[-28,1,-9]})}
+MAPDEFS.militia={n:['붉은 메사 목장','Red Mesa Ranch'],mirror:1,d:['해 질 녘 붉은 협곡의 목장. 사람은 고원의 헛간 앞에서, 좀비는 2층 목조 주택 쪽에서 출발한다. 건초 다락이 있는 헛간, 옆이 트인 차고와 마당에서 오르는 옥상 계단, 급수탑, 바위 능선을 뚫은 두 샛길, 바위 틈 계단, 배수로 하나와 바위 밑 좁은 골목.','A ranch in a red-rock canyon at dusk. The humans start on the plateau by the barn, the zombies on the side of the two-storey wooden house: a barn with a hayloft, a garage open at the side with a stair up to its roof from the yard, a water tower, two gaps through the rock ridge, a stair through a cleft, one drainage channel and a narrow alley under the rock.'],
   env:{sky:1,sun:1,skyTex:'milDusk',halo:'#ff9a5a',rain:0,storm:0,fog:'#5e4450',fogD:.015,ambOut:'#7a6474',ambIn:'#2c242c',boAmb:.4},bounds:[-43,-27,43,28],probeY:[-1.0,.9,2.4,4.3,6.2],tex:bakeMilTex,build:buildMilitia};

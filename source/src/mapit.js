@@ -8,6 +8,9 @@
 // paint colours), and changed in four places (itEdits, in the unmirrored coordinates of ITALY_DATA): an underpass through the wedge between
 // the two stair lanes at the south fork, a fountain and two market stalls in the low south street, the kiosk in the east courtyard
 // replaced by a fountain under two trees, and a row of planters across the north terrace.
+// v7.4: the ways changed: the wedge house at the fork is gone (one sloping square with a monument; the underpass went with it), an
+// arched passage with a well court open to the sky runs from the top of the middle street north to the cross street, the lane from
+// the middle street east to the courtyard is walled up, and the sides change ends (humans on the north terrace, zombies from the south).
 Object.assign(MATS,{
   facA:{t:'facA',s:3,k:'stone',cs:1},facB:{t:'facB',s:3,k:'stone',cs:1},facC:{t:'facC',s:3,k:'stone',cs:1},
   // v6 colour variants, picked per wall from the reference's paint colour: salmon, orange, tan, ochre, grey plaster, bare brick
@@ -200,6 +203,7 @@ function bakeItTex(){if(TEX.facA)return;
   TEX.facR=mkTex(texFacade('#ece5df','#2d5f8a',1401));TEX.facO=mkTex(texFacade('#eee7da','#3e6a46',1411));TEX.facT=mkTex(texFacade('#e8e2d4','#2f7a78',1421));TEX.facY=mkTex(texFacade('#f0eadb','#24426e',1431));TEX.facG=mkTex(texFacade('#dedddb','#2d5f8a',1441));TEX.brickIt=mkTex(texBrickIt());
   for(const [k,f] of [['water',texWater],['leaves',texLeaves],['bark',texBark],['awn',texAwn],['fruit',texFruit]])if(!TEX[k])TEX[k]=mkTex(f(),k!=='fruit');
   TEX.roofIt=mkTex(texRoofIt());TEX.cobble=mkTex(texCobble(991));TEX.cobbleR=mkTex(texCobbleR());TEX.pavers=mkTex(texPavers());TEX.stoneIt=mkTex(texStoneIt());
+  TEX.woodIt=mkTex(texWoodIt());TEX.doorIt=mkTex(texDoorIt());// v7.4 (the stalls' wood was never painted before)
   TEX.retW=mkTex(texRetW());TEX.cellarW=mkTex(texCellarW());TEX.cellarF=mkTex(texCellarF());TEX.woodFl=mkTex(texWoodFl());TEX.ceilT=mkTex(texCeilT());TEX.roofFl=mkTex(texRoofFl());
   if(!TEX.skyDay){TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter}
   if(!TEX.sunDisc){TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false}
@@ -227,7 +231,7 @@ function buildItaly(){const D=ITALY_DATA,M=ITALY_META,S=D.boxes,CS=D.cs,N='none'
   MAP.cam=(t,cam)=>{const a=t*.03+.6;cam.position.set(Math.sin(a)*30,26+1.5*Math.sin(t*.07),Math.cos(a)*44);cam.lookAt(Math.sin(a+1.2)*4,0,Math.cos(a+1.2)*8)};
   if(VIS)itEdits();mapFreeSpawns();
 }
-// ---------- v7.3: the four changes to the town (coordinates of ITALY_DATA, before the mirror) ----------
+// ---------- v7.3 / v7.4: the changes to the town (coordinates of ITALY_DATA, before the mirror) ----------
 // a fountain: a square stone basin with water in it, a column and a bowl on top (spray from the bowl)
 function itFountain(x,y,z,r){const T=.3,H=.55,o={f:{py:'stoneIt'}};
   B(x-r,y,z-r,x+r,y+H,z-r+T,'stoneIt',o);B(x-r,y,z+r-T,x+r,y+H,z+r,'stoneIt',o);B(x-r,y,z-r+T,x-r+T,y+H,z+r-T,'stoneIt',o);B(x+r-T,y,z-r+T,x+r,y+H,z+r-T,'stoneIt',o);
@@ -240,17 +244,45 @@ function itStall(x0,z0,x1,z1,y){B(x0,y,z0,x1,y+.95,z1,'woodIt',{f:{py:'fruit'}})
   B(x0-.25,y+2.3,z0-.25,x1+.25,y+2.4,z1+.25,'awn',{nosolid:true})}
 function itTree(x,y,z){B(x-.16,y,z-.16,x+.16,y+2.6,z+.16,'bark');const c={nosolid:true};
   B(x-1.3,y+2.4,z-1.3,x+1.3,y+3.5,z+1.3,'leaves',c);B(x-.9,y+3.5,z-.9,x+.9,y+4.2,z+.9,'leaves',c)}
+// v7.4: the wedge house between the two stair lanes of the south fork, in .25 m rows from z 19.25 to 30: per row the x it starts at
+// (quarter metres from x -15), the x it ends at (quarter metres from x -10) and the floor of the lanes beside it (sixteenths of a metre
+// below 0), base 36
+const IT_WEDGE='5m65l66l66l86k87k87k97ka8ja8ja8jc8id9id9ie9heaheahfahgbggbghbgicficficfjcekdekdemddmedmedmecofcpfcpfcqgbqgbqgbrhashashath9ui9ui9u';
 function itEdits(){
-  // 1 · the south fork: an underpass through the wedge between the two stair lanes, a lamp in it
-  boxCut(-12.3,-1.3,23.9,-6.2,1.45,25.7,{fl:'pavers',wall:'retW',ceil:'ceilT'});
-  B(-9.55,1.36,24.6,-8.95,1.45,25,'signIt',{nosolid:true});LIGHT(-9.25,1.05,24.8,'#ffd9a0',5.5,.8);
-  // 2 · the low south street (the human start): a fountain in the middle, two stalls against the walls
+  // 1 · (v7.4) the south fork: the wedge house between the two stair lanes comes down, row by row, to one sloping paved square
+  //     (its new top edge is the houses' south front at z 19.25); a monument in the middle, two planters at the top, two lamps at the
+  //     bottom. The v7.3 underpass through the wedge goes with it.
+  for(let k=0;k*3<IT_WEDGE.length;k++){const v=i=>parseInt(IT_WEDGE[k*3+i],36),z=19.25+k*.25,xa=-15+v(0)*.25,xb=-10+v(1)*.25,f=-v(2)/16;
+    boxCut(xa,-2.25,z,xb,9,z+.25,{wall:k?'stoneIt':'facA'});B(xa,-2.25,z,xb,f,z+.25,'pavers')}
+  boxCut(-10.55,5,30,-7.7,6.5,30.25);
+  {const S='stoneIt';B(-10.4,-1.3,22.9,-7.9,-.45,25.3,S);B(-10,-.45,23.3,-8.3,-.1,24.9,S);B(-9.5,-.1,23.75,-8.8,2.9,24.45,S);
+    B(-9.75,2.9,23.5,-8.55,3.15,24.7,S);B(-9.35,3.15,23.9,-8.95,3.6,24.3,S)}
+  for(const x of [-12.6,-5.9])B(x-.7,-.55,19.25,x+.7,.6,20.25,'stoneIt',{f:{py:'leaves'}});
+  for(const x of [-11,-7.25]){B(x-.06,-1.6,27.14,x+.06,1.7,27.26,'metal2');B(x-.2,1.7,27,x+.2,1.95,27.4,'lampO',{nosolid:true});LIGHT(x,1.45,27.2,'#ffd9a0',8,.85)}
+  // 2 · the low south street (the zombies' start since v7.4): a fountain in the middle, two stalls against the walls
   itFountain(-9.5,-2.1,37.2,2.1);itStall(-14,42.2,-12.4,44.6,-2.05);itStall(-6.6,31.2,-5.05,33.4,-2.1);
   // 3 · the east courtyard: the kiosk comes down (paving where it stood); a fountain under two trees instead
   boxCut(14.9,0,5.9,23.1,6,13.1,{fl:'pavers',keep:b=>b.y1<=.01});
   itFountain(19,0,9.5,1.8);itTree(16,0,6.8);itTree(22,0,12.2);
-  // 4 · the north terrace: a row of stone planters across it (crouch cover, gaps between them)
-  for(const x of [-11,-4.5,2.5,9.5,16])B(x-.7,3.45,-45.6,x+.7,4.65,-44.6,'stoneIt',{f:{py:'leaves'}})}
+  // 4 · the north terrace (the humans' start since v7.4): a row of stone planters across it (crouch cover, gaps between them)
+  for(const x of [-11,-4.5,2.5,9.5,16])B(x-.7,3.45,-45.6,x+.7,4.65,-44.6,'stoneIt',{f:{py:'leaves'}});
+  // 5 · (v7.4) an arched passage from the dead end at the top of the middle street north through the houses to the cross street:
+  //     a tunnel, a well court open to the sky halfway (the second tunnel set over to the west, so no sight line runs through), a tunnel
+  {const P={fl:'cobble',wall:'stoneIt',ceil:'woodFl'};boxCut(-3.5,0,-6,-.5,2.6,2.25,P);boxCut(-6.5,0,-10,-.5,16.5,-6,{fl:'cobble',wall:'facA'});boxCut(-6.5,0,-19,-3.5,2.6,-10,P);
+    B(-4.1,0,-8.6,-2.9,.8,-7.4,'stoneIt',{f:{py:'water'}});B(-4.05,.8,-8.04,-3.95,2.1,-7.96,'woodIt',{nosolid:true});B(-3.05,.8,-8.04,-2.95,2.1,-7.96,'woodIt',{nosolid:true});
+    B(-4.05,2.1,-8.06,-2.95,2.2,-7.94,'woodIt',{nosolid:true});
+    for(const [x,z] of [[-2,-2],[-5,-14.5]]){B(x-.2,2.45,z-.2,x+.2,2.6,z+.2,'lampO',{nosolid:true});LIGHT(x,2.2,z,'#ffcf8a',6,.8)}
+    B(-6.5,2.5,-8.2,-6.36,2.8,-7.8,'lampO',{nosolid:true});LIGHT(-6,2.5,-8,'#ffd9a0',7,.8);
+    MAP.camps.push({k:'well',w:.08,p:[[-1.1,0,-9.4],[-5.9,0,-6.6],[-1.1,0,-6.6]],look:[-3.5,1,-8]})}
+  // 6 · (v7.4) the lane from the middle street east to the courtyard is walled up halfway (a door that does not open)
+  B(4,0,9.5,4.5,7,12.25,'facA');B(3.94,0,10.3,4,2.35,11.45,'doorIt',{nosolid:true});B(4.5,0,10.3,4.56,2.35,11.45,'doorIt',{nosolid:true});
+  B(3.84,2.6,10.75,4,2.85,11,'lampO',{nosolid:true});LIGHT(3.5,2.5,10.9,'#ffcf8a',6,.75);
+  // 7 · (v7.4) the sides change ends: the humans start on the high north terrace facing the town, the zombies come from the low south
+  //     street, the stair square and the streets up from it
+  MAP.spawns=[];for(const [x,z] of [[-13.5,-45.9],[-8.5,-45.9],[-6.5,-45.9],[-2.5,-45.9],[-.5,-45.9],[4.5,-45.9],[12,-45.9],[14,-45.9],[18.5,-45.9],[21,-45.9],
+    [-13,-43.4],[-8,-43.4],[-2,-43.4],[.5,-43.4],[4.5,-43.4],[23,-43.4]])MAP.spawns.push([x,z,x<10?3.69:3.5,Math.PI+rr(-.5,.5)]);
+  MAP.zspawns=[[-12.5,31.5,-2],[-8,31,-2],[-13.2,40.5,-2],[-6.2,40.5,-2],[-9.5,44.5,-2],[-18,38,0],[-12.8,22,-.81],[-16.8,12,0],[-16.5,4,0],[-2.5,15,0],[-3,8,0],
+    [12.5,13.5,0],[-22,-1,0],[-20.5,-10,0],[16,-8,0],[-10,-21.5,0]]}
 // ---------- the reference town as the visible map: its own geometry and baked-light textures ----------
 // the reference's baked light is very dark in the shade: a gamma lift brings the alleys up without washing out the sun
 const FS_BAKED=GLSL_DYN+`uniform sampler2D map;uniform float uK;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
@@ -269,5 +301,5 @@ function itMesh(scene){if(typeof ITALY_MESH==='undefined')return;
     tex.anisotropy=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;img.onload=()=>{tex.needsUpdate=true};img.src=P.tex;
     const mat=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uK:{value:1.1}},LU),vertexShader:VS_WORLD,fragmentShader:FS_BAKED,side:THREE.DoubleSide});
     const mesh=new THREE.Mesh(geo,mat);mesh.matrixAutoUpdate=false;mesh.updateMatrix();scene.add(mesh);MAP.meshes.push(mesh)}}
-MAPDEFS.italy={n:['하얀 언덕 마을','Whitehill'],mirror:1,d:['햇살 아래 하얗게 칠한 언덕 마을. 분수가 있는 남쪽 낮은 거리에서 시작해 갈림길 아래 굴다리, 시장 광장, 와인 저장고, 북쪽 높은 골목까지 이어지는 오르막 시가지.','A whitewashed hill town on a summer afternoon: from the low street with its fountain in the south, through the underpass at the fork, the market square and the wine cellar, up to the high lanes in the north.'],
+MAPDEFS.italy={n:['하얀 언덕 마을','Whitehill'],mirror:1,d:['햇살 아래 하얗게 칠한 언덕 마을. 사람은 북쪽 높은 테라스에서, 좀비는 분수가 있는 남쪽 낮은 거리에서 출발한다. 갈림길 대신 기념비가 선 비탈 광장, 집들을 뚫고 북쪽으로 이어지는 아치 통로와 하늘이 뚫린 우물 마당, 벽으로 막힌 동쪽 골목, 시장 광장과 와인 저장고.','A whitewashed hill town on a summer afternoon. The humans start on the high terrace in the north, the zombies in the low street with its fountain in the south: a sloping square with a monument where the fork was, an arched passage north through the houses with a well court open to the sky, the east lane walled up, the market square and the wine cellar.'],
   env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.95,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-34,-61,34,61],probeY:[-2.6,-.9,.9,2.6,4.4,6.2,8],mini:[1.2,4.6],tex:bakeItTex,build:buildItaly,mesh:itMesh};
