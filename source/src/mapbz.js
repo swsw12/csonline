@@ -10,6 +10,7 @@
 // bazaar hall (four pillars, stalls, skylights, a mezzanine along the north wall). The defenders reach B by the north lane, A by the north
 // road, mid by the arch street. Every texture is painted on first load.
 Object.assign(MATS,{
+  bzBark:{t:'bzBark',s:1,k:'wood'},// (v7.6: the palms' crown knob was drawn with a material that did not exist)
   bzSand:{t:'bzSand',s:3,cs:1,k:'soft'},bzSandF:{t:'bzSand',s:3,cs:6,k:'soft'},bzPave:{t:'bzPave',s:2,k:'stone'},bzFloor:{t:'bzFloor',s:2,k:'stone'},bzRoof:{t:'bzRoof',s:3,cs:1.5,k:'stone'},
   bzAdO:{t:'bzAdO',s:3,cs:1,k:'stone'},bzAdR:{t:'bzAdR',s:3,cs:1,k:'stone'},bzAdW:{t:'bzAdW',s:3,cs:1,k:'stone'},bzAdY:{t:'bzAdY',s:3,cs:1,k:'stone'},
   bzStone:{t:'bzStone',s:3,cs:1,k:'stone'},bzStoneD:{t:'bzStoneD',s:3,cs:1,k:'stone'},bzStoneF:{t:'bzStoneD',s:3,cs:4,k:'stone'},bzWoodD:{t:'bzWoodD',s:1.5,k:'wood'},bzBeam:{t:'bzBeam',s:2,k:'wood'},

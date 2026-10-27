@@ -15,7 +15,7 @@ Object.assign(MATS,{
   ptCO:{t:'ptCO',uv:'boxV',s:6,cs:1,k:'metal'},ptCB:{t:'ptCB',uv:'boxV',s:6,cs:1,k:'metal'},ptCR:{t:'ptCR',uv:'boxV',s:6,cs:1,k:'metal'},ptCG:{t:'ptCG',uv:'boxV',s:6,cs:1,k:'metal'},
   ptCY:{t:'ptCY',uv:'boxV',s:6,cs:1,k:'metal'},ptCT:{t:'ptCT',uv:'boxV',s:6,cs:1,k:'metal'},ptCW:{t:'ptCW',uv:'boxV',s:6,cs:1,k:'metal'},
   ptHull:{t:'ptHull',s:8,cs:2,k:'metal'},ptSuper:{t:'ptSuper',s:3,cs:1.5,k:'metal'},ptCraneY:{t:'ptCraneY',s:2,cs:1,k:'metal'},ptCraneW:{t:'ptCraneW',s:2,cs:1,k:'metal'},
-  ptPanel:{t:'ptPanel',s:2,cs:1,k:'metal'},ptClad:{t:'ptClad',s:2,cs:1,k:'metal'},ptRender:{t:'ptRender',s:3,cs:1,k:'stone'},
+  ptPanel:{t:'ptPanel',s:2,cs:1,k:'metal'},ptClad:{t:'ptClad',s:2,cs:1,k:'metal'},ptCladF:{t:'ptClad',s:2,cs:4,k:'metal'},ptPanelF:{t:'ptPanel',s:2,cs:4,k:'metal'},ptRoofF:{t:'roof',s:2,cs:4,k:'metal'},ptRender:{t:'ptRender',s:3,cs:1,k:'stone'},
   ptShut:{t:'ptShut',uv:'box',k:'metal'},ptWin:{t:'ptWin',uv:'box',k:'glass'},ptRack:{t:'ptRack',uv:'boxV',s:2.7,k:'metal'},
   ptSignA:{t:'ptSignA',uv:'box',emis:.06,k:'metal'},ptSignB:{t:'ptSignB',uv:'box',emis:.06,k:'metal'},ptSignC:{t:'ptSignC',uv:'box',emis:.06,k:'metal'},
   ptSignX:{t:'ptSignX',uv:'box',emis:.06,k:'metal'},ptSignP:{t:'ptSignP',uv:'box',emis:.06,k:'metal'},ptDecA:{t:'ptDecA',uv:'box',k:'stone'},ptDecB:{t:'ptDecB',uv:'box',k:'stone'},
@@ -107,7 +107,7 @@ function texPtDec(L){return paint(256,256,P=>{P.post=x=>{x.save();x.translate(0,
 function bakePtTex(){if(TEX.ptPave)return;
   TEX.ptPave=mkTex(texPtPave());TEX.ptAsph=mkTex(texPtAsph());TEX.ptQuay=mkTex(texPtQuay());TEX.ptLineY=mkTex(texPtLine('#d4aa2a'));TEX.ptLineW=mkTex(texPtLine('#dad8ce'));TEX.ptSea=mkTex(texPtSea());
   for(const [k,c,l] of [['ptCO','#b4622c','PRSU 418702'],['ptCB','#2e5a8e','QZPU 220917'],['ptCR','#963428','HBTU 771403'],['ptCG','#3e6a38','KDRU 502288'],['ptCY','#b8952e','NMXU 663019'],
-      ['ptCT','#2a6a68','WSEU 130562'],['ptCW','#c4c6c0','']])TEX[k]=mkTex(texContainer(c,l));
+      ['ptCT','#2a6a68','WSEU 130562'],['ptCW','#c4c6c0','']]){TEX[k]=mkTex(texContainer(c,l));TEX[k+'e']=mkTex(texContEnd(c),false);MATS[k+'e']={t:k+'e',uv:'box',k:'metal'};MATS[k].end=k+'e'}
   TEX.ptHull=mkTex(texPtHull());TEX.ptSuper=mkTex(texPtSuper());TEX.ptCraneY=mkTex(texPtPaint('#c89a26',2231));TEX.ptCraneW=mkTex(texPtPaint('#c2c4c0',2235));
   TEX.ptPanel=mkTex(texPtPanel());TEX.ptClad=mkTex(texPtClad());TEX.ptRender=mkTex(texPtRender());TEX.ptShut=mkTex(texPtShut());TEX.ptWin=mkTex(texPtWin());TEX.ptRack=mkTex(texPtRack());
   TEX.ptSignA=mkTex(texPtSign(128,128,'A','','#1c3a6a','#e8e6dc',96),false);TEX.ptSignB=mkTex(texPtSign(128,128,'B','','#1c3a6a','#e8e6dc',96),false);
@@ -301,14 +301,14 @@ function buildPort(){const CV={nosolid:true},H=2.6,CW=2.44,Y='ptCraneY',W='ptCra
   truck(12.2,28.02,'x',-1,'ptCG','car');jb(19,22.6,22,23.2);drum(25.5,19.6);drum(26.2,20.2,0,'drumR');cone(13.4,19.4);cone(13.4,21);
 
   // ================= scenery: the ship along the quay, a second crane to the north, warehouses outside =================
-  {const SF={f:{px:'none',py:'none',ny:'none',nz:'none',pz:'none'}};B(42.5,-3,-40,60,7.5,38,'ptHull',SF);B(42.5,7.5,-40,42.9,8.7,22,'ptHull',SF);
+  {const SF={f:{px:'none',py:'none',ny:'none',nz:'none',pz:'none'}};B(42.5,-3,-40,60,7.5,38,'ptHull',SF);B(42.5,7.5,-40,42.9,8.7,22,'ptHull',{f:{px:'none',py:'none',ny:'none',nz:'none'}});
     for(let b=0;b<5;b++){const z0=-38+b*12.9,len=b<4?12.19:6.06;for(let r=0;r<3;r++){const x0=43.2+r*CW,h=3+Math.floor(hash2(b,r,3401)*3);
         for(let k=0;k<h;k++)box(x0,z0,x0+CW,z0+len,k,ccol(b,r,k,3402),{f:{px:'none',py:'none',ny:'none'}},7.5)}}
     B(43.4,7.5,24,57,25,34,'ptSuper',{f:{px:'none',ny:'none'}});B(42.6,22,24.5,57,24,33.5,'ptSuper',{f:{px:'none'}});
     B(50,25,27.5,54,30,31,W,{f:{ny:'none'}});B(50,30,27.5,54,31.2,31,'ptCR',{f:{ny:'none'}});B(46,25,28.8,46.3,31,29.2,'metal2')}
   crane(-50,false);
-  B(-44,0,46,-14,13,64,'ptClad',{f:{px:'none',nx:'none',py:'none',ny:'none',pz:'none'}});B(8,0,48,40,11,60,'ptPanel',{f:{px:'none',nx:'none',py:'none',ny:'none',pz:'none'}});
-  B(-36,0,-72,6,15,-46,'ptPanel',{f:{px:'none',nx:'none',py:'none',ny:'none',nz:'none'}});B(-80,0,-34,-56,12,30,'ptClad',{f:{nx:'none',py:'none',ny:'none',nz:'none',pz:'none'}});
+  B(-44,0,46,-14,13,64,'ptClad',{f:{nx:'none',px:'ptCladF',py:'ptRoofF',ny:'none',pz:'none'}});B(8,0,48,40,11,60,'ptPanel',{f:{px:'ptPanelF',nx:'ptPanelF',py:'ptRoofF',ny:'none',pz:'none'}});// (v7.6: sides and roofs drawn, in coarse light cells)
+  B(-36,0,-72,6,15,-46,'ptPanel',{f:{px:'ptPanelF',nx:'ptPanelF',py:'ptRoofF',ny:'none',nz:'none'}});B(-80,0,-34,-56,12,30,'ptClad',{f:{nx:'none',pz:'ptCladF',nz:'ptCladF',py:'ptRoofF',ny:'none'}});
 
   // ================= spawns, camps, the sun, the title camera =================
   MAP.spawns=[];for(const x of [-8,-5,-2,2,5,8])for(const z of [-30.6,-28])MAP.spawns.push([x+rr(-.3,.3),z+rr(-.2,.2),0,Math.PI+rr(-.3,.3)]);

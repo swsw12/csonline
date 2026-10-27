@@ -9,10 +9,11 @@
 // ---------- textures: distance boards and the board on the back wall ----------
 function texRgDist(n){return paint(256,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<256;x++){const e=x<6||y<6||x>=250||y>=122;P.set(x,y,e?'#1c1c1a':'#e8c21a')}
   P.post=x=>{x.fillStyle='#141414';x.textAlign='center';x.font='bold 84px sans-serif';x.fillText(n+'m',128,94);x.fillRect(16,104,224,6)}})}
-function texRgInfo(){return paint(512,192,P=>{for(let y=0;y<192;y++)for(let x=0;x<512;x++){const e=x<8||y<8||x>=504||y>=184;P.set(x,y,e?'#2a2c2e':'#16181a')}
-  P.post=x=>{x.textAlign='center';x.fillStyle='#e8c21a';x.font='bold 46px sans-serif';x.fillText('사격장  SHOOTING RANGE',256,64);x.fillStyle='#e8e8e2';x.font='bold 22px sans-serif';
-    x.fillText('B 무기 무료 · FREE WEAPONS     K 기록 초기화 · RESET',256,112);x.fillText('J 이동 표적 · MOVING TARGETS     ESC 나가기 · EXIT',256,146);
-    x.fillStyle='#ff5a4a';x.font='bold 15px sans-serif';x.fillText('사선 앞으로 나가지 마십시오 · STAY BEHIND THE FIRING LINE',256,174)}})}
+// (v7.6) any width: mapFitSigns paints it again at the board's proportions (the lines ran off the old 512 px board)
+function texRgInfo(W){W=W||512;const C=W/2,cv=paint(W,192,P=>{for(let y=0;y<192;y++)for(let x=0;x<W;x++){const e=x<8||y<8||x>=W-8||y>=184;P.set(x,y,e?'#2a2c2e':'#16181a')}
+  P.post=x=>{x.textAlign='center';x.fillStyle='#e8c21a';x.font='bold 46px sans-serif';x.fillText('사격장  SHOOTING RANGE',C,64);x.fillStyle='#e8e8e2';x.font='bold 22px sans-serif';
+    x.fillText('B 무기 무료 · FREE WEAPONS     K 기록 초기화 · RESET',C,112);x.fillText('J 이동 표적 · MOVING TARGETS     ESC 나가기 · EXIT',C,146);
+    x.fillStyle='#ff5a4a';x.font='bold 15px sans-serif';x.fillText('사선 앞으로 나가지 마십시오 · STAY BEHIND THE FIRING LINE',C,174)}});cv._rp=w=>texRgInfo(w);return cv}
 function texRgLane(n){return paint(64,64,P=>{for(let y=0;y<64;y++)for(let x=0;x<64;x++){const e=x<3||y<3||x>=61||y>=61;P.set(x,y,e?'#e8e8e2':'#1c3a5a')}
   P.post=x=>{x.fillStyle='#f0f0ea';x.textAlign='center';x.font='bold 44px sans-serif';x.fillText(String(n),32,48)}})}
 function bakeRangeTex(){if(TEX.rgInfo)return;

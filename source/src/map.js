@@ -5,8 +5,9 @@
 const MATS={
   conc:{t:'conc',s:2},concf:{t:'concf',s:2},asph:{t:'asph',s:3},dirt:{t:'dirt',s:2.5},brick:{t:'brick',s:2},metal:{t:'metal',s:2},metal2:{t:'metal2',s:2},
   plate:{t:'plate',s:1.5},tile:{t:'tile',s:2},plaster:{t:'plaster',s:2},roof:{t:'roof',s:2},hazard:{t:'hazard',s:1},
-  wood:{t:'wood',uv:'box'},door:{t:'door',uv:'box'},win:{t:'win',uv:'box'},winLit:{t:'winLit',uv:'box',emis:.55},
-  contR:{t:'contR',uv:'boxV',s:6},contB:{t:'contB',uv:'boxV',s:6},contG:{t:'contG',uv:'boxV',s:6},
+  wood:{t:'wood',uv:'box'},woodP:{t:'woodP',s:1.2,k:'wood'},door:{t:'door',uv:'box'},win:{t:'win',uv:'box'},winLit:{t:'winLit',uv:'box',emis:.55},
+  contR:{t:'contR',uv:'boxV',s:6,end:'contRe'},contB:{t:'contB',uv:'boxV',s:6,end:'contBe'},contG:{t:'contG',uv:'boxV',s:6,end:'contGe'},
+  contRe:{t:'contRe',uv:'box',k:'metal'},contBe:{t:'contBe',uv:'box',k:'metal'},contGe:{t:'contGe',uv:'box',k:'metal'},// (v7.6: a container's door end, buildMapGeometry)
   lampW:{t:'lampW',uv:'box',emis:1.4},lampO:{t:'lampO',uv:'box',emis:1.3},lampR:{t:'lampR',uv:'box',emis:1.3},
   signQ:{t:'signQ',uv:'box',emis:.12},signN:{t:'signN',uv:'box',emis:.08},signE:{t:'signE',uv:'box',emis:.9},signW:{t:'signW',uv:'box',emis:.1},
   sandbag:{t:'sandbag',s:1.6},pallet:{t:'pallet',uv:'box'},fence:{t:'fence',s:2},barrier:{t:'barrier',uv:'boxV',s:2},pipe:{t:'pipe',s:1},mark:{t:'mark',s:1},poster0:{t:'poster0',uv:'box',emis:.05},poster1:{t:'poster1',uv:'box',emis:.05},
@@ -23,13 +24,24 @@ const MAP={id:null,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fire
 const MOON_D=new THREE.Vector3(-.42,.78,.46).normalize();
 // rays that light the map and let bots see ignore see-through boxes (chain-link)
 const SEE_THRU={skip:b=>b.o.pass};
+// (v7.6) a lamp may sit inside a box that glows from within (a lab tank): o.lp lets its light out
+const LIGHT_THRU={skip:b=>b.o.pass||b.o.lp};
 function B(x0,y0,z0,x1,y1,z1,mat,o){const b={x0:Math.min(x0,x1),y0:Math.min(y0,y1),z0:Math.min(z0,z1),x1:Math.max(x0,x1),y1:Math.max(y0,y1),z1:Math.max(z0,z1),mat,o:o||{}};
   if(b.o.nosolid)b.nosolid=true;MAP.boxes.push(b);return b}
 function LIGHT(x,y,z,col,range,int,o){MAP.lights.push(Object.assign({x,y,z,c:new THREE.Color(col),r:range,i:int},o||{}))}
 // wall along X (thin in Z) or along Z (thin in X) with rectangular openings [u0,u1,y0,y1]
-function wallX(x0,x1,z0,z1,y0,y1,mat,holes,o){holes=(holes||[]).slice().sort((a,b)=>a[0]-b[0]);let u=x0;
+// (v7.6) holes that overlap along the wall (a door under a window, two windows one above the other) get a real partition: in the plain
+// cut each hole's column above and below it filled the other hole, so those windows were never open and their faces flickered
+function holesOverlap(H){for(let i=0;i<H.length;i++)for(let j=i+1;j<H.length;j++)if(H[i][0]<H[j][1]-1e-6&&H[j][0]<H[i][1]-1e-6)return true;return false}
+function wallCut(u0,u1,y0,y1,holes,put){const us=new Set([u0,u1]);for(const h of holes)for(const v of [h[0],h[1]])if(v>u0&&v<u1)us.add(v);
+  const U=[...us].sort((a,b)=>a-b);let run=null;const flush=()=>{if(run)for(const [a,b] of run.s)put(run.u0,run.u1,a,b);run=null};
+  for(let i=0;i<U.length-1;i++){const a=U[i],b=U[i+1],m=(a+b)/2;const hs=holes.filter(h=>h[0]<m&&h[1]>m).map(h=>[Math.max(y0,h[2]),Math.min(y1,h[3])]).filter(h=>h[1]>h[0]).sort((p,q)=>p[0]-q[0]);
+    const s=[];let y=y0;for(const [h0,h1] of hs){if(h0>y)s.push([y,h0]);y=Math.max(y,h1)}if(y<y1)s.push([y,y1]);
+    const key=s.map(q=>q.join(',')).join(';');if(run&&run.k===key)run.u1=b;else{flush();run={u0:a,u1:b,s,k:key}}}
+  flush()}
+function wallX(x0,x1,z0,z1,y0,y1,mat,holes,o){holes=(holes||[]).slice().sort((a,b)=>a[0]-b[0]);if(holesOverlap(holes)){wallCut(x0,x1,y0,y1,holes,(a,b,c,d)=>B(a,c,z0,b,d,z1,mat,o));return}let u=x0;
   for(const [h0,h1,hy0,hy1] of holes){if(h0>u)B(u,y0,z0,h0,y1,z1,mat,o);if(hy0>y0)B(h0,y0,z0,h1,hy0,z1,mat,o);if(hy1<y1)B(h0,hy1,z0,h1,y1,z1,mat,o);u=h1}if(u<x1)B(u,y0,z0,x1,y1,z1,mat,o)}
-function wallZ(x0,x1,z0,z1,y0,y1,mat,holes,o){holes=(holes||[]).slice().sort((a,b)=>a[0]-b[0]);let u=z0;
+function wallZ(x0,x1,z0,z1,y0,y1,mat,holes,o){holes=(holes||[]).slice().sort((a,b)=>a[0]-b[0]);if(holesOverlap(holes)){wallCut(z0,z1,y0,y1,holes,(a,b,c,d)=>B(x0,c,a,x1,d,b,mat,o));return}let u=z0;
   for(const [h0,h1,hy0,hy1] of holes){if(h0>u)B(x0,y0,u,x1,y1,h0,mat,o);if(hy0>y0)B(x0,y0,h0,x1,hy0,h1,mat,o);if(hy1<y1)B(x0,hy1,h0,x1,y1,h1,mat,o);u=h1}if(u<z1)B(x0,y0,u,x1,y1,z1,mat,o)}
 // solid stair flight rising from (along=a0, y=y0) to (along=a1, y=y1); axis 'z' or 'x'
 function stairs(axis,c0,c1,a0,a1,y0,y1,n,mat,o){const da=(a1-a0)/n,dy=(y1-y0)/n;for(let i=0;i<n;i++){const s0=a0+da*i,s1=a0+da*(i+1),top=y0+dy*(i+1);
@@ -230,18 +242,24 @@ function buildQ7(){
 // (gates do not count: they open later, so nothing behind one is hidden)
 function insideSolid(x,y,z,self){_bq.length=0;boxesIn(x,z,x,z,_bq);for(const b of _bq){if(b===self||b.nosolid||b.o.gate)continue;if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1&&z>b.z0&&z<b.z1)return true}return false}
 // pick: only the boxes it accepts (a gate's own mesh); by default every box except gates
+// the material a face is drawn with (null: not drawn). A box reaching below -.99 has no bottom (it is ground); (v7.6) a ground slab
+// shows its sides too — buried ones are dropped like any other, the rest face something lower beside it (a pit, a ditch, a basement)
+// and were holes into the void before — in its own material, the map's gside or an f override
+function faceMatOf(b,fk){if(fk==='ny'&&b.y0<=-.99)return null;const f=b.o.f&&b.o.f[fk];if(b.o.ground&&fk!=='py'){if(fk==='ny'&&!f)return null;return f||MAP.gside||b.mat}return f||b.mat}
+const matOf=k=>MATS[k.endsWith('|d')?k.slice(0,-2):k];
 function buildMapGeometry(pick){
   const groups={};const g=m=>groups[m]||(groups[m]={pos:[],nrm:[],uv:[],col:[],tn:[]});
   const FACES=[['px',[1,0,0]],['nx',[-1,0,0]],['py',[0,1,0]],['ny',[0,-1,0]],['pz',[0,0,1]],['nz',[0,0,-1]]];
   for(const b of MAP.boxes){if(pick?!pick(b):b.o.gate)continue;
-    for(const [fk,n] of FACES){
-      if(fk==='ny'&&b.y0<=-.99)continue;if(b.o.ground&&fk!=='py')continue;
-      const mat=(b.o.f&&b.o.f[fk])||b.mat;const M=MATS[mat];if(!M)continue;
+    for(let fi=0;fi<6;fi++){const [fk,n]=FACES[fi];
+      let mat=faceMatOf(b,fk);if(!mat)continue;let M=MATS[mat];if(!M)continue;
       // face rectangle: axis a (u) and b (v)
       let ax,bx,fixed,fv;if(n[0]){ax=2;bx=1;fixed=0;fv=n[0]>0?b.x1:b.x0}else if(n[1]){ax=0;bx=2;fixed=1;fv=n[1]>0?b.y1:b.y0}else{ax=0;bx=1;fixed=2;fv=n[2]>0?b.z1:b.z0}
       const lo=[b.x0,b.y0,b.z0],hi=[b.x1,b.y1,b.z1];const ua=lo[ax],ub=hi[ax],va=lo[bx],vb=hi[bx];
+      // (v7.6) a container's short end (M.end): its doors, not a slice of the long side
+      if(M.end&&!(b.o.f&&b.o.f[fk])&&fk!=='py'&&fk!=='ny'){const len=fk[1]==='x'?b.x1-b.x0:b.z1-b.z0;if(ub-ua<=2.7&&len>=5){mat=M.end;M=MATS[mat]}}
       const CS=M.cs||(M.emis>=1?2:.5);const nu=Math.max(1,Math.round((ub-ua)/CS)),nv=Math.max(1,Math.round((vb-va)/CS));
-      const G=g(mat);const TN=(fk==='py'?b.o.ttop:b.o.tint)||null;// optional per-box colour tint (multiplies the baked light)
+      const G=g(b._dec&&(b._dec>>fi&1)?mat+'|d':mat);const TN=(fk==='py'?b.o.ttop:b.o.tint)||null;// optional per-box colour tint (multiplies the baked light), and a decal face (mapDecals) goes to its material's |d group
       for(let j=0;j<nv;j++)for(let i=0;i<nu;i++){
         const u0=ua+(ub-ua)*i/nu,u1=ua+(ub-ua)*(i+1)/nu,v0=va+(vb-va)*j/nv,v1=va+(vb-va)*(j+1)/nv;
         const c=[0,0,0];c[ax]=(u0+u1)/2;c[bx]=(v0+v1)/2;c[fixed]=fv+n[fixed]*.02;
@@ -259,8 +277,9 @@ function buildMapGeometry(pick){
   return groups}
 function faceUV(b,M,fk,p){
   const s=M.s||2;
+  // (v7.6) ru: a plain box picture repeated across a face wider than it is; rot: a top or bottom face's picture turned to run along z (mapFitSigns)
   if(M.uv==='box'){let u,v;if(fk==='px'||fk==='nx'){u=(p[2]-b.z0)/(b.z1-b.z0);v=(p[1]-b.y0)/(b.y1-b.y0);if(fk==='px')u=1-u}
-    else if(fk==='py'||fk==='ny'){u=(p[0]-b.x0)/(b.x1-b.x0);v=(p[2]-b.z0)/(b.z1-b.z0)}else{u=(p[0]-b.x0)/(b.x1-b.x0);v=(p[1]-b.y0)/(b.y1-b.y0);if(fk==='nz')u=1-u}return [u,v]}
+    else if(fk==='py'||fk==='ny'){if(M.rot){u=(p[2]-b.z0)/(b.z1-b.z0);v=fk==='py'?(p[0]-b.x0)/(b.x1-b.x0):(b.x1-p[0])/(b.x1-b.x0)}else{u=(p[0]-b.x0)/(b.x1-b.x0);v=(p[2]-b.z0)/(b.z1-b.z0)}}else{u=(p[0]-b.x0)/(b.x1-b.x0);v=(p[1]-b.y0)/(b.y1-b.y0);if(fk==='nz')u=1-u}return [u*(M.ru||1),v]}
   if(M.uv==='boxV'){if(fk==='py'||fk==='ny')return [p[0]/s,p[2]/s];const along=fk==='px'?b.z1-p[2]:fk==='nx'?p[2]-b.z0:fk==='pz'?p[0]-b.x0:b.x1-p[0];return [along/s,(p[1]-b.y0)/(b.y1-b.y0)]}
   if(M.uv==='boxU'&&(fk==='py'||fk==='ny'))return [(p[0]-b.x0)/(b.x1-b.x0),p[2]/s];
   // world-space tiling; uo shifts u, vo/sv place v in absolute height (train sides line up across door openings)
@@ -277,10 +296,10 @@ function lightAt(px,py,pz,nx,ny,nz,probe){
   const E=MAP.env||{};const sky=E.sky&&!rayCast(ox,oy,oz,0,1,0,40,SEE_THRU);const A=sky?(MAP.ambOut||AMB_OUT):(MAP.ambIn||AMB_IN);const skyF=probe?1:(.55+.45*Math.max(ny,0));r+=A.r*ao*skyF;gg+=A.g*ao*skyF;b+=A.b*ao*skyF;
   const M=MAP.moon;if(M){const ml=probe?.6:(M.d.x*nx+M.d.y*ny+M.d.z*nz);if(ml>0&&!rayCast(ox,oy,oz,M.d.x,M.d.y,M.d.z,60,SEE_THRU)){r+=M.c.r*M.i*ml;gg+=M.c.g*M.i*ml;b+=M.c.b*M.i*ml}}
   for(const L of MAP.lights){const dx=L.x-ox,dy=L.y-oy,dz=L.z-oz;const d=Math.hypot(dx,dy,dz);if(d>=L.r)continue;const lam=probe?.7:(dx*nx+dy*ny+dz*nz)/d;if(lam<=0)continue;
-    if(rayCast(ox,oy,oz,dx/d,dy/d,dz/d,d-.25,SEE_THRU))continue;const a=(1-d/L.r);const f=Math.pow(a,1.35)*L.i*1.55*(.25+.75*lam)*(probe?1:ao*.5+.5);r+=L.c.r*f;gg+=L.c.g*f;b+=L.c.b*f}
+    if(rayCast(ox,oy,oz,dx/d,dy/d,dz/d,d-.25,LIGHT_THRU))continue;const a=(1-d/L.r);const f=Math.pow(a,1.35)*L.i*1.55*(.25+.75*lam)*(probe?1:ao*.5+.5);r+=L.c.r*f;gg+=L.c.g*f;b+=L.c.b*f}
   return [Math.min(r,2.2),Math.min(gg,2.2),Math.min(b,2.2)]}
 function bakeGroups(groups){const cache=new Map();let n=0;
-  for(const k in groups){const G=groups[k];const M=MATS[k];G.col=new Array(G.pos.length);
+  for(const k in groups){const G=groups[k];const M=matOf(k);G.col=new Array(G.pos.length);
     for(let i=0;i<G.pos.length;i+=3){if(M.emis>=1){G.col[i]=1;G.col[i+1]=1;G.col[i+2]=1;continue}
       const key=Math.round(G.pos[i]*50)+','+Math.round(G.pos[i+1]*50)+','+Math.round(G.pos[i+2]*50)+','+G.nrm[i]+G.nrm[i+1]+G.nrm[i+2];let c=cache.get(key);
       if(!c){c=lightAt(G.pos[i],G.pos[i+1],G.pos[i+2],G.nrm[i],G.nrm[i+1],G.nrm[i+2]);cache.set(key,c);n++}
@@ -309,7 +328,7 @@ function buildMapMeshes(scene){
   for(const k in groups){const G=groups[k];if(!G.pos.length)continue;const geo=new THREE.BufferGeometry();
     geo.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(G.uv,2));geo.setAttribute('color',new THREE.Float32BufferAttribute(G.col,3));
     geo.computeBoundingSphere();for(const a of ['position','normal','uv','color'])geo.attributes[a].onUpload(freeArr);
-    const M=MATS[k];const mesh=new THREE.Mesh(geo,matWorld(TEX[M.t],{emis:M.emis||0}));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh)}
+    const M=matOf(k);const mesh=new THREE.Mesh(geo,matWorld(TEX[M.t],{emis:M.emis||0,dec:k.endsWith('|d')}));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh)}
   // round props (drums): merged per texture, vertex-lit by the same baker
   const dg={};for(const d of MAP.deco){const g=new THREE.CylinderGeometry(d.r,d.r,d.h,18,2,false);g.rotateY(d.rot||0);g.translate(d.x,d.y+d.h/2,d.z);
     // a slightly smaller lid sits inside the rim
@@ -329,7 +348,7 @@ function gateMeshes(scene){MAP.gates={};for(const b of MAP.boxes){const k=b.o.ga
     for(const s in by){const set=new Set(by[s]),groups=buildMapGeometry(b=>set.has(b));bakeGroups(groups);const part={gs:by[s][0].o.gs||[0,0,0],meshes:[]};
       for(const m in groups){const G=groups[m];if(!G.pos.length)continue;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3));
         geo.setAttribute('uv',new THREE.Float32BufferAttribute(G.uv,2));geo.setAttribute('color',new THREE.Float32BufferAttribute(G.col,3));geo.computeBoundingSphere();
-        const M=MATS[m];const mesh=new THREE.Mesh(geo,matWorld(TEX[M.t],{emis:M.emis||0}));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh);part.meshes.push(mesh)}
+        const M=matOf(m);const mesh=new THREE.Mesh(geo,matWorld(TEX[M.t],{emis:M.emis||0,dec:m.endsWith('|d')}));mesh.matrixAutoUpdate=false;scene.add(mesh);MAP.meshes.push(mesh);part.meshes.push(mesh)}
       G0.parts.push(part)}}}
 function gateFrame(G0){const e=G0.open?smooth(G0.anim):1-smooth(G0.anim);for(const p of G0.parts)for(const m of p.meshes){m.position.set(p.gs[0]*e,p.gs[1]*e,p.gs[2]*e);m.updateMatrix();m.visible=!(G0.open&&G0.anim>=1)}}
 // open (or shut) a gate: it stops blocking at once and slides away over dur seconds (instant: no slide)
@@ -366,8 +385,75 @@ function mapOk(mode,id){const D=MAPDEFS[id];if(!D||D.practice||D.ep)return false
 function mapsFor(mode){return MAPLIST().filter(id=>mapOk(mode,id))}
 function buildMapData(id){const D=MAPDEFS[id];
   Object.assign(MAP,{id,gates:{},ez:null,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fires:[],smoke:[],spray:[],dyn:[],moon:null,probe:null,probeY:D.probeY||null,env:D.env,cam:null,spawnYaw:null,
-    ambIn:D.env.ambIn?new THREE.Color(D.env.ambIn):null,ambOut:D.env.ambOut?new THREE.Color(D.env.ambOut):null,bounds:D.bounds||[-30,-30,30,30],miniCut:D.mini||null,miniName:D.miniName||null});
-  D.build();if(D.mirror)mapMirrorX()}
+    ambIn:D.env.ambIn?new THREE.Color(D.env.ambIn):null,ambOut:D.env.ambOut?new THREE.Color(D.env.ambOut):null,bounds:D.bounds||[-30,-30,30,30],miniCut:D.mini||null,miniName:D.miniName||null,gside:D.gside||null});
+  D.build();if(D.mirror)mapMirrorX();mapFixWood();mapFitSigns();mapDecals();mapFreeSpawns();mapFreeLights()}
+// a lamp placed inside a solid (a lantern on a rock face, a light in a prefab hut, a floodlight on its mast's axis) lit nothing — the
+// bake's shadow rays stop .25 short of a light and so ended inside the box. It moves to the nearest free point along the six axis
+// directions (in .25 m steps, up to 6 m: two rocks or two stacked containers are passed through), .3 m clear of any solid
+function mapFreeLights(){const S=MAP.boxes.filter(b=>!b.nosolid&&!b.o.pass&&!b.o.lp&&!b.o.gate),inside=(x,y,z,m)=>S.some(b=>x>b.x0-m&&x<b.x1+m&&y>b.y0-m&&y<b.y1+m&&z>b.z0-m&&z<b.z1+m);
+  for(const L of MAP.lights){if(!S.some(b=>L.x>b.x0+.2&&L.x<b.x1-.2&&L.y>b.y0+.2&&L.y<b.y1-.2&&L.z>b.z0+.2&&L.z<b.z1-.2))continue;let best=null;
+    for(const [dx,dy,dz] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])for(let d=.25;d<=6;d+=.25){const x=L.x+dx*d,y=L.y+dy*d,z=L.z+dz*d;if(inside(x,y,z,.3))continue;if(!best||d<best[0])best=[d,x,y,z];break}
+    if(best){L.x=best[1];L.y=best[2];L.z=best[3]}}}
+// ---------- v7.6: finishing passes over every map ----------
+// 'wood' is a crate's face (frame, X brace, nails, stencil): only crate-shaped boxes keep it; tables, benches, counters, beams and shelves
+// made of it get plain planks (woodP, tiled in world space) instead of a stretched crate
+function mapFixWood(){for(const b of MAP.boxes){const f=b.o.f,fw=f&&Object.keys(f).filter(k=>f[k]==='wood');if(b.mat!=='wood'&&!(fw&&fw.length))continue;
+  const s=[b.x1-b.x0,b.y1-b.y0,b.z1-b.z0].sort((p,q)=>p-q);if(s[0]>=.35&&s[2]/s[0]<=1.6)continue;if(b.mat==='wood')b.mat='woodP';
+  if(fw&&fw.length){const g=Object.assign({},f);for(const k of fw)g[k]='woodP';b.o=Object.assign({},b.o,{f:g})}}}
+// a box-mapped picture on a face of another shape is stretched. A face the picture was not drawn for — a board's thin edge, a small
+// side it would be squeezed onto, the top of a box standing taller than it is wide (a cabinet, a terminal, a shelf) — is plain, unless
+// the map set that face itself (plainOf). A top or bottom face turns the picture to run along its long side when that fits better.
+// A sign that can be painted again (canvas._rp: texSign and the like) is painted at the face's proportions — the same lettering, more
+// board; another lettered picture is widened by carrying its background out to the new edges; a plain picture (a door, window,
+// shutter, panel) repeats across a wide face. One variant per size, shared.
+const WIDEN_NO=new Set();
+// the plain stand-in for a box picture: M.edge (M.top on a top or bottom face), else by kind for lettering (planks, concrete, steel) and
+// for a plain steel or wooden picture (steel, planks); none (the picture stays) for glass, cloth and stone pictures without M.edge
+function plainOf(M,I,top){if(top&&M.top)return M.top;if(M.edge)return M.edge;const k=M.k;if(I._txt)return k==='wood'?'woodP':k==='stone'?'conc':'metal2';return k==='metal'?'metal2':k==='wood'?'woodP':null}
+function mapFitSigns(){const FK=['px','nx','pz','nz','py','ny'],L2=Math.log(2);
+  for(const b of MAP.boxes){const sx=b.x1-b.x0,sy=b.y1-b.y0,sz=b.z1-b.z0,A=[sy*sz,sx*sz,sx*sy],mx=Math.max(A[0],A[1],A[2]),bi=A.indexOf(mx),bs=bi===0?Math.min(sy,sz):bi===1?Math.min(sx,sz):Math.min(sx,sy);
+    for(const fk of FK){const own=b.o.f&&b.o.f[fk],mat=own||b.mat;const M=MATS[mat];if(!M||M.uv!=='box'||(M.emis||0)>=1||M.fit===false)continue;const T=TEX[M.t];const I=T&&T.image;if(!I||!I.width)continue;
+      const top=fk[1]==='y',du=fk[1]==='x'?sz:sx,dv=top?sz:sy,ta=I.width/I.height,a=du*dv,e=Math.min(du,dv);let r=(du/dv)/ta;
+      if(!own){const pl=plainOf(M,I,top);
+        if(pl&&MATS[pl]&&((I._txt&&e<.15&&a<.3*mx)||(e<=.5*bs+.01&&a<.51*mx)||(a<.3*mx&&Math.abs(Math.log(r))>L2)||(top&&a<.8*Math.max(A[0],A[2])))){b.o=Object.assign({},b.o,{f:Object.assign({},b.o.f||{},{[fk]:pl})});continue}}
+      if(du<.25||dv<.25)continue;
+      // (a face wider than its picture can be widened or repeated; a narrower one stays squeezed unless it can be painted again)
+      const bad=q=>I._rp?(q>=1?0:-Math.log(q)*.1):q>=1.3?.05:Math.abs(Math.log(q));let rot=0;if(top){const r2=(dv/du)/ta;if(bad(r2)<bad(r)-.04){rot=1;r=r2}}
+      let vk=null,VM=null;
+      if(r<1.3&&r>1/1.3){if(!rot)continue;VM=M;vk=M.t+'@o'}
+      else{const WW=Math.min(2048,Math.round(I.width*r/2)*2),wk=M.t+'@w'+WW;
+        // a widened copy is made once per size; a picture whose text runs to its edges (WIDEN_NO) repeats instead
+        if(!I._rp&&I._txt&&r>=1.3&&!TEX[wk]&&!WIDEN_NO.has(wk)){const cv=texWiden(I,WW);if(cv)TEX[wk]=mkTex(cv,false);else WIDEN_NO.add(wk)}
+        if(I._rp){let W=I.width,H=I.height;if(r>1)W=WW;else H=Math.min(1024,Math.round(H/r/2)*2);vk=M.t+'@'+W+'x'+H;
+          if(!TEX[vk])TEX[vk]=mkTex(I._rp(W,H),false);VM=Object.assign({},M,{t:vk})}
+        else if(I._txt&&r>=1.3&&TEX[wk]){vk=wk;VM=Object.assign({},M,{t:vk})}
+        else if(r>=1.5){const k=Math.round(r);let t=M.t;if(T.wrapS!==THREE.RepeatWrapping){t=M.t+'@r';if(!TEX[t]){const C=TEX[t]=T.clone();C.wrapS=THREE.RepeatWrapping;C.needsUpdate=true}}VM=Object.assign({},M,{t,ru:k});vk=M.t+'@r'+k}
+        else if(rot){VM=M;vk=M.t+'@o'}else continue}
+      if(rot)VM=Object.assign({},VM,{rot:1});
+      const nm=mat+'@'+vk.split('@')[1]+(rot?'R':'');if(!MATS[nm])MATS[nm]=VM;
+      b.o=Object.assign({},b.o,{f:Object.assign({},b.o.f||{},{[fk]:nm})})}}}
+// widen a lettered picture to W px: the middle keeps the picture; the margins repeat the column of background just inside each side
+// border (a board's lettering keeps clear of its edges); the borders move out to the new edges
+function texWiden(src,W){const H=src.height,w=src.width,B=Math.max(2,Math.min(8,Math.floor(w/24))),off=Math.round((W-w)/2),T=src._tx||[];
+  const clear=X=>!T.some(t=>X>=t[0]-2&&X<=t[1]+2);let L=B,R=w-B-1;while(L<w/4&&!clear(L))L++;while(R>w*3/4&&!clear(R))R--;if(!clear(L)||!clear(R))return null;
+  // the carried column must be the board's ground, not a frame (a door's, a panel's): row by row it matches the row's middle (the median
+  // pixel there, so lettering does not count), on most rows
+  const D=src.getContext('2d').getImageData(0,0,w,H).data,px=(x,y)=>{const i=(y*w+x)*4;return [D[i],D[i+1],D[i+2]]},x0=Math.round(w*.25),x1=Math.round(w*.75),lit=(x,y)=>T.some(t=>x>=t[0]&&x<=t[1]&&(t[2]==null||(y>=t[2]&&y<=t[3])));let ok=0,n=0;
+  for(let y=0;y<H;y++){const row=[];for(let x=x0;x<x1;x+=2)if(!lit(x,y))row.push(px(x,y));if(row.length<6)continue;n++;row.sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2]));const m=row[row.length>>1];
+    const near=q=>Math.abs(q[0]-m[0])+Math.abs(q[1]-m[1])+Math.abs(q[2]-m[2])<=60;if(near(px(L,y))&&near(px(R,y)))ok++}
+  if(!n||ok<n*.7)return null;
+  const [c,x]=mkCanvas(W,H);x.drawImage(src,L,0,R-L+1,H,off+L,0,R-L+1,H);x.drawImage(src,L,0,1,H,B,0,off+L-B,H);x.drawImage(src,R,0,1,H,off+R+1,0,W-B-(off+R+1),H);
+  x.drawImage(src,0,0,B,H,0,0,B,H);x.drawImage(src,w-B,0,B,H,W-B,0,B,H);c._txt=1;c._tx=T.map(t=>[t[0]+off,t[1]+off,t[2],t[3]]);return c}
+// two faces in one plane, facing the same way, over the same spot flicker (z-fighting): the thinner box's face (a sign or poster on a
+// wall, a gate in its arch) — or the one standing up to a centimetre proud (road paint) — is drawn as a decal, pulled forward in depth
+function mapDecals(){const K=['px','nx','py','ny','pz','nz'],P=new Map();
+  for(const b of MAP.boxes){b._dec=0;if(b.o.gate)continue;const lo=[b.x0,b.y0,b.z0],hi=[b.x1,b.y1,b.z1];
+    for(let f=0;f<6;f++){const m=faceMatOf(b,K[f]);if(!m||!MATS[m])continue;const ax=f>>1,s=f&1?-1:1,fv=s>0?hi[ax]:lo[ax],ua=ax?0:2,va=ax===1?2:1;
+      const F={b,f,s,fv,u0:lo[ua],u1:hi[ua],v0:lo[va],v1:hi[va],t:hi[ax]-lo[ax],A:(hi[ua]-lo[ua])*(hi[va]-lo[va])};const k=f*1e6+Math.floor(fv*50);let a=P.get(k);if(!a)P.set(k,a=[]);a.push(F)}}
+  for(const [k,L] of P){const N=P.get(k+1),C=N?L.concat(N):L;if(C.length<2)continue;C.sort((p,q)=>p.u0-q.u0);
+    for(let i=0;i<C.length;i++){const A=C[i];for(let j=i+1;j<C.length;j++){const Q=C[j];if(Q.u0>=A.u1)break;if(A.b===Q.b)continue;const d=(Q.fv-A.fv)*A.s;if(Math.abs(d)>.012)continue;
+        if(Math.min(A.u1,Q.u1)-Math.max(A.u0,Q.u0)<=.001||Math.min(A.v1,Q.v1)-Math.max(A.v0,Q.v0)<=.001)continue;
+        const w=Math.abs(d)>.0005?(d>0?Q:A):A.t<Q.t-1e-4?A:Q.t<A.t-1e-4?Q:A.A<=Q.A?A:Q;w.b._dec|=1<<w.f}}}}
 // ---------- v7.3: map edits ----------
 // a map built mirrored east-west (D.mirror): every box, light, prop, spawn and camp, the bounds and the title camera flip x -> -x after
 // D.build(). The sun / moon direction is left alone (it matches the sky texture), so the light falls on the mirrored town from the old side.
@@ -413,7 +499,7 @@ function* mapLoader(id){
     for(const m of MAP.meshes)R.scene.remove(m)}
   const C=MAPCACHE[id];
   if(C){for(const k of MAPKEYS)MAP[k]=C[k];WORLD.boxes=MAP.boxes;WORLD.cells=C.cells;if(C.grid)[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh]=C.grid;Object.assign(NAV,C.nav);if(FX.rain&&C.rainHM)FX.rain.hm=C.rainHM;for(const m of MAP.meshes)R.scene.add(m)}
-  else{yield 'lMap';const D=MAPDEFS[id];if(D.tex)D.tex();buildMapData(id);WORLD.boxes=MAP.boxes;worldIndex();
+  else{yield 'lMap';const D=MAPDEFS[id];if(D.tex)D.tex();buildMapData(id);WORLD.boxes=MAP.boxes;worldIndex();if(D.post)D.post();// (v7.6: D.post runs with the collision grid in place)
     yield 'lLight';MAP.meshes=[];buildMapMeshes(R.scene);if(D.mesh)D.mesh(R.scene);bakeProbes();
     yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}
     // the graph is built with every gate open (they open as the map is played; a shut one simply blocks the way for now)

@@ -15,7 +15,7 @@
 // to 2F by the skybridge over the service road. South: the drop-off loop round a fountain island, the bus stop and the car park (south-
 // west), the quarantine checkpoint at the shut main gate, the healing garden with its pond, pergola and pavilion (south-east). North: the
 // service yard (loading dock, oxygen tank, generators, bins). Brick walls with a fence on top close it all in.
-Object.assign(MATS,{hoGroundF:{t:'asph',s:6,cs:8,k:'soft'},hoFacadeF:{t:'hoFacade',s:8.4,sv:4.2,cs:6,k:'stone'},hoFence:{t:'fence',s:2,cs:2.5,k:'hoSteel'},hoMetal:{t:'hoMetal',s:2,cs:1,k:'hoSteel'}});
+Object.assign(MATS,{hoGroundF:{t:'asph',s:6,cs:8,k:'soft'},hoFacadeF:{t:'hoFacade',s:8.4,sv:4.2,cs:6,k:'stone'},hoFence:{t:'fence',s:2,cs:2.5,k:'metal'},hoMetal:{t:'hoMetal',s:2,cs:1,k:'metal'}});
 function buildHospital(){const CV={nosolid:true},CH=3.8,YR=12.6;
   const only=(k,m)=>{const f={px:'none',nx:'none',py:'none',ny:'none',pz:'none',nz:'none'};f[k]=m;return {nosolid:true,f}};
   // partitions 0.2 m thick along x (at z) or along z (at x), a storey high (3.8 m, up to the slab); openings [u0,u1] (a 2.4 m door),

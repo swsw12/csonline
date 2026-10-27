@@ -98,7 +98,7 @@ function texE4Board(){const W=256,H=176;return paint(W,H,P=>{
   P.rect(16,30,150,130,'#7a9a6a');
   P.post=ctx=>{ctx.strokeStyle='rgba(60,80,50,.7)';ctx.lineWidth=2;for(let i=0;i<7;i++){ctx.beginPath();ctx.ellipse(92,96,70-i*9,56-i*7,0,0,TAU);ctx.stroke()}
     ctx.strokeStyle='#c02010';ctx.lineWidth=3;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(26,150);ctx.lineTo(70,128);ctx.lineTo(120,118);ctx.lineTo(80,96);ctx.lineTo(92,70);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='#1a1a1a';ctx.fillRect(86,62,12,10);ctx.font='bold 15px sans-serif';ctx.fillText('운무봉 등산로 안내',16,24);ctx.font='11px sans-serif';ctx.fillText('정상 · 통신기지 (출입통제)',172,48);ctx.fillText('해발 1,184 m',172,64);
+    ctx.fillStyle='#1a1a1a';ctx.fillRect(86,62,12,10);ctx.font='bold 15px sans-serif';ctx.fillText('운무봉 등산로 안내',16,24);ctx.font='11px sans-serif';ctx.fillText('정상 · 통신기지',172,44);ctx.fillText('(출입통제)',172,58);ctx.fillText('해발 1,184 m',172,74);
     ctx.fillText('현 위치 ●',172,150);ctx.fillStyle='#d83020';ctx.beginPath();ctx.arc(26,150,5,0,TAU);ctx.fill()}})}
 // the bus stop: the route plate and the timetable
 function texE4Bus(){const W=128,H=192;return paint(W,H,P=>{
@@ -217,7 +217,7 @@ function buildEp4(){
   // the army truck on the shoulder, a dead car, the bus stop, the trail board, crates and drums
   e4truck(-53,36.2,'x');car(-60.5,29.2,-56.3,31,'car');car(-45,31.8,-41,33.6,'carBurnt',{burnt:1});
   B(-65,0,38.2,-59.6,.15,40.4,'e4conc');B(-65,0,40.2,-59.6,2.6,40.35,'carGl',{pass:1});B(-65.1,0,38.2,-64.95,2.6,40.4,'metal2');B(-59.75,0,38.2,-59.6,2.6,40.4,'metal2');
-  B(-65.3,2.6,38,-59.3,2.75,40.6,'e4roof');B(-64.4,0,39.5,-60.2,.5,40.1,'wood');B(-59.4,0,37.8,-58.95,2.8,38.25,'e4bus',{f:{pz:'e4bus'}});
+  B(-65.3,2.6,38,-59.3,2.75,40.6,'e4roof');B(-64.4,0,39.5,-60.2,.5,40.1,'wood');B(-59.4,0,37.8,-58.95,2.8,38.25,'metal2');for(const [z0,z1] of [[37.72,37.79],[38.26,38.33]])B(-59.475,1.55,z0,-58.875,2.45,z1,'e4bus',{nosolid:true});// (v7.6) the timetable on a panel either side of its post (it was squeezed onto the 45 cm post)
   B(-67.2,0,21.6,-67,2.5,21.8,'e4bark');B(-63.6,0,21.6,-63.4,2.5,21.8,'e4bark');B(-67.3,.9,21.85,-63.3,2.5,21.95,'e4board',nz);B(-67.3,2.5,21.5,-63.3,2.7,22.1,'e4roof');
   for(const [x,z,y] of [[-50,25,0],[-49,25.2,0],[-49.5,25.1,1.1],[-34,23,0]])e4crate(x,z,y);drum(-47.5,24.6);drum(-33,25.5);drum(-58,24.4,0,'drumR');
   for(const [x,z] of [[-62,26],[-48,36],[-34,26]])lamp(x,z,5.4,'#ffc890');

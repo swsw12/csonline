@@ -115,7 +115,7 @@ function q7emerg(x,y,z,face){const o={nosolid:true};if(face==='x+')B(x,y,z-.15,x
   LIGHT(x+(face==='x+'?.5:face==='x-'?-.5:0),y,z+(face==='z+'?.5:face==='z-'?-.5:0),'#ff3a2a',5.5,.7)}
 // a specimen tank: a glowing cylinder (or a shattered stump) plus an invisible collision box
 function q7tank(x,z,broken){if(broken){MAP.deco.push({k:'drum',x,y:0,z,r:.62,h:.55,mat:'q7tankB',rot:0});B(x-.5,0,z-.5,x+.5,.55,z+.5,'metalx');B(x-.68,0,z-.68,x+.68,.18,z+.68,'metal2');for(let i=0;i<4;i++){const a=i*1.7+x,r=rr(.8,1.4);B(x+Math.cos(a)*r-.12,0,z+Math.sin(a)*r-.1,x+Math.cos(a)*r+.12,.03,z+Math.sin(a)*r+.1,'q7glass',{nosolid:true})}return}
-  MAP.deco.push({k:'drum',x,y:.18,z,r:.6,h:2.3,mat:'q7tankG',rot:0});B(x-.68,0,z-.68,x+.68,.18,z+.68,'metal2');B(x-.68,2.48,z-.68,x+.68,2.68,z+.68,'metal2');B(x-.48,0,z-.48,x+.48,2.6,z+.48,'metalx');LIGHT(x,1.3,z,'#3aff8a',3.2,.55)}
+  MAP.deco.push({k:'drum',x,y:.18,z,r:.6,h:2.3,mat:'q7tankG',rot:0});B(x-.68,0,z-.68,x+.68,.18,z+.68,'metal2');B(x-.68,2.48,z-.68,x+.68,2.68,z+.68,'metal2');B(x-.48,0,z-.48,x+.48,2.6,z+.48,'metalx',{lp:1});LIGHT(x,1.3,z,'#3aff8a',3.2,.55)}// (v7.6: lp lets the glow of the tank out, it lit nothing before)
 function buildEp1(){
   const nz={nosolid:true};
   // ================= zone A: the outer checkpoint (outdoors) =================
@@ -149,7 +149,7 @@ function buildEp1(){
   B(-31.2,0,-24,-30,9.4,-2,'q7fac',{f:{px:'q7lab'}});B(-31.2,0,2,-30,9.4,24,'q7fac',{f:{px:'q7lab'}});B(-31.2,3.4,-2,-30,9.4,2,'q7fac',{f:{px:'q7lab'}});
   for(const z of [-21,-17,-13,-9,-5,6,10,14,18])for(const y of [1.2,5.4]){const lit=hash2(Math.round(z),Math.round(y),7)<.25;B(-31.24,y,z-1.2,-31.2,y+1.6,z+1.2,lit?'winLit':'win',{nosolid:true,glass:1})}
   B(-31.25,3.6,-4,-31.2,4.8,4,'q7sFac',nz);LIGHT(-32.6,4.6,0,'#c8d8ff',8,.6);
-  B(-35,3.3,-3.5,-31.2,3.55,3.5,'metal2');B(-35,0,-3.4,-34.7,3.3,-3.1,'metal2');B(-35,0,3.1,-34.7,3.3,3.4,'metal2');B(-34.9,3.22,-2.8,-32,3.3,2.8,'lampW',nz);LIGHT(-33,3,0,'#dfe8ff',8,.85,{flick:.25});
+  B(-35,3.3,-3.5,-31.2,3.55,3.5,'metal2');B(-35,0,-3.4,-34.7,3.3,-3.1,'metal2');B(-35,0,3.1,-34.7,3.3,3.4,'metal2');for(const x of [-34.5,-32.7])B(x-.15,3.22,-2.6,x+.15,3.3,2.6,'lampW',nz);LIGHT(-33,3,0,'#dfe8ff',8,.85,{flick:.25});// (v7.6: two strips, one 3 x 5.6 m panel glowed white)
   B(-31.2,0,-2,-30.6,3.4,0,'q7glass',{gate:'gA',gs:[0,0,-1.9]});B(-31.2,0,0,-30.6,3.4,2,'q7glass',{gate:'gA',gs:[0,0,1.9]});B(-31.2,-1,-2,-30,0,2,'concf',{ground:1});// (a threshold under every door: nothing falls through an open one)
   // ================= zone B: lobby (1F), security room (1F), server room on the mezzanine (2F) =================
   B(-30,-1,-12,2,0,12,'q7lobF',{ground:1});

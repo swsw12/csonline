@@ -11,6 +11,7 @@
 //                                                                  truck, a parked light plane, floodlight towers; the runway along z -100..-84
 // CHARON (charon.js) flies RT-1's helicopter over the apron; the AA guns are the boss fight's devices.
 Object.assign(MATS,{
+  blk:{t:'blk',s:1,k:'metal'},olive:{t:'olive',s:.8,k:'metal'},// (v7.6: the plane's propeller, two radio sets and the ammo cans were drawn with these, never defined)
   e8apron:{t:'e8apron',s:5,cs:1,k:'stone'},e8snowF:{t:'e6snow',s:4,cs:2,k:'soft'},e8rwy:{t:'e8rwy',s:6,cs:1,k:'stone'},e8lot:{t:'e8lot',s:4,cs:1,k:'stone'},e8plaza:{t:'e8plaza',s:3,cs:1,k:'stone'},
   e8pad:{t:'e8pad',uv:'box',cs:1,k:'stone'},e8paintW:{t:'e8paintW',s:1,k:'stone'},e8paintY:{t:'e8paintY',s:1,k:'stone'},
   e8hangW:{t:'e8hangW',uv:'boxV',s:4,k:'metal'},e8hangI:{t:'e8hangI',uv:'boxV',s:4,k:'metal'},e8hdoor:{t:'e8hdoor',uv:'boxV',s:16.6,k:'metal'},
@@ -18,7 +19,7 @@ Object.assign(MATS,{
   e8console:{t:'e8console',uv:'box',emis:.45,k:'metal'},e8radio:{t:'e8radio',uv:'box',emis:.5,k:'metal'},e8ops:{t:'e8ops',uv:'boxV',s:6,emis:.18,k:'stone'},
   e8floorI:{t:'e8floorI',s:3,k:'stone'},e8counter:{t:'e8counter',uv:'box',emis:.06,k:'wood'},e8board:{t:'e8board',uv:'box',emis:.9,k:'metal'},
   e8crate:{t:'e8crate',uv:'box',k:'wood'},e8gen:{t:'e8gen',uv:'box',emis:.12,k:'metal'},e8panel:{t:'e8panel',uv:'box',emis:.6,k:'metal'},e8aabox:{t:'e8aabox',uv:'box',emis:.25,k:'metal'},
-  e8tank:{t:'e8tank',s:4,k:'metal'},e8plane:{t:'e8plane',uv:'box',k:'metal'},e8planeW:{t:'e8planeW',s:2,k:'metal'},e8heliG:{t:'e8heliG',uv:'box',k:'metal'},
+  e8tank:{t:'e8tank',s:4,k:'metal'},e8plane:{t:'e8plane',uv:'box',k:'metal'},e8planeW:{t:'e8planeW',s:2,k:'metal'},e8heliG:{t:'e8heliG',uv:'box',k:'metal'},e8heliP:{t:'e8heliP',s:2,k:'metal'},
   e8cart:{t:'e8cart',uv:'box',k:'metal'},e8deice:{t:'e8deice',uv:'box',k:'metal'},e8bowser:{t:'e8bowser',uv:'box',k:'metal'},e8grate:{t:'e8grate',s:1,k:'metal'},
   e8lampB:{t:'e8lampB',uv:'box',emis:1.4,k:'metal'},e8lampG:{t:'e8lampG',uv:'box',emis:1.4,k:'metal'},e8seat:{t:'e8seat',s:.8,k:'soft'},e8wsock:{t:'e8wsock',s:1,k:'soft'},
   e8sAir:{t:'e8sAir',uv:'box',emis:.7,k:'metal'},e8sOps:{t:'e8sOps',uv:'box',emis:.5,k:'metal'},e8sTower:{t:'e8sTower',uv:'box',emis:.45,k:'metal'},
@@ -82,10 +83,12 @@ function texE8FloorI(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++)for(l
 function texE8Counter(){const W=256,H=96;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#6a4a32','#7a5a3e',P.n(x,y,12,8181,2));if(y<10)c='#d8dcdc';if(y>H-6)c='#2a2a2a';P.set(x,y,c)}
   P.post=ctx=>{ctx.fillStyle='#e8d8a8';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText('출발 수속 CHECK-IN',W/2,H*.62)}})}
 // the departures board, still lit: every flight cancelled
-function texE8Board(){const W=256,H=128;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++)P.set(x,y,(x+y)%3?'#0a0a08':'#121210');
-  P.post=ctx=>{ctx.fillStyle='#ffb030';ctx.font='bold 12px monospace';ctx.fillText('출발 DEPARTURES',8,16);ctx.font='10px monospace';
-    const R=[['RT-1  06','설령산 레이더','LAST'],['HL1806','한설','결항'],['KA 211','서울','결항'],['KA 214','부산','결항'],['RT-1  02','—','결항']];
-    R.forEach((r,i)=>{ctx.fillStyle=i===0?'#ff6a3a':'#ffb030';ctx.fillText(r[0],8,36+i*18);ctx.fillText(r[1],78,36+i*18);ctx.fillText(r[2],196,36+i*18)});ctx.fillStyle='#ff4a2a';ctx.fillText('ALL FLIGHTS CANCELLED',8,H-6)}})}
+// (v7.6) any width: a wide board is cut into panels, departures and arrivals in turn (mapFitSigns paints it again for its face)
+function texE8Board(W){W=W||256;const H=128,n=Math.max(1,Math.round(W/256)),PW=W/n;const cv=paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++)P.set(x,y,(x+y)%3?'#0a0a08':(x%Math.round(PW)<2&&x>2?'#2a2a24':'#121210'));
+  P.post=ctx=>{for(let k=0;k<n;k++){const X=k*PW,arr=k%2===1;ctx.fillStyle='#ffb030';ctx.font='bold 12px monospace';ctx.fillText(arr?'도착 ARRIVALS':'출발 DEPARTURES',X+8,16);ctx.font='10px monospace';
+    const R=arr?[['RT-1  05','설령산 레이더','결항'],['HL1805','한설','결항'],['KA 210','서울','결항'],['KA 213','부산','결항'],['RT-1  01','—','도착']]:[['RT-1  06','설령산 레이더','LAST'],['HL1806','한설','결항'],['KA 211','서울','결항'],['KA 214','부산','결항'],['RT-1  02','—','결항']];
+    R.forEach((r,i)=>{ctx.fillStyle=i===0&&!arr?'#ff6a3a':'#ffb030';ctx.fillText(r[0],X+8,36+i*18);ctx.fillText(r[1],X+PW*.3,36+i*18);ctx.fillText(r[2],X+PW*.77,36+i*18)});ctx.fillStyle='#ff4a2a';ctx.fillText('ALL FLIGHTS CANCELLED',X+8,H-6)}}});
+  cv._rp=w=>texE8Board(w);return cv}
 function texE8Crate(){const W=128,H=96;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#3e4630','#4a5238',P.n(x,y,10,8191,2));if(x<5||x>W-6||y<5||y>H-6)c='#2a3020';if(Math.abs(x-y*1.33)<3)c='#2e3424';P.set(x,y,c)}
   P.post=ctx=>{ctx.fillStyle='#e0d8a0';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('35MM HE',W/2,H*.45);ctx.font='bold 9px monospace';ctx.fillText('대공 · AA',W/2,H*.62)}})}
 // the generator: yellow cabinet, louvres, gauges, the airfield's ground power
@@ -109,6 +112,8 @@ function texE8PlaneW(){const N=128;return paint(N,N,P=>{for(let y=0;y<N;y++)for(
 // the helicopter under repair in hangar 1: olive panels, the access covers off, RT-1 on its flank
 function texE8HeliG(){const W=256,H=128;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#4a5436','#56603e',P.n(x,y,14,8261,2));if(x%48<2||y%40<2)c='#2e3422';if(x>140&&x<200&&y>30&&y<80)c='#1a1c16';P.set(x,y,c)}
   P.post=ctx=>{ctx.fillStyle='#e8e8e0';ctx.font='bold 22px sans-serif';ctx.fillText('RT-1',24,70);ctx.font='bold 12px sans-serif';ctx.fillText('FERRY 05',24,90)}})}
+// (v7.6) the helicopter's plain olive panels for its roof, skids, boom and fin (they wore the whole side, window and lettering squeezed)
+function texE8HeliP(){const N=128;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){let c=mix('#4a5436','#56603e',P.n(x,y,16,8261,2));if(x%32<2||y%64<2)c='#2e3422';P.set(x,y,c)}})}
 function texE8Cart(){const W=128,H=64;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#3a5a7a','#466888',P.n(x,y,10,8271,2));if(y<6)c='#e0e6ea';if(y>H-8)c='#1a1e22';if(x%32<2)c='#22303e';P.set(x,y,c)}})}
 function texE8Deice(){const W=256,H=128;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=y<H*.5?mix('#d86a1a','#e8782a',P.n(x,y,12,8281,2)):mix('#d8dcdc','#e8eaea',P.n(x,y,12,8282,2));if(y>H*.86)c='#1a1a1a';if(P.n(x,y,20,8283,2)>.7)c=mix(c,'#f0f4f6',.5);P.set(x,y,c)}
   P.post=ctx=>{ctx.fillStyle='#1a1a1a';ctx.font='bold 18px sans-serif';ctx.fillText('DE-ICING 제빙',20,H*.74)}})}
@@ -123,12 +128,13 @@ function texE8Sky(){const W=512,H=256;return paint(W,H,P=>{for(let y=0;y<H;y++)f
   const g=Math.max(0,Math.cos((x/W)*TAU+1.1));if(v>.55)c=mix(c,'#9a6a4e',clamp((v-.55)*2.4,0,1)*Math.pow(g,1.6)*.85);const cl=P.n(x,y*2.4,50,8321,4);if(cl>.48)c=mix(c,v>.6?'#5a5e66':'#323a46',clamp((cl-.48)*1.4,0,.75));
   if(P.n(x*.3,y*3,20,8322,2)>.7)c=mix(c,'#8a929c',.25);P.set(x,y,c)}})}
 function bakeEp8Tex(){if(TEX.e8apron)return;if(typeof bakeEp6Tex==='function')bakeEp6Tex();
+  TEX.blk=mkTex(texMetal('#26282a'));TEX.olive=mkTex(texMetal('#4e5634'));
   TEX.e8apron=mkTex(texE8Apron());TEX.e8rwy=mkTex(texE8Rwy());TEX.e8lot=mkTex(texE8Lot());TEX.e8plaza=mkTex(texE8Plaza());TEX.e8pad=mkTex(texE8Pad(),false);
   TEX.e8paintW=mkTex(texE8PaintW());TEX.e8paintY=mkTex(texE8PaintY());TEX.e8hangW=mkTex(texE8HangW());TEX.e8hangI=mkTex(texE8HangI());TEX.e8hdoor=mkTex(texE8HDoor());
   TEX.e8roofI=mkTex(texE8RoofI());TEX.e8hfloor=mkTex(texE8HFloor());TEX.e8tower=mkTex(texE8Tower());TEX.e8cab=mkTex(texE8Cab());TEX.e8console=mkTex(texE8Console(),false);
   TEX.e8radio=mkTex(texE8Radio(),false);TEX.e8ops=mkTex(texE8Ops());TEX.e8floorI=mkTex(texE8FloorI());TEX.e8counter=mkTex(texE8Counter(),false);TEX.e8board=mkTex(texE8Board(),false);
   TEX.e8crate=mkTex(texE8Crate(),false);TEX.e8gen=mkTex(texE8Gen(),false);TEX.e8panel=mkTex(texE8Panel(),false);TEX.e8aabox=mkTex(texE8AABox(),false);TEX.e8tank=mkTex(texE8Tank());
-  TEX.e8plane=mkTex(texE8Plane(),false);TEX.e8planeW=mkTex(texE8PlaneW());TEX.e8heliG=mkTex(texE8HeliG(),false);TEX.e8cart=mkTex(texE8Cart(),false);TEX.e8deice=mkTex(texE8Deice(),false);
+  TEX.e8plane=mkTex(texE8Plane(),false);TEX.e8planeW=mkTex(texE8PlaneW());TEX.e8heliG=mkTex(texE8HeliG(),false);TEX.e8heliP=mkTex(texE8HeliP());TEX.e8cart=mkTex(texE8Cart(),false);TEX.e8deice=mkTex(texE8Deice(),false);
   TEX.e8bowser=mkTex(texE8Bowser(),false);TEX.e8grate=mkTex(texE8Grate());TEX.e8lampB=mkTex(texE8Lamp('#4a8aff','#1a2a6a')(),false);TEX.e8lampG=mkTex(texE8Lamp('#4aff7a','#1a5a2a')(),false);
   TEX.e8seat=mkTex(texE8Seat());TEX.e8wsock=mkTex(texE8WSock());TEX.e8sky=mkTex(texE8Sky(),false);
   TEX.e8sAir=mkTex(texSign([{t:'설령 비행장'},{t:'SEOLRYEONG AIRFIELD',s:10}],'#1a2a4a','#f0f0e8',288,48),false);
@@ -237,7 +243,7 @@ function buildEp8(){
   B(14,8.4,-6,22,9.4,-5.9,'e8sH1',nz);for(const [x,z] of [[13,-26],[23,-26],[33,-26],[13,-14],[23,-14],[33,-14]])LIGHT(x,10.2,z,'#e0eaff',15,.85);
   // inside: the light plane, the helicopter under repair (no rotors), tool carts, drums, parts racks, the mezzanine office (y 4)
   e8plane(10,-21.4);
-  B(27.6,1.2,-27,30.6,3.4,-18,'e8heliG');B(27.8,.7,-25.6,30.4,1.2,-19.4,'e8heliG');B(28.7,2,-18,29.5,2.8,-12.6,'e8heliG');B(28.9,2.8,-13.4,29.3,4.2,-12.6,'e8heliG');
+  B(27.6,1.2,-27,30.6,3.4,-18,'e8heliG',{f:{py:'e8heliP'}});B(27.8,.7,-25.6,30.4,1.2,-19.4,'e8heliP');B(28.7,2,-18,29.5,2.8,-12.6,'e8heliP');B(28.9,2.8,-13.4,29.3,4.2,-12.6,'e8heliP');
   B(27.6,1.3,-27.6,30.6,3,-27,'carGl',nz);for(const [x,z] of [[27.4,-26],[30.8,-26],[27.4,-19],[30.8,-19]])B(x-.25,0,z-.25,x+.25,1.2,z+.25,'hazard');B(28.6,3.4,-23,29.6,3.9,-21,'metal2');
   for(const [x,z] of [[34,-28],[34.6,-27.4],[36.8,-29.2],[18,-10.4],[18.6,-9.8]])drum(x,z);for(const z of [-28,-24,-20])B(38.2,0,z,39.6,2.6,z+3,'metal');for(const z of [-26.5,-22.5,-18.5])B(38.3,1.3,z,39.5,1.36,z+.6,'e8crate',nz);
   B(16,0,-12,18.4,.95,-10.8,'metal2',{f:{py:'e8grate'}});B(12,0,-28,13.6,1.1,-26.6,'metal2');

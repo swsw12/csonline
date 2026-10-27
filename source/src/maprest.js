@@ -7,7 +7,7 @@
 Object.assign(MATS,{
   rsSnow:{t:'rsSnow',s:3,k:'soft'},rsSnowA:{t:'rsSnowA',s:8,k:'soft'},rsLot:{t:'rsLot',s:3.5,k:'soft'},rsWall:{t:'rsWall',s:3,vo:0,sv:8,k:'stone'},
   rsFacade:{t:'rsFacade',s:2.5,k:'stone'},rsIn:{t:'rsIn',s:2.5,k:'stone'},rsFloor:{t:'rsFloor',s:1.5,k:'stone'},rsCeil:{t:'rsCeil',s:1.2,emis:.12,k:'stone'},
-  rsGlass:{t:'rsGlass',uv:'box',emis:.45,k:'glass'},rsShelf:{t:'rsShelf',s:1.4,k:'metal'},rsFridge:{t:'rsFridge',uv:'box',emis:.7,k:'glass'},
+  rsGlass:{t:'rsGlass',uv:'box',emis:.2,k:'glass'},rsShelf:{t:'rsShelf',s:1.4,k:'metal'},rsFridge:{t:'rsFridge',uv:'box',emis:.7,k:'glass'},
   rsCanopy:{t:'rsCanopy',uv:'boxV',s:3,k:'metal'},rsCanopyU:{t:'rsCanopyU',s:2,emis:1.0,k:'metal'},rsPump:{t:'rsPump',uv:'box',emis:.25,k:'metal'},
   rsSign:{t:'rsSign',uv:'box',emis:1.0,k:'metal'},rsPine:{t:'rsPine',s:2,k:'soft'},rsBark:{t:'rsBark',s:1,k:'wood'},rsBus:{t:'rsBus',uv:'boxV',s:12,k:'metal'},
   rsMark:{t:'rsMark',s:1,k:'soft'},rsMenu:{t:'rsMenu',uv:'box',emis:.6,k:'metal'},rsTable:{t:'rsTable',s:1,k:'wood'},
@@ -53,9 +53,9 @@ function texRsFloor(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++)for(le
 function texRsCeil(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const gx=x%128,gy=y%128;let c=gx<3||gy<3?'#6a6e72':dith(P,x,y,.6+(hash2(x,y,871)-.5)*.1,['#b8bcbe','#c4c8ca','#d0d4d6'],.05);
   if(gx>40&&gx<88&&gy>40&&gy<88)c=gx<44||gx>84||gy<44||gy>84?'#8a8e92':'#f4f8ff';P.set(x,y,c)}})}// tiles with a light panel in every fourth
 // shop window: dark glass, lit store behind it — shelves, a counter, reflections
-function texRsGlass(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){let c=mix('#3a4a5a','#cfe0ec',clamp((y-20)/100,0,1)*.55);
-  if(y>70&&y<118&&(x%40<34)){const row=Math.floor((y-70)/12);c=(y-70)%12<2?'#3a3e44':mix(rpickH(Math.floor(x/5)+row*7,['#c84a3a','#e8c04a','#4a8ac8','#5aa85a','#e8e0d0','#c86ab0']),'#202428',.25)}
-  if(y<6||x<4||x>123||y>123)c='#22262a';if((x+y*.6)%70<6)c=mix(c,'#ffffff',.25);P.set(x,y,c)}
+// v7.6: night glass seen from both sides (it showed a picture of shelves, from inside the store and the food court as well)
+function texRsGlass(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){let c=mix('#1c2430','#46566a',clamp(y/128,0,1)*.7);c=mix(c,'#6a5a40',clamp((y-80)/48,0,1)*.25);
+  if(y<6||x<4||x>123||y>123)c='#22262a';if((x+y*.6)%70<6)c=mix(c,'#ffffff',.18);if((x*.4+y)%97<2)c=mix(c,'#ffffff',.1);P.set(x,y,c)}
   for(let x=0;x<128;x++)if(x%64<3)for(let y=0;y<128;y++)P.set(x,y,'#22262a')})}
 function texRsShelf(){const N=128;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const sh=y%32;let c;
   if(sh<4)c=sh<2?'#c8ccd0':'#7a7e84';else{const i=Math.floor(x/16)+Math.floor(y/32)*17;const w=x%16,top=4+Math.floor(hash2(i,1,895)*12);
@@ -66,12 +66,14 @@ function texRsFridge(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=
 // gas canopy fascia: white panels with a red and a blue band (no brand)
 function texRsCanopy(){const W=512,H=64;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=dith(P,x,y,.6+(hash2(x,y,881)-.5)*.1,['#c8ccd0','#d8dce0','#e8ecf0'],.05);
   if(y>16&&y<30)c='#c83228';else if(y>=30&&y<38)c='#2a4a9a';if(x%128<2)c='#8a8e92';if(y<6)c=mix('#e8eef6','#ffffff',hash2(x,y,882));if(y>H-3)c='#5a5e62';P.set(x,y,c)}})}
-function texRsCanopyU(){const N=128;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const gx=x%64,gy=y%64;let c=gx<2||gy<2?'#6a6e72':'#9a9ea2';
+// (v7.6) the panels between the lamps darker: drawn self-lit, the whole 14 x 12 m underside read as one white sheet
+function texRsCanopyU(){const N=128;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const gx=x%64,gy=y%64;let c=gx<2||gy<2?'#3a3e42':(hash2(x,y,893)<.06?'#54585c':'#4a4e52');
   if(gx>14&&gx<50&&gy>20&&gy<44)c=gx<17||gx>47||gy<23||gy>41?'#c8ccd0':'#ffffff';P.set(x,y,c)}})}
-function texRsPump(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){let c=dith(P,x,y,.6+(hash2(x,y,891)-.5)*.1,['#c8ccd0','#d8dce0','#e4e8ec'],.06);
-  if(y>96)c='#c83228';if(y>10&&y<40&&x>20&&x<108)c=(x>26&&x<102&&y>16&&y<34)?(((x>>2)+(y>>2))%5===0?'#3a5a3a':'#1a2a1a'):'#2a2c30';// display
-  if(y>48&&y<84&&x>30&&x<58)c='#2a2c30';if(y>52&&y<80&&x>34&&x<54&&(x+y)%9<2)c='#4a4e54';// holster
-  if(y>50&&y<62&&x>70&&x<100)c=x%8<5?'#f0e8a0':'#2a2c30';P.set(x,y,c)}})}
+function texRsPump(){const H=272;return paint(128,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<128;x++){let c=dith(P,x,y,.6+(hash2(x,y,891)-.5)*.1,['#c8ccd0','#d8dce0','#e4e8ec'],.06);
+  if(y>H-40)c='#c83228';else if(y>H-48)c='#8a2620';if(y>14&&y<70&&x>18&&x<110)c=(x>24&&x<104&&y>20&&y<62)?(((x>>2)+(y>>2))%5===0?'#3a5a3a':'#1a2a1a'):'#2a2c30';// display
+  if(y>96&&y<170&&x>28&&x<60)c='#2a2c30';if(y>102&&y<164&&x>32&&x<56&&(x+y)%9<2)c='#4a4e54';// holster
+  if(y>98&&y<116&&x>70&&x<102)c=x%8<5?'#f0e8a0':'#2a2c30';if(y>124&&y<150&&x>70&&x<102)c=((x-70)>>3)%2^((y-124)>>3)%2?'#3a3e44':'#5a5e64';// price strip, keypad
+  if(y>190&&y<198)c='#2a6ac8';if(x<3||x>124)c=dk(c,.25);P.set(x,y,c)}})}
 // the rest-stop pylon sign: lit panel, Korean name, REST AREA, fuel and food pictograms
 function texRsSign(){return paint(256,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<256;x++){let c=mix('#123a7a','#1c56a8',y/128);if(x<5||x>250||y<5||y>122)c='#0a1a3a';if(y>88&&y<92)c='#e8eef8';P.set(x,y,c)}
   P.post=x=>{x.fillStyle='#ffffff';x.textAlign='center';x.textBaseline='middle';x.font='bold 40px "Galmuri11","Malgun Gothic","Apple SD Gothic Neo",sans-serif';x.fillText('영동 휴게소',128,48);
@@ -306,7 +308,7 @@ function buildRest(){const N='none',SN='rsSnow',CV={nosolid:true};
   bench(1,33.4,3,33.9);bench(4,33.4,6,33.9);vend(.4,36.1,'nz');vend(1.55,36.1,'nz');
   // ================= the playground: swings, a slide, a seesaw, a snowman =================
   fenceX(20,25.5,32,1);fenceX(27.5,34,32,1);fenceX(20,34,44,1);fenceZ(32,44,20,1);fenceZ(32,44,34,1);
-  for(const x of [21.9,27.9])for(const z of [35.4,36.4])B(x,0,z,x+.2,2.6,z+.2,'rsPlayR');B(21.9,2.5,35.9,28.1,2.65,36.1,'rsPlayR',CV);
+  for(const x of [21.9,27.9]){for(const z of [35.4,36.4])B(x,0,z,x+.2,2.6,z+.2,'rsPlayR');B(x,2.45,35.4,x+.2,2.6,36.6,'rsPlayR',CV)}B(21.9,2.5,35.9,28.1,2.65,36.1,'rsPlayR',CV);// (v7.6: a cap joins each frame's legs, the beam rests on them)
   for(const x of [23.5,26.5]){for(const dx of [-.25,.23])B(x+dx,.56,35.98,x+dx+.02,2.5,36.02,'metal2',CV);B(x-.3,.5,35.8,x+.3,.56,36.2,'rsPlayB',CV)}
   B(30,1.6,37,32,1.8,39,'rsPlayB');for(const [x,z] of [[30,37],[31.85,37],[30,38.85],[31.85,38.85]])B(x,0,z,x+.15,1.6,z+.15,'metal2');
   B(30,1.8,37,32,2.6,37.06,'rsPlayR',CV);B(31.94,1.8,37,32,2.6,39,'rsPlayR',CV);

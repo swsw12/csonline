@@ -50,7 +50,9 @@ vec4 wp=modelMatrix*vec4(position,1.);vPos=wp.xyz;vN=normalize(mat3(modelMatrix)
 const FS_WORLD=GLSL_DYN+`uniform sampler2D map;uniform float uEmis;uniform float uLamp;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
 void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;vec3 n=normalize(vN);vec3 lig=vCol*uAmb+dynLight(vPos,n);
   vec3 c=t.rgb*lig+t.rgb*uEmis*uLamp;gl_FragColor=vec4(applyFog(c,vPos),1.);}`;
-function matWorld(tex,o){o=o||{};return new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uEmis:{value:o.emis||0}},LU),vertexShader:VS_WORLD,fragmentShader:FS_WORLD,vertexColors:o.vc!==false,side:o.side||THREE.FrontSide,transparent:false})}
+// (v7.6) o.dec: a decal face (mapDecals) is pulled forward in depth so it wins over the face it lies on
+function matWorld(tex,o){o=o||{};const m=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uEmis:{value:o.emis||0}},LU),vertexShader:VS_WORLD,fragmentShader:FS_WORLD,vertexColors:o.vc!==false,side:o.side||THREE.FrontSide,transparent:false});
+  if(o.dec){m.polygonOffset=true;m.polygonOffsetFactor=-1;m.polygonOffsetUnits=-4}return m}
 // characters / props: light probe (sampled from the baked light grid) instead of vertex light, hit flash and status tint
 const FS_CHAR=GLSL_DYN+GLSL_BUMP+`uniform sampler2D map;uniform vec3 uProbe;uniform float uFlash;uniform vec4 uTint;uniform float uEmisA;uniform vec2 uTexel;uniform float uBump;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
 void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;vec3 n=normalize(vN);

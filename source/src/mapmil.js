@@ -352,7 +352,7 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   B(13.2,UP,.8,13.45,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(13.45,UP,12.95,23.2,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(22.95,UP,.8,23.2,UP+.9,7.2,BL,{f:{py:'milCurb'}});B(22.95,UP,9.2,23.2,UP+.9,12.95,BL,{f:{py:'milCurb'}});
   for(const [x0,z0,x1,z1] of [[14.6,12.9,16.6,13.25],[19.6,12.9,21.6,13.25],[13.15,5,13.5,7.2],[22.9,10.4,23.25,12.4]])B(x0,UP+.9,z0,x1,UP+1.35,z1,'milBag');
   // v7.4: the stair from the yard up to the roof terrace (top steps by the gap in the east parapet), a rail on its open side
-  stairs('z',23.2,24.5,12.6,7.6,0,UP,12,'milPlank',{f:{px:'milFence',nx:'milFence'}});B(24.42,UP,7.6,24.5,UP+1,9.2,'milRail',{pass:1});
+  stairs('z',23.2,24.5,12.6,7.6,0,UP,12,'milPlank',{f:{px:'milPost',nx:'milPost'}});B(24.42,UP,7.6,24.5,UP+1,9.2,'milRail',{pass:1});
   B(14,2.75,13.2,20.4,3.15,13.5,'milShutter',{f:{ny:'metal2'}});B(16.8,2.95,13.5,17.6,3.1,13.75,'milLampW',{nosolid:true});LIGHT(17.2,2.75,14.3,'#ffe2b0',13,1.05);
   // pickup truck (front to the west)
   {const x0=14.2,x1=18.9,z0=5.3,z1=7.3;B(x0+.1,.4,z0,x1-.1,1.0,z1,'milTruck');B(x0+.7,1.0,z0+.08,x0+2.1,1.72,z1-.08,'milTruck',{f:{nx:'milGlass',pz:'milGlass',nz:'milGlass'}});
@@ -448,7 +448,7 @@ function milEdits(){const CM='milConc';
   B(X0+.9,T+2.3,Z0+.7,X1-.9,T+2.45,Z1-.7,'milPlank');B(X0+1,T+2.45,Z0+.8,X1-1,T+4.6,Z1-.8,'milCorr',{f:{py:'milRoof'}});B(X0+1.3,T+4.6,Z0+1.1,X1-1.3,T+4.95,Z1-1.1,'milRoof');
   const RL={pass:1};B(X1-.06,T,Z0,X1,T+1,Z1,'milRail',RL);B(X0,T,Z0,X1,T+1,Z0+.06,'milRail',RL);B(X0,T,Z1-.06,X1,T+1,Z1,'milRail',RL);
   B(X0,T,Z0,X0+.06,T+1,-4.05,'milRail',RL);B(X0,T,-2.85,X0+.06,T+1,Z1,'milRail',RL);
-  stairs('z',X0-1.3,X0,-.5,-4,0,Y,7,'milPlank',{f:{px:'milFence',nx:'milFence'}});
+  stairs('z',X0-1.3,X0,-.5,-4,0,Y,7,'milPlank',{f:{px:'milPost',nx:'milPost'}});
   B(X0+2.3,T+2.1,Z0+1.8,X0+2.7,T+2.3,Z0+2.2,'milLampW',{nosolid:true});LIGHT(X0+2.5,T+1.8,Z0+2,'#fff0d4',10,.85);
   MAP.camps.push({k:'tower',w:.12,p:[[X1-.5,T,Z0+.5],[X1-.5,T,Z1-.5],[X0+.5,T,Z1-.5],[X0+2.5,T,Z0+2]],look:[24,1,8]})}
 // ---------- v7.4: the barn on the west plateau, where the humans start (coordinates of MIL_DATA, before the mirror) ----------
@@ -467,7 +467,7 @@ function milBarn(){const X0=-38,X1=-31.5,Z0=-14,Z1=-4,EV=5.2,LF=3.2,BR='milBarn'
   // the hayloft, its edge rail (a gap where the stair arrives), the stair along the west wall
   B(X0+.2,LF-.2,Z0+.2,X1-.2,LF,-9,'milPlank');
   B(X0+1.4,LF,-9.06,X1-.2,LF+1,-9,'milRail',{pass:1});
-  stairs('z',X0+.2,X0+1.4,-5,-9,.1,LF,11,'milPlank',{f:{px:'milFence'}});
+  stairs('z',X0+.2,X0+1.4,-5,-9,.1,LF,11,'milPlank',{f:{px:'milPost'}});
   // hay: a stack on the floor, two bales in the loft, one outside by the door
   B(-33.4,.1,-13.6,-32,.9,-12.2,'milHay');B(-33.2,.9,-13.4,-32.1,1.7,-12.4,'milHay');B(-33.2,.1,-5.8,-31.8,.9,-4.4,'milHay');
   B(-37.6,LF,-13.7,-36.2,LF+.8,-12.3,'milHay');B(-35.8,LF,-13.7,-34.4,LF+.8,-12.3,'milHay');B(-31,0,-12.8,-29.8,.8,-11.6,'milHay');

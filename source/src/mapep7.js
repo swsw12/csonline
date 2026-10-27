@@ -13,12 +13,12 @@
 Object.assign(MATS,{
   e7pave:{t:'e7pave',s:3,k:'stone'},e7stone:{t:'e7stone',s:2,k:'stone'},e7bronze:{t:'e7bronze',s:1,k:'metal'},e7fac:{t:'e7fac',s:4,k:'stone'},e7glass:{t:'e7glass',s:4,emis:.32,k:'glass'},
   e7door:{t:'e7door',uv:'box',emis:.22,k:'glass'},e7canU:{t:'e7canU',s:2,emis:.25,k:'metal'},e7shop:{t:'e7shop',uv:'boxV',s:8,k:'metal'},e7bus:{t:'e7bus',uv:'box',k:'metal'},e7busF:{t:'e7busF',uv:'box',k:'metal'},
-  e7amb:{t:'e7amb',uv:'box',k:'metal'},e7ambF:{t:'e7ambF',uv:'box',k:'metal'},e7tent:{t:'e7tent',s:2,k:'soft'},e7horn:{t:'e7horn',uv:'box',k:'metal'},e7banner:{t:'e7banner',uv:'box',emis:.12,k:'soft'},
+  e7amb:{t:'e7amb',uv:'box',k:'metal'},e7ambF:{t:'e7ambF',uv:'box',k:'metal'},e7ambC:{t:'e7ambC',uv:'box',k:'metal'},e7ambR:{t:'e7ambR',s:2,k:'metal'},e7tent:{t:'e7tent',s:2,k:'soft'},e7horn:{t:'e7horn',uv:'box',k:'metal'},e7banner:{t:'e7banner',uv:'box',emis:.12,k:'soft'},
   e7marble:{t:'e7marble',s:4,k:'stone'},e7wood:{t:'e7wood',s:2,k:'wood'},e7ceil:{t:'e7ceil',s:4,emis:.06,k:'stone'},e7ceil2:{t:'e7ceil2',s:4,k:'stone'},e7stair:{t:'e7stair',uv:'box',k:'soft'},e7rail:{t:'e7rail',s:1,k:'metal'},
   e7gRail:{t:'e7gRail',uv:'box',k:'glass'},e7box:{t:'e7box',uv:'box',emis:.2,k:'wood'},e7cafe:{t:'e7cafe',uv:'box',emis:.12,k:'wood'},e7relief:{t:'e7relief',uv:'box',k:'soft'},e7wrap:{t:'e7wrap',uv:'box',k:'soft'},
   e7blank:{t:'e7blank',s:1.2,k:'soft'},e7poster:{t:'e7poster',uv:'box',emis:.12,k:'soft'},e7hdoor:{t:'e7hdoor',uv:'box',k:'wood'},e7fdoor:{t:'e7fdoor',uv:'box',k:'metal'},
   e7bwall:{t:'e7bwall',s:3,k:'stone'},e7bfloor:{t:'e7bfloor',s:3,k:'wood'},e7flat:{t:'e7flat',uv:'box',k:'wood'},e7case:{t:'e7case',uv:'box',k:'metal'},e7rack:{t:'e7rack',uv:'box',emis:.35,k:'metal'},
-  e7mirror:{t:'e7mirror',uv:'box',emis:.55,k:'glass'},e7cost:{t:'e7cost',s:1,k:'soft'},e7hwall:{t:'e7hwall',s:3,k:'soft'},e7hfloor:{t:'e7hfloor',s:4,k:'wood'},e7carpet:{t:'e7carpet',s:2,k:'soft'},
+  e7mirror:{t:'e7mirror',uv:'box',emis:.55,k:'glass',edge:'metal2'},e7cost:{t:'e7cost',s:1,k:'soft'},e7hwall:{t:'e7hwall',s:3,k:'soft'},e7hfloor:{t:'e7hfloor',s:4,k:'wood'},e7carpet:{t:'e7carpet',s:2,k:'soft'},
   e7seat:{t:'e7seat',s:.6,sv:.85,vo:1.2,k:'soft'},e7gold:{t:'e7gold',s:1,emis:.06,k:'metal'},e7balc:{t:'e7balc',uv:'boxV',s:3,k:'wood'},e7pros:{t:'e7pros',s:3,k:'stone'},e7hceil:{t:'e7hceil',s:6,emis:.04,k:'stone'},
   e7stage:{t:'e7stage',s:4,k:'wood'},e7apron:{t:'e7apron',uv:'boxV',s:4,k:'wood'},e7curt:{t:'e7curt',uv:'boxV',s:3,k:'soft'},e7curtV:{t:'e7curtV',uv:'boxV',s:3,k:'soft'},e7legs:{t:'e7legs',s:2,k:'soft'},
   e7spk:{t:'e7spk',uv:'box',emis:.06,k:'metal'},e7pbox:{t:'e7pbox',uv:'box',emis:.3,k:'metal'},e7winch:{t:'e7winch',uv:'box',emis:.22,k:'metal'},e7cyc:{t:'e7cyc',uv:'box',emis:.45,k:'soft'},
@@ -68,12 +68,19 @@ function texE7BusF(){const W=256,H=192;return paint(W,H,P=>{for(let y=0;y<H;y++)
   if(y>124&&y<140&&(x<46&&x>16||x>210&&x<240))c='#f0e8c8';P.set(x,y,c)}
   P.post=ctx=>{ctx.fillStyle='#ff9a1a';ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.fillText('703 대피 차량',W/2,27)}})}
 // an ambulance: white, an orange band and its word
-function texE7Amb(){const W=512,H=160;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#eef0ee','#d8dcda',P.n(x,y,40,7111,3));
-  if(y>70&&y<92)c='#e86a1a';else if(y>92&&y<98)c='#2a5aa8';else if(y>H-16)c='#1c1c1c';if(y>24&&y<62&&x>40&&x<120)c=mix('#141c22','#24323c',P.n(x,y,12,7112,2));if(hash2(x,y,7113)<.02)c=dk(c,.1);P.set(x,y,c)}
-  P.post=ctx=>{ctx.fillStyle='#2a5aa8';ctx.font='bold 26px sans-serif';ctx.textAlign='center';ctx.fillText('구 급',W*.62,58);ctx.font='bold 12px sans-serif';ctx.fillText('EMERGENCY',W*.62,130)}})}
+function texE7Amb(){const W=512,H=280;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#eef0ee','#d8dcda',P.n(x,y,40,7111,3));
+  if(y>122&&y<161)c='#e86a1a';else if(y>161&&y<171)c='#2a5aa8';else if(y>H-28)c='#1c1c1c';if(y>40&&y<106&&x>40&&x<124)c=mix('#141c22','#24323c',P.n(x,y,12,7112,2));
+  if((x===300||x===420)&&y>30&&y<H-28)c=dk(c,.3);if(hash2(x,y,7113)<.02)c=dk(c,.1);P.set(x,y,c)}
+  P.post=ctx=>{ctx.fillStyle='#2a5aa8';ctx.font='bold 40px sans-serif';ctx.textAlign='center';ctx.fillText('구 급',W*.62,98);ctx.font='bold 18px sans-serif';ctx.fillText('EMERGENCY',W*.62,226)}})}
 function texE7AmbF(){const W=256,H=192;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#eef0ee','#d8dcda',P.n(x,y,30,7121,2));
   if(y>20&&y<84&&x>16&&x<240)c=mix('#121a20','#24343e',P.n(x,y,14,7122,2));else if(y>104&&y<118)c='#e86a1a';else if(y>H-20)c='#202020';if(y>124&&y<140&&(x<50&&x>18||x>206&&x<238))c='#f0e8c8';P.set(x,y,c)}
   P.post=ctx=>{ctx.fillStyle='#e82a1a';ctx.fillRect(W/2-40,4,80,12);ctx.fillStyle='#2a5aa8';ctx.fillRect(W/2-40,4,26,12);ctx.fillRect(W/2+14,4,26,12)}})}
+// (v7.6) the cab's sides (a door with its window, the stripes, the sill) and the plain white roof: the side picture squeezed onto the
+// 1.6 m cab, and the livery on the roof, read as noise
+function texE7AmbC(){const W=192,H=192;return paint(W,H,P=>{for(let y=0;y<H;y++)for(let x=0;x<W;x++){let c=mix('#eef0ee','#d8dcda',P.n(x,y,48,7141,3));
+  if(y>104&&y<128)c='#e86a1a';else if(y>128&&y<135)c='#2a5aa8';else if(y>H-20)c='#1c1c1c';if(y>22&&y<84&&x>26&&x<W-26)c=mix('#141c22','#24323c',P.n(x,y,12,7142,2));
+  if((x===16||x===W-17)&&y>12&&y<H-20)c=dk(c,.35);if(y>92&&y<97&&x>W-58&&x<W-30)c='#3a3e40';if(hash2(x,y,7143)<.02)c=dk(c,.1);P.set(x,y,c)}})}
+function texE7AmbR(){const N=64;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){let c=mix('#e4e6e4','#d0d4d2',P.n(x,y,16,7151,2));if(hash2(x,y,7152)<.03)c=dk(c,.08);P.set(x,y,c)}})}
 // a relief tent's canvas: white, a blue roof band
 function texE7Tent(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const w=((x>>1)+(y>>1))&1;let c=dith(P,x,y,.5+(P.n(x,y,40,7131,3)-.5)*.4+(w?.03:-.03),['#a8aca8','#b8bcb8','#c8ccc8','#d6dad6'],.08);
   if(y%128<18)c=mix(c,'#2a5a9a',.85);if(x%128<3)c=dk(c,.25);P.set(x,y,c)}for(let i=0;i<8;i++)stain(P,hash2(i,1,7132)*N,hash2(i,2,7132)*N,8,6,.18,7133+i)})}
@@ -203,7 +210,7 @@ function texE7Fir(){const N=128;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let
 function bakeEp7Tex(){if(TEX.e7pave)return;if(typeof bakeEp6Tex==='function')bakeEp6Tex();
   TEX.e7pave=mkTex(texE7Pave());TEX.e7stone=mkTex(texE7Stone());TEX.e7bronze=mkTex(texE7Bronze());TEX.e7ice=mkTex(texE7Ice());TEX.e7fac=mkTex(texE7Fac());TEX.e7glass=mkTex(texE7Glass());
   TEX.e7door=mkTex(texE7Door(),false);TEX.e7canU=mkTex(texE7CanU());TEX.e7shop=mkTex(texE7Shop());TEX.e7bus=mkTex(texE7Bus(),false);TEX.e7busF=mkTex(texE7BusF(),false);
-  TEX.e7amb=mkTex(texE7Amb(),false);TEX.e7ambF=mkTex(texE7AmbF(),false);TEX.e7tent=mkTex(texE7Tent());TEX.e7horn=mkTex(texE7Horn(),false);TEX.e7banner=mkTex(texE7Banner(),false);
+  TEX.e7amb=mkTex(texE7Amb(),false);TEX.e7ambF=mkTex(texE7AmbF(),false);TEX.e7ambC=mkTex(texE7AmbC(),false);TEX.e7ambR=mkTex(texE7AmbR());TEX.e7tent=mkTex(texE7Tent());TEX.e7horn=mkTex(texE7Horn(),false);TEX.e7banner=mkTex(texE7Banner(),false);
   TEX.e7marble=mkTex(texE7Marble());TEX.e7wood=mkTex(texE7Wood());TEX.e7ceil=mkTex(texE7Ceil());TEX.e7ceil2=mkTex(texE7Ceil2());TEX.e7stair=mkTex(texE7Stair(),false);TEX.e7rail=mkTex(texE7Rail());
   TEX.e7gRail=mkTex(texE7GRail(),false);TEX.e7box=mkTex(texE7Box(),false);TEX.e7cafe=mkTex(texE7Cafe(),false);TEX.e7relief=mkTex(texE7Relief(),false);TEX.e7wrap=mkTex(texE7Wrap(),false);
   TEX.e7blank=mkTex(texE7Blank());TEX.e7poster=mkTex(texE7Poster(),false);TEX.e7hdoor=mkTex(texE7HDoor(),false);TEX.e7fdoor=mkTex(texE7FDoor(),false);TEX.e7bwall=mkTex(texE7BWall());
@@ -237,7 +244,7 @@ function e7bus(x0,z0,ax){const L=11,W=2.5,LB=(a0,a1,c0,c1,y0,y1,m,oo)=>ax==='x'?
   const ends=ax==='x'?{px:'e7busF',nx:'e7busF'}:{pz:'e7busF',nz:'e7busF'};LB(.1,L-.1,0,W,.45,3.1,'e7bus',{f:ends});LB(.2,L-.2,.05,W-.05,3.1,3.22,'e6snowC',E7NZ);
   for(const a of [1.2,2.3,L-1.8])for(const c of [-.05,W-.3])LB(a,a+.9,c,c+.35,0,.95,'tire')}
 // an ambulance (a box van, 6 × 2.2 m) along z, its cab at the low end
-function e7amb(x,z0){const W=2.2,L=6.2;B(x-W/2,.4,z0+1.6,x+W/2,2.9,z0+L,'e7amb',{f:{pz:'e7ambF'}});B(x-W/2,.4,z0,x+W/2,2.1,z0+1.6,'e7amb',{f:{nz:'e7ambF'}});
+function e7amb(x,z0){const W=2.2,L=6.2;B(x-W/2,.4,z0+1.6,x+W/2,2.9,z0+L,'e7amb',{f:{pz:'e7ambF',nz:'e7ambR',py:'e7ambR'}});B(x-W/2,.4,z0,x+W/2,2.1,z0+1.6,'e7amb',{f:{nz:'e7ambF',px:'e7ambC',nx:'e7ambC',py:'e7ambR'}});
   B(x-W/2+.1,2.1,z0+.2,x+W/2-.1,2.16,z0+1.5,'e6snowC',E7NZ);B(x-W/2+.1,2.9,z0+1.7,x+W/2-.1,3,z0+L-.1,'e6snowC',E7NZ);B(x-.5,2.9,z0+1.7,x+.5,3.05,z0+2.1,'lampR',E7NZ);
   for(const z of [z0+.7,z0+L-1.2])for(const sd of [-1,1])B(sd<0?x-W/2-.02:x+W/2-.3,0,z,sd<0?x-W/2+.3:x+W/2+.02,.8,z+.75,'tire')}
 // a pole with two loudspeaker horns (the shelter's broadcast) and a work lamp
@@ -304,8 +311,8 @@ function buildEp7(){
   B(-3,2.6,6,3,3.3,6.06,'e7sHall',nz);B(-1.2,0,7.4,1.2,.78,8.6,'wood');B(-.9,.78,7.6,-.5,.9,8,'metal2',nz);B(.05,.78,7.8,.08,1.3,7.83,'metal2',nz);B(-.03,1.3,7.74,.14,1.42,7.9,'metal',nz);
   B(-6,2.4,6,-3.5,2.9,6.06,'e7sCheck',nz);
   // the box office (west), the café turned into a soup kitchen (east)
-  B(-26,0,22,-22.6,1.15,32,'e7box',{f:{px:'e7box'}});B(-23.4,1.15,22,-23.2,2.6,32,'win',{pass:1});B(-26,2.6,21.8,-22.4,3.4,32.2,'e7wood');B(-22.42,2.7,24,-22.38,3.3,30,'e7sBox',nz);
-  B(21.6,0,21,23,1.1,31,'e7cafe');B(25.4,0,21,26,2.4,31,'wood');B(25.38,2.5,23,25.42,3.4,29,'e7sCafe',nz);for(const z of [22,24.5,27,29.5])B(22,1.1,z,22.6,1.32,z+.6,'metal2',nz);
+  B(-26,0,22,-22.6,1.15,32,'e7wood',{f:{px:'e7box'}});B(-23.4,1.15,22,-23.2,2.6,32,'win',{pass:1});B(-26,2.6,21.8,-22.4,3.4,32.2,'e7wood');B(-22.42,2.7,24,-22.38,3.3,30,'e7sBox',nz);
+  B(21.6,0,21,23,1.1,31,'e7wood',{f:{nx:'e7cafe'}});B(25.4,0,21,26,2.4,31,'wood');B(25.38,2.5,23,25.42,3.4,29,'e7sCafe',nz);for(const z of [22,24.5,27,29.5])B(22,1.1,z,22.6,1.32,z+.6,'metal2',nz);
   for(const [x,z] of [[16.6,33.4],[17.4,30.2],[16.6,36.6]])B(x-.45,0,z-.45,x+.45,.76,z+.45,'wood');
   // the shelter: cots in rows, blankets, the relief stores along the east wall, a field kitchen, a decorated tree by the doors
   for(const xs of [[-14.6,-12.8,-11,-9.2,-7.4],[7.4,9.2,11,12.8,14.6]])for(const z of [17.6,20.6,31.8,34.8])for(const x of xs)e7cot(x,z,'z');

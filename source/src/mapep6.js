@@ -193,7 +193,7 @@ function buildEp6(){
   // the way onto the bridge: walls either side, RT-1's road blockers across it (gate gA: they sink into the road)
   B(-27,0,40,-14.5,3.4,40.6,'e6wall');B(14.5,0,40,27,3.4,40.6,'e6wall');
   B(-14.5,0,40.05,0,1.4,40.55,'e6gate',{gate:'gA',gs:[0,-1.45,0]});B(0,0,40.05,14.5,1.4,40.55,'e6gate',{gate:'gA',gs:[0,-1.45,0]});
-  B(-14.5,1.4,40.28,14.5,3.2,40.32,'fence',{pass:1,gate:'gA',gs:[0,-3.3,0]});B(-8,3.45,40.6,8,4.25,40.64,'e6sRT',nz);B(-8.4,3.4,40,8.4,3.45,40.6,'metal2',nz);
+  B(-14.5,1.4,40.28,14.5,3.2,40.32,'fence',{pass:1,gate:'gA',gs:[0,-3.3,0]});B(-8,3.45,40.6,8,4.25,40.64,'e6sRT',nz);B(-8.4,3.4,40,8.4,3.45,40.6,'metal2',nz);B(-14.5,3.22,40.1,14.5,3.4,40.5,'metal2',nz);// (v7.6: the beam under it, wall to wall)
   // ================= the bridge: zones B and C =================
   B(-14.5,-2.6,-62,14.5,0,40.6,'e6deck',{ground:1});e6edge(-1,-62,40);e6edge(1,-62,40);
   // under the deck: four box girders, the piers (seen over the fence; nobody gets down there)

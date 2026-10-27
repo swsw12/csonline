@@ -306,7 +306,7 @@ function buildSubway(){const N='none',GL={pass:1};
   MAP.dyn.push([-7,9.5,-9,'#eef3ff',8,.5,.6]);
   // ================= B1: ticket hall (east): paid side, gate line, unpaid side with ticket machines, a shuttered shop and exit 1 =================
   slab(10.6,-10.6,26.6,10.6,-1.1,5.5,'tileW',[[10.6,-10.6,14,-2]],{f:{py:'granite2',ny:N}});
-  wallX(10.6,26.6,-10.6,-10,5.5,9.5,'tileW',[],{f:{nz:N}});wallX(10.6,26.6,10,10.6,5.5,9.5,'tileW',[],{f:{pz:N}});wallZ(26,26.6,-10,10,5.5,9.5,'tileW',[[-4,0,5.5,8.6]],{f:{px:N}});
+  wallX(10.6,26.6,-10.6,-10,5.5,9.5,'tileW',[],{f:{nz:N}});wallX(10.6,26.6,10,10.6,5.5,9.5,'tileW',[],{f:{pz:N}});wallZ(26,26.6,-10,10,5.5,9.5,'tileW',[[-4,0,5.5,8.6]],{f:{px:N}});B(26.6,8.6,-4,26.61,9.5,0,'tileW',{nosolid:true});// (v7.6: the lintel's face toward the exit)
   B(10.6,9.5,-10.6,26.6,10.1,10.6,'conc',{f:{ny:'ceil',py:N}});
   rail(14,-10,14.06,-2);
   for(let k=-9;k<=9;k+=2)B(17,5.5,k-.2,18.4,6.55,k+.2,'gate',{f:{py:'metal2'}});
@@ -328,10 +328,11 @@ function buildSubway(){const N='none',GL={pass:1};
   for(const [x,z] of [[-16.5,-6],[-16.5,0],[-17,6]]){B(x-.7,8.94,z-.25,x+.7,9,z+.25,'lampW',{nosolid:true});LIGHT(x,8.6,z,'#e8f0ff',8,z===0?.35:.7)}
   MAP.dyn.push([-16.5,8.55,0,'#e8f0ff',7,.5,.65]);
   // ================= emergency stairwells: track level -> B1 =================
-  B(-14,-2.1,16,-10.6,-1.1,18,'conc',{ground:1});stairs('z',-14,-10.6,16,2,-1.1,5.5,22,'conc',{f:{px:'tileW',nx:'tileW'}});
+  B(-14,-2.1,16,-10.6,-1.1,18,'conc',{ground:1});B(-10.6,-2.1,16,-10,-1.1,18,'conc',{ground:1});stairs('z',-14,-10.6,16,2,-1.1,5.5,22,'conc',{f:{px:'tileW',nx:'tileW'}});
   B(-14.6,-1.1,10,-14,5.5,18.6,'tileW',{f:{nx:N}});B(-14,-1.1,18,-10.6,5.5,18.6,'tileW',{f:{pz:N}});B(-14.6,4.2,10,-10.6,5.5,18.6,'conc',{f:{py:N}});
   B(-12.9,4.12,13.8,-11.7,4.2,14.2,'lampW',{nosolid:true});LIGHT(-12.3,3.7,14,'#d8e4ff',6.5,.55);
-  B(10.6,-2.1,-18,14,-1.1,-16,'conc',{ground:1});stairs('z',10.6,14,-16,-2,-1.1,5.5,22,'conc',{f:{px:'tileW',nx:'tileW'}});
+  B(10.6,-2.1,-18,14,-1.1,-16,'conc',{ground:1});B(10,-2.1,-18,10.6,-1.1,-16,'conc',{ground:1});// (v7.6: the floor under the stairwells' doorways from the track — a slot down to nothing before)
+  stairs('z',10.6,14,-16,-2,-1.1,5.5,22,'conc',{f:{px:'tileW',nx:'tileW'}});
   B(14,-1.1,-18.6,14.6,5.5,-10,'tileW',{f:{px:N}});B(10.6,-1.1,-18.6,14,5.5,-18,'tileW',{f:{nz:N}});B(10.6,4.2,-18.6,14.6,5.5,-10,'conc',{f:{py:N}});
   B(11.7,4.12,-14.2,12.9,4.2,-13.8,'lampW',{nosolid:true});LIGHT(12.3,3.7,-14,'#d8e4ff',6.5,.55);
   // ================= spawns, camps, title camera =================

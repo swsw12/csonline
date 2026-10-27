@@ -520,7 +520,7 @@ function buildApt(){const CV={nosolid:true},SH=3.6,F2=3.6,F3=7.2,CL=3.3;
   // an autumn afternoon: the sun low in the south-west, warm; the blocks' shadows fall to the north-east, out of the garden
   MAP.moon={d:new THREE.Vector3(-.487,.53,.695).normalize(),c:new THREE.Color('#ffe0b0'),i:1.2};
   MAP.cam=(t,cam)=>{const a=Math.sin(t*.04);cam.position.set(16+a*6,9+Math.sin(t*.05)*.6,26);cam.lookAt(-4+a*3,6,-18)}}
-MAPDEFS.apt={n:['은행나무 아파트','Ginkgo Apartments'],d:['주민이 모두 대피한 가을 오후의 복도식 아파트 단지. 101동 2·3층 복도와 뚫린 세대, 상가 2층 태권도장과 옥상, 놀이터 정글짐, 등나무 쉼터, 경로당, 그리고 정원 밑 지하주차장(경사로·유리 계단실·로비 계단). 좀비는 격리선이 쳐진 바깥 도로와 지하에서 온다.',
+MAPDEFS.apt={gside:'apConc',n:['은행나무 아파트','Ginkgo Apartments'],d:['주민이 모두 대피한 가을 오후의 복도식 아파트 단지. 101동 2·3층 복도와 뚫린 세대, 상가 2층 태권도장과 옥상, 놀이터 정글짐, 등나무 쉼터, 경로당, 그리고 정원 밑 지하주차장(경사로·유리 계단실·로비 계단). 좀비는 격리선이 쳐진 바깥 도로와 지하에서 온다.',
     'An apartment complex on an autumn afternoon, emptied by the evacuation: the open corridors of block 101 (2F and 3F) and the flats broken into, the taekwondo studio over the arcade and its roof, the play tower, the wisteria pergola, the senior centre, and the car park under the garden (the ramp, the glass kiosk, the lobby stair). The zombies come from the outer roads behind the quarantine line and from below.'],
   env:{sky:1,sun:1,skyTex:'apSky',halo:'#ffd8a0',rain:0,storm:0,fog:'#c8c0ac',fogD:.009,bloomThr:.88,ambOut:'#7a705e',ambIn:'#3a3630',boAmb:.55},
   bounds:[-42,-42,42,40],probeY:[-2.7,-1.2,.9,2.4,4.5,6.2,8.1,9.8],mini:[-1.5,3.0,6.6],miniName:['B1','1F','2F','3F'],tex:bakeAptTex,build:buildApt};

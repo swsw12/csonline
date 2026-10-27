@@ -120,9 +120,9 @@ function e9pine(x,z,y,s,solid){E9PINES.push([x,y,z,s||1]);if(solid)B(x-.22,y,z-.
 function e9reel(x,z,y,r){MAP.deco.push({k:'drum',x,y,z,r:r||.8,h:1.1,mat:'wood',rot:hash2(Math.round(x*10),Math.round(z*10),9)*TAU});B(x-(r||.8)*.75,y,z-(r||.8)*.75,x+(r||.8)*.75,y+1.1,z+(r||.8)*.75,'metalx')}
 // the gondola's dock: the platform edges either side of the car (yellow lines), the guide rail its hanger runs on from the portal to the
 // bull wheel at the back of the hall (the rope turns round it; it hangs from the roof on its shaft)
-function e9dock(cz,y,back,front){B(-3.2,y,cz-2.3,-2.05,y+.25,cz+2.3,'e9hallF');B(2.05,y,cz-2.3,3.2,y+.25,cz+2.3,'e9hallF');
+function e9dock(cz,y,back,front,rf){B(-3.2,y,cz-2.3,-2.05,y+.25,cz+2.3,'e9hallF');B(2.05,y,cz-2.3,3.2,y+.25,cz+2.3,'e9hallF');
   for(const sx of [-2.1,2.1])B(sx-.06,y+.25,cz-2.3,sx+.06,y+.33,cz+2.3,'hazard',E9NZ);
-  B(-.12,y+4.55,Math.min(back,front),.12,y+4.75,Math.max(back,front),'metal2',E9NZ);B(-2.4,y+4.2,back-2.4,2.4,y+4.5,back+2.4,'e9wheel',E9NZ);B(-.3,y+4.5,back-.3,.3,y+7.5,back+.3,'metal2',E9NZ)}
+  B(-.12,y+4.55,Math.min(back,front),.12,y+4.75,Math.max(back,front),'metal2',E9NZ);B(-2.4,y+4.2,back-2.4,2.4,y+4.5,back+2.4,'e9wheel',E9NZ);B(-.3,y+4.5,back-.3,.3,y+(rf||7.5),back+.3,'metal2',E9NZ)}// (rf: the height of the hall roof, v7.6: 8 at the summit)
 // the gondola car's own boxes where it stands at a dock (daedalus.js draws the car and moves a copy of these up the cable): the floor, the
 // roof, the end walls and the sides with a door each (the window band lets shots and sight through) — invisible here. ft: the floor's top
 function e9carBoxes(cz,ft,add){const P={pass:1},bx=(x0,y0,z0,x1,y1,z1,o)=>add(x0,ft+y0,cz+z0,x1,ft+y1,cz+z1,o||{});
@@ -179,7 +179,7 @@ function buildEp9(){
   wallX(-10.4,10.4,64,64.4,Y,Y+8,'e9hall',[[-4,4,Y,Y+8]]);B(-4,Y,64.2,4,Y+8,64.4,'none',{pass:1});
   wallZ(-10.4,-10,48,64,Y,Y+8,'e9hall',[[51,61,Y+3.6,Y+6.4]]);wallZ(10,10.4,48,64,Y,Y+8,'e9hall',[[51,61,Y+3.6,Y+6.4]]);B(-10.3,Y+3.6,51,-10.1,Y+6.4,61,'winLit',nz);B(10.1,Y+3.6,51,10.3,Y+6.4,61,'winLit',nz);
   B(-10.6,Y+8,47.4,10.6,Y+8.6,64.6,'roof');B(-10.5,Y+8.6,47.5,10.5,Y+8.72,64.5,'e6snowC',nz);
-  e9dock(56,Y,51,64);e9carBoxes(56,Y+.25,(x0,y0,z0,x1,y1,z1,o)=>B(x0,y0,z0,x1,y1,z1,'none',o));
+  e9dock(56,Y,51,64,8);e9carBoxes(56,Y+.25,(x0,y0,z0,x1,y1,z1,o)=>B(x0,y0,z0,x1,y1,z1,'none',o));
   // the hall stands out over the slope: the rock face under it
   B(-14,Y-12,60,14,Y-1,64.4,'e9rock');
   for(const x of [-6,-4.2,4.2,6])B(x-.15,Y,52-.3,x+.15,Y+1,52+.3,'e9turn');B(-8.6,Y,51.9,-6.4,Y+1,52.1,'metal2');B(6.4,Y,51.9,8.6,Y+1,52.1,'metal2');
@@ -237,7 +237,7 @@ function buildEp9(){
   e9railX(-9,9,-65,Y+8);e9railX(-9,9,-47,Y+8);e9railZ(-65,-58.6,-9,Y+8);e9railZ(-55.8,-47,-9,Y+8);e9railZ(-65,-58.6,9,Y+8);e9railZ(-55.8,-47,9,Y+8);
   B(-6,Y+8.03,-62,6,Y+16,-50,'none');B(-4.4,Y+16,-60.4,4.4,Y+18.2,-51.6,'none');
   stairs('z',-11.2,-9.2,-42,-55.8,Y,Y+8,16,'conc');stairs('z',9.2,11.2,-42,-55.8,Y,Y+8,16,'conc');B(-11.2,Y+7.6,-58.6,-9,Y+8,-55.8,'e8grate');B(9,Y+7.6,-58.6,11.2,Y+8,-55.8,'e8grate');
-  for(const [x,z] of [[-6,-44.6],[6,-44.6],[-6,-67.4],[6,-67.4]])LIGHT(x,Y+.7,z,'#dfe6f4',13,.55);LIGHT(0,Y+9,-56,'#c8d4f0',12,.5);
+  for(const [x,z] of [[-6,-44.6],[6,-44.6],[-6,-67.4],[6,-67.4]])LIGHT(x,Y+.7,z,'#dfe6f4',13,.55);LIGHT(0,Y+9.6,-48.4,'#c8d4f0',12,.5);// (v7.6: over the catwalk's south side, it was inside the dome's collision box and lit nothing)
   B(-.4,Y,-48.8,.4,Y+1.4,-48.4,'e9sw');B(-1.8,Y+2.2,-48.98,1.8,Y+3,-48.94,'e9sDanger',sg);
   // the helipad (west: FERRY 06's own), the antenna mast (east: a platform at 46), the sheds, RT1-04's workshop by the west one
   for(const [x,z] of [[-36,-48],[-20,-48],[-36,-32],[-20,-32]])B(x-.15,Y,z-.15,x+.15,Y+.4,z+.15,'lampR',nz);

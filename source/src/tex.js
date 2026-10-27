@@ -14,7 +14,16 @@ function paint(w,h,fn){const [c,x]=mkCanvas(w,h);const id=x.createImageData(w,h)
     n(px,py,cell,seed,oct){return fbm(px/cell,py/cell,seed,oct||3,w/cell)},// periodic fbm
     ramp(cols,t){return cols[clamp(Math.floor(t*cols.length),0,cols.length-1)]},
     ctx:x,canvas:c};
-  fn(P);x.putImageData(id,0,0);if(P.post)P.post(x);return c}
+  fn(P);x.putImageData(id,0,0);if(P.post){txtFit(x);P.post(x);delete x.fillText;delete x.strokeText}return c}
+// (v7.6) text painted on a texture never runs off its edges: a line wider than the room it has is squeezed to fit (the canvas maxWidth);
+// a canvas with text on it is marked (_txt) so its board's thin edges are drawn plain and a stretched face can be widened (mapFitSigns)
+function txtFit(x){const c=x.canvas;for(const fn of ['fillText','strokeText']){const o=x[fn];
+  x[fn]=function(t,X,Y,mw){c._txt=1;const tr=this.getTransform();
+    if(tr.b===0&&tr.c===0&&tr.a>0&&tr.d>0){const mt=this.measureText(String(t));let w=mt.width;const ox=-tr.e/tr.a,W=c.width/tr.a,al=this.textAlign,m=Math.max(6,c.width*.04)/tr.a;// (a board's frame stays clear)
+      const room=al==='center'?2*Math.min(X-ox-m,ox+W-m-X):(al==='right'||al==='end')?X-ox-m:ox+W-m-X,fit=room>8&&w>room&&(mw==null||mw>room);if(fit)w=room;else if(mw!=null&&mw<w)w=mw;
+      const x0=al==='center'?X-w/2:(al==='right'||al==='end')?X-w:X;(c._tx=c._tx||[]).push([tr.a*x0+tr.e,tr.a*(x0+w)+tr.e,tr.d*(Y-mt.actualBoundingBoxAscent)+tr.f-1,tr.d*(Y+mt.actualBoundingBoxDescent)+tr.f+1]);
+      if(fit)return o.call(this,t,X,Y,room)}
+    return o.apply(this,arguments)}}}
 function mkTex(canvas,repeat){const t=new THREE.CanvasTexture(canvas);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestMipmapLinearFilter;t.generateMipmaps=true;
   if(repeat!==false){t.wrapS=t.wrapT=THREE.RepeatWrapping}t.anisotropy=1;return t}
 // dither a value field into a palette
@@ -148,6 +157,28 @@ function texWood(){const N=TN,K=TK;return paint(N,N,P=>{const base='#7a5c37';con
   for(const [x,y] of [[10,10],[N-12,10],[10,N-12],[N-12,N-12],[10,N/2],[N-12,N/2],[N/2,10],[N/2,N-12]]){P.set(x,y,'#d8dcde');P.set(x+1,y,'#a8acae');P.set(x,y+1,'#6a6e70');P.set(x+1,y+1,'#3a3e40');P.set(x+2,y+1,'#2a1e10',.5);streak(P,x,y+2,6+Math.floor(hash2(x,y,3)*14),.2)}
   // stencil mark
   P.post=ctx=>{ctx.fillStyle='rgba(30,22,14,.55)';ctx.font='bold 22px sans-serif';ctx.textAlign='center';ctx.fillText('Q-7',N/2,N/2-8);ctx.font='bold 13px sans-serif';ctx.fillText('THIS SIDE UP',N/2,N/2+12)}})}
+// (v7.6) plain planks for wooden things that are not crates (tables, benches, counters, beams, shelves): the crate's grain without its
+// frame, brace, nails and stencil, tiled in world space (MATS.woodP)
+function texWoodPlain(){const N=TN;return paint(N,N,P=>{const base='#7a5c37';const PL=N/4;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const plank=Math.floor(y/PL),ly=y%PL;const g=Math.sin((x*.55+plank*26)*.125+P.n(x,y,48,91+plank,3)*7)*.5+.5;
+    let c=mix(dk(base,.12+plank%2*.07),lt(base,.1),g*.65);if(ly<2)c=lt(c,.18);else if(ly<3)c=lt(c,.06);if(ly>=PL-3)c=dk(c,ly>=PL-1?.45:.25);if(hash2(x,y,11)<.04)c=dk(c,.2);
+    if(hash2(Math.floor(x/18),y,plank+5)<.012)c=dk(c,.35);P.set(x,y,c)}
+  // butt joints, staggered plank to plank
+  for(let p=0;p<4;p++){const jx=Math.floor(hash2(p,3,95)*N);for(let y=p*PL;y<(p+1)*PL;y++){P.set(jx,y,'#2e2012');P.set(jx+1,y,'#8a6a44',.5)}}
+  for(let i=0;i<5;i++){const cx=hash2(i,1,94)*N,cy=hash2(i,2,94)*N;for(let y=-5;y<=5;y++)for(let x=-7;x<=7;x++){const d=Math.hypot(x/7,y/5);if(d<1)P.set(Math.round(cx+x),Math.round(cy+y),d<.35?'#2e1e10':d<.6?'#3a2614':'#5a3e22',d<.6?1:.5)}}})}
+// (v7.6) a container's door end (2.44 x 2.6 m, box-mapped): the corner posts, top rail and sill, two doors with their own
+// corrugation, a locking bar pair on each with handles, hinges, the data plate; the end faces showed a cut-off slice of the long side
+function texContEnd(base){const N=256;return paint(N,N,P=>{const cols=[dk(base,.55),dk(base,.36),dk(base,.2),base,lt(base,.1),lt(base,.2)];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const r=(x%20)/2;const s=r<1.5?.15:r<2.5?.6:r<6?.9:r<7?.55:.3;let t=s*.7+P.n(x,y,80,141,3)*.3-.05+(hash2(x,y,142)-.5)*.06;P.set(x,y,dith(P,x,y,t,cols,.12))}
+  const frame=dk(base,.45);for(let y=0;y<N;y++)for(let x=0;x<12;x++){P.set(x,y,x<2?dk(base,.7):frame);P.set(N-1-x,y,x<2?dk(base,.7):frame)}
+  for(let x=0;x<N;x++){for(let y=0;y<14;y++)P.set(x,y,y<2?dk(base,.7):y>11?dk(base,.6):frame);for(let y=N-18;y<N;y++)P.set(x,y,y<N-16?lt(base,.05):dk(base,.5))}
+  for(let y=14;y<N-18;y++){P.set(127,y,'#121212');P.set(128,y,'#1a1a1a');P.set(126,y,dk(base,.3))}
+  for(const bx of [44,98,158,212]){for(let y=10;y<N-14;y++)for(let x=bx-2;x<=bx+2;x++)P.set(x,y,x===bx-2?'#8a8e90':x===bx+2?'#3a3e40':'#b8bcbe');
+    for(const cy of [16,N-22])for(let y=cy-4;y<cy+4;y++)for(let x=bx-5;x<=bx+5;x++)P.set(x,y,'#6a6e70');
+    for(let y=136;y<146;y++)for(let x=bx+2;x<bx+16;x++)P.set(x,y,y===136?'#d0d4d6':'#7a7e80')}
+  for(const x0 of [12,N-18])for(const hy of [40,100,160,214])for(let y=hy;y<hy+12;y++)for(let x=x0;x<x0+6;x++)P.set(x,y,'#4a4e50');
+  for(let y=160;y<186;y++)for(let x=60;x<92;x++)P.set(x,y,(y===160||y===185||x===60||x===91)?'#5a5e60':'#a8aaa8');
+  for(let i=0;i<8;i++)streak(P,Math.floor(hash2(i,1,143)*N),14+Math.floor(hash2(i,2,143)*60),30+Math.floor(hash2(i,3,143)*110),.12,2)})}
 // containers get one painted side per box face (512 px across 6 m), so the markings appear once
 function texContainer(base,label){const W=512,N=256;return paint(W,N,P=>{
   const cols=[dk(base,.55),dk(base,.36),dk(base,.2),base,lt(base,.1),lt(base,.22)];
@@ -182,11 +213,13 @@ function texWindow(lit){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x
     P.set(x,y,c)}
   for(let i=0;i<6;i++)streak(P,10+Math.floor(hash2(i,1,18)*108),10,20+Math.floor(hash2(i,2,18)*40),.12)})}
 function texLight(col){return paint(32,32,P=>{for(let y=0;y<32;y++)for(let x=0;x<32;x++){const e=x<2||x>29||y<2||y>29;const r=Math.hypot((x-15.5)/14,(y-15.5)/14);P.set(x,y,e?dk(col,.6):mix(lt(col,.55),col,clamp(r,0,1)))}})}
-function texSign(lines,bg,fg,w,h){w=(w||128)*2;h=(h||32)*2;return paint(w,h,P=>{for(let y=0;y<h;y++)for(let x=0;x<w;x++){let c=bg;if(x<4||y<4||x>=w-4||y>=h-4)c=dk(bg,.5);if(hash2(x,y,17)<.05)c=dk(c,.2);const n=P.n(x,y,16,18,2);if(n>.66)c=dk(c,.1);P.set(x,y,c)}
+function texSign(lines,bg,fg,w,h){w=(w||128)*2;h=(h||32)*2;const cv=paint(w,h,P=>{for(let y=0;y<h;y++)for(let x=0;x<w;x++){let c=bg;if(x<4||y<4||x>=w-4||y>=h-4)c=dk(bg,.5);if(hash2(x,y,17)<.05)c=dk(c,.2);const n=P.n(x,y,16,18,2);if(n>.66)c=dk(c,.1);P.set(x,y,c)}
   for(const [x,y] of [[8,8],[w-10,8],[8,h-10],[w-10,h-10]]){P.set(x,y,'#c8ccc8');P.set(x+1,y+1,'#3a3e3a')}
-  P.post=ctx=>{ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';const n=lines.length;lines.forEach((l,i)=>{ctx.font=`bold ${(l.s?l.s*2:Math.floor(h/(n+.6)))}px sans-serif`;ctx.fillText(l.t||l,w/2,h*(i+.5+.15)/(n+.3))});
+  P.post=ctx=>{ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';const n=lines.length;lines.forEach((l,i)=>{let fs=l.s?l.s*2:Math.floor(h/(n+.6));ctx.font=`bold ${fs}px sans-serif`;
+    const tw=ctx.measureText(l.t||l).width;if(tw>w-20){fs=Math.max(8,Math.floor(fs*(w-20)/tw));ctx.font=`bold ${fs}px sans-serif`}ctx.fillText(l.t||l,w/2,h*(i+.5+.15)/(n+.3))});// (v7.6: a line too long for the board gets a smaller font)
     // weathering over the paint
-    const id=ctx.getImageData(0,0,w,h);for(let i=0;i<id.data.length;i+=4){const px=(i/4)%w,py=Math.floor(i/4/w);if(hash2(px,py,18)<.06){id.data[i]*=.6;id.data[i+1]*=.6;id.data[i+2]*=.6}}ctx.putImageData(id,0,0)}})}
+    const id=ctx.getImageData(0,0,w,h);for(let i=0;i<id.data.length;i+=4){const px=(i/4)%w,py=Math.floor(i/4/w);if(hash2(px,py,18)<.06){id.data[i]*=.6;id.data[i+1]*=.6;id.data[i+2]*=.6}}ctx.putImageData(id,0,0)}});
+  cv._rp=(W,H)=>texSign(lines,bg,fg,W/2,H/2);return cv}// (v7.6) painted again at a face's proportions by mapFitSigns
 function texSky(){return paint(1024,256,P=>{for(let y=0;y<256;y++)for(let x=0;x<1024;x++){const t=y/255;let c=mix('#05060c','#1c1f2e',Math.pow(t,1.5));const n=fbm(x/128,y/36,121,5,1024/128);if(n>.5)c=mix(c,'#262838',clamp((n-.5)*2.6,0,.85));
     if(t>.8)c=mix(c,'#2a2a34',(t-.8)*2.2);P.set(x,y,c)}})}
 function texMoon(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){const dx=(x-63.5)/60,dy=(y-63.5)/60,r=Math.hypot(dx,dy);
@@ -268,13 +301,14 @@ function bakeTextures(){
   TEX.conc=mkTex(texConcrete());TEX.concf=mkTex(texConcFloor());TEX.asph=mkTex(texAsphalt());TEX.dirt=mkTex(texDirt());TEX.brick=mkTex(texBrick());
   TEX.metal=mkTex(texMetal('#5a6670'));TEX.metal2=mkTex(texMetal('#6e6a5e'));TEX.plate=mkTex(texPlate());TEX.tile=mkTex(texTile());TEX.plaster=mkTex(texPlaster());TEX.wood=mkTex(texWood());
   TEX.contR=mkTex(texContainer('#7a2e22','QZL-07'));TEX.contB=mkTex(texContainer('#2a4a6a','NXT 4471'));TEX.contG=mkTex(texContainer('#3e5a32','Q7 LOG'));
+  TEX.contRe=mkTex(texContEnd('#7a2e22'),false);TEX.contBe=mkTex(texContEnd('#2a4a6a'),false);TEX.contGe=mkTex(texContEnd('#3e5a32'),false);
   TEX.hazard=mkTex(texHazard());TEX.roof=mkTex(texRoof());TEX.door=mkTex(texDoor());TEX.win=mkTex(texWindow(false));TEX.winLit=mkTex(texWindow(true));
   TEX.lampW=mkTex(texLight('#e8f0ff'));TEX.lampO=mkTex(texLight('#ffb050'));TEX.lampR=mkTex(texLight('#ff3030'));
   TEX.signQ=mkTex(texSign([{t:'격리구역 Q-7'},{t:'QUARANTINE ZONE',s:9}],'#c8b02a','#1a1a16',128,32),false);
   TEX.signN=mkTex(texSign([{t:'관계자 외 출입금지'}],'#e8e4d6','#a82020',128,24),false);
   TEX.signE=mkTex(texSign([{t:'비상구  EXIT'}],'#1e7a3a','#e8ffe8',64,20),false);
   TEX.signW=mkTex(texSign([{t:'창고 B'},{t:'WAREHOUSE B',s:8}],'#2a3a4a','#d8dcd8',96,32),false);
-  TEX.sandbag=mkTex(texSandbag());TEX.pallet=mkTex(texPallet());TEX.drumB=mkTex(texDrum('#2a4a7a'));TEX.drumR=mkTex(texDrum('#7a2a22'));TEX.fence=mkTex(texFence());TEX.barrier=mkTex(texBarrier());TEX.pipe=mkTex(texPipe());
+  TEX.woodP=mkTex(texWoodPlain());TEX.sandbag=mkTex(texSandbag());TEX.pallet=mkTex(texPallet());TEX.drumB=mkTex(texDrum('#2a4a7a'));TEX.drumR=mkTex(texDrum('#7a2a22'));TEX.fence=mkTex(texFence());TEX.barrier=mkTex(texBarrier());TEX.pipe=mkTex(texPipe());
   TEX.mark=mkTex(texMark());TEX.poster0=mkTex(texPoster(0),false);TEX.poster1=mkTex(texPoster(1),false);
   TEX.sky=mkTex(texSky());TEX.sky.wrapT=THREE.ClampToEdgeWrapping;TEX.moon=mkTex(texMoon(),false);TEX.moon.minFilter=THREE.LinearFilter;TEX.moon.generateMipmaps=false;
   bakeTexturesV51();

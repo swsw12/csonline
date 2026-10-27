@@ -9,6 +9,9 @@ Object.assign(MATS,{
   hoLineW:{t:'hoLineW',s:1,cs:2,k:'soft'},hoLineY:{t:'hoLineY',s:1,cs:2,k:'soft'},hoLineG:{t:'hoLineG',s:1,cs:2,k:'stone'},hoLineB:{t:'hoLineB',s:1,cs:2,k:'stone'},hoLineO:{t:'hoLineO',s:1,cs:2,k:'stone'},
   hoLeafG:{t:'hoLeafG',s:2,cs:1.5,k:'soft'},hoLeafY:{t:'hoLeafY',s:2,cs:1.5,k:'soft'},hoHedge:{t:'hoHedge',s:1.5,cs:1,k:'soft'},hoWater:{t:'hoWater',s:2,cs:1.5,emis:.05,k:'glass'},
   hoWood:{t:'hoWood',s:1.5,cs:1,k:'wood'},hoMil:{t:'hoMil',s:2,cs:1,k:'metal'},hoTape:{t:'hoTape',uv:'boxV',s:1.6,k:'soft'},
+  // (v7.6) used by the map since v6.54 but never defined: its parked cars, the triage tents, the IV stands, rails and steel benches were
+  // invisible (solid all the same)
+  hoCar:{t:'hoCar',s:2,k:'metal'},hoCarR:{t:'hoCarR',s:2,k:'metal'},hoTaxi:{t:'hoTaxi',s:2,k:'metal'},hoTent:{t:'hoTent',s:2,k:'soft'},hoSteel:{t:'hoSteel',s:1,k:'metal'},
   // the buildings
   hoFacade:{t:'hoFacade',s:8.4,sv:4.2,cs:1.5,k:'stone'},hoPanel:{t:'hoPanel',s:2,cs:1.5,k:'metal'},hoGlassW:{t:'hoGlassW',s:1.5,sv:4.2,cs:2,k:'glass'},
   hoWallWin:{t:'hoWallWin',s:8.4,sv:4.2,cs:1,k:'stone'},hoWall:{t:'hoWall',s:4,sv:4.2,cs:1,k:'stone'},hoWallB:{t:'hoWallB',s:4,sv:4.2,cs:1,k:'stone'},hoWallC:{t:'hoWallC',s:4,sv:4.2,cs:1,k:'stone'},
@@ -208,7 +211,7 @@ function texHoMach(dark){return paint(128,128,P=>{const pal=dark?['#2e3236','#3a
 // the ambulance's side: white, a red and orange band, 구급차 / AMBULANCE, the hospital's name
 function texHoAmb(){return paint(256,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<256;x++){let c=dith(P,x,y,clamp(.6+(P.n(x,y,32,6321,2)-.5)*.1,0,1),['#c8cccc','#d8dcdc','#e6e8e8','#f0f2f2'],.05);
     if(y>74&&y<84)c='#d82a1e';else if(y>=84&&y<90)c='#f08a1e';if(x<3||x>252)c='#9aa0a4';P.set(x,y,c)}
-  P.post=x=>{x.fillStyle='#d82a1e';x.textAlign='center';x.textBaseline='middle';x.font=hoFont(30);x.fillText('구급차  AMBULANCE',128,46);x.fillStyle='#2a4a8a';x.font=hoFont(14);x.fillText('새벽 종합병원  SAEBYEOK GENERAL HOSPITAL',128,106)}})}
+  P.post=x=>{x.fillStyle='#d82a1e';x.textAlign='center';x.textBaseline='middle';x.font=hoFont(30);x.fillText('구급차  AMBULANCE',128,46);x.fillStyle='#2a4a8a';x.font=hoFont(11);x.fillText('새벽 종합병원  SAEBYEOK GENERAL HOSPITAL',128,106)}})}
 function texHoAmbW(){return paint(64,64,P=>{for(let y=0;y<64;y++)for(let x=0;x<64;x++)P.set(x,y,dith(P,x,y,clamp(.6+(P.n(x,y,16,6331,2)-.5)*.1,0,1),['#c8cccc','#d8dcdc','#e6e8e8','#f0f2f2'],.05))})}
 // rooftop air handlers: louvred grey sheet metal; the fan seen from above
 function texHoHVAC(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){let c=dith(P,x,y,clamp(.55+(P.n(x,y,32,6341,2)-.5)*.2,0,1),['#5a6064','#6a7074','#7a8084','#888e92'],.06);
@@ -269,9 +272,11 @@ function texHoStair(){return paint(64,64,P=>{for(let y=0;y<64;y++)for(let x=0;x<
     if(y<6)c=(x%4<2)?'#c8a020':'#2a2a26';P.set(x,y,c)}})}
 function texHoEsc(){return paint(64,64,P=>{for(let y=0;y<64;y++)for(let x=0;x<64;x++){let c=x%4<2?'#8a9096':'#3a3e44';if(y<5)c='#e8c020';P.set(x,y,c)}})}
 // a sign (canvas text over a plain panel); bg null: cut out, only the letters stay (the rooftop letters)
-function texHoSign(w,h,lines,bg,fg,brd){return paint(w,h,P=>{if(bg)for(let y=0;y<h;y++)for(let x=0;x<w;x++){let c=bg;if(brd&&(x<brd||x>=w-brd||y<brd||y>=h-brd))c=fg;else if(hash2(x,y,6461)<.04)c=dk(bg,.1);P.set(x,y,c)}
+function texHoSign(w,h,lines,bg,fg,brd){const cv=paint(w,h,P=>{if(bg)for(let y=0;y<h;y++)for(let x=0;x<w;x++){let c=bg;if(brd&&(x<brd||x>=w-brd||y<brd||y>=h-brd))c=fg;else if(hash2(x,y,6461)<.04)c=dk(bg,.1);P.set(x,y,c)}
   P.post=x=>{x.textAlign='center';x.textBaseline='middle';for(const L of lines){x.fillStyle=L.c||fg;x.font=hoFont(L.s);x.fillText(L.t,L.x!=null?L.x:w/2,L.y)}
-    if(!bg){const id=x.getImageData(0,0,w,h),D=id.data;for(let i=3;i<D.length;i+=4)D[i]=D[i]>110?255:0;x.putImageData(id,0,0)}}})}
+    if(!bg){const id=x.getImageData(0,0,w,h),D=id.data;for(let i=3;i<D.length;i+=4)D[i]=D[i]>110?255:0;x.putImageData(id,0,0)}}});
+  // (v7.6) painted again at a face's proportions by mapFitSigns: the same lettering, centred on more board
+  cv._rp=(W,H)=>texHoSign(W,H,lines.map(L=>Object.assign({},L,{y:L.y+(H-h)/2,x:L.x!=null?L.x+(W-w)/2:null})),bg,fg,brd);return cv}
 // the dawn sky: navy overhead, the east glowing pink and gold low down, a few stratus streaks lit from below, a ridge of mountains
 // and the city's apartment blocks along the horizon with their first lit windows (u: 0 west, .25 south, .5 east, .75 north; horizon row 232)
 function texHoSky(){return paint(1024,256,P=>{const HZ=232;
@@ -290,6 +295,7 @@ function texHoSky(){return paint(1024,256,P=>{const HZ=232;
 function texHoSolar(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){let c=dith(P,x,y,clamp(.5+(P.n(x,y,32,6641,2)-.5)*.3,0,1),['#0e1a34','#14223e','#1a2a4a','#22345a'],.08);
     if(x%32<2||y%21<2)c='#8a9098';if(x%64<3||y%64<3)c='#b8bcc0';if(((x+y)|0)%70<2)c='#4a5a7a';P.set(x,y,c)}})}
 function bakeHoTex(){if(TEX.hoFacade)return;
+  TEX.hoCar=mkTex(texCarPaint('#c4c8cc',0));TEX.hoCarR=mkTex(texCarPaint('#6e2a26',0));TEX.hoTaxi=mkTex(texCarPaint('#d88a22',0));TEX.hoTent=mkTex(texCanvas('#c8ccc4',6591));TEX.hoSteel=mkTex(texMetal('#9aa2a8'));TEX.hoMetal=mkTex(texMetal('#7c848c'));// (v7.6)
   TEX.hoPave=mkTex(texHoPave());TEX.hoCurb=mkTex(texHoCurb());TEX.hoGrass=mkTex(texHoGrass());
   TEX.hoLineW=mkTex(texHoLine('#d8d8d0',6521));TEX.hoLineY=mkTex(texHoLine('#d8a820',6522));TEX.hoLineG=mkTex(texHoLine('#2a9a5a',6523));TEX.hoLineB=mkTex(texHoLine('#2a6ac8',6524));TEX.hoLineO=mkTex(texHoLine('#e07a20',6525));
   TEX.hoFacade=mkTex(texHoFacade());TEX.hoPanel=mkTex(texHoPanel());TEX.hoGlassW=mkTex(texHoGlassW());

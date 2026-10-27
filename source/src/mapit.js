@@ -13,6 +13,9 @@
 // the middle street east to the courtyard is walled up, and the sides change ends (humans on the north terrace, zombies from the south).
 Object.assign(MATS,{
   facA:{t:'facA',s:3,k:'stone',cs:1},facB:{t:'facB',s:3,k:'stone',cs:1},facC:{t:'facC',s:3,k:'stone',cs:1},
+  // v7.6: the same walls without a window (indoors and under arcades: the street facade's windows and shutters were painted on room walls)
+  facAp:{t:'facAp',s:3,k:'stone',cs:1},facBp:{t:'facBp',s:3,k:'stone',cs:1},facCp:{t:'facCp',s:3,k:'stone',cs:1},facRp:{t:'facRp',s:3,k:'stone',cs:1},facOp:{t:'facOp',s:3,k:'stone',cs:1},
+  facTp:{t:'facTp',s:3,k:'stone',cs:1},facYp:{t:'facYp',s:3,k:'stone',cs:1},facGp:{t:'facGp',s:3,k:'stone',cs:1},
   // v6 colour variants, picked per wall from the reference's paint colour: salmon, orange, tan, ochre, grey plaster, bare brick
   facR:{t:'facR',s:3,k:'stone',cs:1},facO:{t:'facO',s:3,k:'stone',cs:1},facT:{t:'facT',s:3,k:'stone',cs:1},facY:{t:'facY',s:3,k:'stone',cs:1},facG:{t:'facG',s:3,k:'stone',cs:1},brickIt:{t:'brickIt',s:2,k:'stone',cs:1},
   // v6 colour variants, chosen per wall from the reference's paint colour (salmon, orange, tan, ochre, grey)
@@ -29,7 +32,7 @@ Object.assign(MATS,{
   ivy:{t:'ivy',uv:'box',k:'soft'},shutG:{t:'shutG',uv:'box',k:'wood'},shutR:{t:'shutR',uv:'box',k:'wood'},
 });
 // ---------- textures ----------
-function texFacade(base,shut,seed){const N=TN;return paint(N,N,P=>{
+function texFacade(base,shut,seed,plain){const N=TN;return paint(N,N,P=>{
   // 3 m of wall per tile: lime-washed stucco, a stone string course at each floor, one window with open shutters
   for(let y=0;y<N;y++)for(let x=0;x<N;x++){let t=.55+(P.n(x,y,64,seed,4)-.5)*.45+(P.n(x,y,8,seed+1,2)-.5)*.1+(hash2(x,y,seed+2)-.5)*.05;
     P.set(x,y,dith(P,x,y,t,[dk(base,.22),dk(base,.12),dk(base,.05),base,lt(base,.08),lt(base,.16)],.06))}
@@ -40,12 +43,12 @@ function texFacade(base,shut,seed){const N=TN;return paint(N,N,P=>{
   // string course at the floor line, a little grime above it
   for(let x=0;x<N;x++){for(let y=N-10;y<N;y++)P.set(x,y,y===N-10?'#f4ecdc':y>N-3?'#8a8274':dith(P,x,y,.6+(P.n(x,y,8,seed+5,2)-.5)*.4,['#bdb4a2','#cbc2ae','#d8d0bc'],.06));
     for(let y=N-26;y<N-10;y++)P.mul(x,y,.95+.05*((y-(N-26))/16))}
-  // the window: stone frame and sill, dark glass with a mullion, shutters swung open
-  const wx0=86,wx1=170,wy0=46,wy1=172;
+  // the window: stone frame and sill, dark glass with a mullion, shutters swung open (v7.6: not on the plain wall of a room or an arcade)
+  const wx0=86,wx1=170,wy0=46,wy1=172;if(!plain){
   for(let y=wy0-8;y<=wy1+10;y++)for(let x=wx0-8;x<=wx1+8;x++){const inF=x>=wx0&&x<=wx1&&y>=wy0&&y<=wy1;let c;
     if(inF){c=((x-wx0)+(y-wy0)*.5)%46<4?'#3a4650':'#1a2128';if(Math.abs(x-128)<2||Math.abs(y-108)<2)c='#ece4d2';if(y>wy0+6&&y<wy0+30&&hash2(x>>2,y>>2,seed+6)<.25)c='#4a3e30'}
     else c=y>wy1+2?'#efe6d4':'#e4dccb';if(y>wy1+6)c='#a49a88';if(!inF&&hash2(x,y,seed+7)<.05)c=dk(c,.1);P.set(x,y,c)}
-  for(const [a,b] of [[wx0-44,wx0-10],[wx1+10,wx1+44]])for(let y=wy0-2;y<=wy1+2;y++)for(let x=a;x<=b;x++){let c=(y-wy0)%10<2?dk(shut,.35):shut;if(x===a||x===b||y===wy0-2||y===wy1+2)c=dk(shut,.5);if(hash2(x,y,seed+8)<.06)c=lt(c,.15);P.set(x,y,c)}
+  for(const [a,b] of [[wx0-44,wx0-10],[wx1+10,wx1+44]])for(let y=wy0-2;y<=wy1+2;y++)for(let x=a;x<=b;x++){let c=(y-wy0)%10<2?dk(shut,.35):shut;if(x===a||x===b||y===wy0-2||y===wy1+2)c=dk(shut,.5);if(hash2(x,y,seed+8)<.06)c=lt(c,.15);P.set(x,y,c)}}
   for(let i=0;i<10;i++)streak(P,Math.floor(hash2(i,1,seed+9)*N),Math.floor(hash2(i,2,seed+9)*N*.6),40+Math.floor(hash2(i,3,seed+9)*110),.07,2);
   for(let i=0;i<3;i++)crack(P,Math.floor(hash2(i,4,seed+9)*N),Math.floor(hash2(i,5,seed+9)*N),40+Math.floor(hash2(i,6,seed+9)*40),seed+40+i,dk(base,.35),lt(base,.2))})}
 function texRoofIt(){const N=TN;return paint(N,N,P=>{
@@ -200,7 +203,8 @@ function bakeItTex(){if(TEX.facA)return;
   // v6: only what the rebuilt town uses (the old hand-built set — awnings, frescoes, racks, cloth… — is no longer painted)
   // v7.3: whitewash — off-white lime on every wall, shutters in blues and greens (the reference's salmon / orange / ochre are gone)
   TEX.facA=mkTex(texFacade('#ebe8e0','#2d5f8a',961));TEX.facB=mkTex(texFacade('#eee8dc','#2f7a78',971));TEX.facC=mkTex(texFacade('#e4e1d8','#24426e',981));
-  TEX.facR=mkTex(texFacade('#ece5df','#2d5f8a',1401));TEX.facO=mkTex(texFacade('#eee7da','#3e6a46',1411));TEX.facT=mkTex(texFacade('#e8e2d4','#2f7a78',1421));TEX.facY=mkTex(texFacade('#f0eadb','#24426e',1431));TEX.facG=mkTex(texFacade('#dedddb','#2d5f8a',1441));TEX.brickIt=mkTex(texBrickIt());
+  TEX.facR=mkTex(texFacade('#ece5df','#2d5f8a',1401));TEX.facO=mkTex(texFacade('#eee7da','#3e6a46',1411));TEX.facT=mkTex(texFacade('#e8e2d4','#2f7a78',1421));TEX.facY=mkTex(texFacade('#f0eadb','#24426e',1431));TEX.facG=mkTex(texFacade('#dedddb','#2d5f8a',1441));
+  for(const [k,b,sh,sd] of [['facA','#ebe8e0','#2d5f8a',961],['facB','#eee8dc','#2f7a78',971],['facC','#e4e1d8','#24426e',981],['facR','#ece5df','#2d5f8a',1401],['facO','#eee7da','#3e6a46',1411],['facT','#e8e2d4','#2f7a78',1421],['facY','#f0eadb','#24426e',1431],['facG','#dedddb','#2d5f8a',1441]])TEX[k+'p']=mkTex(texFacade(b,sh,sd,1));TEX.brickIt=mkTex(texBrickIt());// (v7.6: the fac*p walls of rooms and arcades, itInteriors)
   for(const [k,f] of [['water',texWater],['leaves',texLeaves],['bark',texBark],['awn',texAwn],['fruit',texFruit]])if(!TEX[k])TEX[k]=mkTex(f(),k!=='fruit');
   TEX.roofIt=mkTex(texRoofIt());TEX.cobble=mkTex(texCobble(991));TEX.cobbleR=mkTex(texCobbleR());TEX.pavers=mkTex(texPavers());TEX.stoneIt=mkTex(texStoneIt());
   TEX.woodIt=mkTex(texWoodIt());TEX.doorIt=mkTex(texDoorIt());// v7.4 (the stalls' wood was never painted before)
@@ -283,6 +287,16 @@ function itEdits(){
     [-13,-43.4],[-8,-43.4],[-2,-43.4],[.5,-43.4],[4.5,-43.4],[23,-43.4]])MAP.spawns.push([x,z,x<10?3.69:3.5,Math.PI+rr(-.5,.5)]);
   MAP.zspawns=[[-12.5,31.5,-2],[-8,31,-2],[-13.2,40.5,-2],[-6.2,40.5,-2],[-9.5,44.5,-2],[-18,38,0],[-12.8,22,-.81],[-16.8,12,0],[-16.5,4,0],[-2.5,15,0],[-3,8,0],
     [12.5,13.5,0],[-22,-1,0],[-20.5,-10,0],[16,-8,0],[-10,-21.5,0]]}
+// v7.6: a wall face with a roof over the street in front of it (a room, an arcade, a tunnel) is plain plaster: the facade texture put a
+// window with open shutters on every wall, rooms included. A face is indoors when most of the points 1 m out from it, at two heights
+// and five places along it, have something solid within 12 m straight above them (eaves overhang less than that metre)
+function itInteriors(){const FAC=/^fac[A-Z]$/,K=[['px',1,0],['nx',-1,0],['pz',0,1],['nz',0,-1]];
+  for(const b of MAP.boxes){if(!FAC.test(b.mat)||b.nosolid)continue;let f=null;
+    for(const [fk,dx,dz] of K){if(b.o.f&&b.o.f[fk])continue;const len=dx?b.z1-b.z0:b.x1-b.x0,h=b.y1-b.y0;if(len<.2||h<.5)continue;let ex=0,cov=0;
+      for(let i=0;i<5;i++)for(const fy of [.25,.65]){const t=(i+.5)/5,x=dx?(dx>0?b.x1+1:b.x0-1):b.x0+(b.x1-b.x0)*t,z=dz?(dz>0?b.z1+1:b.z0-1):b.z0+(b.z1-b.z0)*t,y=b.y0+h*fy;
+        if(insideSolid(x,y,z))continue;ex++;if(rayCast(x,y,z,0,1,0,12))cov++}
+      if(ex>=3&&cov>=ex*.8){f=f||Object.assign({},b.o.f||{});f[fk]=b.mat+'p'}}
+    if(f)b.o=Object.assign({},b.o,{f})}}
 // ---------- the reference town as the visible map: its own geometry and baked-light textures ----------
 // the reference's baked light is very dark in the shade: a gamma lift brings the alleys up without washing out the sun
 const FS_BAKED=GLSL_DYN+`uniform sampler2D map;uniform float uK;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
@@ -301,5 +315,5 @@ function itMesh(scene){if(typeof ITALY_MESH==='undefined')return;
     tex.anisotropy=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;img.onload=()=>{tex.needsUpdate=true};img.src=P.tex;
     const mat=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uK:{value:1.1}},LU),vertexShader:VS_WORLD,fragmentShader:FS_BAKED,side:THREE.DoubleSide});
     const mesh=new THREE.Mesh(geo,mat);mesh.matrixAutoUpdate=false;mesh.updateMatrix();scene.add(mesh);MAP.meshes.push(mesh)}}
-MAPDEFS.italy={n:['하얀 언덕 마을','Whitehill'],mirror:1,d:['햇살 아래 하얗게 칠한 언덕 마을. 사람은 북쪽 높은 테라스에서, 좀비는 분수가 있는 남쪽 낮은 거리에서 출발한다. 갈림길 대신 기념비가 선 비탈 광장, 집들을 뚫고 북쪽으로 이어지는 아치 통로와 하늘이 뚫린 우물 마당, 벽으로 막힌 동쪽 골목, 시장 광장과 와인 저장고.','A whitewashed hill town on a summer afternoon. The humans start on the high terrace in the north, the zombies in the low street with its fountain in the south: a sloping square with a monument where the fork was, an arched passage north through the houses with a well court open to the sky, the east lane walled up, the market square and the wine cellar.'],
+MAPDEFS.italy={post:itInteriors,n:['하얀 언덕 마을','Whitehill'],mirror:1,d:['햇살 아래 하얗게 칠한 언덕 마을. 사람은 북쪽 높은 테라스에서, 좀비는 분수가 있는 남쪽 낮은 거리에서 출발한다. 갈림길 대신 기념비가 선 비탈 광장, 집들을 뚫고 북쪽으로 이어지는 아치 통로와 하늘이 뚫린 우물 마당, 벽으로 막힌 동쪽 골목, 시장 광장과 와인 저장고.','A whitewashed hill town on a summer afternoon. The humans start on the high terrace in the north, the zombies in the low street with its fountain in the south: a sloping square with a monument where the fork was, an arched passage north through the houses with a well court open to the sky, the east lane walled up, the market square and the wine cellar.'],
   env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.95,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-34,-61,34,61],probeY:[-2.6,-.9,.9,2.6,4.4,6.2,8],mini:[1.2,4.6],tex:bakeItTex,build:buildItaly,mesh:itMesh};
