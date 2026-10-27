@@ -13,7 +13,7 @@ const NET_HZ=20,NET_DELAY=110,NET_MAXP=8;
 const ICE={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}]};
 const ST_L=['menu','prep','fight','end','over'],ZI=Object.fromEntries(ZALL.map((k,i)=>[k,i]));
 let WL=[],WI={},NET_VER='';// filled once every weapon is registered (hooks in other files read WI even when offline)
-function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r19'}// r19: chapter 10 — ELPIS, the Patient and the AED in the zombie classes (v6.99); r18: chapter 9 — DAEDALUS, the Static and the sentry gun in the zombie classes (v6.98); r17: chapter 8 — CHARON and the Frozen in the zombie classes (v6.97); r16: chapter 7 — LORELEI and the Listener in the zombie classes (v6.96); r15: the StarTrack's B mode, charge and beam (stb / stc / stf, v6.93); r14: chapter 6 — LEGATUS and the shield trooper in the zombie classes (v6.92); r11: the host checks every claim and holds each link to a message budget (v6.72); r3: Italy rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: JANUS-1 states, the crowbar's shock (v6.40); r10: THANATOS-9 states and its slow, the Dark Knight's B and Deadshot (v6.41)
+function netTables(){if(WL.length)return;WL=Object.keys(WPN);WI={};WL.forEach((k,i)=>WI[k]=i);NET_VER='qz5-'+WL.length+'-m'+MAPLIST().join('')+'-e'+Object.keys(MAPDEFS).filter(k=>MAPDEFS[k].ep).join('')+'-r20'}// r20: Whitehill and Red Mesa Ranch mirrored and changed (the geometry must match between host and clients, v7.3); r19: chapter 10 — ELPIS, the Patient and the AED in the zombie classes (v6.99); r18: chapter 9 — DAEDALUS, the Static and the sentry gun in the zombie classes (v6.98); r17: chapter 8 — CHARON and the Frozen in the zombie classes (v6.97); r16: chapter 7 — LORELEI and the Listener in the zombie classes (v6.96); r15: the StarTrack's B mode, charge and beam (stb / stc / stf, v6.93); r14: chapter 6 — LEGATUS and the shield trooper in the zombie classes (v6.92); r11: the host checks every claim and holds each link to a message budget (v6.72); r3: Whitehill rebuilt on two levels (map geometry must match between peers); r6: episodes; r7: host migration (v6.38); r8: the firefighter zombie (v6.39); r9: TWINFACE-1 states, the crowbar's shock (v6.40); r10: MORTA-9 states and its slow, the Onyx's B and Deadshot (v6.41)
 // r12 (v6.82): a player can join a match under way (latejoin.js: 'start' with late, 'jn' to the others)
 // r13 (v6.91): the straitjacket zombie can be picked (strait.js: sjc / sjg / sju), and a class picked in a match reaches the host
 const r1=v=>Math.round((v||0)*10),r2=v=>Math.round((v||0)*100),r3=v=>Math.round((v||0)*1000);
@@ -387,7 +387,7 @@ function netPuppet(a,dt){const B=a.nb,c=a.c;if(!B||!B.length)return;const off=NE
     else{a.reloadT=Math.max(0,a.reloadT-dt);if(a.reloadT===0){if(a.relKind==='shell')othSnd(a,'shellin',.45,22);a.reloadT=a.relKind==='shell'?W.shellRel:.001}}}
   else if(a.nRel||a.relKind){if(a.relKind==='mag'&&a.alive&&a.cur!=='startrack')othSnd(a,'magin',.5,25);a.nRel=0;a.reloadT=0;a.relKind=null}
   a.kick=Math.max(0,a.kick-dt*6);a.punchP*=Math.exp(-dt*7);a.punchY*=Math.exp(-dt*7);a.recoilSpread*=Math.exp(-dt*4.5);
-  // the Ripper grinding: replayed from the owner's trigger, harmless here
+  // the Grinder grinding: replayed from the owner's trigger, harmless here
   if(a.cur==='ripper'&&a.team===TH){if(!a.ammo.ripper)a.ammo.ripper={mag:999,res:0};a.ammo.ripper.mag=999;a.cmd.fire=!!(F&512);a.cmd.alt=false;a.drawT=0;NET.ghost++;try{sawUpdate(a,WPN.ripper,dt)}finally{NET.ghost--}a.pc.alt=false}
   // footsteps from the replayed motion; a jump's push-off and its landing (v6.94: the flags run NET_DELAY ahead of the drawn motion)
   const hs=Math.hypot(c.vx,c.vz);if(og&&hs>1.5){a.stepAcc+=hs*dt;if(a.stepAcc>(a.team===TZ?1.7:1.9)){a.stepAcc=0;footstep(a)}}
@@ -549,7 +549,7 @@ const NG_EFF=[['fz',50],['rt',40],['gb',20],['hd',20],['st',40],['dz',40],['sh',
 function ngEff(src,t,m){const e={t:'eff',i:t.id},other=G.pvp?t.side!==src.side:t.team!==src.team;
   const kx=ngF(m.kx,-4000,4000,0),kz=ngF(m.kz,-4000,4000,0),up=ngF(m.up,0,2200,0);if(kx||kz){e.kx=kx;e.kz=kz}if(up)e.up=up;
   if(other){for(const [k,mx] of NG_EFF){const v=ngF(m[k],0,mx,0);if(v)e[k]=v}const bt=ngF(m.bt,0,60,0);if(bt&&Number.isInteger(m.bw)&&WPN[WL[m.bw]]){e.bt=bt;e.bw=m.bw}}
-  for(const k of Object.keys(m))if(!(k in e)&&!['t','i','kx','kz','up','bt','bw',...NG_EFF.map(x=>x[0])].includes(k)&&typeof m[k]==='number'&&Number.isFinite(m[k])&&other)e[k]=ngF(m[k],0,100,0);// (fields other files add, e.g. THANATOS-9's slow, in tenths of a second: up to 10 s)
+  for(const k of Object.keys(m))if(!(k in e)&&!['t','i','kx','kz','up','bt','bw',...NG_EFF.map(x=>x[0])].includes(k)&&typeof m[k]==='number'&&Number.isFinite(m[k])&&other)e[k]=ngF(m[k],0,100,0);// (fields other files add, e.g. MORTA-9's slow, in tenths of a second: up to 10 s)
   return e}
 const HOSTH={
   hello(L,m){if(m.v!==NET_VER){netSend(L.key,{t:'bye',why:'ver'});return}

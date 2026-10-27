@@ -32,7 +32,7 @@ insert into public.admins (user_id) select id from auth.users where email = '관
 플레이어 정보 창에서 바로 지급한 무기는 우편함을 거치지 않고 보유 무기에 들어가고, 게임 화면에 「새 무기 지급」 창으로 한 번 알려 줌 (우편 · 쿠폰으로 받은 무기도 같은 창).
 
 ## 운영자 메모 (Supabase)
-SQL Editor에서 실행. 총 id는 `source/src/*.js`의 `WPN` 이름 (듀얼 MP7A1 = `dmp7`, AK-47 60R = `ak60r`).
+SQL Editor에서 실행. 총 id는 `source/src/*.js`의 `WPN` 이름 (듀얼 MP7A1 = `dmp7`, AK-47 드럼 = `ak60r`).
 ```sql
 -- 이메일로 찾은 계정에 듀얼 MP7A1 넣기 (이미 있으면 아무 일 없음)
 insert into public.owned_guns (user_id, gun_id, price_paid)

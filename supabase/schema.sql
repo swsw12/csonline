@@ -1,22 +1,22 @@
 -- ============================================================================================================
--- QUARANTINE Z — accounts, coins, the gun shop and the decoder bingos: 근하신년 + season + sidearm, the public room list (Supabase)
+-- QUARANTINE Z — accounts, coins, the gun shop and the decoder bingos: All-Clear + season + sidearm, the public room list (Supabase)
 -- Supabase 대시보드 → SQL Editor → New query → 이 파일 전체를 붙여넣고 Run. 여러 번 실행해도 안전합니다.
 --
 -- 규칙
 --   * 코인 · 조각 · 보유 총 · 보유 해독기는 테이블에 직접 쓸 수 없고(RLS: 자기 것 읽기만), 아래 함수로만 바뀝니다.
---   * 총 가격은 gun_prices 테이블이 기준입니다 (게임 화면도 그 값을 씀). tier = 'S' / 'A' 는 근하신년 무기:
---     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole) · 스컬-9(skull9) · 샐러맨더(salamander)는 시즌 해독기 빙고에서만,
---     이벤트 호라이즌 미니(bholemini) · 크림슨 피스메이커(crimson) · JANUS-2(janus2, v6.55)는 보조무기 해독기 빙고(v6.36, 숫자 1~80)에서만.
+--   * 총 가격은 gun_prices 테이블이 기준입니다 (게임 화면도 그 값을 씀). tier = 'S' / 'A' 는 격리해제 무기:
+--     상점에서 팔지 않고 해독기 빙고와 조각 교환으로만 얻습니다. 이벤트 호라이즌(bhole) · 그레이브-9(skull9) · 파이어웜(salamander)는 시즌 해독기 빙고에서만,
+--     이벤트 호라이즌 미니(bholemini) · 크림슨 피스메이커(crimson) · TWINFACE-2(janus2, v6.55)는 보조무기 해독기 빙고(v6.36, 숫자 1~80)에서만.
 --   * 보상은 서버가 계산합니다. 라운드 보상(v6.17): 라운드가 끝날 때마다 최대 600 (지난 라운드 보상 뒤 1초당 4까지,
 --     25초 안에 두 번은 안 됨) + 경험치. 판 보상: 판당 최대 1,200, 지난 판 보상 뒤 1분당 100까지, 그날 첫 판 +250.
 --     라운드 + 판 보상을 합쳐 하루(한국 시간) 20,000까지. 가입하면 3,000 코인.
 --   * 친구 · 선물(v6.18): 친구 코드(또는 한 명만 쓰는 닉네임)로 친구를 맺고, 상점에서 파는 총을 친구에게 선물합니다(보낸 사람 코인).
 --   * 초대(v6.37): 방 초대 — 대기실에서 친구를 초대하면 친구 게임에 3분 동안 알림(room_invites). 추천인 — 내 초대 링크(?ref=친구코드)로
---     가입한 새 계정(가입 7일 안)은 바로 2,000코인을 받고, 3판을 끝내면 새 계정은 근하신년 해독기 2개, 초대한 계정은 3,000코인 + 해독기 2개
+--     가입한 새 계정(가입 7일 안)은 바로 2,000코인을 받고, 3판을 끝내면 새 계정은 격리해제 해독기 2개, 초대한 계정은 3,000코인 + 해독기 2개
 --     (초대한 계정은 10명까지). 숫자는 gacha_config의 ref_* 칸.
---   * 좀비 시나리오 챕터(v6.20): 클리어 기록은 ep_records(챕터 × 난이도)에. 판 보상은 (100 + 구역 150 + 클리어 400 + 탈출 300
+--   * 협동 작전 챕터(v6.20): 클리어 기록은 ep_records(챕터 × 난이도)에. 판 보상은 (100 + 구역 150 + 클리어 400 + 탈출 300
 --     + 킬 5) × 난이도(쉬움 .7 · 보통 1 · 어려움 1.4 · 전문가 2), 판당 3,000 · 1분당 150까지. 난이도마다 첫 클리어 1번:
---     1,000 / 3,000 / 5,000 / 8,000 코인(하루 상한과 별개) + 보통 이상은 근하신년 해독기 1개. 클리어는 4분 이상 걸린 판이어야 하고(v6.21: 5분 → 4분),
+--     1,000 / 3,000 / 5,000 / 8,000 코인(하루 상한과 별개) + 보통 이상은 격리해제 해독기 1개. 클리어는 4분 이상 걸린 판이어야 하고(v6.21: 5분 → 4분),
 --     n챕터는 n-1챕터를 깬 계정만 기록됩니다.
 --   * 명예의 전당(v6.24): 챕터 × 난이도마다 서버에서 처음 클리어한 팀(ep_firsts · ep_first_members). 그 판의 계정들이 칭호를
 --     달아요(로비 · 대기실 · 이름표 · 채팅 · 랭킹 · 친구). 기록은 qz_claim이 남기고, 누구나 qz_ep_firsts로 읽습니다.
@@ -50,7 +50,7 @@
 --     관리 기록 · 보낸 선물 · 오류 기록은 계정과의 연결 없이 남습니다. 관리자 계정은 탈퇴할 수 없습니다(운영진에서 먼저 빼야 함).
 --   * 기초 훈련(v6.70): 사격장에서 하는 튜토리얼을 로그인한 채 끝내면 qz_tut_claim이 계정마다 한 번 1,000코인을 줍니다(profiles.tut_done).
 --     게스트로 끝낸 사람은 나중에 로그인할 때 게임이 받아 줍니다.
---   * 보안 1차(v6.71): 근·하·신·년 글자는 판마다의 한도에 더해 하루(한국 시간) gacha_config.ny_day_cap개(기본 60)까지만 쌓입니다(qz_ny_add,
+--   * 보안 1차(v6.71): 격·리·해·제 글자는 판마다의 한도에 더해 하루(한국 시간) gacha_config.ny_day_cap개(기본 60)까지만 쌓입니다(qz_ny_add,
 --     관리자 페이지 게임 설정에서 바꿈). 판 보상 기록(coin_log)의 모드와 방 초대의 맵 · 모드는 영문 · 숫자만 남겨 짧게 잘라 저장합니다.
 --   * 보안 2차(v6.72): 회원 탈퇴는 10분 안에 새로 로그인한 세션만 할 수 있습니다(qz_account_delete, auth.sessions). 초대 보상은 초대한 계정의
 --     profiles.ref_paid로도 세서, 초대받은 계정이 탈퇴해도 ref_cap 자리가 다시 생기지 않고, 정지된 계정에는 초대 보상이 가지 않습니다.
@@ -106,9 +106,9 @@ create table if not exists public.gun_prices (
   gun_id text primary key,
   price  integer not null check (price >= 0),
   free   boolean not null default false,  -- everyone has it from the start
-  sold   boolean not null default true    -- false: not in the shop (bhole, skull9, salamander: the season decoder; bholemini, crimson, janus2: the sidearm decoder; tier S / A: the 근하신년 decoder)
+  sold   boolean not null default true    -- false: not in the shop (bhole, skull9, salamander: the season decoder; bholemini, crimson, janus2: the sidearm decoder; tier S / A: the All-Clear decoder)
 );
-alter table public.gun_prices add column if not exists tier text check (tier in ('S', 'A'));  -- 근하신년: pouch only
+alter table public.gun_prices add column if not exists tier text check (tier in ('S', 'A'));  -- All-Clear: pouch only
 create table if not exists public.owned_guns (
   user_id    uuid not null references auth.users(id) on delete cascade,
   gun_id     text not null references public.gun_prices(gun_id),
@@ -126,7 +126,7 @@ create table if not exists public.coin_log (
 );
 create index if not exists coin_log_user on public.coin_log(user_id, at desc);
 -- v6.57: achievements (업적) and titles (칭호). ach = the counters the record does not keep, added up by qz_claim / qz_round_claim:
--- hs headshot kills, dmg damage, wins Mutation · Original matches won, mvp match MVPs, surv rounds lived through as a human, zw rounds
+-- hs headshot kills, dmg damage, wins Evolved Infection · Classic Infection matches won, mvp match MVPs, surv rounds lived through as a human, zw rounds
 -- won as a zombie, pk / pw PvP kills / wins, rw arms races won, kn melee kills, cu Q7 cures, mk Bloodhound marks, cr supply crates,
 -- bm bombs planted or defused. ach_fill: the counters were filled once from coin_log (every match and round paid before v6.57).
 -- title = the title worn: null = automatic (the hall of fame's best, else the rarest one earned), 'none', 'hof:<ep*10+diff>' or the
@@ -135,7 +135,7 @@ alter table public.profiles add column if not exists ach      jsonb not null def
 alter table public.profiles add column if not exists ach_fill boolean not null default false;
 alter table public.profiles add column if not exists title    text;
 create index if not exists profiles_nickname on public.profiles(nickname);
--- every tier of every achievement: grp = its ladder, stat = the number it reads (qz_ach_stats), goal, the reward (coins and 근하신년
+-- every tier of every achievement: grp = its ladder, stat = the number it reads (qz_ach_stats), goal, the reward (coins and All-Clear
 -- decoders) and the title it gives (title_g = that title's grade 1..5; the automatic title picks the highest). The game names them.
 create table if not exists public.ach_defs (
   id      text primary key,
@@ -302,7 +302,7 @@ alter table public.gacha_config add column if not exists dec_frag_max integer no
 alter table public.gacha_config add column if not exists shuffle_free integer not null default 3;     -- shuffles a day
 alter table public.profiles add column if not exists shuffle_day date;
 alter table public.profiles add column if not exists shuffles integer not null default 0;
--- one bingo card per player: 25 numbers (cells 0..24, row by row), the numbers drawn so far, a 근하신년 gun on each of the 12 lines
+-- one bingo card per player: 25 numbers (cells 0..24, row by row), the numbers drawn so far, an All-Clear gun on each of the 12 lines
 -- (rows 1-5, columns 6-10, the diagonal from the top left 11, from the top right 12)
 create table if not exists public.bingo_boards (
   user_id    uuid primary key references auth.users(id) on delete cascade,
@@ -314,9 +314,9 @@ create table if not exists public.bingo_boards (
   boards     integer   not null default 1,   -- how many cards this player has had
   updated_at timestamptz not null default now()
 );
--- the season decoder (v6.11): a second card per player, numbers 0..season_hi (fewer hits than the 근하신년 card). Its 12 lines
+-- the season decoder (v6.11): a second card per player, numbers 0..season_hi (fewer hits than the All-Clear card). Its 12 lines
 -- carry the items in season_lines, shuffled onto the lines: gun:<id> (that gun; owned already: season_owned_coins coins),
--- coins:<n>, frags:<n>, tickets:<n> (n free 근하신년 decoders, kept in profiles.dec_tickets). More than 12: 12 of them at random.
+-- coins:<n>, frags:<n>, tickets:<n> (n free All-Clear decoders, kept in profiles.dec_tickets). More than 12: 12 of them at random.
 alter table public.gacha_config add column if not exists season_cost1       integer not null default 1000;   -- one season decoder
 alter table public.gacha_config add column if not exists season_cost10      integer not null default 9000;   -- ten
 alter table public.gacha_config add column if not exists season_hi          integer not null default 99;     -- numbers 0 .. this (24 at least)
@@ -325,8 +325,8 @@ alter table public.gacha_config add column if not exists season_frag_max    inte
 alter table public.gacha_config add column if not exists season_owned_coins integer not null default 10000;  -- a gun line whose gun is owned
 alter table public.gacha_config add column if not exists season_lines text[] not null
   default '{gun:bhole,gun:skull9,gun:salamander,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
-alter table public.profiles add column if not exists dec_tickets integer not null default 0 check (dec_tickets >= 0);  -- 근하신년 decoders to open
--- v6.15: the 근·하·신·년 letters picked up in matches, kept on the account (a full set trades for 2 근하신년 decoders or 1 season decoder);
+alter table public.profiles add column if not exists dec_tickets integer not null default 0 check (dec_tickets >= 0);  -- All-Clear decoders to open
+-- v6.15: the 격·리·해·제 letters picked up in matches, kept on the account (a full set trades for 2 All-Clear decoders or 1 season decoder);
 -- ny_quota = letters the last finished match may still add (set by qz_claim, used by qz_ny_add); season_tickets = season decoders kept
 alter table public.profiles add column if not exists ny_g integer not null default 0 check (ny_g >= 0);
 alter table public.profiles add column if not exists ny_h integer not null default 0 check (ny_h >= 0);
@@ -354,7 +354,7 @@ alter table public.gacha_config add column if not exists ref_tickets     integer
 alter table public.gacha_config add column if not exists ref_matches     integer not null default 3;     -- finished matches the new player needs
 alter table public.gacha_config add column if not exists ref_cap         integer not null default 10;    -- invited players an inviter is paid for
 alter table public.gacha_config add column if not exists ref_days        integer not null default 7;     -- how new an account must be to take a link
--- v6.71: the 근·하·신·년 letters one account may keep in a Korean day, however many matches (qz_ny_add)
+-- v6.71: the 격·리·해·제 letters one account may keep in a Korean day, however many matches (qz_ny_add)
 alter table public.gacha_config add column if not exists ny_day_cap      integer not null default 60;
 -- v6.74: what one account's matches may put on the ranking in a Korean day: kills, infections, xp (qz_claim; xp from the rounds too)
 alter table public.gacha_config add column if not exists rank_day_kills  integer not null default 2000 check (rank_day_kills between 0 and 100000);
@@ -402,7 +402,7 @@ create table if not exists public.season_boards (
   updated_at timestamptz not null default now()
 );
 insert into public.gacha_config (id) values (1) on conflict (id) do nothing;
--- v6.11.1: Skull-9 leaves the shop for a season line, in the place of one coins:1000 line. A card dealt before that gets it too, on a
+-- v6.11.1: Grave-9 leaves the shop for a season line, in the place of one coins:1000 line. A card dealt before that gets it too, on a
 -- coins:1000 line not finished yet. Both run only while gacha_config still holds the v6.11 list (a list edited by hand is left alone).
 with t as (
   select b.user_id, (select min(i) from generate_subscripts(b.rewards, 1) i where b.rewards[i] = 'coins:1000' and not b.done[i]) as k
@@ -415,7 +415,7 @@ from t where b.user_id = t.user_id and t.k is not null;
 update public.gacha_config set season_lines = '{gun:bhole,gun:skull9,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}'::text[]
 where id = 1 and season_lines = '{gun:bhole,coins:1000,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}'::text[];
 alter table public.gacha_config alter column season_lines set default '{gun:bhole,gun:skull9,coins:1000,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
--- v6.13: the Salamander flamethrower joins the season card the same way (another coins:1000 line), while the v6.11.1 list stands
+-- v6.13: the Firewyrm flamethrower joins the season card the same way (another coins:1000 line), while the v6.11.1 list stands
 with t as (
   select b.user_id, (select min(i) from generate_subscripts(b.rewards, 1) i where b.rewards[i] = 'coins:1000' and not b.done[i]) as k
   from public.season_boards b
@@ -429,7 +429,7 @@ where id = 1 and season_lines = '{gun:bhole,gun:skull9,coins:1000,coins:1000,coi
 alter table public.gacha_config alter column season_lines set default '{gun:bhole,gun:skull9,gun:salamander,coins:1000,coins:2000,coins:2000,coins:5000,frags:30,frags:30,tickets:3,tickets:3,tickets:3}';
 -- v6.36: the sidearm decoder (보조무기 해독기): a third card per player, numbers 1..side_hi (1~80). Its 12 lines carry the items in
 -- side_lines the way the season card's do: gun:<id> (the Event Horizon Mini and the Crimson Peacemaker come from here only; owned
--- already: side_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (n 근하신년 decoders). Coins only: no free one, none kept.
+-- already: side_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (n All-Clear decoders). Coins only: no free one, none kept.
 alter table public.gacha_config add column if not exists side_cost1       integer not null default 500;    -- one sidearm decoder
 alter table public.gacha_config add column if not exists side_cost10      integer not null default 4500;   -- ten
 alter table public.gacha_config add column if not exists side_hi          integer not null default 80;     -- numbers 1 .. this (25 at least)
@@ -438,8 +438,8 @@ alter table public.gacha_config add column if not exists side_frag_max    intege
 alter table public.gacha_config add column if not exists side_owned_coins integer not null default 5000;   -- a gun line whose gun is owned
 alter table public.gacha_config add column if not exists side_lines text[] not null
   default '{gun:bholemini,gun:crimson,coins:500,coins:1000,coins:1000,coins:2000,coins:3000,frags:20,frags:20,frags:30,tickets:1,tickets:1}';
--- v6.41: transcendence (초월) fragments. Every decoder (근하신년, season, sidearm) gives trans_frag_min..trans_frag_max of them on top of
--- the decoder fragments; trans_cost of them trade for one transcendence gun of trans_guns (the M4A1 Dark Knight first: qz_trans_exchange).
+-- v6.41: awakening (각성) fragments. Every decoder (All-Clear, season, sidearm) gives trans_frag_min..trans_frag_max of them on top of
+-- the decoder fragments; trans_cost of them trade for one awakened gun of trans_guns (the M4A1 Onyx first: qz_trans_exchange).
 -- Those guns never come from a decoder line, the shop or a gift.
 alter table public.profiles add column if not exists trans_frags integer not null default 0 check (trans_frags >= 0);
 alter table public.gacha_config add column if not exists trans_frag_min integer not null default 2;
@@ -458,7 +458,7 @@ create table if not exists public.side_boards (
   boards     integer   not null default 1,
   updated_at timestamptz not null default now()
 );
--- v6.55: JANUS-2 joins the sidearm card the same way (one of the two coins:1000 lines); a card already open takes it on its first
+-- v6.55: TWINFACE-2 joins the sidearm card the same way (one of the two coins:1000 lines); a card already open takes it on its first
 -- coins:1000 line not done yet, while the list is still the v6.36 one
 with t as (
   select b.user_id, (select min(i) from generate_subscripts(b.rewards, 1) i where b.rewards[i] = 'coins:1000' and not b.done[i]) as k
@@ -682,7 +682,7 @@ create policy "read own episodes" on public.ep_records for select to authenticat
 -- v6.56: sentinel · q7vac · bhound are crate guns like ak60r / dmp7 (not sold; an account that owns one picks it from the buy menu)
 -- v6.59: glock — a plain pistol sold for 1,000 coins; dglock (Double Glock) — a crate gun like the others (a sidearm)
 -- v6.60: vector (3,500) · an94 (5,000) · m82 (8,500) sold; spas12d (SPAS-12 Dragon's Breath) · m32c (M32 Cluster) crate guns
--- v6.69: m4dk2 (M4A1 다크나이트-2) a crate gun like the others
+-- v6.69: m4dk2 (M4A1 오닉스-2) a crate gun like the others
 -- v6.93: startrack (스타트랙) a crate gun like the others
 alter table public.gun_prices add column if not exists admin_set  boolean not null default false;
 alter table public.gun_prices add column if not exists file_price integer;
@@ -1045,7 +1045,7 @@ revoke all on function public.qz_titles_of(text[]) from public;
 grant execute on function public.qz_titles_of(text[]) to anon, authenticated;
 
 -- ---------- what the game calls (POST /rest/v1/rpc/<name>) ----------
--- me: nickname, coins, fragments, pouch pity, the free decoder, 근하신년 decoders kept (tickets), owned guns, admin / ban (v6.42),
+-- me: nickname, coins, fragments, pouch pity, the free decoder, All-Clear decoders kept (tickets), owned guns, admin / ban (v6.42),
 -- the friend code, gifts not shown yet and friend requests waiting (v6.18), the episode records (v6.20), hall-of-fame titles (v6.24),
 -- the title worn and the achievement rewards waiting (v6.57), answers to my inquiries not read yet (v6.66)
 -- (creates the profile if the account is older than this file)
@@ -1239,7 +1239,7 @@ $$;
 -- v6.17: about a quarter more than before, on top of the round rewards (qz_round_claim); the day's limit (20,000) is shared with them.
 -- v6.20: an episode of the zombie scenario (p_ep 1..qz_ep_max: 10 since v6.99) pays by zones reached, the clear and the escape, times the difficulty (p_diff),
 -- and goes on ep_records (p_time = the clear time in seconds, p_lives = lives lost, p_bonus = escaped in time); the first clear of
--- each difficulty adds coins (outside the day's limit) and, from normal up, a 근하신년 decoder.
+-- each difficulty adds coins (outside the day's limit) and, from normal up, an All-Clear decoder.
 -- v6.24: p_match = the match's id (the same on every page of it): the first clear of an episode × difficulty starts its hall-of-fame
 -- row, and the other accounts of that match join it (ep_hof in the answer = this account just did)
 -- v6.57: the achievements' counters (profiles.ach) take this match's numbers, clamped like the rest; p_ach = what only the game counts
@@ -1554,7 +1554,7 @@ begin
     'round', p_round, 'kills', p_kills, 'infects', p_infects, 'damage', p_damage, 'won', p_won, 'survived', p_survived,
     'mvp', p_mvp, 'score', p_score, 'hs', p_hs, 'raw', raw, 'xp', gx, 'secs', round(secs), 'tok', v_tok)
     || case when v_cut = '{}'::jsonb then '{}'::jsonb else jsonb_build_object('cut', v_cut) end);
-  -- achievements (v6.57): a round lived through as a human, or won as a zombie (Mutation, Original) — v6.74: within the day's limits
+  -- achievements (v6.57): a round lived through as a human, or won as a zombie (Evolved Infection, Classic Infection) — v6.74: within the day's limits
   if v_mode in ('orig', 'mut') then
     v_add := public.qz_ach_left(v_ca, jsonb_build_object('surv', case when coalesce(p_survived, false) then 1 else 0 end,
       'zw', case when coalesce(p_won, false) and not coalesce(p_survived, false) then 1 else 0 end), public.qz_ach_day());
@@ -1615,7 +1615,7 @@ begin
   return jsonb_build_object('kind', k, 'top', v_top, 'me', v_me, 'total', (select count(*) from public.profiles t where t.rec_games > 0 and (t.banned_until is null or t.banned_until <= now())));
 end $$;
 
--- ---------- 근·하·신·년 letters (v6.15) ----------
+-- ---------- 격·리·해·제 letters (v6.15) ----------
 -- the letters a player picked up in the match just finished (after qz_claim): at most ny_quota of them, then the quota is spent.
 -- v6.71: and at most gacha_config.ny_day_cap of them a Korean day (Asia/Seoul) — short matches one after another no longer pile them up;
 -- day_left / day_cap tell the game what is left of today's
@@ -1652,7 +1652,7 @@ begin
   return jsonb_build_object('added', jsonb_build_array(g, h, s, n), 'ny', jsonb_build_array(p.ny_g, p.ny_h, p.ny_s, p.ny_n),
     'day_left', greatest(v_cap - p.ny_day_n, 0), 'day_cap', v_cap);
 end $$;
--- one full set (one of each letter) for p_choice: 'ny' = 2 근하신년 decoders, 'season' = 1 season decoder (kept, opened on the season tab)
+-- one full set (one of each letter) for p_choice: 'ny' = 2 All-Clear decoders, 'season' = 1 season decoder (kept, opened on the season tab)
 create or replace function public.qz_ny_exchange(p_choice text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -1698,7 +1698,7 @@ create table if not exists public.mission_pool (
   kind    text not null check (kind in ('play', 'win', 'kills', 'infects', 'damage', 'rounds', 'hs')),
   goal    integer not null check (goal > 0),
   coins   integer not null default 0 check (coins between 0 and 5000),
-  tickets integer not null default 0 check (tickets between 0 and 5),   -- 근하신년 decoders; paid only on the day's hard slot
+  tickets integer not null default 0 check (tickets between 0 and 5),   -- All-Clear decoders; paid only on the day's hard slot
   weight  integer not null default 1 check (weight >= 0),            -- how often it is picked (0: never)
   active  boolean not null default true,
   ko      text,   -- own wording; empty: the game writes it from kind + goal
@@ -1851,7 +1851,7 @@ begin
   return public.qz_ach_json(uid);
 end $$;
 -- the reward of one tier reached (p_id), or of every tier reached and not claimed yet (p_id null or ''), once each: coins (outside the
--- day's limit) and 근하신년 decoders; titles = the titles it gave
+-- day's limit) and All-Clear decoders; titles = the titles it gave
 create or replace function public.qz_ach_claim(p_id text default null) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -1913,9 +1913,9 @@ grant execute on function public.qz_achievements() to authenticated;
 grant execute on function public.qz_ach_claim(text) to authenticated;
 grant execute on function public.qz_title_wear(text) to authenticated;
 
--- ---------- the 근하신년 decoder bingo ----------
+-- ---------- the All-Clear decoder bingo ----------
 drop function if exists public.qz_pull(integer, boolean);   -- the old lucky pouch
--- a new card: 25 different numbers from 0..bingo_hi, the 근하신년 guns shuffled onto the 12 lines
+-- a new card: 25 different numbers from 0..bingo_hi, the All-Clear guns shuffled onto the 12 lines
 create or replace function public.qz_bingo_new(uid uuid) returns void
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -2101,7 +2101,7 @@ begin
   return public.qz_bingo_json(uid);
 end $$;
 
--- ---------- the season decoder bingo (Event Horizon, Skull-9) ----------
+-- ---------- the season decoder bingo (Event Horizon, Grave-9) ----------
 -- a new season card: 25 different numbers from 0..season_hi, the season_lines items shuffled onto the 12 lines
 create or replace function public.qz_season_new(uid uuid) returns void
 language plpgsql security definer set search_path = '' as $$
@@ -2120,7 +2120,7 @@ begin
   on conflict (user_id) do update set nums = excluded.nums, marked = excluded.marked, drawn = excluded.drawn, rewards = excluded.rewards,
     done = excluded.done, boards = public.season_boards.boards + 1, updated_at = now();
 end $$;
--- the season card as the game reads it (its shuffles are counted apart from the 근하신년 card's)
+-- the season card as the game reads it (its shuffles are counted apart from the All-Clear card's)
 create or replace function public.qz_season_json(uid uuid) returns jsonb
 language sql stable security definer set search_path = '' as $$
   select jsonb_build_object('nums', b.nums, 'marked', b.marked, 'drawn', b.drawn, 'rewards', b.rewards, 'done', b.done, 'boards', b.boards,
@@ -2139,7 +2139,7 @@ begin
   return public.qz_season_json(uid);
 end $$;
 -- open one or ten season decoders (coins only, no free one): the same draw as qz_decode, on the season card. A finished line pays its
--- item: gun:<id> the gun (owned already: season_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (근하신년 decoders to open later).
+-- item: gun:<id> the gun (owned already: season_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (All-Clear decoders to open later).
 -- Every season decoder also gives season_frag_min..season_frag_max fragments. A full card is replaced by a new one at once.
 drop function if exists public.qz_season_decode(integer);   -- v6.11-6.14, before p_ticket
 create or replace function public.qz_season_decode(p_count integer, p_ticket boolean default false) returns jsonb
@@ -2261,7 +2261,7 @@ begin
   perform public.qz_season_new(uid);
   return public.qz_season_json(uid);
 end $$;
--- move the season card's numbers not stamped yet to other unstamped cells (shuffle_free times a day, apart from the 근하신년 card's)
+-- move the season card's numbers not stamped yet to other unstamped cells (shuffle_free times a day, apart from the All-Clear card's)
 create or replace function public.qz_season_shuffle() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -2330,7 +2330,7 @@ begin
   return public.qz_side_json(uid);
 end $$;
 -- open one or ten sidearm decoders (coins only): the season card's draw on the sidearm card, numbers 1..side_hi. A finished line pays
--- its item: gun:<id> the gun (owned already: side_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (근하신년 decoders to open later).
+-- its item: gun:<id> the gun (owned already: side_owned_coins coins), coins:<n>, frags:<n>, tickets:<n> (All-Clear decoders to open later).
 -- Every sidearm decoder also gives side_frag_min..side_frag_max fragments. A full card is replaced by a new one at once.
 create or replace function public.qz_side_decode(p_count integer) returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -2508,7 +2508,7 @@ begin
   return jsonb_build_object('gun', p_gun, 'fragments', f);
 end $$;
 
--- v6.41: a transcendence gun of your choice (one of trans_guns) for trans_cost transcendence fragments
+-- v6.41: an awakened gun of your choice (one of trans_guns) for trans_cost awakening fragments
 create or replace function public.qz_trans_exchange(p_gun text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -3156,7 +3156,7 @@ end $$;
 
 -- Invite links: a new account (made within ref_days) applies the friend code of the link that brought it, once: it gets ref_new_coins at
 -- once and the two become friends. After its ref_matches-th finished match (qz_ref_check, asked by the game after each match), it gets
--- ref_new_tickets 근하신년 decoders and the inviter ref_coins coins + ref_tickets decoders — for the first ref_cap players they bring in.
+-- ref_new_tickets All-Clear decoders and the inviter ref_coins coins + ref_tickets decoders — for the first ref_cap players they bring in.
 -- v6.74: the two no longer become friends by themselves — the new account sends the inviter a friend request, which the inviter answers
 -- (none when either has blocked the other, or a request or a friendship is there already); an account made again by someone whose
 -- deleted account is remembered (profiles.reborn) cannot take an invite link (ref_reborn)
@@ -3322,7 +3322,7 @@ begin
 end $$;
 
 -- the dashboard: players (all, new today, online now = a heartbeat in the last 150 s, played today), bans, coins today (paid out / spent),
--- decoders opened for coins today, S lines and transcendence trades today, play time (today, all time), the public rooms up now, and
+-- decoders opened for coins today, S lines and awakening trades today, play time (today, all time), the public rooms up now, and
 -- the last 14 days (sign-ups, players, time). "Today" is the Korean day.
 create or replace function public.qz_admin_dash() returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
@@ -3439,7 +3439,7 @@ begin
       from (select * from public.admin_log l0 where l0.target = p_id order by l0.id desc limit 30) l), '[]'::jsonb));
 end $$;
 
--- give (or take back, p_amount < 0) coins, decoder fragments, transcendence fragments, 근하신년 decoders kept or season decoders kept;
+-- give (or take back, p_amount < 0) coins, decoder fragments, awakening fragments, All-Clear decoders kept or season decoders kept;
 -- never below 0. Coins go on the coin log too ('admin').
 create or replace function public.qz_admin_grant(p_id uuid, p_kind text, p_amount integer, p_reason text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -3564,7 +3564,7 @@ begin
     from public.gun_prices g), '[]'::jsonb);
 end $$;
 -- a gun's price and whether the shop sells it (kept when schema.sql runs again; qz_admin_price_reset goes back to the file's).
--- 근하신년 (tier) guns and transcendence guns are never sold.
+-- All-Clear (tier) guns and awakened guns are never sold.
 create or replace function public.qz_admin_price(p_gun text, p_price integer, p_sold boolean, p_reason text default '') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare

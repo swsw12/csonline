@@ -247,7 +247,7 @@ const FDS={
       E:[[o0,'brk',.5,.9],[ly0+.03,'magin',.65,.72],[ly1-.03,'casing',.35,.6],[cha-.025,'chg',.7,.8-h*.1],[chd,'dry',.6,.7,[.1,-.25,0]]],
       C:[[0,0,0,0],[.14,.01,0,.006],[ly1,.012,0,.008],[ch0,.006,.006,.014],[.95,0,0,0],[1,0,0,0]]}},
   // Rotating barrels / drill / disc: a motor spins it up and lets it run down; the gun torques against it and buzzes.
-  // Volcano: the drum is swiped round by hand and clicks to a stop on a chamber.
+  // Hexa Rotor: the drum is swiped round by hand and clicks to a stop on a chamber.
   spin(P,G,m,L){const sn=P.snd||['spinup',.8,1],ch=P.axis==='x'?'rx':'rz';
     if(sn[0]==='cylspin'){const E=fdExt(G,'spin'),sp=[E.mn[0],(E.mn[1]+E.mx[1])/2-.02,E.mx[2]-.08];// the drum's left side
       return {G:[K6(0),K6(.08,-.04,.02,-.03,.06,.2,-.15),K6(.25,-.045,.024,-.03,.065,.22,-.17),K6(.32,-.04,.02,-.03,.055,.2,-.12),K6(.75,-.042,.022,-.03,.06,.2,-.15),K6(.92,.003,-.003,0,-.01,-.01,-.01),K6(1)],

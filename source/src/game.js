@@ -12,10 +12,10 @@ const HSKIN_T={guard:['한국 경찰특공대 출신 · 격리구역 봉쇄선 �
   soldier:['프랑스 외인부대 출신 · 용병','Ex-French Foreign Legion · mercenary'],hazmat:['미 해병대 화생방 대응군(CBIRF) 출신 · 방호복 기술자','Ex-USMC CBIRF · hazmat technician']};
 const ZCLASS={
   rager:{n:['일반 좀비','Regular Zombie'],sk:['광폭화','Berserk'],d:['기본형 · 스킬 G: 광폭화 (5초간 이동속도 +45%, 대신 받는 피해 +30% / 체력 소모)','Standard · Skill G: Berserk (5s +45% speed, but takes +30% damage / costs HP)'],hp:2900,armor:120,speed:5.6,jump:7.3,kb:1,dmg:55,skill:'frenzy',cd:14,dur:5,hw:.3,h:1.8,eye:1.62},
-  runner:{n:['라이트 좀비','Light Zombie'],sk:['투명화','Invisibility'],d:['고속·고점프 · 스킬 G: 투명화 (8초간 거의 보이지 않음, 봇은 가까이서만 발견) · 체력 낮음','Fast, jumps high · Skill G: Invisibility (8s, nearly invisible; bots only spot you up close) · low HP'],hp:2050,armor:60,speed:6.4,jump:8.6,kb:1.3,dmg:40,skill:'invis',cd:16,dur:8,hw:.28,h:1.82,eye:1.66},
-  brute:{n:['헤비 좀비','Heavy Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:3400,armor:220,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
+  runner:{n:['그림자 좀비','Shade Zombie'],sk:['투명화','Invisibility'],d:['고속·고점프 · 스킬 G: 투명화 (8초간 거의 보이지 않음, 봇은 가까이서만 발견) · 체력 낮음','Fast, jumps high · Skill G: Invisibility (8s, nearly invisible; bots only spot you up close) · low HP'],hp:2050,armor:60,speed:6.4,jump:8.6,kb:1.3,dmg:40,skill:'invis',cd:16,dur:8,hw:.28,h:1.82,eye:1.66},
+  brute:{n:['덫잡이 좀비','Trapper Zombie'],sk:['덫','Trap'],d:['탱커형 · 스킬 G: 덫 설치 (밟은 인간을 4초간 묶음, 최대 3개) · 느림','Tank · Skill G: Trap (roots a human who steps in it for 4s, up to 3) · slow'],hp:3400,armor:220,speed:5.0,jump:6.8,kb:.5,dmg:80,skill:'trap',cd:8,dur:0,hw:.38,h:2.05,eye:1.86},
   coffin:{n:['관짝 좀비','Coffin Zombie'],sk:['관 방패','Coffin Wall'],d:['방어형 · 스킬 G: 앞에 기다란 관을 세로로 세움 (총알·이동을 막음, 부서지면 좀비 폭탄처럼 폭발, 최대 2개)','Defender · Skill G: stands a tall coffin up in front (stops bullets and bodies; bursts like a zombie bomb when broken; up to 2)'],hp:3300,armor:200,speed:5.3,jump:7,kb:.8,dmg:58,skill:'coffin',cd:14,dur:0,hw:.32,h:1.92,eye:1.72},
-  scream:{n:['부두 좀비','Voodoo Zombie'],sk:['치유','Heal'],d:['지원형 · 스킬 G: 치유 (자신 25%, 주변 좀비 20% 회복)','Support · Skill G: Heal (25% to itself, 20% to nearby zombies)'],hp:2400,armor:100,speed:5.5,jump:7.3,kb:1.1,dmg:48,skill:'heal',cd:12,dur:1.2,hw:.29,h:1.85,eye:1.68},
+  scream:{n:['주술사 좀비','Shaman Zombie'],sk:['치유','Heal'],d:['지원형 · 스킬 G: 치유 (자신 25%, 주변 좀비 20% 회복)','Support · Skill G: Heal (25% to itself, 20% to nearby zombies)'],hp:2400,armor:100,speed:5.5,jump:7.3,kb:1.1,dmg:48,skill:'heal',cd:12,dur:1.2,hw:.29,h:1.85,eye:1.68},
   // v6.39 (fireman.js): the turnout coat halves fire and blast damage; G = a charge behind the back tank held in front (knocks humans
   // flat and throws them back); shooting the tank during the charge breaks it: the charge stops and a smoke cloud billows out
   fireman:{n:['소방관 좀비','Firefighter Zombie'],sk:['산소통 돌진','Tank Charge'],d:['돌격형 · 방화복: 불·폭발 피해 ½ · 스킬 G: 산소통 돌진 (넘어뜨리며 밀어냄 · 돌진 중 산소통을 쏘면 멈추고 연막)','Assault · Turnout coat: fire and blasts ½ · Skill G: Tank Charge (knocks humans flat and back; shoot the tank mid-charge to stop it, smoke bursts out)'],hp:3000,armor:170,speed:5.4,jump:7.1,kb:.75,dmg:60,skill:'charge',cd:15,dur:1.4,hw:.32,h:1.9,eye:1.72},
@@ -167,10 +167,10 @@ function zRandomSpawn(){const H=G.actors.filter(t=>t.alive&&t.team===TH),N=NAV.n
 //   moraleDrop: levels lost per infection;
 //   cbRevive / cbKb: in a comeback, how much faster the dead rise and how much of the shove still lands; cbStuck: see zComeback
 const ZBAL={hostHp:240,regen:.04,regenWait:4,kbCap:[5,3.5],moraleMax:5,moraleDrop:1,cbRevive:1.6,cbKb:.6,cbStuck:60,
-  origHp:1.6,origArmor:1.3,origHostHp:420,origHostDiv:4};// Original: one life each, so every zombie is tougher and there are more hosts
+  origHp:1.6,origArmor:1.3,origHostHp:420,origHostDiv:4};// Classic Infection: one life each, so every zombie is tougher and there are more hosts
 // hosts: about a fifth of the room, 2–4 (one in a room of five or fewer)
 function hostsFor(N){const o=G.mode==='orig';return N<6?1:clamp(Math.round(N/(o?ZBAL.origHostDiv:5)),2,o?5:4)}
-// comeback (Mutation): two zombies or fewer on their feet against six humans or more, or the zombies still stuck at one infection or none
+// comeback (Evolved Infection): two zombies or fewer on their feet against six humans or more, or the zombies still stuck at one infection or none
 // ZBAL.cbStuck s into the round against ten humans or more — the dead rise sooner (5 s instead of 8), whole and armoured, near the rest
 // of the pack and out of sight, and bullets shove them less (ZBAL.cbRevive / cbKb)
 function zComeback(){if(G.mode!=='mut'||G.st!=='fight')return false;if(G.cbT===G.t)return G.cb;let z=0,h=0,n=0;for(const a of G.actors){if(a.team===TZ)n++;if(!a.alive)continue;if(a.team===TZ)z++;else h++}
@@ -239,7 +239,7 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
   ensureGun(a);if(a.gun){a.gun.visible=!!ch.gunOn;if(ch.gunOn){a.gun.matrix.multiplyMatrices(ch.M[1],ch.gunM);a.gun.material.uniforms.uProbe.value.copy(U.uProbe.value)}}
   if(a.gun2){a.gun2.visible=!!ch.gunOn2;if(ch.gunOn2)a.gun2.matrix.multiplyMatrices(ch.M[1],ch.gunM2)}
   charHead(ch,a.head);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14;
-  // a zombie's arms are hit volumes too (the Heavy's reach well outside its body box)
+  // a zombie's arms are hit volumes too (the Trapper's reach well outside its body box)
   if(a.team===TZ&&a.alive){if(!a.arms)a.arms=[0,1,2,3,4,5].map(()=>new THREE.Vector3());a.armR=charArms(ch,a.arms);a.armT=G.t}else a.armT=-1e9;
   // flashlight beam for human bots
   if(a.team===TH&&a.alive&&!a.isPlayer&&a.flash&&a.gun&&a.gun.visible){if(!a.beam){a.beam=mkBeam();a.gun.add(a.beam)}a.beam.visible=true}else if(a.beam)a.beam.visible=false}
@@ -327,7 +327,7 @@ function gbName(W,on,L){const M=W.gMode;if(on)return M?M.n[L?1:0]:L?`${W.gBurst.
 function gbShort(W,on,L){const M=W.gMode;if(on)return M?M.s[L?1:0]:L?'BURST':'점사';return M&&M.s0?M.s0[L?1:0]:W.semi?(L?'SEMI':'반자동'):(L?'AUTO':'연사')}
 function actorWeapons(a,dt){const cmd=a.cmd,pc=a.pc;
   if(cmd.drop&&!pc.drop&&a.team===TH)playerDrop(a);// G: throw the gun in hand (drops.js)
-  if(a.holdT>0&&a.team===TZ&&!a.host){cmd.fire=cmd.alt=cmd.skill=false}// pinned by the Ripper: no claws, no skill
+  if(a.holdT>0&&a.team===TZ&&!a.host){cmd.fire=cmd.alt=cmd.skill=false}// pinned by the Grinder: no claws, no skill
   a.punchP*=Math.exp(-dt*7);a.punchY*=Math.exp(-dt*7);a.recoilSpread*=Math.exp(-dt*4.5);a.kick=Math.max(0,a.kick-dt*6);
   if(!cmd.fire)a.shots=Math.max(0,a.shots-dt*12);
   if(a.drawT>0)a.drawT-=dt;const W0=WPN[a.cur];
@@ -445,7 +445,7 @@ function zPain(t,own){if(!AU.throttle('zp'+t.id,350))AU.at('zpain',t.c.x,t.c.y+1
 function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==='end'||G.st==='over'?0:netClaimHit(t,dmg,src,o);if(!t.alive||G.st==='end'||G.st==='over')return;
   if(t.team===TH){return G.pvp?PVP.hurt(t,dmg,src,o):undefined}// (대인전: one human shooting another, pvp.js)
   if(t.reviving>0)return;
-  if(src&&src.team===TH&&!o.flat)dmg*=1+.1*G.moraleLvl;if(src&&src.wup&&o.w&&src.wup[o.w])dmg*=1+.1*src.wup[o.w];// flat: the Plasma Gun's orbs (csoguns.js) ignore morale
+  if(src&&src.team===TH&&!o.flat)dmg*=1+.1*G.moraleLvl;if(src&&src.wup&&o.w&&src.wup[o.w])dmg*=1+.1*src.wup[o.w];// flat: the Plasma Gun's orbs (specguns.js) ignore morale
   if(t.skillT>0&&t.zc==='brute')dmg*=.4;if(t.skillT>0&&t.zc==='rager')dmg*=1.3;// berserk: faster, but it takes 30 % more
   const hp0=t.hp,ar0=t.armor;
   if(t.armor>0){const ab=Math.min(t.armor,dmg*.5);t.armor-=ab;dmg-=ab}
@@ -455,7 +455,7 @@ function damageActor(t,dmg,src,o){if(NET.ghost)return 0;if(NET.cli)return G.st==
   if(!t.c.onGround)kb*=1.5;t.kvx+=o.dir[0]*kb;t.kvz+=o.dir[2]*kb;{const W=WPN[o.w];if(W&&W.air){const v=Math.hypot(t.kvx,t.kvz),cp=W.air.cap;if(v>cp){t.kvx*=cp/v;t.kvz*=cp/v}}else if(W&&W.mag&&!o.knife&&!o.he&&!o.nocap)kbCap(t,src,kb)}// the air gun shoves hard but never launches anyone across the map
   if(o.up){t.c.vy=Math.max(t.c.vy,o.up);t.c.onGround=false;t.c.jumped=true}
   if(t.skillT<=0||t.zc!=='brute')t.staggerT=Math.max(t.staggerT,((o.stag||.2)+Math.min(.1,dealt/500))*STAG_K);
-  {const W=WPN[o.w];if(W&&W.kind==='saw'&&!(t.skillT>0&&t.zc==='brute')){t.holdT=Math.max(t.holdT||0,(o.kb||0)>0?.7:.32);t.mvx*=.3;t.mvz*=.3}}// the Ripper pins whoever it bites (a swing pins longer); a hardened Heavy shrugs it off
+  {const W=WPN[o.w];if(W&&W.kind==='saw'&&!(t.skillT>0&&t.zc==='brute')){t.holdT=Math.max(t.holdT||0,(o.kb||0)>0?.7:.32);t.mvx*=.3;t.mvz*=.3}}// the Grinder pins whoever it bites (a swing pins longer); a hardened Trapper shrugs it off
   t.an.flinch=Math.min(1,t.an.flinch+.35);if(o.dir)t.an.flx=clamp((t.an.flx||0)+(o.dir[0]*Math.cos(t.yaw)-o.dir[2]*Math.sin(t.yaw))*.6,-1,1);if(t.ch)t.ch.mat.uniforms.uFlash.value=Math.min(.35,t.ch.mat.uniforms.uFlash.value+.12);
   if(src){src.dmgDealt+=dealt;src.dmgRound=(src.dmgRound||0)+dealt;src.score+=dealt/100;scEarn(src,Math.round(dealt/8));if(src.isPlayer)HUD.dmgNum(t,dealt,!!o.hs,t.hp<=0)}
   if(t.isPlayer){HUD.hurt(clamp(dmg/600,.15,.8));FX.shake=Math.max(FX.shake,.15)}
@@ -470,8 +470,8 @@ function hurtHuman(t,dmg,src,o){if(NET.ghost)return;if(NET.cli&&!NET.ev){if(t===
     if(src){src.kills++;src.score+=3}HUD.feed(src,src?'claw':'fall',t,{});if(t.isPlayer)onPlayerDeath(src);if(NET.host)netEv('hdie',{i:t.id,s:src?src.id:-1})}}
 function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.deadT=0;t.deaths++;t.frozen=0;t.skillT=0;t.reviving=0;t.an.dead=Math.max(t.an.dead,.001);// keeps the body drawn while it falls
   aimDir(t.yaw,0,_dv);t.deadDir=(o.dir&&(o.dir[0]*_dv.x+o.dir[2]*_dv.z)>0)?-1:1;
-  // Original: every dead zombie stays down this round. Mutation: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
-  // the Nata Knife's (killknife) last blow keeps any zombie down in every mode (hosts too)
+  // Classic Infection: every dead zombie stays down this round. Evolved Infection: knife kills, and headshot/HE kills on non-hosts, stay down; the rest rise after 8 s
+  // the Jungle Machete's (killknife) last blow keeps any zombie down in every mode (hosts too)
   const perma=G.mode==='orig'||o.w==='killknife'&&G.mode!=='scen'||G.mode==='mut'&&(o.knife||o.hs);
   if(perma)t.permaDead=true;else if(G.mode==='mut')t.reviveT=8;else t.respawnT=5
   if(src){src.kills++;if(o.hs)src.hsKills=(src.hsKills|0)+1;src.score+=perma?3:2;scEarn(src,o.hs?500:300)}// hsKills: the daily missions' headshot kills

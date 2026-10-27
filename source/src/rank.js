@@ -14,7 +14,7 @@ function misText(m,L){const own=m[L?'en':'ko'];if(own)return own;const n=fmtC(m.
   return ({play:L?`Finish ${n} match${s}`:`매치 ${n}판 끝까지 하기`,win:L?`Win ${n} match${s} (humans win / scenario cleared)`:`매치 ${n}번 승리 (인간 승리 · 시나리오 클리어)`,
     kills:L?`Get ${n} kills`:`${n}킬 하기`,infects:L?`Infect ${n} humans as a zombie`:`좀비로 인간 ${n}명 감염시키기`,damage:L?`Deal ${n} damage`:`피해량 ${n} 주기`,
     rounds:L?`Play ${n} rounds (scenario: stages)`:`라운드 ${n}개 진행 (시나리오: 스테이지)`,hs:L?`Get ${n} headshot kills`:`헤드샷으로 ${n}킬`})[m.kind]||m.kind}
-const misRw=(m,L)=>`${m.coins?`${COIN}${fmtC(m.coins)}`:''}${m.tickets?`<span class="mtk" title="${L?'근하신년 decoder':'근하신년 해독기'}">${decoderSvg('tki')}×${m.tickets}</span>`:''}`;
+const misRw=(m,L)=>`${m.coins?`${COIN}${fmtC(m.coins)}`:''}${m.tickets?`<span class="mtk" title="${L?'All-Clear decoder':'격리해제 해독기'}">${decoderSvg('tki')}×${m.tickets}</span>`:''}`;
 const hms=s=>{s=Math.max(0,s|0);return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`};
 
 const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy:false,tick:0,
@@ -33,7 +33,7 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
   clock(){if(!$('rkWin')){clearInterval(this.tick);return}const M=ACC.mis,el=$('rkReset');if(!M||M.resets_in==null)return;
     const left=M.resets_in-(Date.now()-M.at)/1000;if(el)el.textContent=hms(left);if(left<=0&&this.page==='mis'&&!this.load.mis){M.resets_in=null;this.fetch(true)}},
   head(){const L=LI(),me=ACC.me;if(!ACC.on)return '';
-    if(ACC.signed())return `<span class="scoin">${COIN}<b>${fmtC(me.coins)}</b></span>${me.tickets>0?`<span class="scoin tkc" title="${L?'근하신년 decoders kept':'보유한 근하신년 해독기'}">${decoderSvg('tki')}<b>${fmtC(me.tickets)}</b></span>`:''}<button class="sacc" data-ra="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`;
+    if(ACC.signed())return `<span class="scoin">${COIN}<b>${fmtC(me.coins)}</b></span>${me.tickets>0?`<span class="scoin tkc" title="${L?'All-Clear decoders kept':'보유한 격리해제 해독기'}">${decoderSvg('tki')}<b>${fmtC(me.tickets)}</b></span>`:''}<button class="sacc" data-ra="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`;
     return `<button class="sacc hl" data-ra="login">${SVG_USER}<span>${L?'Sign in':'로그인'}</span></button>`},
   render(){const o=$('rkWin');if(!o)return;const L=LI(),pg=this.page,dot=ACC.misReady()>0,adot=ACC.signed()&&(ACC.me.achReady|0)>0,sc=o.querySelector('.rklist,.mbody'),keep=sc&&o.dataset.pg===pg+this.kind?sc.scrollTop:0;
     const PG={mis:[SVG_MIS,'일일 미션','Daily missions','MISSIONS'],ach:[SVG_MEDAL,'업적','Achievements','ACHIEVEMENTS'],ttl:[SVG_TAG,'칭호','Titles','TITLES'],rank:[SVG_TROPHY,'랭킹','Ranking','RANKING'],hof:[SVG_CROWN,'명예의 전당','Hall of fame','HALL OF FAME']},P0=PG[pg]||PG.mis;
@@ -43,7 +43,7 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
   // ---- the daily missions ----
   misPage(){const L=LI(),M=ACC.mis,ms=M&&M.missions||[];let body;
     if(!ACC.on)body=`<div class="rkempty">${L?'Missions open once accounts are set up.':'계정 서버가 연결되면 미션을 할 수 있어요.'}</div>`;
-    else if(!ACC.signed())body=`<div class="rkempty">${L?'Sign in for 3 daily missions — coins and 근하신년 decoders for playing.':'로그인하면 매일 미션 3개 — 플레이만 해도 코인과 근하신년 해독기를 받아요.'}<button class="sbb" data-ra="login">${L?'Sign in':'로그인'}</button></div>`;
+    else if(!ACC.signed())body=`<div class="rkempty">${L?'Sign in for 3 daily missions — coins and All-Clear decoders for playing.':'로그인하면 매일 미션 3개 — 플레이만 해도 코인과 격리해제 해독기를 받아요.'}<button class="sbb" data-ra="login">${L?'Sign in':'로그인'}</button></div>`;
     else if(!ms.length)body=`<div class="rkempty">${this.load.mis?(L?'Loading…':'불러오는 중…'):(L?'No missions today.':'오늘은 미션이 없어요.')}</div>`;
     else body=ms.map(m=>{const done=m.progress>=m.goal,p=Math.min(1,m.progress/Math.max(1,m.goal)),t=MIS_TIER[m.tier]||MIS_TIER[1];
       return `<div class="mcard t${m.tier|0}${done?' done':''}${m.claimed?' got':''}"><em class="mtier">${t[L?1:0]}</em>
@@ -84,7 +84,7 @@ const RKW={page:'mis',kind:'level',data:{},at:{},load:{},msg:'',msgOk:false,busy
     if(a==='wear'){ACH.wear(v);return}
     if(a==='hsz'){if(typeof EPSZ!=='undefined'&&EPSZ.hs!==+v){EPSZ.hs=+v;this.render();AU.play('ui',{vol:.25});const l=document.querySelector('#rkWin .mbody');if(l)l.scrollTop=0}return}},
   async claim(slot){if(this.busy)return;const L=LI();this.busy=true;this.msg='';this.render();
-    try{const r=await ACC.misClaim(slot);this.msg=(L?'Reward: ':'보상 — ')+(r.got?`+${fmtC(r.got)} ${L?'coins':'코인'}`:'')+(r.got_tickets?`${r.got?' · ':''}${L?'근하신년 decoder':'근하신년 해독기'} +${r.got_tickets}`:'');this.msgOk=true;AU.play('buy',{vol:.8})}
+    try{const r=await ACC.misClaim(slot);this.msg=(L?'Reward: ':'보상 — ')+(r.got?`+${fmtC(r.got)} ${L?'coins':'코인'}`:'')+(r.got_tickets?`${r.got?' · ':''}${L?'All-Clear decoder':'격리해제 해독기'} +${r.got_tickets}`:'');this.msgOk=true;AU.play('buy',{vol:.8})}
     catch(e){this.msg=ACC.errText(e);this.msgOk=false;AU.play('dry',{vol:.5});if(/no_mission/.test(String(e.message)))ACC.loadMissions().catch(()=>{})}
     this.busy=false;this.render()}};
 

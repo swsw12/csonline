@@ -50,7 +50,7 @@ const SOUND_DESIGN={
   f7:      {vol:1, rate:1, file:''},  // 파이브세븐 발사음 — 가볍고 날카로움
   tw9:     {vol:1, rate:1, file:''},  // 듀얼 베레타 발사음 (빨강·노랑 쌍권총, 양손 번갈아 쏨)
   r6:      {vol:1, rate:1, file:''},  // 아나콘다 리볼버 발사음
-  duck:    {vol:1, rate:1, file:''},  // 스페셜 덕 풋 건 발사음 (여러 총구가 한 번에 터지는 소리)
+  duck:    {vol:1, rate:1, file:''},  // 덕풋 권총 발사음 (여러 총구가 한 번에 터지는 소리)
   // ── 총소리 · 샷건 ────────────────────────────────────────────────────────────────────────────
   sg8:     {vol:1, rate:1, file:''},  // M3 펌프 샷건 발사음
   db2:     {vol:1, rate:1, file:''},  // 더블 배럴 샷건 발사음
@@ -63,17 +63,17 @@ const SOUND_DESIGN={
   k9:      {vol:1, rate:1, file:''},  // MAC-10 발사음
   um45:    {vol:1, rate:1, file:''},  // UMP45 발사음
   pd50:    {vol:1, rate:1, file:''},  // P90 발사음
-  sterling:{vol:1, rate:1, file:''},  // 스털링 바요넷 발사음
-  balrog5: {vol:1, rate:1, file:''},  // 발록-5 발사음 — M4A1보다 낮고 묵직한 5.56mm
-  bx11:    {vol:1, rate:1, file:''},  // 발록-XI 발사음 — XM1014보다 거친 12게이지
-  bxfire:  {vol:1, rate:1, file:''},  // 발록-XI 우클릭 — 화염구 5발이 '화르륵' 터져 나가는 소리
-  bxchg:   {vol:1, rate:1, file:''},  // 발록-XI 특수탄 충전 '띠링'
+  sterling:{vol:1, rate:1, file:''},  // 스털링 L2A3 발사음
+  balrog5: {vol:1, rate:1, file:''},  // 이그니스-5 발사음 — M4A1보다 낮고 묵직한 5.56mm
+  bx11:    {vol:1, rate:1, file:''},  // 이그니스-XI 발사음 — XM1014보다 거친 12게이지
+  bxfire:  {vol:1, rate:1, file:''},  // 이그니스-XI 우클릭 — 화염구 5발이 '화르륵' 터져 나가는 소리
+  bxchg:   {vol:1, rate:1, file:''},  // 이그니스-XI 특수탄 충전 '띠링'
   plfire:  {vol:1, rate:1, file:''},  // 플라즈마 건 발사음 — '퓨웅' 하는 에너지탄
   plhit:   {vol:1, rate:1, file:''},  // 플라즈마 구체가 터지는 '팍'
   plchg:   {vol:1, rate:1, file:''},  // 플라즈마 셀을 끼운 뒤 차오르는 '위잉'
-  tbfire:  {vol:1, rate:1, file:''},  // 썬더볼트 발사음 — 광선이 '쥬웅' 뻗어 나가는 소리
-  tbchg:   {vol:1, rate:1, file:''},  // 썬더볼트 재충전 완료 '위이잉'
-  tbsw:    {vol:1, rate:1, file:''},  // 썬더볼트 전원 스위치 '딸깍'
+  tbfire:  {vol:1, rate:1, file:''},  // 아크라인 발사음 — 광선이 '쥬웅' 뻗어 나가는 소리
+  tbchg:   {vol:1, rate:1, file:''},  // 아크라인 재충전 완료 '위이잉'
+  tbsw:    {vol:1, rate:1, file:''},  // 아크라인 전원 스위치 '딸깍'
   dmp7:    {vol:1, rate:1, file:''},  // 듀얼 MP7A1 (보급상자 전용) 발사음 — 날카롭고 높은 4.6mm, 양손 번갈아 쏨
   glock:   {vol:1, rate:1, file:''},  // 글록 발사음 — 가볍고 경쾌한 9mm (우클릭 3점사)
   dglock:  {vol:1, rate:1, file:''},  // 더블 글록 (보급상자 전용) 발사음 — 빠른 연사용으로 짧고 날카로운 9mm, 양손 번갈아 쏨
@@ -89,7 +89,7 @@ const SOUND_DESIGN={
   br3:     {vol:1, rate:1, file:''},  // 파마스 발사음
   ar5c:    {vol:1, rate:1, file:''},  // SG552 발사음
   hr17:    {vol:1, rate:1, file:''},  // SCAR-H 발사음
-  ak60r:   {vol:1, rate:1, file:''},  // AK-47 60R (보급상자 전용) 발사음 — AK보다 낮고 묵직한 7.62mm + 노리쇠 철컥
+  ak60r:   {vol:1, rate:1, file:''},  // AK-47 드럼 (보급상자 전용) 발사음 — AK보다 낮고 묵직한 7.62mm + 노리쇠 철컥
   sr8:     {vol:1, rate:1, file:''},  // 스카웃 저격총 발사음
   r700:    {vol:1, rate:1, file:''},  // AWP 저격총 발사음 — 길게 울리는 메아리
   dm14:    {vol:1, rate:1, file:''},  // G3SG1 자동 저격총 발사음
@@ -99,13 +99,13 @@ const SOUND_DESIGN={
   spinloop:{vol:1, rate:1, file:''},  // M134 미니건 총열 도는 모터음 (조준·사격 중 계속 도는 반복음)
   // ── 총소리 · 특수무기 ────────────────────────────────────────────────────────────────────────
   gl40:    {vol:1, rate:1, file:''},  // M79 유탄발사기 '퐁' 발사음
-  airb:    {vol:1, rate:1, file:''},  // 에어 버스터(넉백총) 압축공기 '피슉' 소리 — 초당 10번 나는 짧은 소리
-  salign:  {vol:1, rate:1, file:''},  // 샐러맨더(화염방사기) 점화 '화륵' — 방아쇠를 당기는 순간 (첫 장전 때 파일럿 불꽃도)
-  salroar: {vol:1, rate:1, file:''},  // 샐러맨더 불길 '쿠와아' 반복음 — 내가 쏘는 동안 계속 도는 소리 (파일로 바꿀 땐 끊김 없이 이어지는 소리로)
-  salgust: {vol:1, rate:1, file:''},  // 샐러맨더 불길 소리 한 토막 — 다른 사람·봇이 쏠 때 위치에 맞춰 이어서 재생
-  saloff:  {vol:1, rate:1, file:''},  // 샐러맨더 사격을 멈출 때 밸브 '탁' + 가스 '치이익'
-  salout:  {vol:1, rate:1, file:''},  // 샐러맨더 재장전: 연료통 걸쇠 풀고 빼는 '덜컥'
-  salin:   {vol:1, rate:1, file:''},  // 샐러맨더 재장전: 새 연료통 끼우는 묵직한 '철컥' + 가스 새는 소리
+  airb:    {vol:1, rate:1, file:''},  // 압축 공기포(넉백총) 압축공기 '피슉' 소리 — 초당 10번 나는 짧은 소리
+  salign:  {vol:1, rate:1, file:''},  // 파이어웜(화염방사기) 점화 '화륵' — 방아쇠를 당기는 순간 (첫 장전 때 파일럿 불꽃도)
+  salroar: {vol:1, rate:1, file:''},  // 파이어웜 불길 '쿠와아' 반복음 — 내가 쏘는 동안 계속 도는 소리 (파일로 바꿀 땐 끊김 없이 이어지는 소리로)
+  salgust: {vol:1, rate:1, file:''},  // 파이어웜 불길 소리 한 토막 — 다른 사람·봇이 쏠 때 위치에 맞춰 이어서 재생
+  saloff:  {vol:1, rate:1, file:''},  // 파이어웜 사격을 멈출 때 밸브 '탁' + 가스 '치이익'
+  salout:  {vol:1, rate:1, file:''},  // 파이어웜 재장전: 연료통 걸쇠 풀고 빼는 '덜컥'
+  salin:   {vol:1, rate:1, file:''},  // 파이어웜 재장전: 새 연료통 끼우는 묵직한 '철컥' + 가스 새는 소리
   blackout:{vol:1, rate:1, file:''},  // 정전 이벤트 — 전기 끊기는 '쿵' + 형광등 꺼지는 웅 소리
   powerup: {vol:1, rate:1, file:''},
   bhole:   {vol:1, rate:1, file:''},  // 이벤트 호라이즌(보급상자 전용) 발사음 — 낮은 '쿵' + 올라가는 전자음
@@ -113,8 +113,8 @@ const SOUND_DESIGN={
   supply:  {vol:1, rate:1, file:''},
   chg:     {vol:1, rate:1, file:''},  // 첫 장전: 소총·기관단총 장전손잡이를 뒤로 당기는 '스르륵-턱' (AK·M4·갈릴 등)
   hkslap:  {vol:1, rate:1, file:''},  // 첫 장전: HK식 장전 — 손바닥으로 레버를 내리쳐 노리쇠가 닫히는 '착!' (MP5·UMP·G3)
-  cylspin: {vol:1, rate:1, file:''},  // 첫 장전: 리볼버 실린더를 손으로 돌리는 '촤르륵' (아나콘다), 볼케이노 드럼·매그넘 런처 총열
-  sawpull: {vol:1, rate:1, file:''},  // 첫 장전: 리퍼 시동줄 당기는 소리 + 엔진 털털
+  cylspin: {vol:1, rate:1, file:''},  // 첫 장전: 리볼버 실린더를 손으로 돌리는 '촤르륵' (아나콘다), 헥사 로터 드럼·슬러그 런처 총열
+  sawpull: {vol:1, rate:1, file:''},  // 첫 장전: 그라인더 시동줄 당기는 소리 + 엔진 털털
   spinup:  {vol:1, rate:1, file:''},  // 첫 장전: M134 미니건 모터 시동 '위이잉'
   xbowcock:{vol:1, rate:1, file:''},  // 첫 장전: 크로스보우 시위를 당겨 거는 '끼익-탁'
   fdslam:  {vol:1, rate:1, file:''},  // 첫 장전: 권총 슬라이드가 스프링에 튕겨 닫히는 '착' (닫히는 순간에 맞춰 재생 — 파일로 바꿀 땐 소리가 0초에 바로 시작해야 함)
@@ -122,24 +122,24 @@ const SOUND_DESIGN={
   pumpb:   {vol:1, rate:1, file:''},  // 첫 장전: 펌프를 뒤로 당기는 '척' (0.055초에 뒤 끝에 닿는 소리)
   pumpf:   {vol:1, rate:1, file:''},  // 첫 장전: 펌프를 앞으로 밀어 닫는 '철컥' (0초에 바로 시작)
   fdgrab:  {vol:1, rate:1, file:''},  // 첫 장전: 장갑 낀 손이 쇠를 움켜쥐는 작은 소리
-  hiss:    {vol:1, rate:1, file:''},  // 첫 장전: 에어 버스터 공기탱크 밸브 '치익', 이벤트 호라이즌 충전  // 보급상자 투하 — 수송기 프로펠러가 머리 위로 지나가는 소리  // 전력 복구 — 발전기 돌아가며 조명이 차례로 켜지는 소리
-  volc:    {vol:1, rate:1, file:''},  // 볼케이노 (연사 샷건) 발사음
-  mdrill:  {vol:1, rate:1, file:''},  // 매그넘 드릴 발사음
-  drill:   {vol:1, rate:1, file:''},  // 매그넘 드릴 우클릭 — 드릴 돌리며 찌르기
-  mlaunch: {vol:1, rate:1, file:''},  // 매그넘 런처 3연발 발사음
+  hiss:    {vol:1, rate:1, file:''},  // 첫 장전: 압축 공기포 공기탱크 밸브 '치익', 이벤트 호라이즌 충전  // 보급상자 투하 — 수송기 프로펠러가 머리 위로 지나가는 소리  // 전력 복구 — 발전기 돌아가며 조명이 차례로 켜지는 소리
+  volc:    {vol:1, rate:1, file:''},  // 헥사 로터 (연사 샷건) 발사음
+  mdrill:  {vol:1, rate:1, file:''},  // 보어 드릴 발사음
+  drill:   {vol:1, rate:1, file:''},  // 보어 드릴 우클릭 — 드릴 돌리며 찌르기
+  mlaunch: {vol:1, rate:1, file:''},  // 슬러그 런처 3연발 발사음
   xbow:    {vol:1, rate:1, file:''},  // 크로스보우 시위 소리
-  xbowa:   {vol:1, rate:1, file:''},  // 크로스보우 어드밴스 시위 소리
-  hstick:  {vol:1, rate:1, file:''},  // 크로스보우 볼트·게이볼그 작살이 벽이나 몸에 꽂히는 소리
-  harpoon: {vol:1, rate:1, file:''},  // 게이볼그 작살 발사음
-  disc:    {vol:1, rate:1, file:''},  // 혈적자 원반 던지는 '윙' 소리
-  dischit: {vol:1, rate:1, file:''},  // 혈적자 원반이 좀비·벽에 맞는 금속성 '챙'
-  pickup:  {vol:1, rate:1, file:''},  // 혈적자 원반이 돌아와 손에 잡힐 때
-  bdc:     {vol:1, rate:1, file:''},  // 흑룡포 화염 발사음
-  rdc:     {vol:1, rate:1, file:''},  // 적룡포 화염 발사음 (흑룡포보다 더 큼)
+  xbowa:   {vol:1, rate:1, file:''},  // 관통 크로스보우 시위 소리
+  hstick:  {vol:1, rate:1, file:''},  // 크로스보우 볼트·나르왈 작살이 벽이나 몸에 꽂히는 소리
+  harpoon: {vol:1, rate:1, file:''},  // 나르왈 작살 발사음
+  disc:    {vol:1, rate:1, file:''},  // 차크람 원반 던지는 '윙' 소리
+  dischit: {vol:1, rate:1, file:''},  // 차크람 원반이 좀비·벽에 맞는 금속성 '챙'
+  pickup:  {vol:1, rate:1, file:''},  // 차크람 원반이 돌아와 손에 잡힐 때
+  bdc:     {vol:1, rate:1, file:''},  // 흑염포 화염 발사음
+  rdc:     {vol:1, rate:1, file:''},  // 홍염포 화염 발사음 (흑염포보다 더 큼)
   dragon:  {vol:1, rate:1, file:''},  // 용포 우클릭(게이지 가득) — 용 소환 포효
-  sawrev:  {vol:1, rate:1, file:''},  // 리퍼(전기톱) 엔진 부웅 — 내가 들 때 / 남이 갈아버릴 때
-  sawloop: {vol:1, rate:1, file:''},  // 리퍼 엔진 반복음 (누르고 있는 동안 계속, 세게 갈수록 높아짐)
-  sawhit:  {vol:1, rate:1, file:''},  // 리퍼 톱날이 몸을 가는 소리
+  sawrev:  {vol:1, rate:1, file:''},  // 그라인더(전기톱) 엔진 부웅 — 내가 들 때 / 남이 갈아버릴 때
+  sawloop: {vol:1, rate:1, file:''},  // 그라인더 엔진 반복음 (누르고 있는 동안 계속, 세게 갈수록 높아짐)
+  sawhit:  {vol:1, rate:1, file:''},  // 그라인더 톱날이 몸을 가는 소리
 
   // ── 장전 · 무기 다루기 ───────────────────────────────────────────────────────────────────────
   casing:  {vol:1, rate:1, file:''},  // 탄피가 바닥에 떨어지는 '팅' (권총·소총 쏜 뒤, 배경 음악 타악기로도 씀)
@@ -160,20 +160,20 @@ const SOUND_DESIGN={
 
   // ── 근접 무기 ────────────────────────────────────────────────────────────────────────────────
   kdraw:   {vol:1, rate:1, file:''},  // 칼·도끼·망치 꺼내는 '스릉' (망치 모드 바꿀 때도)
-  kswing:  {vol:1, rate:1, file:''},  // 근접 무기 휘두르는 바람 소리 (칼·도끼, 리퍼 휘두르기)
+  kswing:  {vol:1, rate:1, file:''},  // 근접 무기 휘두르는 바람 소리 (칼·도끼, 그라인더 휘두르기)
   khit:    {vol:1, rate:1, file:''},  // 칼날이 몸에 박히는 소리
   hamhit:  {vol:1, rate:1, file:''},  // 망치 같은 둔기가 몸을 때리는 '퍽'
   kwall:   {vol:1, rate:1, file:''},  // 근접 무기·좀비 손톱이 벽에 부딪히는 '깡'
-  skswing: {vol:1, rate:1, file:''},  // 스컬-9 휘두르는 묵직한 바람 소리 (좌클릭 가로베기·우클릭 내려찍기)
-  skhit:   {vol:1, rate:1, file:''},  // 스컬-9 도끼날이 몸을 찍는 '콱'
-  skslam:  {vol:1, rate:1, file:''},  // 스컬-9 우클릭 내려찍기가 땅을 때리는 '쿵' (흙먼지와 함께)
-  skdraw:  {vol:1, rate:1, file:''},  // 스컬-9 꺼낼 때 쇠 긁히는 소리와 철사 찰랑임
+  skswing: {vol:1, rate:1, file:''},  // 그레이브-9 휘두르는 묵직한 바람 소리 (좌클릭 가로베기·우클릭 내려찍기)
+  skhit:   {vol:1, rate:1, file:''},  // 그레이브-9 도끼날이 몸을 찍는 '콱'
+  skslam:  {vol:1, rate:1, file:''},  // 그레이브-9 우클릭 내려찍기가 땅을 때리는 '쿵' (흙먼지와 함께)
+  skdraw:  {vol:1, rate:1, file:''},  // 그레이브-9 꺼낼 때 쇠 긁히는 소리와 철사 찰랑임
   kaswing: {vol:1, rate:1, file:''},  // 카타나 휘두르는 날카로운 바람 소리 (좌클릭 사선베기·우클릭 가로베기)
   kahit:   {vol:1, rate:1, file:''},  // 카타나 날이 몸을 베는 소리 (서걱 + 짧은 쇳소리)
   kadraw:  {vol:1, rate:1, file:''},  // 카타나 뽑는 소리 (칼집에서 '스르릉' 하고 울림)
 
   // ── 폭발 · 투척물 ────────────────────────────────────────────────────────────────────────────
-  explode: {vol:1, rate:1, file:''},  // 폭발 (고폭 수류탄, M79 유탄, 게이볼그 기폭, 관짝 터짐, 자폭 좀비)
+  explode: {vol:1, rate:1, file:''},  // 폭발 (고폭 수류탄, M79 유탄, 나르왈 기폭, 관짝 터짐, 자폭 좀비)
   frostx:  {vol:1, rate:1, file:''},  // 냉동 수류탄 터지는 소리 (얼음 깨지는 반짝임)
   zbombx:  {vol:1, rate:1, file:''},  // 좀비 폭탄 터지는 소리 (인간을 날려버림)
   flare:   {vol:1, rate:1, file:''},  // 조명탄 점화 '치익'
@@ -202,9 +202,9 @@ const SOUND_DESIGN={
   zinfect: {vol:1, rate:1, file:''},  // 감염 — 숙주 좀비 등장 / 내가 좀비가 됐을 때
   zroar:   {vol:1, rate:1, file:''},  // 일반 좀비 스킬 광폭화 포효 / 좀비 레벨업 포효
   zleap:   {vol:1, rate:1, file:''},  // 도약 (좀비 폭탄에 날아갈 때, 시나리오 보스가 뛰어들 때)
-  invis:   {vol:1, rate:1, file:''},  // 라이트 좀비 스킬 투명화
-  heal:    {vol:1, rate:1, file:''},  // 부두 좀비 스킬 치유
-  trapset: {vol:1, rate:1, file:''},  // 헤비 좀비 스킬 덫 설치 (관짝 좀비가 관 세울 때도 낮게)
+  invis:   {vol:1, rate:1, file:''},  // 그림자 좀비 스킬 투명화
+  heal:    {vol:1, rate:1, file:''},  // 주술사 좀비 스킬 치유
+  trapset: {vol:1, rate:1, file:''},  // 덫잡이 좀비 스킬 덫 설치 (관짝 좀비가 관 세울 때도 낮게)
   trapsnap:{vol:1, rate:1, file:''},  // 덫이 닫히며 인간 다리를 무는 소리
   zrevive: {vol:1, rate:1, file:''},  // 좀비 부활
   zscream: {vol:1, rate:1, file:''},  // 비명 스킬 (지금 이 스킬을 쓰는 좀비 없음, 예비)
@@ -261,9 +261,9 @@ const ARM_DESIGN={
   sl_soldier:['#4c5436','#2e3424','#6a6a48'],   // LEGION (용병) — 올리브 위장무늬 소매
   sl_hazmat: ['#c8a42a'],                       // CBIRF (방호복) — 노란 방호복 소매
   zs_rager:  ['#7a8a6a','#4a2a28'],             // 일반 좀비 팔 — 회녹색 피부, 검붉은 얼룩
-  zs_runner: ['#9a9a86','#5a3a40'],             // 라이트 좀비 팔 — 창백한 회색 피부, 보랏빛 얼룩
-  zs_brute:  ['#8a7a6a','#6a3a32'],             // 헤비 좀비 팔 — 누런 살색, 적갈색 얼룩
-  zs_scream: ['#2a1a15','#4a3020'],             // 부두 좀비 팔 — 짙은 갈색 피부
+  zs_runner: ['#9a9a86','#5a3a40'],             // 그림자 좀비 팔 — 창백한 회색 피부, 보랏빛 얼룩
+  zs_brute:  ['#8a7a6a','#6a3a32'],             // 덫잡이 좀비 팔 — 누런 살색, 적갈색 얼룩
+  zs_scream: ['#2a1a15','#4a3020'],             // 주술사 좀비 팔 — 짙은 갈색 피부
   zs_coffin: ['#282321','#3a1c10'],             // 관짝 좀비 팔 — 거의 검은 피부
   zs_fireman:['#5e4c42','#2a1410'],             // 소방관 좀비 팔 — 그을린 잿빛 피부 (손등)
   sl_fmcoat: ['#8a6c3e'],                       // 소방관 좀비 소매 — 그을린 황갈색 방화복 (손목에 형광 띠: fmRefl, fireman.js)
@@ -451,7 +451,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       for(let r=0;r<3;r++)for(const s of [-1,1])L.push({n:'rib',b:1,c:[s*o.torsoW*.16,sY+o.torsoH*(.72-r*.13),zf-.012],s:[o.torsoW*.22,.02,.026],m:'bone'});
       L.push({n:'rib',b:1,c:[0,sY+o.torsoH*.6,zf-.008],s:[.03,o.torsoH*.34,.02],m:'bone'});
       const el=H.piv[4];L.push({n:'spike',b:4,c:[el[0]-o.armW*.55,el[1]-o.fore*.35,0],s:[.08,.024,.024],m:'bone'});return L}}
-  // ▶ 라이트 좀비 (runner) — 가죽이 벗겨진 굶주린 몸
+  // ▶ 그림자 좀비 (runner) — 가죽이 벗겨진 굶주린 몸
   //    마른 체형·긴 다리, 등 가죽이 벗겨져 척추뼈·견갑골이 드러남, 입술 없는 이빨, 코 없음(구멍),
   //    길게 굽은 뼈 손톱, 창백한 회색 피부에 보랏빛 혈관, 하늘색 눈, 검은 머리.
   else if(k==='runner'){// 질주체 — flayed and starved: the back skinned down to the spine, a lipless grin, long bone claws
@@ -468,7 +468,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       for(let i=0;i<6;i++)L.push({n:'vert',b:1,c:[0,sY+.04+i*.075,zb+.012],s:[.05,.045,.03],m:'bone'});
       for(const s of [-1,1])L.push({n:'vert',b:1,c:[s*.085,sY+o.torsoH*.74,zb+.006],s:[.1,.13,.016],m:'bone'});
       return L}}
-  // ▶ 헤비 좀비 (brute) — 부풀어 오른 격리 환자   (boss 일 때는 같은 몸에 어두운 색 = 시나리오 거대 좀비)
+  // ▶ 덫잡이 좀비 (brute) — 부풀어 오른 격리 환자   (boss 일 때는 같은 몸에 어두운 색 = 시나리오 거대 좀비)
   //    거대한 몸통, 주황 환자복(앞에 'Q7-031', 보스는 'Q7-000'), 꿰맸다 다시 터진 배에서 내장이 늘어짐,
   //    양 어깨를 뚫고 나온 뼈, 등 혹, 종양 여러 개, 살이 벗겨진 정수리, 주황 눈.
   else if(k==='brute'){// 거구 — a bloated quarantine patient: belly stitched shut and burst open again, guts hanging to the knees, tumours, bone through the shoulders
@@ -1082,7 +1082,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       {n:'wrist',b:6,c:[H.piv[6][0],H.piv[6][1]-o.fore+.045,0],s:[o.armW*1.04,.035,o.armW*1.04],m:'wrist'},
       {n:'tape',b:4,c:[el[0],el[1]-.05,-o.armW*.5],s:[.07,.06,.012],m:'tape'},
       {n:'tube',b:4,c:[el[0]-.01,el[1]-.2,-o.armW*.56],s:[.012,.3,.012],m:'tube'}]}}
-  // ▶ 부두 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
+  // ▶ 주술사 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),
   //    팔에 흰 핏줄 무늬와 찢김, 손목 갈색 띠.  오른손 인형은 아래 공통 처리의 '부두 인형' 부분에서 만든다.
@@ -1103,7 +1103,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
        {n:'dollB',b:0,c:[-.16,.9,-.12],s:[.06,.1,.05],m:'doll'},{n:'dollH',b:0,c:[-.16,.98,-.12],s:[.05,.05,.05],m:'doll'}
      ];
   }
-  // ▶ 알레프 (aleph, 1챕터 보스 Q7-000) — 거대 좀비 몸(위 헤비 좀비, 어두운 색) + 끊어진 구속 목줄과 늘어진 사슬 두 줄,
+  // ▶ 알레프 (aleph, 1챕터 보스 Q7-000) — 거대 좀비 몸(위 덫잡이 좀비, 어두운 색) + 끊어진 구속 목줄과 늘어진 사슬 두 줄,
   //    어깨와 가슴에 볼트로 박은 철판, 등에 탱크를 묶은 띠 두 줄. (등의 주황 혈청 탱크와 2페이즈의 격벽 방패는 게임이 따로 붙인다: aleph.js)
   if(aleph){const ex0=extra;mats.iron={base:'#4a4e52',style:'plate',gloss:244};mats.chain={base:'#6a6e70',style:'plate',gloss:246};mats.bolt={base:'#9a9890',style:'plate',gloss:248};
     decor.iron={all:[['grime',.5],['soak',0,.4,'#4a0606',.5]]};decor.torso.back=(decor.torso.back||[]).concat([['band',.42,.5,'#1a1814'],['band',.7,.78,'#1a1814']]);
@@ -1114,7 +1114,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       for(const [x,y] of [[-.25,.8],[-.09,.8],[-.25,.64],[-.09,.64],[.12,.72],[.26,.72],[.12,.6],[.26,.6]])L.push({n:'bolt',b:1,c:[x,sY+o.torsoH*y,zf-.04],s:[.025,.025,.02],m:'bolt'});
       return L}}
   // ── 여기부터 모든 좀비 공통 처리 ──
-  //    숙주·보스 혈관 추가 → 아래턱 → 팔다리가 잘렸을 때 보이는 단면(stump) → 부두 좀비 인형
+  //    숙주·보스 혈관 추가 → 아래턱 → 팔다리가 잘렸을 때 보이는 단면(stump) → 주술사 좀비 인형
   if(host||boss){for(const p of Object.keys(decor))for(const fk of ['front','back','all'])if(decor[p][fk])decor[p][fk]=decor[p][fk].concat([['veins',2,vein,1]]);
     decor.torso.front=(decor.torso.front||[]).concat([['veins',4,vein,1]]);decor.torso.back=(decor.torso.back||[]).concat([['veins',3,vein,1]]);}
   o.zombie=1;if(k==='brute')o.eyeSep=.16;const H=humanoid(o);const ex=extra(H);
@@ -1176,7 +1176,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
 //    harpoon  작살을 포신에 밀어 넣기                            tank     공기탱크 밸브를 비틀어 압력 충전
 //    orb      우리 안 구체가 돌며 빛이 차오름                    dragon   탄을 밀어 넣고 포구에 불씨
 //    cock     엄지로 해머 젖히기                                barrel   다연장 총열을 손으로 돌려 맞추기
-//    rail     전원 스위치를 올리면 레일 코일이 차례로 켜짐 (썬더볼트, csoguns.js)
+//    rail     전원 스위치를 올리면 레일 코일이 차례로 켜짐 (아크라인, specguns.js)
 const GUN_DESIGN={
   // ── 권총 ─────────────────────────────────────────────────────────────────────────────────────
   p9:      {mag:12, ch:1, act:'slide', x:.45, d:.045, roll:.35},             // USP .45 ACP — 실제 12발. 슬라이드 뒤를 잡아 당겼다 놓음 '철컥'
@@ -1186,15 +1186,15 @@ const GUN_DESIGN={
   dde:     {mag:14, ch:1, act:'slide', x:.65, d:.06, heavy:1},               // 데저트 이글 Mark XIX .50AE ×2 — 한 자루 7발씩 (약실 +2). X자 교차 뒤 무거운 두 슬라이드를 끝까지
   r6:      {mag:6,  ch:0, act:'revolver', x:1.1},
   crimson: {mag:6,  ch:0, act:'revolver', x:1.1},                            // 크림슨 피스메이커 (오리지널) — 6연발 싱글액션 리볼버, 빨강·검정                            // 콜트 아나콘다 .44 매그넘 — 6연발 리볼버. 실린더 열고 촤르륵 돌리고 닫고 해머 딸깍
-  duckfoot:{         ch:0, act:'cock', x:.45},                               // 스페셜 덕 풋 건 (CSO) — 4연장 일제사격 권총. 엄지로 해머 젖히기
+  duckfoot:{         ch:0, act:'cock', x:.45},                               // 덕풋 권총 — 4연장 일제사격 권총. 엄지로 해머 젖히기
   // ── 샷건 ─────────────────────────────────────────────────────────────────────────────────────
   sg8:     {mag:8,  ch:0, act:'pump', x:.45},                                // 베넬리 M3 슈퍼90 — 군용 튜브 7+약실 1 = 8발. 펌프 척-척
   m14:     {mag:7,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 베넬리 M4 (XM1014) — 튜브 6+약실 1 = 7발. 오른쪽 장전손잡이
   as12:    {mag:20, ch:0, act:'charge', x:.6,  side:'r', d:.055, roll:.32, heavy:.6, rl:'mag', reload:3.2}, // 대우 USAS-12 — 10발 박스 / 20발 드럼 → 드럼. 묵직한 오른쪽 손잡이. 재장전은 드럼 통째로 교체(3.2초)
   jhammer: {mag:10, ch:0, act:'pump', x:.55, rl:'mag', reload:3.2},       // 팬코 잭해머 — 10발 회전 카세트(리볼버 실린더처럼 한 발마다 돌아감), 재장전은 카세트째 교체. 첫 장전은 앞손잡이를 한 번 당겼다 밂
   db2:     {mag:2,  ch:0, act:'break', x:.85},                               // 더블 배럴 — 2발. 꺾어 열어 약실 확인, 손목으로 탁 닫기
-  volc:    {         ch:0, act:'spin', x:.7, rps:2.2, axis:'z', snd:['cylspin',.85,.7], shake:.002}, // 볼케이노 (CSO) — 6연장 회전 드럼을 드르륵 한 바퀴
-  mdrill:  {         ch:0, act:'spin', x:.6, rps:16, axis:'z', snd:['drill',.45,1.2], shake:.004},   // 매그넘 드릴 (CSO) — 드릴 비트를 위잉
+  volc:    {         ch:0, act:'spin', x:.7, rps:2.2, axis:'z', snd:['cylspin',.85,.7], shake:.002}, // 헥사 로터 — 6연장 회전 드럼을 드르륵 한 바퀴
+  mdrill:  {         ch:0, act:'spin', x:.6, rps:16, axis:'z', snd:['drill',.45,1.2], shake:.004},   // 보어 드릴 — 드릴 비트를 위잉
   // ── 기관단총 ──────────────────────────────────────────────────────────────────────────────────
   k5:      {mag:30, ch:1, act:'hk', x:.7, d:.045},                           // H&K MP5 — 30발. HK 슬랩: 왼쪽 앞 레버를 당겨 걸고 손바닥으로 착!
   k9:      {mag:30, ch:0, act:'charge', x:.5, side:'t', d:.045, ob:1},       // 잉그램 MAC-10 .45 — 30발, 오픈볼트. 위쪽 장전노브를 뒤로
@@ -1209,9 +1209,9 @@ const GUN_DESIGN={
   ar7:     {mag:30, ch:1, act:'ar', x:.75, d:.06},                           // 콜트 M4A1 — 30발. 뒤쪽 T자 손잡이 당겼다 놓고 전진기 탁
   ar5c:    {mag:30, ch:1, act:'charge', x:.5,  side:'r', d:.045, roll:.28},  // SIG SG552 — 30발. 오른쪽 손잡이, 짧고 경쾌하게
   hr17:    {mag:20, ch:1, act:'charge', x:.5,  side:'l', d:.06,  roll:.25},  // FN SCAR-H 7.62 — 20발. 왼쪽 앞 장전손잡이를 지지손으로 바로
-  ak60r:   {mag:60, ch:1, act:'charge', x:.7,  side:'r', d:.075, roll:.42, heavy:.6}, // AK-47 60R (보급상자 전용) — 반달형 60발 라운드 탄창. 총을 기울이고 오른쪽 손잡이를 크게 당겼다 철컥
-  xbow:    {         ch:0, act:'xbow', x:.8},                                // 크로스보우 (CSO 연발식) — 장전 슬라이드로 시위를 당겨 걸기
-  xbowa:   {         ch:0, act:'xbow', x:.75},                               // 크로스보우 어드밴스 (CSO)
+  ak60r:   {mag:60, ch:1, act:'charge', x:.7,  side:'r', d:.075, roll:.42, heavy:.6}, // AK-47 드럼 (보급상자 전용) — 반달형 60발 라운드 탄창. 총을 기울이고 오른쪽 손잡이를 크게 당겼다 철컥
+  xbow:    {         ch:0, act:'xbow', x:.8},                                // 크로스보우 (연발식) — 장전 슬라이드로 시위를 당겨 걸기
+  xbowa:   {         ch:0, act:'xbow', x:.75},                               // 관통 크로스보우
   // ── 저격총 ────────────────────────────────────────────────────────────────────────────────────
   sr8:     {mag:10, ch:1, act:'bolt', x:.65},                                // 슈타이어 스카웃 — 5발 / 10발 탄창 중 10발. 볼트 한 사이클
   r700:    {mag:10, ch:1, act:'bolt', x:.8, heavy:1},                        // AI 악틱 워페어 (AWP) .308 — 10발. 무거운 볼트를 크게
@@ -1220,22 +1220,22 @@ const GUN_DESIGN={
   hmg:     {mag:100, ch:0, act:'belt', x:1.3},                               // FN M249 — 100발 벨트 (200발 박스도 있음), 오픈볼트. 덮개 열고 벨트 얹고 닫고 장전
   mg6:     {mag:100, ch:0, act:'belt', x:1.35, heavy:1},                     // MG3 — 50발 벨트 두 개 연결, 오픈볼트. 더 묵직하게
   gx6:     {mag:500, res:500, ch:0, act:'spin', x:.8, rps:14, axis:'z', snd:['spinup',.9,1], shake:.006}, // M134 미니건 — 실제는 수천 발 급탄 → 500발. 모터 시동 위이잉
-  // ── 특수 (가상 무기라 탄 수는 CSO 값) ─────────────────────────────────────────────────────────────
+  // ── 특수 (가상 무기라 탄 수는 게임 설정값) ─────────────────────────────────────────────────────────────
   gl40:    {mag:1,  ch:0, act:'break', x:.7, open:.4, lift:.02},                                // M79 유탄발사기 — 1발 중절식. 꺾어 열어 확인하고 탁
-  airb:    {         ch:0, act:'tank', x:.7},                                // 에어 버스터 — 공기탱크 밸브를 비틀어 치익
+  airb:    {         ch:0, act:'tank', x:.7},                                // 압축 공기포 — 공기탱크 밸브를 비틀어 치익
   salamander:{       ch:0, act:'salig', x:.75},
   blaze8:  {mag:8,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 블레이즈-8 — 튜브 8발. 오른쪽 장전손잡이를 당겼다 놓음
-  balrog11:{mag:7,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 발록-XI (CSO) — 튜브 7발 자동 샷건. 오른쪽 장전손잡이 (재장전은 한 발씩, 아주 빠르게)
-  plasma:  {mag:45, ch:0, act:'charge', x:.6,  side:'r', d:.04, roll:.3},    // 플라즈마 건 (CSO) — 셀 45발. 오른쪽 레버를 당겨 셀을 깨움 (재장전은 셀을 뒤로 뽑아 갈아 끼움)
-  thunder: {mag:30, ch:0, act:'rail', x:.9},                                 // 썬더볼트 (CSO) — 전용탄 30발, 재장전 없음. 전원 스위치를 올리면 코일이 차례로 켜짐
-  balrog5: {mag:35, ch:1, act:'ar', x:.75, d:.06},                           // 발록-5 — 35발. 뒤쪽 T자 손잡이 당겼다 놓고 전진기 탁 (M4A1과 같은 동작)
-  winchester:{mag:6, ch:0, act:'pump', x:.5},                               // 윈체스터 M1887 — 레버 액션 6발. 레버를 내렸다 올림                              // 샐러맨더 화염방사기 — 가스통 밸브를 돌리고 점화, 파일럿 불꽃이 화륵
-  bdc:     {         ch:0, act:'dragon', x:.85},                             // 흑룡포 — 탄을 밀어 넣고 포구에 불씨 화륵
-  rdc:     {         ch:0, act:'dragon', x:.9},                              // 적룡포
-  ripper:  {         ch:0, act:'saw', x:1.4},                                // 리퍼 — 시동줄 두 번: 털털 꺼지고, 두 번째에 부릉
-  gaebolg: {         ch:0, act:'harpoon', x:.8},                             // 게이볼그 — 작살을 포신에 밀어 넣고 철컥
-  xdz:     {         ch:0, act:'spin', x:.6, rps:6, axis:'x', snd:['sawrev',.4,1.6], shake:.003}, // 혈적자 — 회전 칼날을 위잉 한 번
-  mlaunch: {         ch:0, act:'barrel', x:.6},                              // 매그넘 런처 — 3연장 총열을 돌려 맞추고 딸깍
+  balrog11:{mag:7,  ch:0, act:'charge', x:.55, side:'r', d:.05, roll:.3},    // 이그니스-XI — 튜브 7발 자동 샷건. 오른쪽 장전손잡이 (재장전은 한 발씩, 아주 빠르게)
+  plasma:  {mag:45, ch:0, act:'charge', x:.6,  side:'r', d:.04, roll:.3},    // 플라즈마 건 — 셀 45발. 오른쪽 레버를 당겨 셀을 깨움 (재장전은 셀을 뒤로 뽑아 갈아 끼움)
+  thunder: {mag:30, ch:0, act:'rail', x:.9},                                 // 아크라인 — 전용탄 30발, 재장전 없음. 전원 스위치를 올리면 코일이 차례로 켜짐
+  balrog5: {mag:35, ch:1, act:'ar', x:.75, d:.06},                           // 이그니스-5 — 35발. 뒤쪽 T자 손잡이 당겼다 놓고 전진기 탁 (M4A1과 같은 동작)
+  winchester:{mag:6, ch:0, act:'pump', x:.5},                               // 윈체스터 M1887 — 레버 액션 6발. 레버를 내렸다 올림                              // 파이어웜 화염방사기 — 가스통 밸브를 돌리고 점화, 파일럿 불꽃이 화륵
+  bdc:     {         ch:0, act:'dragon', x:.85},                             // 흑염포 — 탄을 밀어 넣고 포구에 불씨 화륵
+  rdc:     {         ch:0, act:'dragon', x:.9},                              // 홍염포
+  ripper:  {         ch:0, act:'saw', x:1.4},                                // 그라인더 — 시동줄 두 번: 털털 꺼지고, 두 번째에 부릉
+  gaebolg: {         ch:0, act:'harpoon', x:.8},                             // 나르왈 — 작살을 포신에 밀어 넣고 철컥
+  xdz:     {         ch:0, act:'spin', x:.6, rps:6, axis:'x', snd:['sawrev',.4,1.6], shake:.003}, // 차크람 — 회전 칼날을 위잉 한 번
+  mlaunch: {         ch:0, act:'barrel', x:.6},                              // 슬러그 런처 — 3연장 총열을 돌려 맞추고 딸깍
   bhole:   {         ch:0, act:'orb', x:.8},                                 // 이벤트 호라이즌 (보급상자 전용) — 구체가 돌며 빛이 차오름
 };
 // (게임이 읽는 부분) 무기 표에 위 값을 덮어쓴다 — 모든 무기 파일이 읽힌 뒤 supply.js 끝에서 한 번 부른다

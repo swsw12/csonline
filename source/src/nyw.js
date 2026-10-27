@@ -1,6 +1,6 @@
 'use strict';
-// ============ 근하신년 (Lunar New Year) weapon series and CSO zombie-class skills ============
-// Names, numbers and mechanics follow CSO; every model, texture and sound here is drawn/synthesised in code (original designs).
+// ============ The 격리해제 (All-Clear) weapon series and the zombie-class skills ============
+// Every model, texture and sound here is drawn/synthesised in code (original designs).
 
 // ---------- extra atlas materials (slots 48..55 of the 8x8 weapon atlas) ----------
 const NY_MATS=['gold','lacR','lacB','scale','chain','string','sawd','ember','scaleB'];
@@ -126,34 +126,34 @@ const NYG={
 };
 Object.assign(GUNS,NYG);
 
-// ---------- stats (CSO numbers where known; mechanics in the comments) ----------
+// ---------- stats (mechanics in the comments) ----------
 Object.assign(WPN,{
   // crossbows: quiet bolts with travel time, scope on RMB; the Advance's bolts pass through up to three targets
   xbow:{slot:1,kind:'rifle',ny:1,n:['크로스보우','Crossbow'],cost:3000,mag:50,res:150,dmg:30,rpm:400,semi:1,spread:[.003,.03,.09],spreadZ:.0008,zoom:[40],rec:[.012,.004],kb:2.4,stag:.25,hs:3,reload:2.8,draw:.7,speed:.95,snd:'xbow',model:'xbow',hold:'rifle',proj:'bolt',quiet:1},
-  xbowa:{slot:1,kind:'rifle',ny:1,n:['크로스보우 어드밴스','Crossbow Advance'],cost:3800,mag:50,res:150,dmg:33,rpm:520,semi:1,spread:[.003,.028,.09],spreadZ:.0006,zoom:[38],rec:[.012,.004],kb:2.6,stag:.25,hs:3,reload:2.6,draw:.7,speed:.95,snd:'xbowa',model:'xbowa',hold:'rifle',proj:'bolt',pierce:3,quiet:1},
-  // Volcano: 40 rounds of 12-gauge out of six turning barrels
-  volc:{slot:1,kind:'shotgun',ny:1,n:['볼케이노','Volcano'],cost:7000,mag:40,res:120,pellets:6,dmg:27,rpm:420,spin:.25,spread:[.05,.065,.1],rec:[.03,.02],kb:2.4,stag:.35,hs:2,reload:4.2,draw:1,speed:.82,snd:'volc',model:'volc',hold:'rifle',shell:1},
+  xbowa:{slot:1,kind:'rifle',ny:1,n:['관통 크로스보우','Piercing Crossbow'],cost:3800,mag:50,res:150,dmg:33,rpm:520,semi:1,spread:[.003,.028,.09],spreadZ:.0006,zoom:[38],rec:[.012,.004],kb:2.6,stag:.25,hs:3,reload:2.6,draw:.7,speed:.95,snd:'xbowa',model:'xbowa',hold:'rifle',proj:'bolt',pierce:3,quiet:1},
+  // Hexa Rotor: 40 rounds of 12-gauge out of six turning barrels
+  volc:{slot:1,kind:'shotgun',ny:1,n:['헥사 로터','Hexa Rotor'],cost:7000,mag:40,res:120,pellets:6,dmg:27,rpm:420,spin:.25,spread:[.05,.065,.1],rec:[.03,.02],kb:2.4,stag:.35,hs:2,reload:4.2,draw:1,speed:.82,snd:'volc',model:'volc',hold:'rifle',shell:1},
   // dragon cannons: a cone of dragon fire that hits everything in front three times and sets it alight
-  bdc:{slot:1,kind:'special',ny:1,n:['흑룡포','Black Dragon Cannon'],cost:6500,mag:20,res:40,dmg:85,rpm:55,semi:1,cone:{r:9,a:.55,ticks:3,burn:3,kb:9,up:3.5},spread:[0,0,0],rec:[.12,.03],kb:9,stag:.8,hs:1,shellRel:.32,relStart:.35,draw:1,speed:.85,snd:'bdc',model:'bdc',hold:'rifle'},
-  rdc:{slot:1,kind:'special',ny:1,n:['적룡포','Red Dragon Cannon'],cost:9000,mag:30,res:60,dmg:100,rpm:60,semi:1,cone:{r:10,a:.6,ticks:3,burn:4,kb:11,up:4,red:1},alt:'dragon',spread:[0,0,0],rec:[.12,.03],kb:11,stag:.8,hs:1,shellRel:.3,relStart:.35,draw:1,speed:.84,snd:'rdc',model:'rdc',hold:'rifle'},
-  // Ripper: hold LMB to grind (no knockback, heavy stagger, uses fuel); RMB swings it into a crowd (huge knockback, free)
-  ripper:{slot:1,kind:'saw',ny:1,n:['리퍼','Ripper'],cost:5000,mag:200,res:400,dmg:34,rpm:600,range:3.0,alt:'swing',swDmg:120,swKb:20,swCd:.9,reload:3.2,draw:1.1,speed:.95,snd:'sawrev',model:'ripper',hold:'rifle',spread:[0,0,0],rec:[0,0],kb:0,stag:.6,hs:1},
-  // Gae Bolg: the harpoon sticks and blows up a second later; RMB blows every harpoon at once (and you can ride the blast)
-  gaebolg:{slot:1,kind:'special',ny:1,n:['게이볼그','Gae Bolg'],cost:6000,mag:3,res:21,dmg:114,pm:{head:2.5,legs:.6},rpm:90,semi:1,proj:'harpoon',alt:'detonate',spread:[.003,.02,.06],rec:[.08,.02],kb:4,stag:.5,hs:1,shellRel:.6,relStart:.35,draw:.9,speed:.9,snd:'harpoon',model:'gaebolg',hold:'rifle'},
-  // 혈적자: a spinning blade that cuts through everything for 19 m and comes back; a head hit (126, a hard shove) buries it in the head, where it
+  bdc:{slot:1,kind:'special',ny:1,n:['흑염포','Black Flame Cannon'],cost:6500,mag:20,res:40,dmg:85,rpm:55,semi:1,cone:{r:9,a:.55,ticks:3,burn:3,kb:9,up:3.5},spread:[0,0,0],rec:[.12,.03],kb:9,stag:.8,hs:1,shellRel:.32,relStart:.35,draw:1,speed:.85,snd:'bdc',model:'bdc',hold:'rifle'},
+  rdc:{slot:1,kind:'special',ny:1,n:['홍염포','Red Flame Cannon'],cost:9000,mag:30,res:60,dmg:100,rpm:60,semi:1,cone:{r:10,a:.6,ticks:3,burn:4,kb:11,up:4,red:1},alt:'dragon',spread:[0,0,0],rec:[.12,.03],kb:11,stag:.8,hs:1,shellRel:.3,relStart:.35,draw:1,speed:.84,snd:'rdc',model:'rdc',hold:'rifle'},
+  // Grinder: hold LMB to grind (no knockback, heavy stagger, uses fuel); RMB swings it into a crowd (huge knockback, free)
+  ripper:{slot:1,kind:'saw',ny:1,n:['그라인더','Grinder'],cost:5000,mag:200,res:400,dmg:34,rpm:600,range:3.0,alt:'swing',swDmg:120,swKb:20,swCd:.9,reload:3.2,draw:1.1,speed:.95,snd:'sawrev',model:'ripper',hold:'rifle',spread:[0,0,0],rec:[0,0],kb:0,stag:.6,hs:1},
+  // Narwhal: the harpoon sticks and blows up a second later; RMB blows every harpoon at once (and you can ride the blast)
+  gaebolg:{slot:1,kind:'special',ny:1,n:['나르왈','Narwhal'],cost:6000,mag:3,res:21,dmg:114,pm:{head:2.5,legs:.6},rpm:90,semi:1,proj:'harpoon',alt:'detonate',spread:[.003,.02,.06],rec:[.08,.02],kb:4,stag:.5,hs:1,shellRel:.6,relStart:.35,draw:.9,speed:.9,snd:'harpoon',model:'gaebolg',hold:'rifle'},
+  // 차크람: a spinning blade that cuts through everything for 19 m and comes back; a head hit (126, a hard shove) buries it in the head, where it
   // grinds for 1.6 s (45 every 0.12 s, a steady shove, the head bursts if it kills) and then flies back
-  xdz:{slot:1,kind:'special',ny:1,n:['혈적자','Blood Dripper'],cost:5500,mag:50,res:100,dmg:32,hsDmg:126,gDmg:45,gT:1.6,rpm:150,proj:'disc',spread:[.002,.015,.05],rec:[.03,.01],kb:3,stag:.4,hs:1,reload:3,draw:.8,speed:.95,snd:'disc',model:'xdz',hold:'rifle'},
-  // Magnum Drill: automatic 12-gauge through a turning drill; RMB drives the drill into whatever is in front
-  mdrill:{slot:1,kind:'shotgun',ny:1,n:['매그넘 드릴','Magnum Drill'],cost:8000,mag:30,res:90,pellets:7,dmg:28,rpm:400,spread:[.05,.065,.1],rec:[.035,.02],kb:2.6,stag:.35,hs:2,reload:3.8,alt:'drill',draw:1,speed:.85,snd:'mdrill',model:'mdrill',hold:'rifle',shell:1},
-  // Magnum Launcher: three explosive slugs per pull
-  mlaunch:{slot:1,kind:'special',ny:1,n:['매그넘 런처','Magnum Launcher'],cost:7500,mag:10,res:30,dmg:160,rpm:100,semi:1,proj:'slug',slugs:3,spread:[.02,.04,.08],rec:[.1,.03],kb:10,stag:.7,hs:1,reload:3.4,draw:.9,speed:.86,snd:'mlaunch',model:'mlaunch',hold:'rifle'},
+  xdz:{slot:1,kind:'special',ny:1,n:['차크람','Chakram'],cost:5500,mag:50,res:100,dmg:32,hsDmg:126,gDmg:45,gT:1.6,rpm:150,proj:'disc',spread:[.002,.015,.05],rec:[.03,.01],kb:3,stag:.4,hs:1,reload:3,draw:.8,speed:.95,snd:'disc',model:'xdz',hold:'rifle'},
+  // Bore Drill: automatic 12-gauge through a turning drill; RMB drives the drill into whatever is in front
+  mdrill:{slot:1,kind:'shotgun',ny:1,n:['보어 드릴','Bore Drill'],cost:8000,mag:30,res:90,pellets:7,dmg:28,rpm:400,spread:[.05,.065,.1],rec:[.035,.02],kb:2.6,stag:.35,hs:2,reload:3.8,alt:'drill',draw:1,speed:.85,snd:'mdrill',model:'mdrill',hold:'rifle',shell:1},
+  // Slug Launcher: three explosive slugs per pull
+  mlaunch:{slot:1,kind:'special',ny:1,n:['슬러그 런처','Slug Launcher'],cost:7500,mag:10,res:30,dmg:160,rpm:100,semi:1,proj:'slug',slugs:3,spread:[.02,.04,.08],rec:[.1,.03],kb:10,stag:.7,hs:1,reload:3.4,draw:.9,speed:.86,snd:'mlaunch',model:'mlaunch',hold:'rifle'},
   // the 2017 rewards: a four-barrel volley pistol and a bayonet SMG (RMB stab)
-  duckfoot:{slot:2,kind:'pistol',ny:1,n:['스페셜 덕 풋 건','Special Duck Foot Gun'],cost:2000,mag:8,res:40,dmg:45,rpm:150,semi:1,fan:4,fanA:.17,spread:[.006,.02,.06],rec:[.07,.02],kb:3,stag:.35,hs:3,reload:3,draw:.6,speed:.98,snd:'duck',model:'duckfoot',hold:'pistol'},
-  sterling:{slot:1,kind:'smg',ny:1,n:['스털링 바요넷','Sterling Bayonet'],cost:2600,mag:34,res:170,dmg:26,rpm:550,alt:'bayonet',bayDmg:95,bayKb:7,bayCd:.65,spread:[.012,.03,.09],rec:[.01,.008],kb:2,stag:.22,hs:3,reload:2.6,draw:.65,speed:.97,snd:'sterling',model:'sterling',hold:'rifle',shell:1},
+  duckfoot:{slot:2,kind:'pistol',ny:1,n:['덕풋 권총','Duck-Foot Pistol'],cost:2000,mag:8,res:40,dmg:45,rpm:150,semi:1,fan:4,fanA:.17,spread:[.006,.02,.06],rec:[.07,.02],kb:3,stag:.35,hs:3,reload:3,draw:.6,speed:.98,snd:'duck',model:'duckfoot',hold:'pistol'},
+  sterling:{slot:1,kind:'smg',ny:1,n:['스털링 L2A3','Sterling L2A3'],cost:2600,mag:34,res:170,dmg:26,rpm:550,alt:'bayonet',bayDmg:95,bayKb:7,bayCd:.65,spread:[.012,.03,.09],rec:[.01,.008],kb:2,stag:.22,hs:3,reload:2.6,draw:.65,speed:.97,snd:'sterling',model:'sterling',hold:'rifle',shell:1},
 });
 const NY_LIST=['xbow','xbowa','volc','bdc','rdc','ripper','gaebolg','xdz','mdrill','mlaunch'];
 BUY_MENU.find(c=>c.k==='pistol').items.push('duckfoot');BUY_MENU.find(c=>c.k==='smg').items.push('sterling');
-BUY_MENU.splice(BUY_MENU.length-1,0,{k:'ny',n:['근하신년','New Year'],items:NY_LIST});
+BUY_MENU.splice(BUY_MENU.length-1,0,{k:'ny',n:['격리해제','All-Clear'],items:NY_LIST});
 Object.assign(VM_POS,{xbow:{p:[.15,-.16,-.34],r:[0,.085,.035]},xbowa:{p:[.15,-.16,-.34],r:[0,.085,.035]},volc:{p:[.17,-.2,-.47],r:[0,.075,.03]},
   bdc:{p:[.17,-.22,-.38],r:[0,.07,.03]},rdc:{p:[.17,-.225,-.38],r:[0,.07,.03]},ripper:{p:[.2,-.25,-.2],r:[.1,.2,.06]},gaebolg:{p:[.15,-.17,-.36],r:[0,.08,.035]},
   xdz:{p:[.15,-.17,-.33],r:[0,.08,.035]},mdrill:{p:[.16,-.19,-.38],r:[0,.08,.035]},mlaunch:{p:[.16,-.19,-.37],r:[0,.08,.035]},duckfoot:{p:[.12,-.14,-.36],r:[0,.07,.02]},sterling:{p:[.14,-.16,-.33],r:[0,.08,.03]}});
@@ -278,7 +278,7 @@ function coneBlast(a,W,eye,dir){const C=W.cone,red=!!C.red;const mz=muzzleWorld(
     if(!NET.ghost){t.burnT=Math.max(t.burnT||0,C.burn);t.burnSrc=a;t.burnW=a.cur}}
   if(n&&a.isPlayer)HUD.hitmark(false)}
 
-// ---------- the Ripper ----------
+// ---------- the Grinder ----------
 function sawUpdate(a,W,dt){const cmd=a.cmd,pc=a.pc,am=a.ammo[a.cur];
   const cutting=!!cmd.fire&&am.mag>0&&a.drawT<=0;a.sawRev=approach(a.sawRev||0,cutting?1:.22,dt*(cutting?6:2));a.sawCut=cutting;
   if(cutting&&G.t>=a.nextFire){a.nextFire=G.t+60/W.rpm;am.mag--;a.an.atk=Math.max(a.an.atk,.55);a.an.atkD=.3;a.an.heavy=false;a.lastFire=G.t;
@@ -335,7 +335,7 @@ function updBurn(dt){for(const t of G.actors){if(!(t.burnT>0))continue;if(!t.ali
     if(t.burnAcc>=.25&&NET.cli)t.burnAcc=0;
     if(t.burnAcc>=.25){t.burnAcc-=.25;const src=t.burnSrc&&G.actors.includes(t.burnSrc)?t.burnSrc:null;damageActor(t,11,src,{w:t.burnW||'bdc',dir:[0,0,0],kb:0,stag:.05,x:t.c.x,y:t.c.y+1,z:t.c.z,dot:1})}}}
 
-// ---------- CSO zombie skills: Light (invisibility), Heavy (trap), Voodoo (heal) ----------
+// ---------- zombie-class skills: Shade (invisibility), Trapper (trap), Shaman (heal) ----------
 function nySkill(a,Z){const c=a.c;
   if(Z.skill==='invis'){a.skillT=Z.dur;a.an.skill=.5;AU.at('invis',c.x,c.y+1.5,c.z,{vol:.9,range:30});for(let i=0;i<16;i++)FX.spawn({x:c.x+rr(-.3,.3),y:c.y+rr(.2,1.8),z:c.z+rr(-.3,.3),vx:rr(-.5,.5),vy:rr(-.2,.5),vz:rr(-.5,.5),life:rr(.4,.8),s0:.15,s1:.4,r:.5,g:.6,b:.7,a:.4,f:5,drag:2});
     if(a.isPlayer)HUD.note(T('nyInvis'),2);return true}
@@ -359,9 +359,9 @@ function updTraps(dt){for(let i=NY.traps.length-1;i>=0;i--){const T0=NY.traps[i]
     for(const h of G.actors){if(!h.alive||h.team!==TH)continue;if(Math.abs(h.c.x-T0.x)>.5||Math.abs(h.c.z-T0.z)>.5||Math.abs(h.c.y-T0.y)>.5)continue;
       h.rootT=4;h.c.vx=h.c.vz=0;h.mvx=h.mvz=h.kvx=h.kvz=0;nyTrapSnap(T0.id,h);if(NET.host)netEv('tsnap',{i:T0.id,v:h.id});break}}}
 
-// ---------- 근·하·신·년 letters: zombies you kill sometimes drop one; every letter picked up goes to the account inventory at the end
-// of the match (P.nyM counts this match's, ACC.nyAdd after the claim); a full set trades there for 2 근하신년 decoders or 1 season decoder
-const NY_CH=['근','하','신','년'];
+// ---------- 격·리·해·제 letters: zombies you kill sometimes drop one; every letter picked up goes to the account inventory at the end
+// of the match (P.nyM counts this match's, ACC.nyAdd after the claim); a full set trades there for 2 All-Clear decoders or 1 season decoder
+const NY_CH=['격','리','해','제'];
 function letterTex(ch){if(NY.tex[ch])return NY.tex[ch];const [cv,x]=mkCanvas(64,64);x.clearRect(0,0,64,64);x.font="bold 44px 'Galmuri11',sans-serif";x.textAlign='center';x.textBaseline='middle';
   x.shadowColor='#ff8a00';x.shadowBlur=14;x.fillStyle='#ffe08a';x.fillText(ch,32,35);x.shadowBlur=0;x.lineWidth=2;x.strokeStyle='#8a4400';x.strokeText(ch,32,35);
   const t=new THREE.CanvasTexture(cv);t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;return NY.tex[ch]=t}
@@ -376,7 +376,7 @@ function updLetters(dt){for(let i=NY.letters.length-1;i>=0;i--){const L=NY.lette
     if(got||L.t<=0){R.scene.remove(L.spr);L.spr.material.dispose();if(L.light)L.light.dead=true;NY.letters.splice(i,1)}}}
 function nyCollect(P,ch){const M=P.nyM||(P.nyM=[0,0,0,0]),i=NY_CH.indexOf(ch);if(i<0)return;M[i]++;AU.play('nyletter',{vol:.7});
   const L=LI(),saved=typeof ACC!=='undefined'&&ACC.signed&&ACC.signed();
-  if(M.every(v=>v>0)&&M.reduce((x,y)=>x+y,0)===4){HUD.announce(L?'근·하·신·년 — a full set! Trade it in your inventory':'근·하·신·년 한 세트! 인벤토리에서 해독기로 교환','h',3);AU.play('stingH',{vol:.6})}
+  if(M.every(v=>v>0)&&M.reduce((x,y)=>x+y,0)===4){HUD.announce(L?'격·리·해·제 — a full set! Trade it in your inventory':'격·리·해·제 한 세트! 인벤토리에서 해독기로 교환','h',3);AU.play('stingH',{vol:.6})}
   else HUD.note(`'${ch}' ${L?'picked up':'획득'} ×${M[i]}${saved?(L?' — goes to your inventory':' — 인벤토리에 저장돼요'):(L?' — sign in to keep it':' — 로그인하면 인벤토리에 저장')}`,1.8)}
 
 // ---------- per frame ----------
@@ -402,7 +402,7 @@ const NY_SW=[[0,[0,0,0,0,0,0]],[.25,[.12,.08,.04,.25,-.6,.5]],[.45,[-.08,.02,-.1
 // ---------- buy-menu text ----------
 function nyTags(W,L){const t=[];
   if(W.proj==='bolt')t.push(L?(W.pierce?'Piercing bolts':'Silent bolts'):(W.pierce?'관통 볼트':'저소음 볼트'));if(W.zoom)t.push(L?'Scope':'조준경');
-  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.air)t.push(L?'Air blast cone · huge knockback':'압축공기 분사 · 강한 넉백');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 적룡 소환');if(W.alt==='fan')t.push(L?'RMB: fan the hammer — empties the cylinder fast':'우클릭: 해머 연타 — 남은 탄을 빠르게 쏟아냄');
+  if(W.cone)t.push(L?'Dragon fire cone · burns':'용의 화염 · 화상');if(W.air)t.push(L?'Air blast cone · huge knockback':'압축공기 분사 · 강한 넉백');if(W.alt==='dragon')t.push(L?'RMB: summon a dragon':'우클릭: 화염룡 소환');if(W.alt==='fan')t.push(L?'RMB: fan the hammer — empties the cylinder fast':'우클릭: 해머 연타 — 남은 탄을 빠르게 쏟아냄');
   if(W.kind==='saw')t.push(L?'Hold to grind · RMB swing':'갈아버리기 · 우클릭 휘두르기');if(W.proj==='harpoon')t.push(L?'Sticky harpoon · RMB detonate':'작살 1초 뒤 폭발 · 우클릭 즉시 폭발');
   if(W.proj==='disc')t.push(L?'Returning blade · pierces':'관통 후 되돌아오는 칼날');if(W.alt==='drill')t.push(L?'RMB: drill':'우클릭: 드릴');if(W.proj==='slug')t.push(L?'3 explosive slugs':'폭발탄 3발');
   if(W.spin)t.push(L?'Rotary barrels':'회전 총열');if(W.pellets)t.push((L?'Pellets ×':'산탄 ×')+W.pellets);if(W.fan)t.push(L?'4-barrel volley':'4연장 일제사격');if(W.alt==='bayonet')t.push(L?'RMB: bayonet':'우클릭: 대검');
@@ -446,7 +446,7 @@ Object.assign(SFX,{
   heal:{n:1,dur:1.6,peak:.85,gain:.7,rev:.3,fn:B=>{voice(B,{f0:rr(140,160),fm:rr(180,200),f1:110,len:1,F:[600,1100,2500],drive:2.5,rasp:.5,rf:1200,vib:5,vibD:.05});[523,659,784].forEach((f,i)=>tone(B,.2+i*.1,f,.6,.12,'sine'))}},
 });
 SFX_ORDER.push('xbow','xbowa','hstick','volc','mdrill','bdc','rdc','harpoon','disc','dischit','mlaunch','duck','sterling','sawloop','sawrev','sawhit','drill','dragon','nyletter','trapset','trapsnap','invis','heal');
-// the Ripper's engine: one looping voice whose pitch and level follow the throttle
+// the Grinder's engine: one looping voice whose pitch and level follow the throttle
 AU.saw=function(v,cut){const c=this.ctx;if(!c||!this.sfx||c.state!=='running')return;const b=this.bank.sawloop;if(!b||!b.length)return;
   if(!this.sawS){if(!(v>.01))return;const s=c.createBufferSource();s.buffer=b[0];s.loop=true;const g=c.createGain();g.gain.value=0;s.connect(g);g.connect(this.sfx);s.start();this.sawS=s;this.sawG=g}
   const t=c.currentTime;const sd=soundDesign('sawloop');this.sawS.playbackRate.setTargetAtTime((.55+.9*v)*(sd.rate||1),t,.05);this.sawG.gain.setTargetAtTime(this.muted||!(v>.01)?0:(.12+.3*v)*(cut?1.1:1)*sd.vol,t,.05)};

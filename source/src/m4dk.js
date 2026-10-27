@@ -1,13 +1,13 @@
 'use strict';
-// ============ v6.41: M4A1 다크나이트 (M4A1 Dark Knight) — the first transcendence (초월) weapon ============
-// The name and the mechanics follow the CSO weapon; the model (a black-and-gold armoured M4: a crimson gem over the grip, armour lames down
+// ============ v6.41: M4A1 오닉스 (M4A1 Onyx) — the first awakened (각성) weapon ============
+// The model (a black-and-gold armoured M4: a crimson gem over the grip, armour lames down
 // the handguard, a knight's crest along the top, a sword's crossguard for a muzzle brake), its motions and its sounds are this game's own.
 // 50 rounds of .50 (50 / 300). A (left click): full-auto, head 150 / body 90 / arms and legs 50 (W.hs, W.limbK), a strong stagger.
 // Right click: B — the lames swing open over a crimson core, the crossguard turns, the view closes in a little (half zoom): every round
 // does double (300 / 180 / 100), goes through every zombie on its line (×DK.PK for each one before) and through up to DK.WALLS walls
 // (×DK.WALLK each), leaves a crimson trail and comes at a heavy machine-gun beat (DK.BRPM) while held, with almost no kick.
 // Owning it (the account; a bot: carrying it) makes the Deadshot (6) last DK.DS s longer.
-// Only from the transcendence exchange (초월 조각 × 888: shop.js, schema.sql qz_trans_exchange) — never from a decoder.
+// Only from the awakening exchange (각성 조각 × 888: shop.js, schema.sql qz_trans_exchange) — never from a decoder.
 // Network: the B state goes out as ['dk', id, 0 | 1]; a B shot is replayed on the other pages from the usual 'f' event (the state says
 // which); a client asking the host for its Deadshot says whether it owns one (x), the host passes it on with the event.
 
@@ -76,7 +76,7 @@ GUNS.m4dk=Object.assign({parts:dkParts('vm'),piv:DK_PIV,wid:'m4dkw'},DK_G);
 GUNS.m4dkw=Object.assign({parts:dkParts('a')},DK_G);GUNS.m4dkwb=Object.assign({parts:dkParts('b')},DK_G);
 
 // ---------- stats ----------
-WPN.m4dk={slot:1,kind:'rifle',n:['M4A1 다크나이트','M4A1 Dark Knight'],cost:6500,mag:50,res:300,dmg:90,hs:150/90,limbK:50/90,rpm:700,spread:[.005,.04,.11],rec:[.014,.008],
+WPN.m4dk={slot:1,kind:'rifle',n:['M4A1 오닉스','M4A1 Onyx'],cost:6500,mag:50,res:300,dmg:90,hs:150/90,limbK:50/90,rpm:700,spread:[.005,.04,.11],rec:[.014,.008],
   kb:3.2,stag:.62,reload:2,draw:.8,speed:.93,snd:'dkfire',model:'m4dk',hold:'rifle',shell:1,alt:'dk',trans:1,kickX:[.45,.66,.3]};
 // B fires these (through zombies and walls: dkShot), on the same magazine
 DK.WB=Object.assign({},WPN.m4dk,{rail:1,dkp:1,dmg:180,rec:[.0018,.0012],spread:[.0015,.014,.07],kb:4.6,stag:.9,snd:'dkfireb',kickX:[.3,.34,.1]});
@@ -114,7 +114,7 @@ function dkShot(a,W,eye,base,sp){const dir=new THREE.Vector3();spreadDir(base,sp
     if(!NET.ghost&&w.box.coffin&&a.team===TH&&typeof COFF!=='undefined')COFF.hurt(w.box.coffin,W.dmg,a);if(i===0)AU.at('imp_metal',x,y,z,{vol:.45,range:30})});
   const mz=muzzleWorld(a),e=Math.min(tEnd,110);dkBeam(mz.x,mz.y,mz.z,ox+dx*e,oy+dy*e,oz+dz*e);
   return {hit:hits.length>0,hs:hsAny,dmg:dmgT}}
-// the trail: a pale core in a crimson glow (the Thunderbolt's beams fade it: csoguns.js tbUpdate), embers along its first stretch
+// the trail: a pale core in a crimson glow (the Arcline's beams fade it: specguns.js tbUpdate), embers along its first stretch
 function dkBeam(x0,y0,z0,x1,y1,z1){if(!TB.geo)TB.geo=new THREE.BoxGeometry(1,1,1);const len=Math.hypot(x1-x0,y1-y0,z1-z0);if(len<.5)return;
   const mk=(col,w,op)=>{const m=new THREE.Mesh(TB.geo,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false}));
     m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);m.lookAt(x1,y1,z1);m.scale.set(w,w,len);m.renderOrder=6;R.scene.add(m);return m};
@@ -133,7 +133,7 @@ VMX.m4dk=function(V,a,dt,o,m){const T=m.tags;V.dkK=approach(V.dkK||0,a.dkB?1:0,d
 
 // ---------- the Deadshot: a second longer for whoever owns one ----------
 // (the local player: the account owns it — with accounts off, it is in hand; a bot: carrying it; anyone else: what their request said)
-// the name the Deadshot's note gives (m4dk2.js: the Dark Knight-2 for one who owns only that)
+// the name the Deadshot's note gives (m4dk2.js: the Onyx-2 for one who owns only that)
 function dkOwnN(a){return WPN.m4dk.n}
 function dkOwns(a){if(!a)return false;if(a===G.player)return ACC.on?!!(ACC.signed()&&ACC.me&&ACC.me.owned&&ACC.me.owned.has('m4dk')):!!(a.inv&&a.inv[1]==='m4dk');
   if(a.bot&&!a.pup)return !!(a.inv&&a.inv[1]==='m4dk');return !!a.dkOwn}
@@ -164,7 +164,7 @@ function dkOwns(a){if(!a)return false;if(a===G.player)return ACC.on?!!(ACC.signe
   // HUD: a crimson crosshair in B, the mode in the weapon's name
   const hu0=HUD.update;HUD.update=function(dt){hu0.call(this,dt);const P=G.player,cr=HUD.el&&HUD.el.cross;if(!cr)return;const on=!!(P&&P.alive&&P.team===TH&&P.cur==='m4dk'&&P.dkB);if(cr.classList.contains('dkb')!==on)cr.classList.toggle('dkb',on)};
   const ct=cmbTag;cmbTag=function(P,W){return ct(P,W)+(W&&W.trans&&P&&P.team===TH&&P.dkB?(LI()?' · B piercing':' · B 관통'):'')};
-  const wt=UI.wTags;UI.wTags=function(W,id){if(W&&W.trans)return LI()?'Transcendence · RMB B: half zoom, piercing rounds ×2 · Deadshot +1 s while owned · Mag 50 · auto':'초월 · 우클릭 B: 반줌 · 관통탄 데미지 ×2 · 보유 시 확인사살 +1초 · 탄창 50 · 자동';return wt.call(this,W,id)};
+  const wt=UI.wTags;UI.wTags=function(W,id){if(W&&W.trans)return LI()?'Awakening · RMB B: half zoom, piercing rounds ×2 · Deadshot +1 s while owned · Mag 50 · auto':'각성 · 우클릭 B: 반줌 · 관통탄 데미지 ×2 · 보유 시 확인사살 +1초 · 탄창 50 · 자동';return wt.call(this,W,id)};
   // the Deadshot: a second longer for an owner, every page (the host and the others learn it from the request / the event)
   const hs0=HSK.start.bind(HSK);HSK.start=function(a,k){hs0(a,k);if(k==='ds'&&dkOwns(a)){const h=this.of(a);h.ds+=DK.DS;
     if(a===G.player)HUD.note(LI()?`DEADSHOT — ${HSK.DS+DK.DS} s (${dkOwnN(a)[1]} +${DK.DS} s)`:`확인사살 — ${HSK.DS+DK.DS}초 (${dkOwnN(a)[0]} +${DK.DS}초)`,1.8)}};

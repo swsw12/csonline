@@ -673,7 +673,7 @@ Object.assign(JAW0,{elpis:.12,patient:.35,aed:0});
 //   4 the stock vault — the boss fight, three phases (the triage, the memories, the last vial). A wipe replays the phase it reached
 //   5 the escape — 75 s: the sterilization protocol locks the vault door and burns B5 out; through the vault's service door, the corridor,
 //     the ward and the antechamber to the freight elevator (the incinerator's vents fire along the way). The car takes them up into the dawn
-CHAP[10]={id:10,k:'elpis',map:'ep10',code:'RT1-02',season:2,n:['엘피스','ELPIS'],t:['좀비 시나리오: 엘피스','Zombie Scenario: ELPIS'],
+CHAP[10]={id:10,k:'elpis',map:'ep10',code:'RT1-02',season:2,n:['엘피스','ELPIS'],t:['협동 작전: 엘피스','Co-op Operation: ELPIS'],
   file:[['1차 회수팀 의무병 RT1-02. 억제제를 들고 혼자 격리구역 Q-7로 돌아와, 지하 병동에서 감염자들을 계속 되살리고 있다','RT-1\'s medic, RT1-02: she came back to Q-7 alone with the suppressant, and in the ward underground she keeps bringing the infected back'],
     ['시즌 2 최종장 · 화물 승강기로 지하 B5 · 제세동기를 쏴서 부숴라 · 자외선 멸균등 · 1차 회수팀의 기억 · 환자 좀비','Season 2\'s finale · down to B5 in the freight elevator · shoot the AEDs apart · the UV banks · the memories of RT-1 · the Patient']],
   cards:{place:['격리구역 Q-7 중앙 연구소 · 새벽','Q-7 CENTRAL LABORATORY · DAWN'],who:['1차 회수팀 의무병','RT-1 MEDIC'],line:['포기할 수 없었다 — 그래서 혼자 돌아왔다','She could not give up — so she came back alone']},
@@ -763,7 +763,7 @@ CHAP[10]={id:10,k:'elpis',map:'ep10',code:'RT1-02',season:2,n:['엘피스','ELPI
   // after the clear: the recorder in her vest; the season's card
   ending(){EP.later(2.6,()=>EP.radio('clear'));EP.later(5.4,()=>EP.radio('end0'));EP.later(9.4,()=>EP.radio('end1'));EP.later(13.4,()=>EP.radio('end2'));EP.later(16.4,()=>EP.radio('end3'));EP.later(18.6,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'SEASON 2 COMPLETE':'시즌 2 완결'}</h1><p>${L?'All seven of RT-1 — it is over. The stock had already left Q-7.':'1차 회수팀 일곱 명 — 모두 끝났다. 원액은 이미 Q-7을 떠났다.'}</p><b>${L?'NEXT — SEASON 3 · COMING SOON':'다음 이야기 — 시즌 3 · 준비 중'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'CO-OP OPERATION · SEASON 2':'협동 작전 · 시즌 2'}</small><h1>${L?'SEASON 2 COMPLETE':'시즌 2 완결'}</h1><p>${L?'All seven of RT-1 — it is over. The stock had already left Q-7.':'1차 회수팀 일곱 명 — 모두 끝났다. 원액은 이미 Q-7을 떠났다.'}</p><b>${L?'NEXT — SEASON 3 · COMING SOON':'다음 이야기 — 시즌 3 · 준비 중'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},9000)},
   radio:{
     start:['2차 회수팀, 격리구역 Q-7이다. 모든 게 시작된 곳 — 02는 중앙 연구소 지하에 있다. 제독 검문소부터 확보해.','RT-2, this is Quarantine Zone Q-7. Where it all began — 02 is underneath the central lab. Secure the decon checkpoint first.',0],

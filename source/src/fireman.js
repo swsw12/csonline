@@ -1,6 +1,6 @@
 'use strict';
 // ============ 소방관 좀비 (Firefighter Zombie, v6.39): the turnout coat, the oxygen-tank charge, a tank that can be shot to pieces ============
-// The coat: fire (flamethrowers, dragon fire, burning, Balrog-XI fireballs, gas) and blasts (HE, grenade launcher, harpoon / Balrog-5 /
+// The coat: fire (flamethrowers, dragon fire, burning, IGNIS-XI fireballs, gas) and blasts (HE, grenade launcher, harpoon / IGNIS-5 /
 // launcher blasts) do half damage to it.
 // G: it takes the oxygen tank off its back, holds it across its chest and charges: FM.DUR s at FM.SPD m/s, turning at most FM.TURN rad/s
 // toward where it looks (a bot: toward its target). Every human it runs into is knocked flat for FM.KD s (no moving, no shooting) and
@@ -17,7 +17,7 @@ const FM={DUR:1.4,SPD:12.5,TURN:2.2,KD:1.1,PUSH:13,UP:4.6,TANK:380,RE:18,SMR:4.6
   // the hold in first person (vm.js): [hand x,y,z, toward-elbow x,y,z] for the right and the left arm
   VMH:[[.155,-.26,-.5,.5,-.52,.7],[-.155,-.26,-.5,-.5,-.52,.7]]};
 const FM_FIREW={salamander:1,bdc:1,rdc:1,gas:1,ladle:1};
-const fmFire=o=>!!(o&&(o.fire||o.dot||FM_FIREW[o.w]||o.w==='balrog11'&&o.nocap));// (the Balrog-XI's fireballs carry nocap; its buckshot does not)
+const fmFire=o=>!!(o&&(o.fire||o.dot||FM_FIREW[o.w]||o.w==='balrog11'&&o.nocap));// (the IGNIS-XI's fireballs carry nocap; its buckshot does not)
 const fmBlast=o=>!!(o&&(o.he||o.w==='gl40'));
 const isFm=a=>!!a&&a.zc==='fireman'&&a.team===TZ;
 

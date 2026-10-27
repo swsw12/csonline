@@ -96,7 +96,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async signOut(){try{if(this.ses)await this.req('POST','/auth/v1/logout',null,true)}catch(e){}this.setSes(null);this.me=null;this.bingo=null;this.season=null;this.side=null;this.mis=null;this.ls('qz_me',null);this.emit()},
   async setNick(n){const r=await this.rpc('qz_set_nickname',{p_nick:n});if(this.me){this.me.nickname=r;this.ls('qz_me',{...this.ls('qz_me'),nickname:r})}this.emit();return r},
   async buy(id){const r=await this.rpc('qz_buy',{p_gun:id});if(this.me){this.me.coins=r.coins;this.me.owned.add(id);this.ls('qz_me',{...this.ls('qz_me'),coins:r.coins,owned:[...this.me.owned]})}this.emit();return r},
-  // the 근하신년 decoder bingo: the player's card {nums[25], marked[25], drawn[], rewards[12], done[12], boards, shuffles_left}
+  // the All-Clear decoder bingo: the player's card {nums[25], marked[25], drawn[], rewards[12], done[12], boards, shuffles_left}
   async loadBingo(){const r=await this.rpc('qz_bingo');this.bingo=r;this.emit();return r},
   // open n (1 or 10) decoders, or today's free one, or (ticket) n of the ones kept from the season card.
   // Returns {draws:[{n,cell,lines:[{line,kind,gun,tier,amount}],frags,card}],card,coins,fragments,tickets,free_today}
@@ -110,7 +110,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async loadSeason(){const r=await this.rpc('qz_season');this.season=r;this.emit();return r},
   // n (1 or 10) season decoders for coins. Lines: {line,kind (gun|coins|frags|tickets),gun,amount,item}; an owned gun's line pays coins (gun set)
   async seasonDecode(n,ticket){const a={p_count:n};if(ticket)a.p_ticket=true;const r=await this.rpc('qz_season_decode',a);this.gotDraws(r);if(r.season_tickets!=null&&this.me)this.me.sTickets=r.season_tickets|0;this.season=r.card;return r},
-  // 근·하·신·년 letters (v6.15): the ones picked up in the match just claimed go to the account; a full set trades for decoders
+  // 격·리·해·제 letters (v6.15): the ones picked up in the match just claimed go to the account; a full set trades for decoders
   async nyAdd(L){const r=await this.rpc('qz_ny_add',{p_g:L[0]|0,p_h:L[1]|0,p_s:L[2]|0,p_n:L[3]|0});if(this.me&&r.ny){this.me.ny=r.ny.map(v=>v|0);this.emit()}return r},
   async nyExchange(choice){const r=await this.rpc('qz_ny_exchange',{p_choice:choice});if(this.me){this.me.ny=r.ny.map(v=>v|0);this.me.tickets=r.tickets|0;this.me.sTickets=r.season_tickets|0;this.emit()}return r},
   async seasonReset(){this.season=await this.rpc('qz_season_reset');this.emit();return this.season},
@@ -122,7 +122,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
   async sideReset(){this.side=await this.rpc('qz_side_reset');this.emit();return this.side},
   async sideShuffle(){this.side=await this.rpc('qz_side_shuffle');this.emit();return this.side},
   async exchange(id){const r=await this.rpc('qz_exchange',{p_gun:id});const me=this.me;if(me){me.frags=r.fragments;me.owned.add(id);this.saveMe()}this.emit();return r},
-  // a transcendence gun (v6.41: the M4A1 Dark Knight) for trans_cost transcendence fragments → {gun, tfrags}
+  // an awakened gun (v6.41: the M4A1 Onyx) for trans_cost awakening fragments → {gun, tfrags}
   async transExchange(id){const r=await this.rpc('qz_trans_exchange',{p_gun:id});const me=this.me;if(me){me.tfrags=r.tfrags|0;me.owned.add(id);this.saveMe()}this.emit();return r},
   async history(){return await this.call('GET','/rest/v1/gacha_log?select=at,src,kind,tier,gun_id,amount,pity_hit&order=id.desc&limit=50',null)},
   saveMe(){const me=this.me;if(!me)return;this.ls('qz_me',{...this.ls('qz_me'),coins:me.coins,owned:[...me.owned],nickname:me.nickname})},
@@ -244,10 +244,10 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/reauth/.test(m))return T2('안전을 위해 다시 로그인한 뒤 10분 안에 탈퇴할 수 있어요','For safety, sign in again — then you have 10 minutes to delete');
     if(/qz_account_delete/.test(m))return T2('탈퇴는 서버 업데이트(schema.sql) 뒤에 할 수 있어요','Deleting needs the server updated (schema.sql)');
     if(/not_enough_coins/.test(m))return T2('코인이 부족해요','Not enough coins');
-    if(/not_enough_tfrags/.test(m))return T2('초월 조각이 부족해요','Not enough transcendence fragments');
+    if(/not_enough_tfrags/.test(m))return T2('각성 조각이 부족해요','Not enough awakening fragments');
     if(/not_enough_frags/.test(m))return T2('해독 조각이 부족해요','Not enough fragments');
-    if(/not_enough_tickets/.test(m))return T2('보유한 근하신년 해독기가 부족해요','Not enough decoders kept');
-    if(/gacha_only/.test(m))return T2('근하신년 무기는 해독기 빙고에서만 얻을 수 있어요','근하신년 guns only come from the decoder bingo');
+    if(/not_enough_tickets/.test(m))return T2('보유한 격리해제 해독기가 부족해요','Not enough decoders kept');
+    if(/gacha_only/.test(m))return T2('격리해제 무기는 해독기 빙고에서만 얻을 수 있어요','All-Clear guns only come from the decoder bingo');
     if(/free_used/.test(m))return T2('오늘 무료 해독기는 이미 열었어요','Today\'s free decoder is used');
     if(/no_shuffles/.test(m))return T2('오늘 뒤섞기를 다 썼어요','No shuffles left today');
     if(/not_for_exchange/.test(m))return T2('교환할 수 없는 총이에요','That gun cannot be exchanged');
@@ -256,7 +256,7 @@ const ACC={on:!!(SB.url&&SB.key),ses:null,me:null,bingo:null,season:null,side:nu
     if(/already_claimed/.test(m))return T2('이미 받은 보상이에요','Already claimed');
     if(/no_mission/.test(m))return T2('오늘의 미션이 바뀌었어요. 다시 열어 주세요','Today\'s missions changed — open them again');
     if(/no_title/.test(m))return T2('아직 가지고 있지 않은 칭호예요','You do not have that title yet');
-    if(/no_set/.test(m))return T2('근·하·신·년 한 세트가 아직 모자라요','You need one of each letter first');if(/no_tickets/.test(m))return T2('보유한 해독기가 없어요','No kept decoders left');
+    if(/no_set/.test(m))return T2('격·리·해·제 한 세트가 아직 모자라요','You need one of each letter first');if(/no_tickets/.test(m))return T2('보유한 해독기가 없어요','No kept decoders left');
     if(/dm_text/.test(m))return T2('메시지는 1~200자로 적어 주세요','A message is 1 to 200 characters');
     if(/dm_slow/.test(m))return T2('너무 빨리 보내고 있어요. 잠시 후에 다시 보내 주세요','Slow down — try again in a moment');
     if(/dm_not_friend/.test(m))return T2('친구끼리만 메시지를 보낼 수 있어요','Messages go to friends only');

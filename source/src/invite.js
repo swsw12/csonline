@@ -5,7 +5,7 @@
 // online; the heartbeat (qz_ping) and the friend list (qz_friends) carry the count the rest of the time. 「초대 링크」 copies (or shares)
 // a link that opens the game and offers to join that room (?join=CODE), with my friend code on it (&ref=CODE).
 // Invite links (?ref=FRIENDCODE): an account made within 7 days applies it once (qz_ref_set): coins at once and the two become friends;
-// after its 3rd finished match (qz_ref_check, asked after every match until settled) it gets 근하신년 decoders and the inviter coins +
+// after its 3rd finished match (qz_ref_check, asked after every match until settled) it gets All-Clear decoders and the inviter coins +
 // decoders (10 players at most). The friends window shows my link and how many it brought in. The numbers: gacha_config ref_*.
 const SVG_INV='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="1.5" y="3.5" width="13" height="9" rx="1.2"/><path d="M2.2 4.6L8 8.9l5.8-4.3"/></svg>';
 const INVT={list:[],shown:{},busy:false,off:false,last:0,lastN:0,sent:{},join:null,
@@ -61,8 +61,8 @@ const INVT={list:[],shown:{},busy:false,off:false,last:0,lastN:0,sent:{},join:nu
       top.insertAdjacentHTML('afterend',`${room?`<div class="frroom">${SVG_INV}<span>${L?`Inviting to room <b>${esc(NET.code)}</b> — tap 「Invite」 on a friend, or send the link`:`지금 방 <b>${esc(NET.code)}</b>로 초대 중 — 친구의 「초대」를 누르거나 링크를 보내요`}</span><button data-fr="rjoin">${L?'Room link':'방 링크 복사'}</button></div>`:''}
         <div class="frref"><div class="frrh">${SVG_GIFT}<b>${L?'Invite friends to the game':'친구 초대 링크'}</b><span>${L?`brought in ${f.n|0} · paid ${f.paid|0}/${g.ref_cap}`:`초대한 친구 ${f.n|0}명 · 보상 ${f.paid|0}/${g.ref_cap}`}</span></div>
           <div class="frrl"><input readonly value="${esc(u)}" aria-label="link"><button data-fr="rcopy">${L?'Copy':'복사'}</button>${sh?`<button data-fr="rshare">${L?'Share':'공유'}</button>`:''}</div>
-          <small>${L?`A friend who signs up with this link gets ${fmtC(g.ref_new_coins)} coins at once and sends you a friend request. After ${g.ref_matches} finished matches they get ${g.ref_new_tickets} 근하신년 decoders and you ${fmtC(g.ref_coins)} coins + ${g.ref_tickets} decoders (up to ${g.ref_cap} friends).`
-            :`이 링크로 가입한 친구는 바로 ${fmtC(g.ref_new_coins)}코인을 받고 나에게 친구 요청을 보내요. 친구가 ${g.ref_matches}판을 끝내면 친구는 근하신년 해독기 ${g.ref_new_tickets}개, 나는 ${fmtC(g.ref_coins)}코인 + 해독기 ${g.ref_tickets}개 (최대 ${g.ref_cap}명).`}</small>
+          <small>${L?`A friend who signs up with this link gets ${fmtC(g.ref_new_coins)} coins at once and sends you a friend request. After ${g.ref_matches} finished matches they get ${g.ref_new_tickets} All-Clear decoders and you ${fmtC(g.ref_coins)} coins + ${g.ref_tickets} decoders (up to ${g.ref_cap} friends).`
+            :`이 링크로 가입한 친구는 바로 ${fmtC(g.ref_new_coins)}코인을 받고 나에게 친구 요청을 보내요. 친구가 ${g.ref_matches}판을 끝내면 친구는 격리해제 해독기 ${g.ref_new_tickets}개, 나는 ${fmtC(g.ref_coins)}코인 + 해독기 ${g.ref_tickets}개 (최대 ${g.ref_cap}명).`}</small>
           ${f.by&&!f.done?`<em class="frmy">${L?`Invited by ${esc(f.by)} — ${f.left|0} more match(es) for your decoders`:`${esc(f.by)}님의 초대로 가입 — 해독기까지 ${f.left|0}판 남음`}</em>`:''}</div>`)}
     if(!room)return;const now=Date.now();
     for(const b of o.querySelectorAll('.frbt [data-fr="chat"]')){const code=b.dataset.v,row=b.closest('.frr');if(!row||row.querySelector('[data-fr="inv"]'))continue;
@@ -77,19 +77,19 @@ const REFL={busy:false,off:false,
       if(/ref_|not_found|friend_self/.test(m))ACC.ls('qz_ref',null);else this.off=true})},// (the server not updated yet, offline: try again on the next visit)
   welcome(r){const L=LI();INVT.pop('refPop',`<div class="iph">${SVG_GIFT}<b>${L?'Invite applied!':'초대 코드 적용!'}</b></div>
       <div class="ipr"><span>${L?`You came in on <b>${esc(r.by)}</b>'s invite — a friend request went to them.`:`<b>${esc(r.by)}</b>님의 초대로 들어왔어요 — 친구 요청을 보냈어요 (수락하면 친구가 돼요).`}</span>
-        <small>${COIN} +${fmtC(r.bonus)} ${L?'coins':'코인'} · ${L?`finish ${r.left} match(es) for ${r.tickets} 근하신년 decoders (and a reward for ${esc(r.by)})`:`${r.left}판을 끝내면 근하신년 해독기 ${r.tickets}개 (${esc(r.by)}님도 보상)`}</small></div>
+        <small>${COIN} +${fmtC(r.bonus)} ${L?'coins':'코인'} · ${L?`finish ${r.left} match(es) for ${r.tickets} All-Clear decoders (and a reward for ${esc(r.by)})`:`${r.left}판을 끝내면 격리해제 해독기 ${r.tickets}개 (${esc(r.by)}님도 보상)`}</small></div>
       <div class="ipb"><button class="ok" data-ip="ok">${L?'OK':'확인'}</button></div>`,(a,o)=>o.remove());AU.play('lvlup',{vol:.6})},
   // after a counted match: settle my invite reward once I have played enough
   after(){const me=ACC.signed()&&ACC.me,f=me&&me.ref;if(!f||!f.by||f.done||this.off)return;
     ACC.refCheck().then(r=>{if(r.state!=='paid')return;const L=LI();
       INVT.pop('refPop',`<div class="iph">${SVG_GIFT}<b>${L?'Invite reward!':'초대 보상 도착!'}</b></div>
-        <div class="ipr"><span>${L?`${r.got_tickets} 근하신년 decoders for you`:`근하신년 해독기 ${r.got_tickets}개를 받았어요`}</span><small>${r.inviter_paid?(L?`${esc(r.by)} got their reward too.`:`${esc(r.by)}님에게도 보상이 갔어요.`):(L?'Open them on the shop\'s 근하신년 tab.':'상점의 근하신년 해독기 탭에서 열어요.')}</small></div>
+        <div class="ipr"><span>${L?`${r.got_tickets} All-Clear decoders for you`:`격리해제 해독기 ${r.got_tickets}개를 받았어요`}</span><small>${r.inviter_paid?(L?`${esc(r.by)} got their reward too.`:`${esc(r.by)}님에게도 보상이 갔어요.`):(L?'Open them on the shop\'s All-Clear tab.':'상점의 격리해제 해독기 탭에서 열어요.')}</small></div>
         <div class="ipb"><button class="ok" data-ip="ok">${L?'OK':'확인'}</button></div>`,(a,o)=>o.remove());AU.play('lvlup',{vol:.6})}).catch(()=>{})},
   // the inviter: rewards for players my link brought in, shown once in the lobby
   news(){const me=ACC.signed()&&ACC.me;if(!me||!me.ref||!(me.ref.new>0)||this.busy||G.st!=='menu'||$('refPop')||$('invPop')||$('giftPop'))return;this.busy=true;
     ACC.refInfo().then(r=>{this.busy=false;const got=(r.list||[]).filter(x=>x.new&&x.rewarded);if(!got.length)return;const L=LI();
       INVT.pop('refPop',`<div class="iph">${SVG_GIFT}<b>${L?'Invite rewards!':'초대 보상 도착!'}</b></div>
-        ${got.map(x=>`<div class="ipr"><span>${L?`<b>${esc(x.nick)}</b> finished ${x.m} matches`:`<b>${esc(x.nick)}</b>님이 ${x.m}판을 끝냈어요`}</span><small>${COIN} +${fmtC(r.coins)} ${L?'coins':'코인'} · ${L?`${r.tickets} 근하신년 decoders`:`근하신년 해독기 ${r.tickets}개`}</small></div>`).join('')}
+        ${got.map(x=>`<div class="ipr"><span>${L?`<b>${esc(x.nick)}</b> finished ${x.m} matches`:`<b>${esc(x.nick)}</b>님이 ${x.m}판을 끝냈어요`}</span><small>${COIN} +${fmtC(r.coins)} ${L?'coins':'코인'} · ${L?`${r.tickets} All-Clear decoders`:`격리해제 해독기 ${r.tickets}개`}</small></div>`).join('')}
         <div class="ipb"><button class="ok" data-ip="ok">${L?'OK':'확인'}</button></div>`,(a,o)=>o.remove());AU.play('lvlup',{vol:.6});ACC.loadMe().catch(()=>{})},()=>{this.busy=false})}};
 // ---- hooks ----
 (function(){

@@ -2,7 +2,7 @@
 // ============ Supply drops and the weapon that only comes out of them ============
 // During a round of the infection modes the host drops a crate on a parachute every 35-50 s (the first one 20-32 s into the
 // fight, at most two on the map). It lands somewhere open near a human, pours red smoke and blinks until a human walks into it.
-// Opening it gives one of: the Event Horizon (30 %, the crate-only black-hole launcher), one of the crate-only guns (30 %: AK-47 60R
+// Opening it gives one of: the Event Horizon (30 %, the crate-only black-hole launcher), one of the crate-only guns (30 %: AK-47 Drum
 // or Dual MP7A1, crateguns.js), a heavy weapon (20 %), or supplies (20 %: full ammo, armour, a set of grenades and $1000). Clients see crates appear ('sb') and get opened ('so'); whoever opens one
 // applies the reward to his own inventory, the same way picked-up guns work (drops.js).
 
@@ -174,7 +174,7 @@ const SUP={list:[],seq:1,next:1e9,MAXN:2,
       // opening: host / solo decides
       if(own&&b.landed){for(const a of G.actors){if(!a.alive||a.team!==TH)continue;if(Math.abs(a.c.x-b.x)>1.1||Math.abs(a.c.z-b.z)>1.1||Math.abs(a.c.y-b.y)>1.6)continue;this.open(a,b);break}}}},
   // what is inside: Event Horizon 30 %, a crate gun 35 % (v6.56: five of them, from 30 %; v6.59: six, the Double Glock a sidearm; v6.69: nine,
-  // the M4A1 다크나이트-2 the ninth; v6.93: ten, the StarTrack), a heavy gun 15 %, the kit 20 %
+  // the M4A1 오닉스-2 the ninth; v6.93: ten, the StarTrack), a heavy gun 15 %, the kit 20 %
   open(a,b){const i=this.list.indexOf(b);if(i>=0)this.list.splice(i,1);this.drop(b);
     const r=Math.random(),heavy=['gx6','airb','ripper','rdc','hmg','gl40','bdc'].filter(w=>WPN[w]&&a.inv[1]!==w),cg=CRATE_GUNS.filter(w=>WPN[w]&&a.inv[WPN[w].slot]!==w);
     let k='kit',w='';if(r<.3&&a.inv[1]!=='bhole'){k='w';w='bhole'}else if(r<.65&&cg.length){k='w';w=rpick(cg)}else if(r<.8&&heavy.length){k='w';w=rpick(heavy)}

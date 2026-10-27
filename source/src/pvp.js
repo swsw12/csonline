@@ -114,7 +114,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   around(c,r){const L=[];for(const p of (MAP.spawns||[]).concat(MAP.zspawns||[])){const x=p[0],y=p[2]||0,z=p[1];if(Math.hypot(x-c.x,z-c.z)<r&&Math.abs(y-c.y)<2.5)L.push({x,y,z})}
     for(let k=0;k<50&&L.length<24;k++){const n=navAround(c.x,c.z,0,r);if(n&&n.e.length>=10&&Math.abs(n.y-c.y)<2.5&&!L.some(q=>Math.hypot(q.x-n.x,q.z-n.z)<1.1))L.push({x:n.x,y:n.y,z:n.z})}
     if(!L.length)L.push({x:c.x,y:c.y,z:c.z});return L},
-  // 팀 데스매치: two bases. The human and zombie spawns when they are well apart (Italy, Militia …), else the two open places farthest apart that a
+  // 팀 데스매치: two bases. The human and zombie spawns when they are well apart (Whitehill, Red Mesa Ranch …), else the two open places farthest apart that a
   // path joins (tried in order of distance)
   mkBases(){const P=p=>({x:p[0],y:p[2]||0,z:p[1]}),S=(MAP.spawns||[]).map(P),Z=(MAP.zspawns||[]).map(P);
     const cen=L=>L.length?{x:L.reduce((s,p)=>s+p.x,0)/L.length,y:L.reduce((s,p)=>s+p.y,0)/L.length,z:L.reduce((s,p)=>s+p.z,0)/L.length}:null,cs=cen(S),cz=cen(Z);
@@ -447,7 +447,7 @@ AI.pvp=function(a,dt){PVP.bot(a,dt)};
   // no death drops (everyone gets his own guns back), no zombie class menu
   const dd=dropDeath;dropDeath=function(a){if(G.pvp)return;return dd(a)};
   const oo=Main.openOverlay.bind(Main);Main.openOverlay=function(k){if(G.pvp&&k==='zsel'){HUD.note(LI()?'No zombies in PvP':'대인전에는 좀비가 없어요',1.4);return}
-    if(G.pvp&&G.mode==='race'&&k==='buy'){HUD.note(LI()?'No picking weapons in Arms Race — every kill brings the next gun':'무기 레이스에서는 무기를 고를 수 없어요 — 처치하면 다음 무기가 와요',2);return}
+    if(G.pvp&&G.mode==='race'&&k==='buy'){HUD.note(LI()?'No picking weapons in Gun Race — every kill brings the next gun':'무기 레이스에서는 무기를 고를 수 없어요 — 처치하면 다음 무기가 와요',2);return}
     if(G.pvp&&k==='buy'&&G.player&&!G.player.alive&&this.overlay!=='buy'){const L=LI();HUD.note(G.mode==='bomb'?(L?'Weapons can be changed at the start of the next round':'다음 라운드 시작 때 무기를 바꿀 수 있어요'):(L?'Weapons can be changed for 12 s after coming back':'무기는 부활 후 12초 동안 바꿀 수 있어요'),1.8);return}return oo(k)};
   // a saved set (Shift+1–3): not while down, not after the buy window
   const les=ldEquipSet;ldEquipSet=function(i){const P=G.player;if(G.pvp&&G.mode==='race')return;if(G.pvp&&P&&(!P.alive||G.st==='fight'&&G.t>(P.pvpBuy||0))){ldWhy('pvpT');return}return les(i)};

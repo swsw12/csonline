@@ -3,7 +3,7 @@
 // GLOCK (글록): a plain 9 mm service pistol, sold in the shop — 17 rounds, semi-auto, a little weaker a shot than the USP but quicker
 // and with more rounds; right click switches it to 3-round bursts and back (the mode stays with the gun: game.js gBurst / gbOn).
 // Numbers: the Glock 27 a round, 450 rpm (about the USP's 230 a second, more rounds, a quicker reload); the pair 30 a round at 1,250 rpm —
-// 20 rounds a second at 60 fps, about 600 a second on the body, as the crate primaries (Dual MP7A1 480 / 640 sprayed, AK-47 60R 580).
+// 20 rounds a second at 60 fps, about 600 a second on the body, as the crate primaries (Dual MP7A1 480 / 640 sprayed, AK-47 Drum 580).
 // DOUBLE GLOCK (더블 글록): a pair of full-auto machine pistols (Glock 18C pattern: compensator cuts over a gold barrel, the selector on
 // the slide, 33-round magazines standing out under the grips) — out of supply crates only, crate-gun numbers in the sidearm slot. Right
 // click: 6-round bursts, the two guns in turn, tighter and 10 % harder (for range); again: full auto.
@@ -69,7 +69,7 @@ GUN_DESIGN.dglock={mag:66,ch:1,act:'slide',x:.5,d:.04};WPN.dglock.fd=GUN_DESIGN.
 // ---------- the weapon name on the HUD: the burst mode ----------
 {const ct=cmbTag;cmbTag=function(P,W){return ct(P,W)+(W&&P&&gbOn(P,W)?' · '+gbName(W,true,LI()):'')}}
 // touch: the aim button says what it switches to while a gun with a second mode is in hand (점사 / 펌프, or back to 반자동 / 연사); the label goes
-// back to 조준 after, unless the Thanatos or a Janus has taken the button over (their own labels)
+// back to 조준 after, unless the Morta or a Twinface has taken the button over (their own labels)
 function glkTouch(P){if(typeof TOUCH==='undefined'||!TOUCH.el)return;const bt=TOUCH.el.querySelector('.tAlt'),em=bt&&bt.querySelector('em');if(!em)return;
   const W=P&&P.alive&&P.team===TH?WPN[P.cur]:null,L=LI();
   if(W&&(W.gBurst||W.gMode)){const t=gbShort(W,!gbOn(P,W),L);if(em.textContent!==t)em.textContent=t;bt.dataset.gb='1'}

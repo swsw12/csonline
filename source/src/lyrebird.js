@@ -591,7 +591,7 @@ function lyCrawl(ch,st,a,P){const R=ch.R,Pv=ch.A.piv,A=ch.A,t=st.t,sp=st.spd||0,
 //   3 the radar compound — break through to the summit gate within 3 min; LYREBIRD's first fake radio, it hunts the team and goes
 //     once it has lost 15 %; the radio-operator zombies show up
 //   4 the summit antenna yard — the boss fight, three phases. A wipe replays the phase it reached, at that phase's health
-CHAP[4]={id:4,k:'lyrebird',map:'ep4',code:'RT1-05',n:['라이어버드','LYREBIRD'],t:['좀비 시나리오: 라이어버드','Zombie Scenario: LYREBIRD'],
+CHAP[4]={id:4,k:'lyrebird',map:'ep4',code:'RT1-05',n:['라이어버드','LYREBIRD'],t:['협동 작전: 라이어버드','Co-op Operation: LYREBIRD'],
   file:[['1차 회수팀 통신병 RT1-05. 무전을 엿듣고 우리 목소리를 흉내 낸다 — 가짜 무전 · 가짜 핑','RT-1\'s signaller, RT1-05: it listens in and fakes our voices — false radio calls, false pings'],
     ['미니맵에 그 아군 점이 없으면 가짜 · 경보 사이렌이 안개를 걷어 낸다','No teammate\'s dot where the voice says: a fake · the alarm siren clears the fog']],
   cards:{place:['운무봉 통신기지','UNMUBONG SIGNAL STATION'],who:['1차 회수팀 통신병','RT-1 SIGNALLER'],line:['살아 있는 사람이 부러워서 따라 한다 — 그 사이에 섞이려고','It envies the living, so it copies them — to slip in among them']},

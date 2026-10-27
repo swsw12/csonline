@@ -85,7 +85,7 @@ function kaParts(){const P=[],N=40,L=KA.z0-KA.z1;
 // flat of the blade (and the temper line) faces the camera
 const KA_REST={p:[.17,-.17,-.45],d:[-.2,.66,-.72],b:[-.957,-.29,0]};
 VM_POS.katana=skPose(KA_REST.p,KA_REST.d,KA_REST.b);
-// a fist round the handle at gun-space point hp with the forearm toward gun-space point e. Unlike the Skull-9's fists (skHand) the
+// a fist round the handle at gun-space point hp with the forearm toward gun-space point e. Unlike the Grave-9's fists (skHand) the
 // forearm need not stand square to the handle: the handle may cross the palm on a slant of up to KA_SLANT, from the heel of the hand
 // to the root of the fingers as a sword grip does, so an upright blade is held with the forearms coming up from below instead of
 // sticking out sideways
@@ -125,7 +125,7 @@ HOLDS.katana={off:[-.04,-.28,-.17],rx:1.1,rz:Math.PI,ham:1,kA:'hamA',kH:'skA'};
 VMK.drKa=[[0,[-.2,-.34,.12,-1.05,-.45,.9]],[.5,[.01,.02,0,.12,.02,-.06]],[.78,[0,-.005,0,-.025,0,.012]],[1,[0,0,0,0,0,0]]];
 
 // ---------- first-person swings ----------
-// Built like the Skull-9's (skull9.js): keys in seconds, [t, grip point (where the right fist holds the handle), blade direction, edge
+// Built like the Grave-9's (skull9.js): keys in seconds, [t, grip point (where the right fist holds the handle), blade direction, edge
 // direction, right elbow, left elbow], all camera space; elbows left out are placed from the hands. The blow lands at WPN.katana.hitT.
 const KA_SW={
   // down from the right shoulder: cocked up and back with the edge leading, a beat, then cut across to the lower left and held there.
@@ -187,7 +187,7 @@ VMX.katana=function(vm,a,dt,K,m){const pv=m.gun.userData.piv;if(pv){pv.position.
 {const af=VM.actFrame;VM.actFrame=function(dt,m,W,K){af.call(this,dt,m,W,K);const A=this.act,pv=m.gun.userData.piv;if(this.id!=='katana'||!pv||!A||!A.S.P||A.t<A.st)return;
   const k=1-(A.fk||0);fdTrack(A.S.P,A.u,_kaO);pv.position.set(_kaO[0]*k,_kaO[1]*k,_kaO[2]*k);_kaV.set(_kaO[3],_kaO[4],_kaO[5],_kaO[6]).normalize();
   if(k<1)pv.quaternion.copy(_kaI).slerp(_kaV,k);else pv.quaternion.copy(_kaV)}}
-// a blow that lands holds the cut for a moment (lighter than the Skull-9's) and nudges the view
+// a blow that lands holds the cut for a moment (lighter than the Grave-9's) and nudges the view
 {const mh=VM.meleeHit;VM.meleeHit=function(heavy,what){if(this.id!=='katana')return mh.call(this,heavy,what);const A=this.act;if(!A||!A.mel||A.fade)return;
   A.hold=Math.max(A.hold,what===1?(heavy?.075:.05):.04);const k=what===1?(heavy?.9:.6):.45;A.cam.p.v-=.35*k;A.cam.r.v+=(heavy?.5:.3)*k*(this.kaSide||1);this.sp.pz.v+=.3*k}}
 

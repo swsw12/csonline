@@ -1,7 +1,7 @@
 'use strict';
 // ============ joining a match under way (v6.82) ============
 // The owner's 3번: a room that had started turned everyone away (「이미 게임이 진행 중인 방이에요」), so 빠른 매칭 and the room list
-// could only use rooms still waiting. Now, in the modes of NET_LATE (뮤테이션 · 오리지널 · 팀 데스매치 · 개인전 · 무기 레이스 · 폭파미션;
+// could only use rooms still waiting. Now, in the modes of NET_LATE (진화 감염 · 클래식 감염 · 팀 데스매치 · 개인전 · 무기 레이스 · 폭파미션;
 // not the scenario's chapters), the host takes the newcomer in:
 //   - a seat in the waiting room's list (NET.lob.pl, so the room's order of succession knows them) and an actor of their own, with the
 //     next id, on every page: the others get 'jn' with its roster row, the newcomer gets 'start' with the whole roster and 'late' —

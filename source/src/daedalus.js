@@ -780,7 +780,7 @@ Object.assign(JAW0,{daedalus:.15,static:.3,sentry:0});
 //   4 the radome plaza — the boss fight, three phases (the workshop, the radar, the wings). A wipe replays the phase it reached
 //   5 the escape — 90 s back through the compound and the maze to the cable car, the radome coming down behind (his mines and the
 //     infected about the plaza gone when he falls)
-CHAP[9]={id:9,k:'daedalus',map:'ep9',code:'RT1-04',season:2,n:['다이달로스','DAEDALUS'],t:['좀비 시나리오: 다이달로스','Zombie Scenario: DAEDALUS'],
+CHAP[9]={id:9,k:'daedalus',map:'ep9',code:'RT1-04',season:2,n:['다이달로스','DAEDALUS'],t:['협동 작전: 다이달로스','Co-op Operation: DAEDALUS'],
   file:[['1차 회수팀 공병 RT1-04. 산꼭대기 기상 레이더 기지를 컨테이너와 포탑으로 둘러싸고 06을 기다린다','RT-1\'s engineer, RT1-04: he walled the mountaintop radar station in with containers and guns, and waits there for 06'],
     ['케이블카 · 컨테이너 미로와 포탑 · 인계철선 · 지뢰 · 피뢰침으로 번개를 끌어와라 · 감전 좀비 · 날개','The cable car · the container maze and its sentry guns · tripwires · mines · draw the lightning with the rods · the Static · the wings']],
   cards:{place:['설령산 기상 레이더 기지 · 뇌설이 내리는 밤','SEOLRYEONG RADAR STATION · A NIGHT OF THUNDERSNOW'],who:['1차 회수팀 공병','RT-1 ENGINEER'],line:['더는 아무것도 잃기 싫었다 — 그래서 벽을 쌓았다','He could not bear to lose anything more — so he built walls']},
@@ -871,7 +871,7 @@ CHAP[9]={id:9,k:'daedalus',map:'ep9',code:'RT1-04',season:2,n:['다이달로스'
   // after the clear: 02's last log; a card for the season so far
   ending(){EP.later(3,()=>EP.radio('end0'));EP.later(6.5,()=>EP.radio('end1'));EP.later(9.5,()=>EP.radio('end2'));EP.later(11,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 9 CLEAR':'9챕터 클리어'}</h1><p>${L?'One of RT-1 left — 02, gone back to Q-7\'s central lab alone.':'1차 회수팀은 이제 하나 — 02, 홀로 격리구역 Q-7 중앙 연구소로.'}</p><b>${L?'NEXT — CHAPTER 10 「ELPIS」 · THE SEASON 2 FINALE':'다음 이야기 — 10챕터 「엘피스」 · 시즌 2 최종장'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'CO-OP OPERATION · SEASON 2':'협동 작전 · 시즌 2'}</small><h1>${L?'CHAPTER 9 CLEAR':'9챕터 클리어'}</h1><p>${L?'One of RT-1 left — 02, gone back to Q-7\'s central lab alone.':'1차 회수팀은 이제 하나 — 02, 홀로 격리구역 Q-7 중앙 연구소로.'}</p><b>${L?'NEXT — CHAPTER 10 「ELPIS」 · THE SEASON 2 FINALE':'다음 이야기 — 10챕터 「엘피스」 · 시즌 2 최종장'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},7000)},
   radio:{
     start:['2차 회수팀, 설령산이다. 기상 레이더 기지는 산꼭대기 — 올라가는 길은 저 케이블카뿐이야. 하부 정류장부터 확보해.','RT-2, this is Mount Seolryeong. The radar station is on the summit — the only way up is that cable car. Secure the valley station first.',0],

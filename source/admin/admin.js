@@ -24,8 +24,8 @@ function dur(sec){const s=Math.max(0,Math.round(+sec||0));if(s<60)return s+'초'
 function lvl(xp){let l=1,need=300,acc=0;xp=+xp||0;while(xp>=acc+need&&l<99){acc+=need;l++;need=Math.round(need*1.18)}return l}// (lobby.js recLevel)
 const GN=id=>(GUN_NAMES[id]&&GUN_NAMES[id][0])||id;
 const MN=id=>MAP_NAMES[id]||id||'-';
-const MODE={mut:'뮤테이션',orig:'오리지널',scen:'좀비 시나리오',tdm:'팀 데스매치',ffa:'개인전',bomb:'폭파미션',race:'무기 레이스'};
-const KIND={coins:'코인',frags:'해독 조각',tfrags:'초월 조각',tickets:'근하신년 해독기',season_tickets:'시즌 해독기'};
+const MODE={mut:'진화 감염',orig:'클래식 감염',scen:'협동 작전',tdm:'팀 데스매치',ffa:'개인전',bomb:'폭파미션',race:'무기 레이스'};
+const KIND={coins:'코인',frags:'해독 조각',tfrags:'각성 조각',tickets:'격리해제 해독기',season_tickets:'시즌 해독기'};
 const PROV={email:'이메일',google:'구글',kakao:'카카오',github:'깃허브',apple:'애플'};
 const online=t=>!!t&&Date.now()-new Date(t)<150e3;
 const ls=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
@@ -61,9 +61,9 @@ function errText(e){const m=String(e&&e.message||e||''),c=String(e&&e.code||'');
     [/bad_amount/,'수량을 확인해 주세요 (1 ~ 1억)'],[/bad_kind/,'지급할 수 없는 항목이에요'],[/no_profile/,'플레이어를 찾을 수 없어요'],[/nick_taken/,'다른 플레이어가 쓰는 닉네임이에요 (대소문자 구분 없이 한 명만)'],[/no_record/,'이미 없는 기록이에요'],
     [/already_owned/,'이미 가진 무기예요'],[/not_owned/,'가지고 있지 않은 무기예요'],[/free_gun/,'모두가 처음부터 가진 기본 무기예요'],[/no_gun/,'목록에 없는 무기가 있어요'],
     [/ban_admin/,'관리자 계정은 정지할 수 없어요'],[/bad_days/,'정지 기간을 확인해 주세요'],[/not_banned/,'정지 중인 계정이 아니에요'],
-    [/bad_price/,'가격을 확인해 주세요 (0 ~ 1,000만)'],[/gacha_only/,'근하신년 무기는 상점에서 팔 수 없어요'],[/trans_only/,'초월 무기는 상점에서 팔 수 없어요'],
+    [/bad_price/,'가격을 확인해 주세요 (0 ~ 1,000만)'],[/gacha_only/,'격리해제 무기는 상점에서 팔 수 없어요'],[/trans_only/,'각성 무기는 상점에서 팔 수 없어요'],
     [/bad_range/,'최소값이 최대값보다 커요'],[/bad_line/,'줄 보상은 gun:무기 · coins:숫자 · frags:숫자 · tickets:숫자 꼴이어야 해요'],[/bad_key/,'없는 설정 칸이에요'],
-    [/bad_value/,'값을 확인해 주세요 (0 이상, 숫자 범위는 근하신년 · 시즌 24 이상, 보조무기 25 이상)'],[/bad_title/,'제목을 적어 주세요'],[/no_notice/,'공지를 찾을 수 없어요 (이미 지워졌을 수 있어요)'],
+    [/bad_value/,'값을 확인해 주세요 (0 이상, 숫자 범위는 격리해제 · 시즌 24 이상, 보조무기 25 이상)'],[/bad_title/,'제목을 적어 주세요'],[/no_notice/,'공지를 찾을 수 없어요 (이미 지워졌을 수 있어요)'],
     [/bad_id/,'미션 ID는 영문 소문자 · 숫자 · _ 로 1~24자'],[/owner_only/,'주인 계정만 할 수 있어요'],[/bad_rewards/,'보상을 하나 이상, 0 이상의 정수로 넣어 주세요'],
     [/no_target/,'받을 사람을 한 명 이상 적어 주세요'],[/too_many_targets/,'한 번에 1,000명까지 보낼 수 있어요'],[/coupon_exists/,'이미 있는 쿠폰 코드예요'],
     [/bad_code/,'쿠폰 코드는 영문 · 숫자 4~20자예요 (- 와 띄어쓰기는 빠져요)'],[/coupon_not_found/,'쿠폰을 찾을 수 없어요'],[/no_room/,'이미 목록에서 내려간 방이에요'],
@@ -180,8 +180,8 @@ function dashHtml(D){const days=D.days||[],dec=D.dec||{},R=D.rooms||[];
   <div class="grid2">
     <div class="panel"><h2><span>오늘 재화</span><small>한국 시간 0시부터</small></h2><div class="pb"><div class="kv">
       <span>들어온 코인</span><b class="num">+${N(D.coins_in)}</b><span>쓴 코인</span><b class="num">−${N(D.coins_out)}</b><span>플레이어가 가진 코인 합계</span><b class="num">${N(D.coins_all)}</b>
-      <span>코인으로 연 근하신년 해독기</span><b class="num">${N(dec.ny)}개</b><span>코인으로 연 시즌 해독기</span><b class="num">${N(dec.season)}개</b><span>코인으로 연 보조무기 해독기</span><b class="num">${N(dec.side)}개</b>
-      <span>S급 무기 당첨</span><b class="num">${N(D.s_today)}번</b><span>초월 교환</span><b class="num">${N(D.trans_today)}번</b></div></div></div>
+      <span>코인으로 연 격리해제 해독기</span><b class="num">${N(dec.ny)}개</b><span>코인으로 연 시즌 해독기</span><b class="num">${N(dec.season)}개</b><span>코인으로 연 보조무기 해독기</span><b class="num">${N(dec.side)}개</b>
+      <span>S급 무기 당첨</span><b class="num">${N(D.s_today)}번</b><span>각성 교환</span><b class="num">${N(D.trans_today)}번</b></div></div></div>
     <div class="panel"><h2><span>공개 방</span><small>${R.length?R.length+'개 열림':''}</small></h2>${R.length?`<div class="tw"><table class="tbl"><thead><tr><th>코드</th><th>방장</th><th class="hm">맵</th><th>모드</th><th class="num">인원</th><th class="hm">열린 지</th><th></th></tr></thead><tbody>
       ${R.map(r=>`<tr class="click" data-a="user" data-v="${esc(r.host)}"><td><code>${esc(r.code)}</code></td><td>${esc(r.host_name)}</td><td class="hm">${esc(MN(r.map))}</td><td>${esc(MODE[r.mode]||r.mode)}${r.status==='playing'?' <span class="tag">게임 중</span>':''}</td><td class="num">${N(r.players)}/${N(r.max_players)}</td><td class="hm">${esc(ago(r.since))}</td><td class="act"><button class="btn sm take" data-a="roomclose" data-v="${esc(r.code)}" data-n="${esc(r.host_name)}">내리기</button></td></tr>`).join('')}
       </tbody></table></div>`:'<div class="empty">지금 열린 공개 방이 없어요.</div>'}</div></div>`}
@@ -241,7 +241,7 @@ function renderSheet(){const u=ST.user;if(!u)return;const sc=document.querySelec
   const giveable=P.filter(p=>!p.free&&!has.has(p.gun)).sort((a,c)=>GN(a.gun).localeCompare(GN(c.gun),'ko'));
   const eps=(u.eps||[]).filter(e=>e.clears>0).map(e=>`${e.ep}챕터 ${['쉬움','보통','어려움','전문가'][e.diff]||e.diff}${e.best_medal?' '+e.best_medal:''}`);
   const days=u.days||[],dmx=Math.max(1,...days.map(d=>+d.online||0)),D14=[];for(let i=13;i>=0;i--){const d=new Date(Date.now()+(new Date().getTimezoneOffset()+540)*60e3-i*864e5),k=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;D14.push(days.find(x=>x.day===k)||{day:k,online:0,play:0})}
-  const W=[['coins','코인',u.coins],['frags','해독 조각',u.frags],['tfrags','초월 조각',u.tfrags],['tickets','근하신년 해독기',u.tickets],['season_tickets','시즌 해독기',u.season_tickets]];
+  const W=[['coins','코인',u.coins],['frags','해독 조각',u.frags],['tfrags','각성 조각',u.tfrags],['tickets','격리해제 해독기',u.tickets],['season_tickets','시즌 해독기',u.season_tickets]];
   const html=`<div class="sh"><span class="dot${online(u.last_seen)?' on':''}" title="${online(u.last_seen)?'접속 중':'접속 안 함'}"></span><h2>${esc(u.nickname)}</h2>${u.admin?'<span class="tag adm">관리자</span>':''}${b?'<span class="tag ban">정지</span>':''}<button class="btn sm ghost x" data-a="closesheet">닫기</button></div>
   <div class="sb">
     <div class="sec"><div class="kv">
@@ -257,7 +257,7 @@ function renderSheet(){const u=ST.user;if(!u)return;const sc=document.querySelec
       <p class="note">회수는 0 아래로 내려가지 않아요. 코인은 플레이어의 코인 기록에도 「관리자」로 남아요.</p></form></div>`:''}
     <div class="sec"><h3>무기 <small>기본 무기 빼고 ${N(owned.length)}개</small></h3><div class="box">
       ${owned.length?`<div class="guns">${owned.map(o=>`<span class="gun" title="${esc(dt(o.at))}${o.paid?' · '+N(o.paid)+' 코인':''}">${esc(GN(o.gun))}${isOwner()?`<button type="button" data-a="guntake" data-v="${esc(o.gun)}" aria-label="${esc(GN(o.gun))} 회수">회수</button>`:''}</span>`).join('')}</div>`:'<p class="note" style="margin:0 0 10px">아직 산 무기가 없어요.</p>'}
-      ${isOwner()?`<form class="row" data-f="gungive"><select name="gun" class="grow" aria-label="지급할 무기"${P.length?'':' disabled'}>${P.length?giveable.map(p=>`<option value="${esc(p.gun)}">${esc(GN(p.gun))}${p.tier?' (근하신년 '+p.tier+')':''}</option>`).join(''):'<option>무기 목록을 불러오는 중…</option>'}</select>
+      ${isOwner()?`<form class="row" data-f="gungive"><select name="gun" class="grow" aria-label="지급할 무기"${P.length?'':' disabled'}>${P.length?giveable.map(p=>`<option value="${esc(p.gun)}">${esc(GN(p.gun))}${p.tier?' (격리해제 '+p.tier+')':''}</option>`).join(''):'<option>무기 목록을 불러오는 중…</option>'}</select>
         <input name="reason" class="grow" maxlength="200" placeholder="사유" aria-label="사유"><button class="btn give">지급</button></form>
         <p class="note" style="margin:8px 0 0">우편함을 거치지 않고 바로 보유 무기에 들어가요. 플레이어 게임 화면에는 「새 무기 지급」 창이 한 번 떠요 (접속 중이 아니면 다음 접속 때).</p>`:''}</div></div>
     <div class="sec"><h3>닉네임</h3><form class="box row" data-f="rename"><input name="nick" class="grow" maxlength="16" placeholder="새 닉네임 (2~16자)" aria-label="새 닉네임"><input name="reason" class="grow" maxlength="200" placeholder="사유" aria-label="사유"><button class="btn">바꾸기</button></form></div>
@@ -275,29 +275,29 @@ function renderSheet(){const u=ST.user;if(!u)return;const sc=document.querySelec
     <div class="sec"><div class="tabs" role="tablist">${[['coin','코인 기록'],['gacha','해독 기록'],['admin','관리 기록']].map(([k,t])=>`<button role="tab" aria-selected="${ST.utab===k}" class="${ST.utab===k?'on':''}" data-a="utab" data-v="${k}">${t}</button>`).join('')}</div><div id="ulog">${ulogHtml(u)}</div></div>
   </div>`;
   if(!document.querySelector('.sheet'))sheetShell(html);else document.querySelector('.sheet').innerHTML=html;const s2=document.querySelector('.sheet');if(s2)s2.scrollTop=y}
-const COINR={welcome:'가입 보상',buy:'무기 구매',match:'판 보상',round:'라운드 보상',ep_first:'챕터 첫 클리어',mission:'미션 보상',decoder:'근하신년 해독기',bingo_win:'근하신년 빙고',
+const COINR={welcome:'가입 보상',buy:'무기 구매',match:'판 보상',round:'라운드 보상',ep_first:'챕터 첫 클리어',mission:'미션 보상',decoder:'격리해제 해독기',bingo_win:'격리해제 빙고',
   season_decoder:'시즌 해독기',season_win:'시즌 빙고',side_decoder:'보조무기 해독기',side_win:'보조무기 빙고',gift:'선물 보냄',ref_welcome:'초대 링크 보너스',ref_reward:'초대 보상',admin:'관리자',mail:'우편 보상',coupon:'쿠폰',ach:'업적 보상',tutorial:'기초 훈련 보상'};
-const GSRC={decode:'근하신년',free:'무료 근하신년',ticket:'보유 근하신년',season:'시즌',side:'보조무기',exchange:'조각 교환',trans:'초월 교환',letters:'근하신년 글자',pull:'예전 행운 주머니'};
+const GSRC={decode:'격리해제',free:'무료 격리해제',ticket:'보유 격리해제',season:'시즌',side:'보조무기',exchange:'조각 교환',trans:'각성 교환',letters:'격리해제 글자',pull:'예전 행운 주머니'};
 function ulogHtml(u){const k=ST.utab;
   if(k==='coin'){const L=u.coin_log||[];if(!L.length)return '<div class="empty">코인 기록이 없어요.</div>';
     return `<div class="tw"><table class="tbl"><thead><tr><th>시각</th><th>내용</th><th class="num">변동</th></tr></thead><tbody>${L.map(c=>{const d=c.detail||{};let x=COINR[c.reason]||c.reason;
       if(d.gun)x+=' · '+GN(d.gun);if(d.to)x+=' → '+d.to;if(d.count)x+=' '+d.count+'개';if(d.mode)x+=' · '+(MODE[d.mode]||d.mode);if(d.note)x+=' · '+d.note;if(c.reason==='mail'&&d.title)x+=' · '+d.title;if(c.reason==='coupon'&&d.code)x+=' · '+d.code;
       return `<tr><td class="mute" style="white-space:nowrap">${esc(dt(c.at))}</td><td>${esc(x)}</td><td class="num" style="color:${c.delta>=0?'#8cc8ff':'#ff9a8a'}">${c.delta>=0?'+':'−'}${N(Math.abs(c.delta))}</td></tr>`}).join('')}</tbody></table></div>`}
   if(k==='gacha'){const L=u.gacha_log||[];if(!L.length)return '<div class="empty">해독 기록이 없어요.</div>';
-    return `<div class="tw"><table class="tbl"><thead><tr><th>시각</th><th>어디서</th><th>받은 것</th></tr></thead><tbody>${L.map(g=>{let x=g.kind==='gun'?GN(g.gun)+(g.tier?' ('+g.tier+'급)':''):g.kind==='coins'?N(g.amount)+' 코인':g.kind==='frags'?'해독 조각 '+N(g.amount):g.kind==='tickets'?'근하신년 해독기 '+N(g.amount):g.kind==='season_ticket'?'시즌 해독기 '+N(g.amount):g.kind;
+    return `<div class="tw"><table class="tbl"><thead><tr><th>시각</th><th>어디서</th><th>받은 것</th></tr></thead><tbody>${L.map(g=>{let x=g.kind==='gun'?GN(g.gun)+(g.tier?' ('+g.tier+'급)':''):g.kind==='coins'?N(g.amount)+' 코인':g.kind==='frags'?'해독 조각 '+N(g.amount):g.kind==='tickets'?'격리해제 해독기 '+N(g.amount):g.kind==='season_ticket'?'시즌 해독기 '+N(g.amount):g.kind;
       if((g.src==='exchange'||g.src==='trans')&&g.amount<0)x+=` (조각 ${N(-g.amount)} 사용)`;return `<tr><td class="mute" style="white-space:nowrap">${esc(dt(g.at))}</td><td>${esc(GSRC[g.src]||g.src)}</td><td>${esc(x)}</td></tr>`}).join('')}</tbody></table></div>`}
   const L=u.log||[];if(!L.length)return '<div class="empty">관리자가 이 계정에 한 일이 없어요.</div>';
   return `<div class="tw"><table class="tbl"><thead><tr><th>시각</th><th>관리자</th><th>작업</th><th>사유</th></tr></thead><tbody>${L.map(l=>`<tr><td class="mute" style="white-space:nowrap">${esc(dt(l.at))}</td><td>${esc(l.by||'-')}</td><td>${logWhat(l)}</td><td>${esc(l.reason||'')}</td></tr>`).join('')}</tbody></table></div>`}
 
 // ---------- 게임 설정 ----------
 const CFG_G=[
-  ['근하신년 해독기',[['dec_cost1','1개 가격','코인'],['dec_cost10','10개 가격','코인'],['bingo_hi','숫자 범위 (0 ~ 이 값)','24 이상'],['dec_frag_min','해독 조각 최소','1개당'],['dec_frag_max','해독 조각 최대','1개당'],
-    ['shuffle_free','하루 뒤섞기 횟수',''],['daily_free','매일 무료 해독기 1개',''],['full_s_coins','S급을 다 가졌을 때 대신 주는 코인',''],['full_a_frags','A급을 다 가졌을 때 대신 주는 조각',''],['ex_s','S급 교환에 드는 조각',''],['ex_a','A급 교환에 드는 조각',''],['ny_day_cap','하루 근·하·신·년 글자 상한','판당 2~8개']]],
+  ['격리해제 해독기',[['dec_cost1','1개 가격','코인'],['dec_cost10','10개 가격','코인'],['bingo_hi','숫자 범위 (0 ~ 이 값)','24 이상'],['dec_frag_min','해독 조각 최소','1개당'],['dec_frag_max','해독 조각 최대','1개당'],
+    ['shuffle_free','하루 뒤섞기 횟수',''],['daily_free','매일 무료 해독기 1개',''],['full_s_coins','S급을 다 가졌을 때 대신 주는 코인',''],['full_a_frags','A급을 다 가졌을 때 대신 주는 조각',''],['ex_s','S급 교환에 드는 조각',''],['ex_a','A급 교환에 드는 조각',''],['ny_day_cap','하루 격·리·해·제 글자 상한','판당 2~8개']]],
   ['시즌 해독기',[['season_cost1','1개 가격','코인'],['season_cost10','10개 가격','코인'],['season_hi','숫자 범위 (0 ~ 이 값)','24 이상'],['season_frag_min','해독 조각 최소','1개당'],['season_frag_max','해독 조각 최대','1개당'],
     ['season_owned_coins','이미 가진 무기 줄 대신 주는 코인',''],['season_lines','빙고 줄 보상','한 줄에 하나, 12개']]],
   ['보조무기 해독기',[['side_cost1','1개 가격','코인'],['side_cost10','10개 가격','코인'],['side_hi','숫자 범위 (1 ~ 이 값)','25 이상'],['side_frag_min','해독 조각 최소','1개당'],['side_frag_max','해독 조각 최대','1개당'],
     ['side_owned_coins','이미 가진 무기 줄 대신 주는 코인',''],['side_lines','빙고 줄 보상','한 줄에 하나, 12개']]],
-  ['초월',[['trans_frag_min','해독기 1개당 초월 조각 최소',''],['trans_frag_max','해독기 1개당 초월 조각 최대',''],['trans_cost','초월 무기 교환에 드는 조각',''],['trans_guns','교환할 수 있는 초월 무기','무기 ID, 한 줄에 하나']]],
+  ['각성',[['trans_frag_min','해독기 1개당 각성 조각 최소',''],['trans_frag_max','해독기 1개당 각성 조각 최대',''],['trans_cost','각성 무기 교환에 드는 조각',''],['trans_guns','교환할 수 있는 각성 무기','무기 ID, 한 줄에 하나']]],
   ['랭킹 하루 상한',[['rank_day_kills','하루 처치','계정마다 · 한국 시간 하루'],['rank_day_inf','하루 감염',''],['rank_day_xp','하루 경험치','판 + 라운드']]],
   ['전체 채팅',[['chat_on','로비 전체 채팅','끄면 아무도 못 보내고 열린 채팅도 30초 안에 닫혀요'],['chat_guest','손님(로그인 안 한 사람) 채팅','끄면 로그인한 사람만 보낼 수 있어요 · 읽기는 그대로'],['chat_guest_day','손님 하루 메시지 수','한국 시간 하루 · 계정은 제한 없음 · 0 ~ 1000']]],
   ['초대',[['ref_new_coins','새 계정이 링크로 바로 받는 코인',''],['ref_new_tickets','새 계정이 판을 채우면 받는 해독기',''],['ref_coins','초대한 사람이 받는 코인',''],['ref_tickets','초대한 사람이 받는 해독기',''],
@@ -305,14 +305,14 @@ const CFG_G=[
   ['예전 행운 주머니 (지금은 안 써요)',[['cost1','1번 가격',''],['cost10','10번 가격',''],['rate_s','S 확률','0 ~ 1'],['rate_a','A 확률','0 ~ 1'],['rate_coin','코인 확률','0 ~ 1'],['pity','천장 (이 번째에 S)',''],
     ['frag_min','조각 최소',''],['frag_max','조각 최대',''],['coin_table','코인 표','[[코인, 가중치], …]']],true]];
 const lineWords=s=>{const m=/^(gun|coins|frags|tickets):(.+)$/.exec(s);if(!m)return {t:s+' (알 수 없는 꼴)',g:false};const v=m[2];
-  return m[1]==='gun'?{t:GN(v),g:true}:m[1]==='coins'?{t:'코인 '+N(v)}:m[1]==='frags'?{t:'해독 조각 '+N(v)}:{t:'근하신년 해독기 '+N(v)}};
+  return m[1]==='gun'?{t:GN(v),g:true}:m[1]==='coins'?{t:'코인 '+N(v)}:m[1]==='frags'?{t:'해독 조각 '+N(v)}:{t:'격리해제 해독기 '+N(v)}};
 async function vSettings(sub){const M=$('main');const S=[['prices','무기 가격'],['gacha','해독기 · 초대 · 채팅'],['missions','일일 미션']];if(!S.some(x=>x[0]===sub))sub='prices';
   M.innerHTML=head('게임 설정','바로 게임에 반영돼요. 바꾼 값은 schema.sql을 다시 실행해도 그대로예요.')+`<div class="sub">${S.map(([k,t])=>`<a class="chip${k===sub?' on':''}" href="#/settings/${k}"${k===sub?' aria-current="page"':''}>${t}</a>`).join('')}</div><div id="setB"><div class="empty">불러오는 중…</div></div>`;
   try{if(sub==='prices'){const [p,c]=await Promise.all([API.rpc('qz_admin_prices'),ST.cfg?Promise.resolve(ST.cfg):API.rpc('qz_admin_config_get')]);ST.prices=p;ST.cfg=c;renderPrices()}
     else if(sub==='gacha'){ST.cfg=await API.rpc('qz_admin_config_get');ST.cfgDraft={};renderCfg()}
     else{ST.missions=await API.rpc('qz_admin_missions');renderMissions()}}
   catch(e){if($('setB'))$('setB').innerHTML=errBox(e,'resettings')}}
-function gunCat(p){const tg=(ST.cfg&&ST.cfg.trans_guns)||[];if(p.free)return '기본 무기';if(p.tier)return '근하신년 '+p.tier+'급';if(tg.includes(p.gun))return '초월';return p.sold?'상점':'비매품'}
+function gunCat(p){const tg=(ST.cfg&&ST.cfg.trans_guns)||[];if(p.free)return '기본 무기';if(p.tier)return '격리해제 '+p.tier+'급';if(tg.includes(p.gun))return '각성';return p.sold?'상점':'비매품'}
 function renderPrices(){const B=$('setB');if(!B)return;const tg=(ST.cfg&&ST.cfg.trans_guns)||[],q=ST.pq.trim().toLowerCase();
   const F=[['all','전체'],['sold','상점 판매'],['nosale','비매품'],['set','직접 바꾼 값']];
   const rows=(ST.prices||[]).filter(p=>ST.pf==='all'||(ST.pf==='sold'?p.sold&&!p.free:ST.pf==='nosale'?!p.sold&&!p.free:p.admin_set)).filter(p=>!q||GN(p.gun).toLowerCase().includes(q)||p.gun.includes(q))
@@ -325,7 +325,7 @@ function renderPrices(){const B=$('setB');if(!B)return;const tg=(ST.cfg&&ST.cfg.
       <td class="num hm">${N(p.owners)}명</td><td class="hm">${p.admin_set?`<span class="tag set">직접 바꿈</span> <span class="mute" style="font-size:11px">파일: ${N(p.file_price)}${p.file_sold?'':' · 비매품'}</span>`:''}</td>
       <td class="act">${fix?'':`<button class="btn sm pri" data-a="psave" data-v="${esc(p.gun)}" disabled>저장</button>`}${p.admin_set?` <button class="btn sm ghost" data-a="preset" data-v="${esc(p.gun)}">되돌리기</button>`:''}</td></tr>`}).join('')}
     </tbody></table></div>${rows.length?'':'<div class="empty">조건에 맞는 무기가 없어요.</div>'}</div>
-    <p class="mute" style="font-size:12px">「되돌리기」는 schema.sql에 적힌 가격 · 판매 여부로 돌려놔요. 근하신년 무기와 초월 무기는 상점에서 팔 수 없어요.</p>`}
+    <p class="mute" style="font-size:12px">「되돌리기」는 schema.sql에 적힌 가격 · 판매 여부로 돌려놔요. 격리해제 무기와 각성 무기는 상점에서 팔 수 없어요.</p>`}
 function cfgVal(k){return k in ST.cfgDraft?ST.cfgDraft[k]:ST.cfg[k]}
 function renderCfg(){const B=$('setB');if(!B)return;const C=ST.cfg||{},known=new Set(CFG_G.flatMap(g=>g[1].map(f=>f[0])));
   const other=Object.keys(C).filter(k=>k!=='id'&&!known.has(k)).map(k=>[k,k,'']);const groups=CFG_G.concat(other.length?[['기타',other]]:[]);
@@ -471,12 +471,12 @@ function renderErrs(){const B=$('errB');if(!B)return;const D=ST.errs.data||{},L=
     </tbody></table></div>`}
 
 // ---------- reward bundles (mail and coupons): coins and the rest, and up to 10 guns ----------
-const RWK=[['coins','코인',10000000],['frags','해독 조각',100000],['tfrags','초월 조각',10000],['tickets','근하신년 해독기',1000],['season_tickets','시즌 해독기',1000]];
+const RWK=[['coins','코인',10000000],['frags','해독 조각',100000],['tfrags','각성 조각',10000],['tickets','격리해제 해독기',1000],['season_tickets','시즌 해독기',1000]];
 function rwText(rw){if(!rw)return '-';const o=[];for(const [k,l] of RWK)if(rw[k])o.push(`${l} ${N(rw[k])}`);for(const g of rw.guns||[])o.push(GN(g));return o.join(', ')||'-'}
 function rwGuns(id,rw){return (rw.guns||[]).map(g=>`<span class="gun">${esc(GN(g))}<button type="button" data-a="rwgunx" data-v="${id}|${esc(g)}" aria-label="${esc(GN(g))} 빼기">빼기</button></span>`).join('')}
 function rwEditor(id,rw){const P=(ST.prices||[]).filter(p=>!p.free).sort((a,b)=>GN(a.gun).localeCompare(GN(b.gun),'ko'));
   return `<div class="rwe" id="${id}"><div class="cfg">${RWK.map(([k,l,mx])=>`<label class="fld"><span>${l}</span><input type="number" min="0" max="${mx}" step="1" inputmode="numeric" data-rk="${k}" value="${rw[k]||''}" placeholder="0"></label>`).join('')}</div>
-    <div class="row" style="margin-top:10px"><select class="grow" data-rsel="${id}" aria-label="넣을 무기"${P.length?'':' disabled'}>${P.length?'<option value="">무기 넣기 — 고르면 바로 들어가요</option>'+P.map(p=>`<option value="${esc(p.gun)}">${esc(GN(p.gun))}${p.tier?' (근하신년 '+p.tier+')':''}</option>`).join(''):'<option>무기 목록을 불러오는 중…</option>'}</select></div>
+    <div class="row" style="margin-top:10px"><select class="grow" data-rsel="${id}" aria-label="넣을 무기"${P.length?'':' disabled'}>${P.length?'<option value="">무기 넣기 — 고르면 바로 들어가요</option>'+P.map(p=>`<option value="${esc(p.gun)}">${esc(GN(p.gun))}${p.tier?' (격리해제 '+p.tier+')':''}</option>`).join(''):'<option>무기 목록을 불러오는 중…</option>'}</select></div>
     <div class="guns" data-rguns style="margin:8px 0 0">${rwGuns(id,rw)}</div></div>`}
 // the amounts typed in, kept on the draft too (so a redraw keeps them); the guns are on the draft already
 function rwRead(id,rw){const el=$(id),o={};if(!el)return o;el.querySelectorAll('[data-rk]').forEach(i=>{const v=parseInt(i.value,10);if(v>0){o[i.dataset.rk]=v;rw[i.dataset.rk]=v}else delete rw[i.dataset.rk]});

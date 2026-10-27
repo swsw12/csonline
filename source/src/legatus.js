@@ -820,7 +820,7 @@ Object.assign(JAW0,{legatus:.08,shield:.1});
 //   3 the main span — everybody across to the checkpoint gate within 150 s, TESTUDO coming down the cleared lane at them meanwhile
 //     (it pulls back through the gate once they are across, or once it has lost 15 % of its health)
 //   4 the north checkpoint — the boss fight, three phases. A wipe replays the phase it reached, at that phase's health
-CHAP[6]={id:6,k:'legatus',map:'ep6',code:'RT1-01',season:2,n:['레가투스','LEGATUS'],t:['좀비 시나리오: 레가투스','Zombie Scenario: LEGATUS'],
+CHAP[6]={id:6,k:'legatus',map:'ep6',code:'RT1-01',season:2,n:['레가투스','LEGATUS'],t:['협동 작전: 레가투스','Co-op Operation: LEGATUS'],
   file:[['1차 회수팀 대장 RT1-01. 지휘 장갑차 테스투도의 해치에서 기관총을 쏘고, 길을 막는 사람을 들이받는다','RT-1\'s leader, RT1-01: he fires from the hatch of the command APC TESTUDO and runs down whoever stands in its road'],
     ['약점은 장갑차 뒤쪽 엔진 · 스파이크 띠를 깔면 바퀴가 터진다 · 내려선 뒤엔 등의 무전기','Its engine at the back is the weak spot · spike strips burst its tyres · on foot: the radio on his back']],
   cards:{place:['제1 봉쇄선 북문대교','NORTH GATE BRIDGE · LINE 1'],who:['1차 회수팀 대장','RT-1 LEADER'],line:['아무도 두고 가지 않는다 — 죽은 부하들에게 아직도 명령을 내린다','Leave no one behind — he still gives his dead squad their orders']},
@@ -848,7 +848,7 @@ CHAP[6]={id:6,k:'legatus',map:'ep6',code:'RT1-01',season:2,n:['레가투스','LE
   // after the clear: the signal is still there; a card for the season so far
   ending(){EP.later(3,()=>EP.radio('end0'));EP.later(6.4,()=>EP.radio('end1'));EP.later(8.8,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 6 CLEAR':'6챕터 클리어'}</h1><p>${L?'The signal comes from further north.':'신호는 더 북쪽에서 온다.'}</p><b>${L?'NEXT — CHAPTER 7 「LORELEI」':'다음 이야기 — 7챕터 「로렐라이」'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'CO-OP OPERATION · SEASON 2':'협동 작전 · 시즌 2'}</small><h1>${L?'CHAPTER 6 CLEAR':'6챕터 클리어'}</h1><p>${L?'The signal comes from further north.':'신호는 더 북쪽에서 온다.'}</p><b>${L?'NEXT — CHAPTER 7 「LORELEI」':'다음 이야기 — 7챕터 「로렐라이」'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},6500)},
   radio:{
     start:['2차 회수팀, 북문대교 남단이다. 레가투스의 무전 — "북쪽으로 와라" — 은 다리 건너 검문소에서 나오고 있다.','RT-2, you are at the south end of the North Gate Bridge. LEGATUS\'s broadcast — "come north" — is coming from the checkpoint across it.',0],

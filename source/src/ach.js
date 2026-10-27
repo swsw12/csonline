@@ -1,6 +1,6 @@
 'use strict';
 // ============ v6.57: achievements (업적) and titles (칭호) ============
-// The server keeps both (schema.sql v6.57): ach_defs lists every tier of every achievement (its goal, coins, 근하신년 decoders and the
+// The server keeps both (schema.sql v6.57): ach_defs lists every tier of every achievement (its goal, coins, All-Clear decoders and the
 // title it gives), qz_achievements reads the numbers (the record, the chapters and the counters qz_claim / qz_round_claim add up),
 // qz_ach_claim pays a tier once (or every tier waiting), qz_title_wear sets the title worn. This file names them, draws the two pages
 // of the mission / ranking window (업적 · 칭호), the lobby button, the results line, counts what only the game sees in a match (melee
@@ -31,7 +31,7 @@ const ACH_GRP={
   inf:{c:'zombie',n:['감염','Infections'],d:n=>[`좀비로 인간 ${n}명 감염`,`Infect ${n} humans as a zombie`]},
   zw:{c:'zombie',n:['좀비의 승리','Zombie victories'],d:n=>[`좀비로 라운드 ${n}번 승리`,`Win ${n} rounds as a zombie`]},
   surv:{c:'survive',n:['생존','Survival'],d:n=>[`인간으로 라운드 끝까지 ${n}번 살아남기`,`Live through ${n} rounds as a human`]},
-  win:{c:'survive',n:['인간 승리','Human victories'],d:n=>[`뮤테이션 · 오리지널 매치 ${n}번 승리`,`Win ${n} Mutation / Original matches`]},
+  win:{c:'survive',n:['인간 승리','Human victories'],d:n=>[`진화 감염 · 클래식 감염 매치 ${n}번 승리`,`Win ${n} Evolved Infection / Classic Infection matches`]},
   ep:{c:'chapter',n:['챕터 정복','Chapters'],d:n=>[`서로 다른 챕터 ${n}개 클리어`,`Clear ${n} different chapters`]},
   eph:{c:'chapter',n:['고난도 정복','Hard chapters'],d:n=>[`어려움 이상으로 챕터 ${n}개 클리어`,`Clear ${n} chapters on hard or expert`]},
   epx:{c:'chapter',n:['전문가','Expert chapters'],d:n=>[`전문가 난이도로 챕터 ${n}개 클리어`,`Clear ${n} chapters on expert`]},
@@ -43,7 +43,7 @@ const ACH_GRP={
   tags:{c:'chapter',n:['1차 회수팀','Recovery Team 1'],d:()=>['1차 회수팀 일곱 명을 모두 쓰러뜨리기 (2 · 4 · 6~10챕터 보스)','Bring down all seven of RT-1 (the bosses of chapters 2, 4 and 6–10)']},
   pk:{c:'pvp',n:['대인전 처치','PvP kills'],d:n=>[`대인전에서 ${n}킬`,`${n} kills in PvP`]},
   pw:{c:'pvp',n:['대인전 승리','PvP wins'],d:n=>[`대인전 매치 ${n}번 승리`,`Win ${n} PvP matches`]},
-  rw:{c:'pvp',n:['무기 레이스 우승','Arms race wins'],d:n=>[`무기 레이스 ${n}번 우승`,`Win ${n} arms races`]},
+  rw:{c:'pvp',n:['무기 레이스 우승','Gun race wins'],d:n=>[`무기 레이스 ${n}번 우승`,`Win ${n} arms races`]},
   bomb:{c:'pvp',n:['폭파 임무','Bomb missions'],d:n=>[`폭탄 설치 · 해체 ${n}번`,`Plant or defuse the bomb ${n} times`]},
   lv:{c:'growth',n:['레벨','Level'],d:n=>[`레벨 ${n} 달성`,`Reach level ${n}`]},
   games:{c:'growth',n:['매치','Matches'],d:n=>[`매치 ${n}판 끝까지 하기`,`Finish ${n} matches`]},
@@ -154,11 +154,11 @@ const ACH={cat:'all',res:null,
     return G0},
   num(g,v){return g.stat==='lv'?'Lv.'+fmtC(v):g.stat==='hours'?fmtC(v)+(LI()?' h':'시간'):fmtC(v)},
   rw(d,L){if(!d)return '';const t=d.title&&TITLES[d.title]?TTL.chip(d.title,'sm'):'';
-    return `${d.coins?`<span class="arc">${COIN}${fmtC(d.coins)}</span>`:''}${d.tickets?`<span class="mtk" title="${L?'근하신년 decoder':'근하신년 해독기'}">${decoderSvg('tki')}×${d.tickets}</span>`:''}${t}`},
+    return `${d.coins?`<span class="arc">${COIN}${fmtC(d.coins)}</span>`:''}${d.tickets?`<span class="mtk" title="${L?'All-Clear decoder':'격리해제 해독기'}">${decoderSvg('tki')}×${d.tickets}</span>`:''}${t}`},
   // ---- 업적 ----
   page(){const L=LI(),A=ACC.ach;let body,top='';
     if(!ACC.on)body=`<div class="rkempty">${L?'Achievements open once accounts are set up.':'계정 서버가 연결되면 업적을 볼 수 있어요.'}</div>`;
-    else if(!ACC.signed())body=`<div class="rkempty">${L?'Sign in for achievements — coins, 근하신년 decoders and titles for what you have done (your record so far counts).':'로그인하면 업적 — 지금까지의 기록도 그대로 쳐서 코인 · 근하신년 해독기 · 칭호를 받아요.'}<button class="sbb" data-ra="login">${L?'Sign in':'로그인'}</button></div>`;
+    else if(!ACC.signed())body=`<div class="rkempty">${L?'Sign in for achievements — coins, All-Clear decoders and titles for what you have done (your record so far counts).':'로그인하면 업적 — 지금까지의 기록도 그대로 쳐서 코인 · 격리해제 해독기 · 칭호를 받아요.'}<button class="sbb" data-ra="login">${L?'Sign in':'로그인'}</button></div>`;
     else if(!A)body=`<div class="rkempty">${RKW.load.ach?(L?'Loading…':'불러오는 중…'):''}</div>`;
     else{const G0=this.groups(),cat=this.cat,all=A.defs.length,got=(A.claimed||[]).filter(id=>A.defs.some(d=>d.id===id)).length,ready=G0.reduce((s,g)=>s+g.nReady,0);
       const catReady=c=>G0.some(g=>g.nReady>0&&(c==='all'||(ACH_GRP[g.id]||{}).c===c));
@@ -180,7 +180,7 @@ const ACH={cat:'all',res:null,
       <div class="achR">${g.done?'':this.rw(d,L)}</div>
       <button class="mcl" data-ra="aclaim" data-v="${g.ready?d.id:''}"${g.ready&&!RKW.busy?'':' disabled'}>${g.done?(L?'Done ✔':'완료 ✔'):g.ready?(L?'Claim':'보상 받기'):(L?'In progress':'진행 중')}</button></div>`},
   async claim(id){if(RKW.busy)return;const L=LI();RKW.busy=true;RKW.msg='';RKW.render();
-    try{const r=await ACC.achClaim(id||null),parts=[];if(r.got)parts.push(`+${fmtC(r.got)} ${L?'coins':'코인'}`);if(r.got_tickets)parts.push(`${L?'근하신년 decoder':'근하신년 해독기'} +${r.got_tickets}`);
+    try{const r=await ACC.achClaim(id||null),parts=[];if(r.got)parts.push(`+${fmtC(r.got)} ${L?'coins':'코인'}`);if(r.got_tickets)parts.push(`${L?'All-Clear decoder':'격리해제 해독기'} +${r.got_tickets}`);
       const tn=(r.titles||[]).filter(t=>TITLES[t]).map(t=>`「${TTL.name(t,L)}」`);if(tn.length)parts.push((L?'new title ':'새 칭호 ')+tn.join(' '));
       RKW.msg=(L?'Reward: ':'보상 — ')+parts.join(' · ');RKW.msgOk=true;AU.play('buy',{vol:.8});if(tn.length)AU.play('lvlup',{vol:.55})}
     catch(e){const m=String(e&&e.message||'');RKW.msg=/not_done/.test(m)?(L?'Not reached yet':'아직 달성하지 못했어요'):ACC.errText(e);RKW.msgOk=false;AU.play('dry',{vol:.5});if(/not_done|already_claimed/.test(m))ACC.loadAch().catch(()=>{})}

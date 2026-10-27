@@ -538,7 +538,7 @@ Object.assign(JAW0,{argus:.16,squad:.1});
 //   3 the command tent — recover RT-1's mission records (10 s) while ARGUS snipes from the command post's tower; it goes once the
 //     records are in (or once it has lost a tenth of its health)
 //   4 the watchtower plaza — the boss fight, three phases. A wipe replays the phase it reached, at that phase's health
-CHAP[2]={id:2,k:'argus',map:'ep2',code:'RT1-07',n:['아르고스','ARGUS'],t:['좀비 시나리오: 아르고스','Zombie Scenario: ARGUS'],
+CHAP[2]={id:2,k:'argus',map:'ep2',code:'RT1-07',n:['아르고스','ARGUS'],t:['협동 작전: 아르고스','Co-op Operation: ARGUS'],
   file:[['1차 회수팀 저격수 RT1-07. 불빛과 총구 불꽃을 노리고, 쏘기 전에 레이저가 꽂힌다','RT-1\'s sniper, RT1-07: it shoots at lights and muzzle flashes, and its laser comes first'],
     ['투광등을 놈이 선 탑으로 돌리면 야간투시경이 탄다 · 렌즈 4개가 약점','Swing a floodlight onto its tower and its night vision burns out · four lenses to shoot']],
   cards:{place:['제7 봉쇄선','CONTAINMENT LINE 7'],who:['1차 회수팀 저격수','RT-1 SNIPER'],line:['절대 빗나가지 않는다는 오만 — 불빛만 보이면 쏜다','Too proud to miss — anything that shows a light gets shot']},

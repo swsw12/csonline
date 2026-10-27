@@ -4,7 +4,7 @@
 // less cures it: it gets up a human again, on your side, with its own sidearm and knife (a player too) and the vaccine still in the blood
 // (no claw turns it for 4 s). The first zombies of a round (the hosts) carry the strain itself: they cannot be cured. Above half health a
 // dart hurts and the vaccine burns: the zombie runs slower for 2 s. The bio-scanner in the sight marks every zombie in view: green when a
-// dart would cure it, its health while it would not, IMMUNE on a host. Cures happen in the infection modes only (Original, Mutation): in
+// dart would cure it, its health while it would not, IMMUNE on a host. Cures happen in the infection modes only (Classic Infection, Evolved Infection): in
 // the scenario, the range and the episodes it is a dart gun that slows.
 // Network: the host decides (a client's dart is a claim, like any shot) and tells everyone: 'cure' (who, by whom), 'vxs' (a slowed zombie).
 
@@ -60,7 +60,7 @@ function vaxHuman(a){a.team=TH;a.host=false;a.lvl=1;a.infR=0;a.maxHp=100;a.hp=VA
 function vaxCure(t,src){if(NET.cli&&!NET.ev)return;if(!t||t.team!==TZ)return;
   vaxHuman(t);vaxCureFx(t);HUD.feed(src,'q7vac',t,{cure:1});
   if(src){src.score+=3;src.cures=(src.cures|0)+1;scEarn(src,400)}
-  // Mutation: a cure lifts the humans' morale as a kill does
+  // Evolved Infection: a cure lifts the humans' morale as a kill does
   if(G.mode==='mut'&&src&&src.team===TH&&!NET.cli){G.moralePts+=2;const nl=Math.min(ZBAL.moraleMax,Math.floor(G.moralePts/3));if(nl>G.moraleLvl){G.moraleLvl=nl;HUD.announce(T('moraleUp',nl*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}}
   const L=LI();if(t.isPlayer){HUD.announce(L?'CURED — you are human again':'백신 치료 — 인간으로 돌아왔어요','h',3.2);HUD.note(L?'The vaccine keeps the claws off for a few seconds':'몇 초 동안은 감염되지 않아요',3);AU.play('vaxcure',{vol:.9})}
   else if(src&&src.isPlayer){HUD.note(L?`${t.name} cured — on our side now`:`${t.name} 치료 성공 — 이제 아군이에요`,2.4);AU.play('vaxcure',{vol:.7})}

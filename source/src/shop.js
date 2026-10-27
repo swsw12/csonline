@@ -2,36 +2,36 @@
 // ============ The gun shop (coins), the sign-in window and what they change in the game ============
 // Coins come from finished matches (worked out by the database, see supabase/schema.sql) and buy guns for good. In a match,
 // weapons cost nothing, but only the guns you own can be picked; the free set is everyone's. Picking a gun up off the floor, supply crates and the
-// 근하신년 free pick still hand out any gun; the 근하신년 guns themselves come from the decoder bingo (or the fragment exchange). With accounts off (no Supabase settings in account.js) every gun stays open.
+// All-Clear free pick still hand out any gun; the All-Clear guns themselves come from the decoder bingo (or the fragment exchange). With accounts off (no Supabase settings in account.js) every gun stays open.
 // Prices: the database table gun_prices is the truth; this copy (same numbers as schema.sql) is shown until it has loaded.
 const SHOP_FREE=['knife','p9','sg8','k5','g35'];
 const SHOP_PRICE={thanatos9:15000,glock:1000,vector:3500,an94:5000,m82:8500,f7:1200,d50:1500,tw9:1800,r6:2000,db2:1500,m14:3500,as12:4500,k9:1200,um45:1800,pd50:3000,br3:2500,kv47:3500,ar7:4000,ar5c:4500,hr17:5500,sr8:2500,r700:6500,dm14:7000,mg6:6000,hmg:6500,gx6:10000,airb:4500,gl40:5500,axe:1500,hammer:4000,killknife:12000,blaze8:6000,winchester:4500,balrog5:6500,balrog11:7000,plasma:7500,thunder:9500,katana:9000,jhammer:7500,dde:8500,janus1:8500,cbmav:9000};
-const SHOP_NOTSOLD=['bhole','skull9','salamander','ak60r','dmp7','bholemini','crimson','janus2','m4dk','sentinel','q7vac','bhound','dglock','spas12d','m32c','m4dk2','startrack'];// never in the shop: the season / sidearm decoders' guns (a line on their cards), the transcendence exchange's (v6.41), else crate-only
+const SHOP_NOTSOLD=['bhole','skull9','salamander','ak60r','dmp7','bholemini','crimson','janus2','m4dk','sentinel','q7vac','bhound','dglock','spas12d','m32c','m4dk2','startrack'];// never in the shop: the season / sidearm decoders' guns (a line on their cards), the awakening exchange's (v6.41), else crate-only
 const SHOP_GACHA={S:['rdc','mdrill','mlaunch','volc','bdc','gaebolg'],A:['xdz','ripper','xbowa','xbow','sterling','duckfoot']};
 // the decoder's numbers until gacha_config has loaded (same defaults as schema.sql)
 const GACHA_DEF={dec_cost1:600,dec_cost10:5400,bingo_hi:49,dec_frag_min:1,dec_frag_max:3,shuffle_free:3,full_s_coins:3000,full_a_frags:30,ex_s:200,ex_a:80,daily_free:true,
   season_cost1:1000,season_cost10:9000,season_hi:99,season_frag_min:1,season_frag_max:3,season_owned_coins:10000,
   season_lines:['gun:bhole','gun:skull9','gun:salamander','coins:1000','coins:2000','coins:2000','coins:5000','frags:30','frags:30','tickets:3','tickets:3','tickets:3'],
   side_cost1:500,side_cost10:4500,side_hi:80,side_frag_min:1,side_frag_max:2,side_owned_coins:5000,
-  side_lines:['gun:bholemini','gun:crimson','gun:janus2','coins:500','coins:1000','coins:2000','coins:3000','frags:20','frags:20','frags:30','tickets:1','tickets:1'],// v6.55: JANUS-2 took a coins:1000 line
+  side_lines:['gun:bholemini','gun:crimson','gun:janus2','coins:500','coins:1000','coins:2000','coins:3000','frags:20','frags:20','frags:30','tickets:1','tickets:1'],// v6.55: TWINFACE-2 took a coins:1000 line
   ref_new_coins:2000,ref_new_tickets:2,ref_coins:3000,ref_tickets:2,ref_matches:3,ref_cap:10,ref_days:7,// invite links (v6.37, invite.js)
-  trans_frag_min:2,trans_frag_max:4,trans_cost:888,trans_guns:['m4dk']};// transcendence (v6.41): fragments from every decoder, 888 for a transcendence gun
+  trans_frag_min:2,trans_frag_max:4,trans_cost:888,trans_guns:['m4dk']};// awakening (v6.41): fragments from every decoder, 888 for an awakened gun
 // the 12 lines of the 5×5 card: rows 0-4, columns 5-9, the diagonal from the top left 10, from the top right 11
 const BINGO_LINES=[[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
-// a season (or sidearm) card's line items: 'gun:<id>' (owned already: season_owned_coins / side_owned_coins coins), 'coins:<n>', 'frags:<n>', 'tickets:<n>' (n 근하신년 decoders)
+// a season (or sidearm) card's line items: 'gun:<id>' (owned already: season_owned_coins / side_owned_coins coins), 'coins:<n>', 'frags:<n>', 'tickets:<n>' (n All-Clear decoders)
 const sItem=c=>{const [k,v]=String(c||'').split(':');return k==='gun'?{k,gun:v,n:0}:{k:k==='frags'||k==='tickets'?k:'coins',n:+v||0}};
 const sAmt=n=>LI()?(n>=1000&&n%1000===0?n/1000+'K':fmtC(n)):(n>=10000&&n%10000===0?n/10000+'만':fmtC(n));// short amounts for the small tiles
 const sRank=c=>{const it=sItem(c);return ({gun:0,coins:1,frags:2,tickets:3})[it.k]*1e7-it.n};// the rules list: guns, then coins (biggest first), fragments, decoders
 function seasonGun(id){return (ACC.gc().season_lines||[]).includes('gun:'+id)}
-function sideGun(id){return (ACC.gc().side_lines||[]).includes('gun:'+id)}// the sidearm card's (v6.36: Event Horizon Mini, Crimson Peacemaker; v6.55: JANUS-2)
-function transGun(id){return (ACC.gc().trans_guns||[]).includes(id)}// the transcendence exchange's (v6.41: the M4A1 Dark Knight)
-// a card's guns (season: Event Horizon, Skull-9 …; side: the sidearm card's), in the order of its list; names: 'A · B' in the language shown
+function sideGun(id){return (ACC.gc().side_lines||[]).includes('gun:'+id)}// the sidearm card's (v6.36: Event Horizon Mini, Crimson Peacemaker; v6.55: TWINFACE-2)
+function transGun(id){return (ACC.gc().trans_guns||[]).includes(id)}// the awakening exchange's (v6.41: the M4A1 Onyx)
+// a card's guns (season: Event Horizon, Grave-9 …; side: the sidearm card's), in the order of its list; names: 'A · B' in the language shown
 function cardGuns(k){const o=[];for(const c of ACC.gc()[k==='side'?'side_lines':'season_lines']||[]){const it=sItem(c);if(it.k==='gun'&&WPN[it.gun]&&!o.includes(it.gun))o.push(it.gun)}return o}
 const seasonGuns=()=>cardGuns('season');
 const seasonNames=(L,ids)=>(ids||seasonGuns()).map(id=>WPN[id]?WPN[id].n[L]:id).join(' · ');
-// a locked gun's right-hand column in the buy menu: where it comes from (the 근하신년 card, the season card, the sidearm card, else its price)
+// a locked gun's right-hand column in the buy menu: where it comes from (the All-Clear card, the season card, the sidearm card, else its price)
 function shopLockTag(id){const L=LI(),p=ACC.price(id);
-  return SVG_LOCK+(p&&p.tier?`<small class="gb">${L?'decoder':'해독기'}</small>`:p&&!p.sold&&transGun(id)?`<small class="gb gt">${L?'transcend':'초월'}</small>`:p&&!p.sold&&seasonGun(id)?`<small class="gb gs">${L?'season':'시즌'}</small>`
+  return SVG_LOCK+(p&&p.tier?`<small class="gb">${L?'decoder':'해독기'}</small>`:p&&!p.sold&&transGun(id)?`<small class="gb gt">${L?'awakened':'각성'}</small>`:p&&!p.sold&&seasonGun(id)?`<small class="gb gs">${L?'season':'시즌'}</small>`
     :p&&!p.sold&&sideGun(id)?`<small class="gb gd">${L?'sidearm':'보조 해독기'}</small>`
     :WPN[id]&&WPN[id].crate?`<small class="gb">${L?'crates':'보급 전용'}</small>`:`<small>${COIN}${fmtC(p&&p.price)}</small>`)}
 // averages for a card of 25 numbers out of N (a fixed seed, so the same every time): first line, 6th line, one given line, the later of
@@ -56,16 +56,16 @@ function shopCats(){const L=LI();const cats=BUY_MENU.filter(c=>c.k!=='equip').ma
   const sp=cats.find(c=>c.k==='special');if(sp)sp.items=['knife',...sp.items.filter(i=>i!=='knife'&&i!=='bhole'),'bhole'].filter(id=>WPN[id]);
   const seen=new Set(),all=[];for(const c of cats)for(const id of c.items)if(!seen.has(id)){seen.add(id);all.push(id)}
   return [{k:'all',n:L?'All':'전체',items:all},...cats]}
-// free / own / buy / crate / gacha (근하신년: decoder bingo or exchange only) / season (a line on the season decoder card: Event Horizon, Skull-9)
+// free / own / buy / crate / gacha (All-Clear: decoder bingo or exchange only) / season (a line on the season decoder card: Event Horizon, Grave-9)
 // / side (a line on the sidearm decoder card: Event Horizon Mini, Crimson Peacemaker)
-// / trans (v6.41: the transcendence exchange only)
+// / trans (v6.41: the awakening exchange only)
 function shopState(id){const p=ACC.price(id);if(!p||p.free)return 'free';if(ACC.me&&ACC.me.owned&&ACC.me.owned.has(id))return 'own';if(p.tier)return 'gacha';if(!p.sold)return transGun(id)?'trans':seasonGun(id)?'season':sideGun(id)?'side':'crate';return 'buy'}
-// free ones first, then by price; the 근하신년 guns after them (S first), then the season decoder's, the sidearm decoder's, crate-only last
+// free ones first, then by price; the All-Clear guns after them (S first), then the season decoder's, the sidearm decoder's, crate-only last
 function shopOrder(ids){const grp=id=>{const s=shopState(id),t=ACC.tier(id);return s==='free'?0:t?(t==='S'?2:3):s==='trans'?1.5:s==='season'?4:s==='side'?4.5:s==='crate'?5:1};
   return ids.slice().sort((a,b)=>grp(a)-grp(b)||((ACC.price(a)||{}).price||0)-((ACC.price(b)||{}).price||0))}
 const FRAG='<i class="fi"></i>';
-const TFRAG='<i class="tfi"></i>';// a transcendence fragment (v6.41)
-// the 근하신년 decoder drawn in SVG: a handheld code breaker — gunmetal case, red and gold band, aerial, green read-out, keypad
+const TFRAG='<i class="tfi"></i>';// an awakening fragment (v6.41)
+// the All-Clear decoder drawn in SVG: a handheld code breaker — gunmetal case, red and gold band, aerial, green read-out, keypad
 function decoderSvg(cls){return `<svg class="${cls||''}" viewBox="0 0 120 150" aria-hidden="true"><defs>
   <linearGradient id="dcB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a616c"/><stop offset=".45" stop-color="#2e333a"/><stop offset="1" stop-color="#16181c"/></linearGradient>
   <linearGradient id="dcG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0a8"/><stop offset=".5" stop-color="#f2c230"/><stop offset="1" stop-color="#a87408"/></linearGradient>
@@ -78,7 +78,7 @@ function decoderSvg(cls){return `<svg class="${cls||''}" viewBox="0 0 120 150" a
   <path d="M33 58 h20 M33 64 h30 M33 70 h14" stroke="#3aa83a" stroke-width="2" opacity=".55"/>
   <text x="84" y="77" text-anchor="end" font-size="17" font-weight="bold" fill="#8dff7a" font-family="Galmuri11,monospace">??</text>
   ${[0,1,2].map(r=>[0,1,2].map(c=>`<rect x="${33+c*19}" y="${92+r*14}" width="15" height="10" rx="2.5" fill="${r===2&&c===2?'#b4221a':'#4a505a'}" stroke="#121417"/>`).join('')).join('')}
-  <text x="60" y="137" text-anchor="middle" font-size="8.5" font-weight="bold" fill="url(#dcG)" letter-spacing="1" font-family="Galmuri11,sans-serif">근하신년</text>
+  <text x="60" y="137" text-anchor="middle" font-size="8.5" font-weight="bold" fill="url(#dcG)" letter-spacing="1" font-family="Galmuri11,sans-serif">격리해제</text>
 </svg>`}
 // the season decoder: the same handheld in deep violet, its read-out a round window onto a black hole — a dark core, a gold photon
 // ring, a tilted accretion disc and spiral arms that turn (.swl; faster while numbers roll)
@@ -128,7 +128,7 @@ function sideSvg(cls){const at=(a,r)=>{const t=a*Math.PI/180;return [(60+r*Math.
 const SVG_COINS=(()=>{const st=(x,n)=>{let s='';for(let i=0;i<n;i++){const y=23-i*3.4;s+=`<path d="M${x-6} ${y}v2.4a6 2.3 0 0 0 12 0V${y}" fill="#b8820e" stroke="#6a4604" stroke-width=".5"/><ellipse cx="${x}" cy="${y}" rx="6" ry="2.3" fill="#f6cf3a" stroke="#8a5c04" stroke-width=".5"/>`}return s};
   return `<svg class="cpile" viewBox="0 0 34 28" aria-hidden="true">${st(8,3)}${st(26,2)}${st(17,5)}<ellipse cx="17" cy="9.4" rx="3.2" ry="1.1" fill="#fff6c0" opacity=".85"/></svg>`})();
 
-// ---------- the shop window: the gun shop, the 근하신년, season and sidearm decoder bingos, the fragment exchange ----------
+// ---------- the shop window: the gun shop, the All-Clear, season and sidearm decoder bingos, the fragment exchange ----------
 // gift (v6.18): {code, nick} while buying for a friend (the buy buttons send the gun to them); gpick: the gun whose friend list is open
 const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msgOk:false,busy:false,exSel:null,anim:null,lastN:{},bLoad:{},gift:null,gpick:null,
   giftTo(code,nick){this.gift={code,nick};this.gpick=null;this.page='shop';this.open()},
@@ -143,10 +143,10 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
   list(){const C=shopCats(),c=C.find(x=>x.k===this.cat)||C[0];let ids=c.items;if(this.onlyOwn)ids=ids.filter(id=>{const s=shopState(id);return s==='free'||s==='own'});return {C,c,ids:shopOrder(ids)}},
   head(){const L=LI(),signed=ACC.signed(),me=ACC.me;
     if(!ACC.on)return `<span class="soff">${L?'Accounts not set up — every gun is open':'계정 서버 연결 전 — 지금은 모든 총 사용 가능'}</span>`;
-    if(signed)return `<span class="scoin">${COIN}<b>${fmtC(me.coins)}</b></span><span class="scoin frg" title="${L?'Decoder fragments':'해독 조각'}">${FRAG}<b>${fmtC(me.frags||0)}</b></span><button class="scoin tfr" data-sa="page" data-v="tr" title="${L?'Transcendence fragments (the 초월 exchange)':'초월 조각 (초월 교환)'}">${TFRAG}<b>${fmtC(me.tfrags||0)}</b></button>${me.tickets>0?`<button class="scoin tkc" data-sa="page" data-v="gacha" title="${L?'근하신년 decoders kept (open them on the 근하신년 tab)':'보유한 근하신년 해독기 (근하신년 해독기 탭에서 사용)'}">${decoderSvg('tki')}<b>${fmtC(me.tickets)}</b></button>`:''}<button class="sacc" data-sa="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`;
+    if(signed)return `<span class="scoin">${COIN}<b>${fmtC(me.coins)}</b></span><span class="scoin frg" title="${L?'Decoder fragments':'해독 조각'}">${FRAG}<b>${fmtC(me.frags||0)}</b></span><button class="scoin tfr" data-sa="page" data-v="tr" title="${L?'Awakening fragments (the awakening exchange)':'각성 조각 (각성 교환)'}">${TFRAG}<b>${fmtC(me.tfrags||0)}</b></button>${me.tickets>0?`<button class="scoin tkc" data-sa="page" data-v="gacha" title="${L?'All-Clear decoders kept (open them on the All-Clear tab)':'보유한 격리해제 해독기 (격리해제 해독기 탭에서 사용)'}">${decoderSvg('tki')}<b>${fmtC(me.tickets)}</b></button>`:''}<button class="sacc" data-sa="acc">${SVG_USER}<span>${esc(me.nickname)}</span></button>`;
     return `<button class="sacc hl" data-sa="login">${SVG_USER}<span>${L?'Sign in':'로그인'}</span></button>`},
   render(){const o=$('shopWin');if(!o)return;const L=LI(),pg=this.page,free=ACC.signed()&&ACC.me.freeToday&&ACC.gc().daily_free;
-    const ptabs=`<div class="spages"><button class="${pg==='shop'?'on':''}" data-sa="page" data-v="shop">${L?'Gun shop':'총기 상점'}</button><button class="${pg==='gacha'?'on':''} gp" data-sa="page" data-v="gacha">${L?'Decoder bingo':'근하신년 해독기'}${free?'<i class="dot"></i>':''}</button><button class="${pg==='season'?'on':''} sp" data-sa="page" data-v="season">${L?'Season decoder':'시즌 해독기'}</button><button class="${pg==='side'?'on':''} dp" data-sa="page" data-v="side">${L?'Sidearm decoder':'보조무기 해독기'}</button><button class="${pg==='ex'?'on':''}" data-sa="page" data-v="ex">${L?'Fragment exchange':'조각 교환'}</button><button class="${pg==='tr'?'on':''} tp" data-sa="page" data-v="tr">${L?'Transcendence':'초월 교환'}</button></div>`;
+    const ptabs=`<div class="spages"><button class="${pg==='shop'?'on':''}" data-sa="page" data-v="shop">${L?'Gun shop':'총기 상점'}</button><button class="${pg==='gacha'?'on':''} gp" data-sa="page" data-v="gacha">${L?'Decoder bingo':'격리해제 해독기'}${free?'<i class="dot"></i>':''}</button><button class="${pg==='season'?'on':''} sp" data-sa="page" data-v="season">${L?'Season decoder':'시즌 해독기'}</button><button class="${pg==='side'?'on':''} dp" data-sa="page" data-v="side">${L?'Sidearm decoder':'보조무기 해독기'}</button><button class="${pg==='ex'?'on':''}" data-sa="page" data-v="ex">${L?'Fragment exchange':'조각 교환'}</button><button class="${pg==='tr'?'on':''} tp" data-sa="page" data-v="tr">${L?'Awakening':'각성 교환'}</button></div>`;
     const body=pg==='gacha'||pg==='season'||pg==='side'?this.bingoPage(pg):pg==='ex'?this.exPage():pg==='tr'?this.trPage():this.shopPage();
     o.innerHTML=`<div class="swin"><div class="swh"><b>${L?'Shop':'상점'}</b><small>SHOP</small><span class="sgap"></span>${this.head()}<button class="sx" data-sa="x" aria-label="close">×</button></div>${ptabs}${body}</div>`;
     if(this.scrollSel){this.scrollSel=false;const c=o.querySelector('.sc.on');if(c&&c.scrollIntoView)c.scrollIntoView({block:'nearest'})}},
@@ -155,7 +155,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     const cards=ids.map(id=>{const W=WPN[id],st=shopState(id),p=ACC.price(id)||{price:0},t=ACC.tier(id);
       const tag=st==='free'?`<em class="bf">${L?'FREE':'기본'}</em>`:st==='own'?`<em class="bo">${L?'OWNED':'보유'}</em>`:st==='crate'?`<em class="bc">${L?'CRATE ONLY':'보급 전용'}</em>`
         :st==='gacha'?`<em class="bg${t}">${t} · ${L?'DECODER':'해독기 전용'}</em>`:st==='season'?`<em class="bsz">${L?'SEASON DECODER':'시즌 해독기'}</em>`
-        :st==='side'?`<em class="bsd">${L?'SIDEARM DECODER':'보조무기 해독기'}</em>`:st==='trans'?`<em class="btr">${L?'TRANSCENDENCE':'초월 교환'}</em>`
+        :st==='side'?`<em class="bsd">${L?'SIDEARM DECODER':'보조무기 해독기'}</em>`:st==='trans'?`<em class="btr">${L?'AWAKENING':'각성 교환'}</em>`
         :`<span class="pr${signed&&coins<p.price?' poor':''}">${COIN}${fmtC(p.price)}</span>`;
       return `<div class="sc ${st}${t?' t'+t:''}${seasonGun(id)?' tE':''}${sideGun(id)?' tP':''}${transGun(id)?' tX':''}${id===this.sel?' on':''}" data-sa="sel" data-v="${id}">${W.ny?'<i class="nyb">NY</i>':''}<div class="sci"><img src="${gunIcon(W.model,30)}" alt=""></div><b>${esc(W.n[L])}</b><span class="scp">${tag}</span></div>`}).join('')
       ||`<div class="sempty">${L?'Nothing here yet':'아직 없어요'}</div>`;
@@ -163,13 +163,13 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
         <label class="sfil"><input type="checkbox" data-sa="own"${this.onlyOwn?' checked':''}><span>${L?'Mine only':'보유한 총만'}</span></label></div>
       ${this.gift?`<div class="sgift">${SVG_GIFT}<span>${L?`Pick a gun to send to <b>${esc(this.gift.nick)}</b> (your coins)`:`<b>${esc(this.gift.nick)}</b>에게 선물할 총을 골라요 (내 코인으로)`}</span><button data-sa="giftoff">${L?'Stop gifting':'선물 그만두기'}</button></div>`:''}
       <div class="sbody"><div class="sgrid">${cards}</div>${this.detail()}</div>
-      <div class="sfoot">${L?'Coins and xp come at the end of every round (its kills, infections, damage and win) and more at the end of a finished match. In a match every gun you own is free to pick; floor pick-ups and supply crates still give any gun. The shooting range lends you every gun to try. 근하신년 guns come from the decoder bingo'+(seasonGuns().length?', '+seasonNames(1)+' from the season decoder':'')+(cardGuns('side').length?', '+seasonNames(1,cardGuns('side'))+' from the sidearm decoder.':'.')
-        :'코인과 경험치는 라운드가 끝날 때마다 그 라운드의 킬·감염·피해량·승리로 들어오고, 매치를 끝까지 하면 더 들어와요. 매치 안에서는 보유한 총을 무료로 고를 수 있고, 바닥에 떨어진 총·보급상자는 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 근하신년 무기는 해독기 빙고에서만'+(seasonGuns().length?', '+seasonNames(0)+'는 시즌 해독기에서만':'')+(cardGuns('side').length?', '+seasonNames(0,cardGuns('side'))+'는 보조무기 해독기에서만':'')+' 나와요.'}</div>`},
+      <div class="sfoot">${L?'Coins and xp come at the end of every round (its kills, infections, damage and win) and more at the end of a finished match. In a match every gun you own is free to pick; floor pick-ups and supply crates still give any gun. The shooting range lends you every gun to try. All-Clear guns come from the decoder bingo'+(seasonGuns().length?', '+seasonNames(1)+' from the season decoder':'')+(cardGuns('side').length?', '+seasonNames(1,cardGuns('side'))+' from the sidearm decoder.':'.')
+        :'코인과 경험치는 라운드가 끝날 때마다 그 라운드의 킬·감염·피해량·승리로 들어오고, 매치를 끝까지 하면 더 들어와요. 매치 안에서는 보유한 총을 무료로 고를 수 있고, 바닥에 떨어진 총·보급상자는 그대로예요. 사격장에서는 모든 총을 빌려 쏴 볼 수 있어요. 격리해제 무기는 해독기 빙고에서만'+(seasonGuns().length?', '+seasonNames(0)+'는 시즌 해독기에서만':'')+(cardGuns('side').length?', '+seasonNames(0,cardGuns('side'))+'는 보조무기 해독기에서만':'')+' 나와요.'}</div>`},
   detail(){const L=LI(),id=this.sel,W=id&&WPN[id];if(!W)return '<div class="sdet"></div>';const st=shopState(id),p=ACC.price(id)||{price:0},signed=ACC.signed(),coins=signed?ACC.me.coins:0,t=ACC.tier(id),g=ACC.gc();
     const kn=(KIND_N[W.kind]||KIND_N.special)[L?1:0];
-    const info=[kn,t?t+(L?' grade':'등급'):null,transGun(id)?(L?'Transcendence':'초월 무기'):null,seasonGun(id)?(L?'Season decoder':'시즌 해독기'):null,sideGun(id)?(L?'Sidearm decoder':'보조무기 해독기'):null,W.mag?W.mag+(L?' rds':'발'):null,W.rpm?W.rpm+' RPM':null].filter(Boolean).join(' · ');
+    const info=[kn,t?t+(L?' grade':'등급'):null,transGun(id)?(L?'Awakening':'각성 무기'):null,seasonGun(id)?(L?'Season decoder':'시즌 해독기'):null,sideGun(id)?(L?'Sidearm decoder':'보조무기 해독기'):null,W.mag?W.mag+(L?' rds':'발'):null,W.rpm?W.rpm+' RPM':null].filter(Boolean).join(' · ');
     let buy;
-    if(st==='gacha')buy=`<div class="sbn">${L?'Only from a bingo line on the 근하신년 decoder card, or the fragment exchange.':'근하신년 해독기 빙고의 줄 보상이나 조각 교환으로만 얻을 수 있어요.'}</div>
+    if(st==='gacha')buy=`<div class="sbn">${L?'Only from a bingo line on the All-Clear decoder card, or the fragment exchange.':'격리해제 해독기 빙고의 줄 보상이나 조각 교환으로만 얻을 수 있어요.'}</div>
       <button class="sbb red" data-sa="page" data-v="gacha">${L?'Open decoders':'해독기 열기'}</button><button class="sbx2" data-sa="exsel" data-v="${id}">${FRAG}${fmtC(t==='S'?g.ex_s:g.ex_a)} ${L?'fragments — exchange':'조각으로 교환'}</button>`;
     else if(!ACC.on)buy=`<div class="sbn">${L?'Accounts are not set up yet, so every gun is open for now.':'계정 서버가 연결되기 전이라 지금은 모든 총을 쓸 수 있어요.'}</div>${st==='buy'?`<div class="sbp">${COIN}${fmtC(p.price)}</div>`:''}`;
     else if(st==='free')buy=`<div class="sbn ok">${L?'Free for everyone.':'기본 지급 — 누구나 쓸 수 있어요.'}</div>`;
@@ -177,8 +177,8 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     else if(st==='crate')buy=`<div class="sbn">${L?'Only from supply crates.':'보급상자에서만 얻을 수 있어요.'}</div>`;
     else if(st==='season')buy=`<div class="sbn">${L?'Yours to keep only from its line on the season decoder card (not sold, not exchanged).':'시즌 해독기 빙고에서 이 총의 줄을 완성하면 영구 보유해요 (판매 · 조각 교환 없음).'}</div>
       <button class="sbb vio" data-sa="page" data-v="season">${L?'Open season decoders':'시즌 해독기 열기'}</button>`;
-    else if(st==='trans')buy=`<div class="sbn">${L?`Only from the transcendence exchange: ${fmtC(g.trans_cost)} transcendence fragments (every decoder gives ${g.trans_frag_min}–${g.trans_frag_max}). Never from a decoder line, the shop or a gift.`:`초월 교환으로만 얻어요: 초월 조각 ${fmtC(g.trans_cost)}개 (해독기를 열 때마다 ${g.trans_frag_min}~${g.trans_frag_max}개). 해독기 보상 · 상점 · 선물로는 안 나와요.`}</div>
-      <button class="sbb trx" data-sa="trsel" data-v="${id}">${TFRAG}${fmtC(g.trans_cost)} ${L?'— to the exchange':'초월 교환으로'}</button>`;
+    else if(st==='trans')buy=`<div class="sbn">${L?`Only from the awakening exchange: ${fmtC(g.trans_cost)} awakening fragments (every decoder gives ${g.trans_frag_min}–${g.trans_frag_max}). Never from a decoder line, the shop or a gift.`:`각성 교환으로만 얻어요: 각성 조각 ${fmtC(g.trans_cost)}개 (해독기를 열 때마다 ${g.trans_frag_min}~${g.trans_frag_max}개). 해독기 보상 · 상점 · 선물로는 안 나와요.`}</div>
+      <button class="sbb trx" data-sa="trsel" data-v="${id}">${TFRAG}${fmtC(g.trans_cost)} ${L?'— to the exchange':'각성 교환으로'}</button>`;
     else if(st==='side')buy=`<div class="sbn">${L?'Yours to keep only from its line on the sidearm decoder card (not sold, not exchanged, not a gift).':'보조무기 해독기 빙고에서 이 총의 줄을 완성하면 영구 보유해요 (판매 · 조각 교환 · 선물 없음).'}</div>
       <button class="sbb crim" data-sa="page" data-v="side">${L?'Open sidearm decoders':'보조무기 해독기 열기'}</button>`;
     else if(!signed)buy=`<div class="sbp">${COIN}${fmtC(p.price)}</div><button class="sbb" data-sa="login">${L?'Sign in to buy':'로그인하고 구매'}</button>`;
@@ -202,7 +202,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
   pickHtml(){const L=LI(),F=ACC.fr;if(!F){ACC.loadFriends().then(()=>this.render()).catch(e=>{this.msg=ACC.errText(e);this.msgOk=false;this.gpick=null;this.render()});return `<div class="sgp"><small>${L?'Loading friends…':'친구 목록 불러오는 중…'}</small></div>`}
     const fr=F.friends||[];if(!fr.length)return `<div class="sgp"><small>${L?'No friends yet.':'아직 친구가 없어요.'}</small><button data-sa="friends">${L?'Add friends':'친구 추가하러 가기'}</button><button class="sgx" data-sa="gpick" data-v="">${L?'Close':'닫기'}</button></div>`;
     return `<div class="sgp"><small>${L?'Send it to':'누구에게 보낼까요?'}</small>${fr.map(f=>`<button data-sa="gto" data-v="${esc(f.code)}">${esc(f.nickname)} <i>Lv.${recLevel(f.xp|0).l}</i></button>`).join('')}<button class="sgx" data-sa="gpick" data-v="">${L?'Close':'닫기'}</button></div>`},
-  // ---- the decoder bingos: 'gacha' = the 근하신년 card (guns), 'season' = the season card (Event Horizon, Skull-9 and items),
+  // ---- the decoder bingos: 'gacha' = the All-Clear card (guns), 'season' = the season card (Event Horizon, Grave-9 and items),
   // 'side' = the sidearm card (v6.36: Event Horizon Mini, Crimson Peacemaker and items; numbers 1..side_hi) ----
   // what a page needs from its card: the account's card, its numbers (lo..hi) and prices, the server calls; s: a card of items (season, side)
   bk(k){const g=ACC.gc();return k==='season'?{k,s:1,lo:0,card:ACC.season,hi:g.season_hi,c1:g.season_cost1,c10:g.season_cost10,f0:g.season_frag_min,f1:g.season_frag_max,own:g.season_owned_coins,
@@ -225,14 +225,14 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     const tip=got?(L?'Line done: ':'완성: ')+name:own?`${name} — ${L?'owned, pays':'보유 중 → 완성하면'} ${sub}`:name;
     return `<div class="brw ${cls}${t?' t'+t:''}${got?' got':''}${own?' own':''}${A&&A.flash&&A.flash.includes(k)?' pop':''}" data-l="${k}" title="${esc(tip)}">${W?`<img src="${gunIcon(W.model,22)}" alt="">`:''}${t?`<em>${t}</em>`:''}${got?'<i>✔</i>':''}</div>`},
   // a season (or sidearm) line's tile: a gun (with its card's glow; owned already: the coins it pays instead), a coin pile, fragments
-  // or 근하신년 decoders, the amount under the picture
+  // or All-Clear decoders, the amount under the picture
   srwTile(B,k,cls,kind){const L=LI(),it=sItem(B.rewards[k]),got=B.done[k],me=ACC.me,D=kind==='side',oc=this.bk(D?'side':'season').own,A=this.banim(D?'side':'season');let ic,x,tip,amt='';
     if(it.k==='gun'){const W=WPN[it.gun],name=W?W.n[L]:it.gun,OW=this.ownView(A),own=!got&&!!OW&&OW.has(it.gun);
       ic=W&&W.model?`<img src="${gunIcon(W.model,22)}" alt="">`:'';x=(D?' rP':' rE')+(own?' own':'');if(own)amt=`<em>${COIN}${sAmt(oc)}</em>`;
       tip=got?(L?'Line done: ':'완성: ')+name:own?`${name} — ${L?'owned, pays':'보유 중 → 완성하면'} ${fmtC(oc)} ${L?'coins':'코인'}`:`${name} — ${D?(L?'the sidearm prize':'보조무기 보상'):(L?'the season prize':'시즌 보상')}`}
     else if(it.k==='coins'){ic=SVG_COINS;x=' rC';amt=`<em>${sAmt(it.n)}</em>`;tip=`${fmtC(it.n)} ${L?'coins':'코인'}`}
     else if(it.k==='frags'){ic='<span class="fi"></span>';x=' rF';amt=`<em>×${it.n}</em>`;tip=`${L?'Decoder fragments':'해독 조각'} ×${it.n}`}
-    else{ic=decoderSvg('tki');x=' rT';amt=`<em>×${it.n}</em>`;tip=`${L?'근하신년 decoders':'근하신년 해독기'} ×${it.n}`}
+    else{ic=decoderSvg('tki');x=' rT';amt=`<em>×${it.n}</em>`;tip=`${L?'All-Clear decoders':'격리해제 해독기'} ×${it.n}`}
     return `<div class="brw it ${cls}${x}${got?' got':''}${A&&A.flash&&A.flash.includes(k)?' pop':''}" data-l="${k}" title="${esc(tip)}">${ic}${amt}${got?'<i>✔</i>':''}</div>`},
   boardHtml(B,kind){const A=this.banim(kind),hot=new Set();if(A&&A.flash)for(const k of A.flash)for(const c of BINGO_LINES[k])hot.add(c);
     const cell=i=>{const n=B.nums?B.nums[i]:null,m=B.marked[i];return `<div class="bc${m?' mk':''}${A&&A.last===i?' last':''}${hot.has(i)?' lw':''}" data-c="${i}"><span>${n==null?'?':pad2(n)}</span>${m?'<i></i>':''}</div>`};
@@ -248,7 +248,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
       :!signed?`<button class="gbtn big" data-sa="login">${L?'Sign in to open decoders':'로그인하고 해독기 열기'}</button>`
       :A?`<button class="gbtn big skip" data-sa="bskip">${L?'Skip':'건너뛰기'}</button>`
       :`${free?`<button class="gbtn free" data-sa="dec" data-v="free"${dis?' disabled':''}>${L?'Today\'s free decoder':'오늘의 무료 해독기'}</button>`:''}
-        ${tk>0?`<div class="gtk"><span title="${S?(L?'From 근·하·신·년 letter sets':'근·하·신·년 글자 세트로 받은 시즌 해독기'):(L?'Won on the season and sidearm decoder cards':'시즌 · 보조무기 해독기 빙고에서 받은 해독기')}">${S?seasonSvg('tki'):decoderSvg('tki')}<i><u>${L?'Kept':'보유 해독기'} </u><b>${fmtC(tk)}</b>${L?'':'개'}</i></span><button class="gbtn tk" data-sa="${sa}" data-v="t1"${dis?' disabled':''}>${L?'Open 1':'1개 열기'}</button>${tk>=10?`<button class="gbtn tk" data-sa="${sa}" data-v="t10"${dis?' disabled':''}>${L?'Open 10':'10개 열기'}</button>`:''}</div>`:''}
+        ${tk>0?`<div class="gtk"><span title="${S?(L?'From 격·리·해·제 letter sets':'격·리·해·제 글자 세트로 받은 시즌 해독기'):(L?'Won on the season and sidearm decoder cards':'시즌 · 보조무기 해독기 빙고에서 받은 해독기')}">${S?seasonSvg('tki'):decoderSvg('tki')}<i><u>${L?'Kept':'보유 해독기'} </u><b>${fmtC(tk)}</b>${L?'':'개'}</i></span><button class="gbtn tk" data-sa="${sa}" data-v="t1"${dis?' disabled':''}>${L?'Open 1':'1개 열기'}</button>${tk>=10?`<button class="gbtn tk" data-sa="${sa}" data-v="t10"${dis?' disabled':''}>${L?'Open 10':'10개 열기'}</button>`:''}</div>`:''}
         <div class="gbr"><button class="gbtn" data-sa="${sa}" data-v="1"${can1&&!dis?'':' disabled'}><b>${L?'1 decoder':'해독기 1개'}</b><span>${COIN}${fmtC(K.c1)}</span></button>
         <button class="gbtn ten" data-sa="${sa}" data-v="10"${can10&&!dis?'':' disabled'}><b>${L?'10 decoders':'해독기 10개'}</b><span>${COIN}${fmtC(K.c10)}</span></button></div>`;
     const tools=signed&&!A?(this.confirm==='breset'?`<div class="bq">${L?'A new card? What is stamped now is lost.':'새 판으로 바꿀까요? 지금 찍힌 칸은 사라져요.'}<div><button data-sa="bresetok">${L?'New card':'바꾸기'}</button><button data-sa="buyno">${L?'Cancel':'취소'}</button></div></div>`
@@ -256,12 +256,12 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     // the season / sidearm card: how far each of its gun lines has got
     const gl=S?B.rewards.map((c,k)=>({k,W:WPN[sItem(c).gun]})).filter(x=>sItem(B.rewards[x.k]).k==='gun'&&x.W):[],gn=esc(gl.map(x=>x.W.n[L]).join(' · '));
     const eh=B.nums?gl.map(({k,W})=>`<span class="ehs" title="${esc(W.n[L])} ${L?'line':'줄'}">${W.model?`<img src="${gunIcon(W.model,14)}" alt="">`:''}<b>${B.done[k]?'✔':BINGO_LINES[k].filter(c=>B.marked[c]).length}</b>${B.done[k]?'':'/5'}</span>`).join(''):'';
-    const note=D?(L?`Each sidearm decoder shows one number from ${lo}–${hi} not drawn on this card yet; a number on the card is stamped. Finish a line and you get the item at its end: ${gn||'the sidearm guns'} (owned already: ${fmtC(K.own)} coins), coins, fragments or 근하신년 decoders (open them on the 근하신년 tab instead of paying). Every sidearm decoder also gives ${K.f0}–${K.f1} fragments (and ${g.trans_frag_min}–${g.trans_frag_max} transcendence fragments). A full card is replaced by a new one.`
-        :`보조무기 해독기 1개를 열면 ${lo}~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 줄을 채우면 줄 끝의 보상을 받아요: ${gn||'보조무기'}(이미 가졌으면 ${fmtC(K.own)} 코인), 코인, 해독 조각, 근하신년 해독기(근하신년 해독기 탭에서 코인 대신 사용). 해독기마다 조각 ${K.f0}~${K.f1}개(초월 조각 ${g.trans_frag_min}~${g.trans_frag_max}개)도 나오고, 판을 다 채우면 새 판이 깔려요.`)
-      :S?(L?`Each season decoder shows one number from 0–${hi} not drawn on this card yet; a number on the card is stamped. Finish a line and you get the item at its end: ${gn||'the season gun'} (owned already: ${fmtC(g.season_owned_coins)} coins), coins, fragments or 근하신년 decoders (open them on the 근하신년 tab instead of paying). Every season decoder also gives ${K.f0}–${K.f1} fragments (and ${g.trans_frag_min}–${g.trans_frag_max} transcendence fragments). A full card is replaced by a new one.`
-        :`시즌 해독기 1개를 열면 0~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 줄을 채우면 줄 끝의 보상을 받아요: ${gn||'시즌 무기'}(이미 가졌으면 ${fmtC(g.season_owned_coins)} 코인), 코인, 해독 조각, 근하신년 해독기(근하신년 해독기 탭에서 코인 대신 사용). 해독기마다 조각 ${K.f0}~${K.f1}개(초월 조각 ${g.trans_frag_min}~${g.trans_frag_max}개)도 나오고, 판을 다 채우면 새 판이 깔려요.`)
-      :(L?`Each decoder shows one number from 0–${hi} not drawn on this card yet; a number on the card is stamped. Finish a row, a column or a diagonal and you get the 근하신년 gun shown at its end (owned already: an S line pays ${fmtC(g.full_s_coins)} coins, an A line ${g.full_a_frags} fragments). Every decoder also gives ${K.f0}–${K.f1} fragments (and ${g.trans_frag_min}–${g.trans_frag_max} transcendence fragments). A full card is replaced by a new one.`
-        :`해독기 1개를 열면 0~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 가로·세로·대각선 한 줄을 채우면 줄 끝에 있는 근하신년 무기를 받아요 (이미 가진 무기면 S줄은 ${fmtC(g.full_s_coins)} 코인, A줄은 조각 ${g.full_a_frags}개). 해독기마다 조각 ${K.f0}~${K.f1}개(초월 조각 ${g.trans_frag_min}~${g.trans_frag_max}개)도 나오고, 판을 다 채우면 새 판이 깔려요.`);
+    const note=D?(L?`Each sidearm decoder shows one number from ${lo}–${hi} not drawn on this card yet; a number on the card is stamped. Finish a line and you get the item at its end: ${gn||'the sidearm guns'} (owned already: ${fmtC(K.own)} coins), coins, fragments or All-Clear decoders (open them on the All-Clear tab instead of paying). Every sidearm decoder also gives ${K.f0}–${K.f1} fragments (and ${g.trans_frag_min}–${g.trans_frag_max} awakening fragments). A full card is replaced by a new one.`
+        :`보조무기 해독기 1개를 열면 ${lo}~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 줄을 채우면 줄 끝의 보상을 받아요: ${gn||'보조무기'}(이미 가졌으면 ${fmtC(K.own)} 코인), 코인, 해독 조각, 격리해제 해독기(격리해제 해독기 탭에서 코인 대신 사용). 해독기마다 조각 ${K.f0}~${K.f1}개(각성 조각 ${g.trans_frag_min}~${g.trans_frag_max}개)도 나오고, 판을 다 채우면 새 판이 깔려요.`)
+      :S?(L?`Each season decoder shows one number from 0–${hi} not drawn on this card yet; a number on the card is stamped. Finish a line and you get the item at its end: ${gn||'the season gun'} (owned already: ${fmtC(g.season_owned_coins)} coins), coins, fragments or All-Clear decoders (open them on the All-Clear tab instead of paying). Every season decoder also gives ${K.f0}–${K.f1} fragments (and ${g.trans_frag_min}–${g.trans_frag_max} awakening fragments). A full card is replaced by a new one.`
+        :`시즌 해독기 1개를 열면 0~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 줄을 채우면 줄 끝의 보상을 받아요: ${gn||'시즌 무기'}(이미 가졌으면 ${fmtC(g.season_owned_coins)} 코인), 코인, 해독 조각, 격리해제 해독기(격리해제 해독기 탭에서 코인 대신 사용). 해독기마다 조각 ${K.f0}~${K.f1}개(각성 조각 ${g.trans_frag_min}~${g.trans_frag_max}개)도 나오고, 판을 다 채우면 새 판이 깔려요.`)
+      :(L?`Each decoder shows one number from 0–${hi} not drawn on this card yet; a number on the card is stamped. Finish a row, a column or a diagonal and you get the All-Clear gun shown at its end (owned already: an S line pays ${fmtC(g.full_s_coins)} coins, an A line ${g.full_a_frags} fragments). Every decoder also gives ${K.f0}–${K.f1} fragments (and ${g.trans_frag_min}–${g.trans_frag_max} awakening fragments). A full card is replaced by a new one.`
+        :`해독기 1개를 열면 0~${hi} 중 이 판에서 아직 안 나온 숫자가 하나 나오고, 판에 있는 숫자면 도장이 찍혀요. 가로·세로·대각선 한 줄을 채우면 줄 끝에 있는 격리해제 무기를 받아요 (이미 가진 무기면 S줄은 ${fmtC(g.full_s_coins)} 코인, A줄은 조각 ${g.full_a_frags}개). 해독기마다 조각 ${K.f0}~${K.f1}개(각성 조각 ${g.trans_frag_min}~${g.trans_frag_max}개)도 나오고, 판을 다 채우면 새 판이 깔려요.`);
     return `<div class="gwrap bwrap${D?' sd':S?' sz':''}"><div class="gleft"><div class="bdec${A&&A.rolling?' roll':''}">${D?sideSvg('dz'):S?seasonSvg('dz'):decoderSvg('dz')}</div>
         <div class="bnum"><small>${L?`Number drawn (${lo}–${hi})`:`추첨된 빙고 숫자 (${lo}~${hi})`}</small><b id="bNum" class="${A&&A.hit?'hit':''}">${pad2(this.lastN&&this.lastN[kind])}</b></div>
         <div class="gbtns">${btns}</div>${this.msg?`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`:''}
@@ -287,7 +287,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     return `<div class="sbody"><div class="sgrid">${cards}</div><div class="sdet"><div class="sdi t${t}"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${t}${L?' grade':'등급'} · ${esc(W.n[L?0:1])}</small></h4>
       ${UI.statBars(W)}<p class="sdesc">${UI.wTags(W,id)||''}</p><div class="sbn">${L?`You have ${fmtC(fr)} fragments. Every decoder gives ${g.dec_frag_min}–${g.dec_frag_max}, and a finished A line whose gun you own gives ${g.full_a_frags}.`:`보유 조각 ${fmtC(fr)}개 — 해독기마다 ${g.dec_frag_min}~${g.dec_frag_max}개, 이미 가진 A 무기 줄을 완성하면 ${g.full_a_frags}개가 나와요.`}</div><div class="sbuy">${act}</div></div></div>
       <div class="sfoot">${L?`An S of your choice for ${g.ex_s} fragments, an A for ${g.ex_a}.`:`원하는 S 무기는 조각 ${g.ex_s}개, A 무기는 ${g.ex_a}개로 바꿀 수 있어요.`}</div>`},
-  // ---- the transcendence exchange (v6.41): a transcendence gun for trans_cost transcendence fragments ----
+  // ---- the awakening exchange (v6.41): an awakened gun for trans_cost awakening fragments ----
   trPage(){const L=LI(),g=ACC.gc(),signed=ACC.signed(),me=ACC.me,fr=signed?me.tfrags||0:0,cost=g.trans_cost;
     const ids=(g.trans_guns||[]).filter(id=>WPN[id]&&WPN[id].model);if(!ids.length)return `<div class="sbody"><div class="sempty">${L?'Nothing here yet':'아직 없어요'}</div></div>`;
     if(!ids.includes(this.trSel))this.trSel=ids.find(id=>!(me&&me.owned&&me.owned.has(id)))||ids[0];
@@ -298,17 +298,17 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     if(!ACC.on)act=`<div class="sbn">${L?'The exchange opens once accounts are set up.':'계정 서버가 연결되면 교환할 수 있어요.'}</div>`;
     else if(!signed)act=`<button class="sbb" data-sa="login">${L?'Sign in to exchange':'로그인하고 교환'}</button>`;
     else if(own)act=`<div class="sbn ok">${L?'Already yours.':'이미 보유 중이에요.'}</div>`;
-    else if(this.confirm==='tr:'+id)act=`<div class="sbq">${L?`Exchange ${fmtC(cost)} transcendence fragments for the ${esc(W.n[1])}?`:`초월 조각 ${fmtC(cost)}개로 ${esc(W.n[0])}을(를) 받을까요?`}</div>
+    else if(this.confirm==='tr:'+id)act=`<div class="sbq">${L?`Exchange ${fmtC(cost)} awakening fragments for the ${esc(W.n[1])}?`:`각성 조각 ${fmtC(cost)}개로 ${esc(W.n[0])}을(를) 받을까요?`}</div>
       <div class="sbr"><button class="sbb trx" data-sa="trok" data-v="${id}"${this.busy?' disabled':''}>${L?'Exchange':'교환'}</button><button class="sbx2" data-sa="buyno">${L?'Cancel':'취소'}</button></div>`;
     else if(fr>=cost)act=`<button class="sbb trx" data-sa="tr" data-v="${id}">${TFRAG}${fmtC(cost)} <span>${L?'Exchange':'교환'}</span></button>`;
-    else act=`<button class="sbb trx" disabled>${TFRAG}${fmtC(cost)}</button><div class="sbn bad">${L?fmtC(cost-fr)+' transcendence fragments short':'초월 조각 '+fmtC(cost-fr)+'개 부족'}</div>`;
+    else act=`<button class="sbb trx" disabled>${TFRAG}${fmtC(cost)}</button><div class="sbn bad">${L?fmtC(cost-fr)+' awakening fragments short':'각성 조각 '+fmtC(cost-fr)+'개 부족'}</div>`;
     if(this.msg)act+=`<div class="sbm ${this.msgOk?'ok':'bad'}">${esc(this.msg)}</div>`;
     const pct=Math.min(100,Math.round(fr/Math.max(1,cost)*100));
-    return `<div class="sbody"><div class="sgrid">${cards}</div><div class="sdet"><div class="sdi tX"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${L?'Transcendence':'초월 무기'} · ${esc(W.n[L?0:1])}</small></h4>
+    return `<div class="sbody"><div class="sgrid">${cards}</div><div class="sdet"><div class="sdi tX"><img src="${gunIcon(W.model,58)}" alt=""></div><h4>${esc(W.n[L])}<small>${L?'Awakening':'각성 무기'} · ${esc(W.n[L?0:1])}</small></h4>
       ${UI.statBars(W)}<p class="sdesc">${UI.wTags(W,id)||''}</p>
       <div class="trbar"><i style="width:${pct}%"></i><span>${TFRAG}<b>${fmtC(fr)}</b> / ${fmtC(cost)}</span></div>
-      <div class="sbn">${L?`Every decoder you open — 근하신년, season or sidearm, one or ten at a time — gives ${g.trans_frag_min}–${g.trans_frag_max} transcendence fragments on top of its decoder fragments. Transcendence guns never come from a decoder line, the shop or a gift.`:`근하신년 · 시즌 · 보조무기 해독기를 열 때마다 (1개든 10개든 한 개마다) 해독 조각과 따로 초월 조각이 ${g.trans_frag_min}~${g.trans_frag_max}개씩 나와요. 초월 무기는 해독기 보상 · 상점 · 선물로는 나오지 않아요.`}</div><div class="sbuy">${act}</div></div></div>
-      <div class="sfoot">${L?`A transcendence gun of your choice for ${fmtC(cost)} transcendence fragments. M4A1 Dark Knight: owning it also makes your Deadshot last a second longer.`:`원하는 초월 무기를 초월 조각 ${fmtC(cost)}개로 교환해요. M4A1 다크나이트는 보유만 해도 확인사살 지속시간이 1초 늘어나요.`}</div>`},
+      <div class="sbn">${L?`Every decoder you open — All-Clear, season or sidearm, one or ten at a time — gives ${g.trans_frag_min}–${g.trans_frag_max} awakening fragments on top of its decoder fragments. Awakening guns never come from a decoder line, the shop or a gift.`:`격리해제 · 시즌 · 보조무기 해독기를 열 때마다 (1개든 10개든 한 개마다) 해독 조각과 따로 각성 조각이 ${g.trans_frag_min}~${g.trans_frag_max}개씩 나와요. 각성 무기는 해독기 보상 · 상점 · 선물로는 나오지 않아요.`}</div><div class="sbuy">${act}</div></div></div>
+      <div class="sfoot">${L?`An awakened gun of your choice for ${fmtC(cost)} awakening fragments. M4A1 Onyx: owning it also makes your Deadshot last a second longer.`:`원하는 각성 무기를 각성 조각 ${fmtC(cost)}개로 교환해요. M4A1 오닉스는 보유만 해도 확인사살 지속시간이 1초 늘어나요.`}</div>`},
   act(a,v){const L=LI();
     if(a==='x'){this.close();return}
     if(a==='page'){if(this.page!==v){if(this.anim)this.animSkip();this.page=v;this.bLoad={};this.confirm=null;this.msg='';this.scrollSel=true;this.render();AU.play('ui',{vol:.3})}return}
@@ -332,7 +332,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     if(a==='buyok'){this.buy(v);return}
     if(a==='ex'){this.confirm='ex:'+v;this.msg='';this.render();return}
     if(a==='exok'){this.exchange(v);return}
-    // 근하신년 decoders: 1 | 10 | free | t1 | t10 (kept ones instead of coins); season decoders: 1 | 10 | t1 | t10; sidearm decoders: 1 | 10
+    // All-Clear decoders: 1 | 10 | free | t1 | t10 (kept ones instead of coins); season decoders: 1 | 10 | t1 | t10; sidearm decoders: 1 | 10
     if(a==='dec'){const t=v[0]==='t';this.decode(t?+v.slice(1):v==='free'?1:+v,t?'ticket':v==='free'?'free':'coins','gacha');return}
     if(a==='sdec'){const t=v[0]==='t';this.decode(t?+v.slice(1):+v,t?'ticket':'coins','season');return}
     if(a==='pdec'){this.decode(+v,'coins','side');return}
@@ -363,7 +363,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     this.busy=false;this.render()},
   // open decoders: the server answers at once; then the card plays it out — each number rolls on the read-out and lands,
   // a number on the card is stamped, a finished line flashes gold — and the line rewards turn over as cards at the end.
-  // mode: coins | free | ticket (근하신년 decoders kept from the season card); kind: gacha (근하신년 card) | season | side (the sidearm card)
+  // mode: coins | free | ticket (All-Clear decoders kept from the season card); kind: gacha (All-Clear card) | season | side (the sidearm card)
   async decode(n,mode,kind){if(this.busy||this.anim)return;const K=this.bk(kind);this.busy=true;this.msg='';this.render();
     // (own0: the guns owned before these decoders — while the card plays out, a gun won in this batch must not show as owned yet)
     const before=K.card&&K.card.nums?K.card:null,own0=ACC.me&&ACC.me.owned?new Set(ACC.me.owned):null;let r=null;AU.play('cylspin',{vol:.35,rate:1.3});
@@ -396,7 +396,7 @@ const SHOP={page:'shop',cat:'all',sel:null,onlyOwn:false,confirm:null,msg:'',msg
     this.animEnd()},
   animEnd(){const A=this.anim;if(!A)return;clearTimeout(A.to);clearInterval(A.iv);this.anim=null;const L=LI();
     if(A.res.card.drawn.length===0&&A.draws.length)shopToast(L?'BINGO card full — a new card!':'판을 다 채웠어요 — 새 판!');
-    this.msg=(L?`+${A.frags} fragments`:`조각 +${A.frags}개`)+(A.tfr?(L?` · +${A.tfr} transcendence`:` · 초월 조각 +${A.tfr}개`):'')+(A.got.length?(L?` · ${A.got.length} line(s)!`:` · ${A.got.length}줄 완성!`):'');this.msgOk=true;
+    this.msg=(L?`+${A.frags} fragments`:`조각 +${A.frags}개`)+(A.tfr?(L?` · +${A.tfr} awakening`:` · 각성 조각 +${A.tfr}개`):'')+(A.got.length?(L?` · ${A.got.length} line(s)!`:` · ${A.got.length}줄 완성!`):'');this.msgOk=true;
     ACC.emit();this.render();if(A.got.length)GFX.show(A.got,A.n,A.kind,A.mode)}};
 
 // ---------- the line rewards: one card per finished line, turned over one by one ----------
@@ -416,13 +416,13 @@ const GFX={res:null,n:1,kind:'gacha',mode:'coins',timers:[],done:false,
     else{cls+=' fv';face=`<div class="gci big">${FRAG}</div><b>×${x.amount}</b><span>${L?'fragments':'해독 조각'} <small>(${esc(W.n[L])} ${L?'owned':'보유 중'})</small></span>${ln}`}
     return `<div class="gcard ${cls}" style="--i:${i}"><div class="gin"><div class="gback">${decoderSvg('mini')}</div><div class="gfront">${face}</div></div></div>`},
   // a season (or sidearm) line's card: the gun (violet / crimson, a turning disc behind it), the coins it pays when owned, a coin pile,
-  // fragments, 근하신년 decoders
+  // fragments, All-Clear decoders
   scard(x,i){const L=LI(),W=WPN[x.gun]||null,name=W?W.n[L]:(x.gun||'?'),many=this.res.length>5,ln=this.lnTag(x),D=this.kind==='side',tg=D?'tP':'tE';let face,cls;
     if(x.kind==='gun'){cls=tg;face=`<div class="gci eh${D?' dp':''}"><img src="${W&&W.model?gunIcon(W.model,many?30:48):''}" alt=""></div><b>${esc(name)}</b><span class="gtg ${tg}">${D?(L?'SIDEARM':'보조무기'):(L?'SEASON':'시즌')}</span><i class="gnew">NEW</i>${ln}`}
     else if(x.kind==='coins'&&x.gun){cls=tg+' cv';face=`<div class="gci big">${COIN}</div><b>${fmtC(x.amount)}</b><span>${L?'coins':'코인'} <small>(${esc(name)} ${L?'owned':'보유 중'})</small></span>${ln}`}
     else if(x.kind==='coins'){cls='tC';face=`<div class="gci pile">${SVG_COINS}</div><b>${fmtC(x.amount)}</b><span>${L?'coins':'코인'}</span>${ln}`}
     else if(x.kind==='frags'){cls='tF';face=`<div class="gci big">${FRAG}</div><b>×${x.amount}</b><span>${L?'fragments':'해독 조각'}</span>${ln}`}
-    else{cls='tT';face=`<div class="gci tks">${decoderSvg('tki').repeat(Math.max(1,Math.min(3,x.amount|0)))}</div><b>×${x.amount}</b><span>${L?'근하신년 decoders':'근하신년 해독기'}</span>${ln}`}
+    else{cls='tT';face=`<div class="gci tks">${decoderSvg('tki').repeat(Math.max(1,Math.min(3,x.amount|0)))}</div><b>×${x.amount}</b><span>${L?'All-Clear decoders':'격리해제 해독기'}</span>${ln}`}
     return `<div class="gcard ${D?'sd':'sz'} ${cls}" style="--i:${i}"><div class="gin"><div class="gback">${D?sideSvg('mini'):seasonSvg('mini')}</div><div class="gfront">${face}</div></div></div>`},
   cards(res){const o=this.el(),L=LI(),many=res.length>5,step=many?170:220;
     o.innerHTML=`<div class="gstage res${many?' ten':''}"><div class="gcap">BINGO! <small>${L?`${res.length} line(s)`:`${res.length}줄 완성`}</small></div><div class="gcards">${res.map((x,i)=>this.card(x,i)).join('')}</div>
@@ -430,7 +430,7 @@ const GFX={res:null,n:1,kind:'gacha',mode:'coins',timers:[],done:false,
     const cs=o.querySelectorAll('.gcard');cs.forEach((c,i)=>this.later(Math.max(260+i*step,420+i*40),()=>{// flip only once the card has slid in (a flip during the slide-in can leave the card unpainted on some phones)
       c.classList.add('open');const x=res[i];AU.play(x.kind==='gun'?(x.tier==='A'?'hsding':'lvlup'):'ui',{vol:x.kind==='gun'?.8:.3})}));
     this.later(Math.max(260+cs.length*step,420+cs.length*40)+500,()=>this.finish())},
-  // "again": the same count on the same card — with kept 근하신년 decoders while they last, else coins
+  // "again": the same count on the same card — with kept All-Clear decoders while they last, else coins
   again(){const g=ACC.gc(),me=ACC.me,S=this.kind==='season',D=this.kind==='side',n=this.n>=10?10:1,tk=!S&&!D&&this.mode==='ticket'&&me&&me.tickets>=n;
     const cost=D?(n===10?g.side_cost10:g.side_cost1):S?(n===10?g.season_cost10:g.season_cost1):(n===10?g.dec_cost10:g.dec_cost1);return {n,tk,cost,can:!!(me&&(tk||me.coins>=cost))}},
   finish(){this.clear();const o=this.el(),L=LI();if(!o.querySelector('.gcards'))return;o.querySelectorAll('.gcard').forEach(c=>{c.style.animation='none';c.classList.add('open')});this.done=true;
@@ -445,7 +445,7 @@ function gPop(title,html,cls){let o=$('gPop');if(o)o.remove();o=document.createE
 function gPopRules(){const L=LI(),g=ACC.gc(),hi=g.bingo_hi,rows=[],S=bingoSim(hi+1);
   const r=(a,b,h)=>rows.push(`<tr${h?' class="h"':''}><td>${a}</td><td>${b}</td></tr>`);
   r(L?'The card':'빙고판','',1);r(L?'Numbers on the card':'판의 숫자',L?`25 of 0–${hi}`:`0~${hi} 중 25개`);r(L?'Lines':'줄',L?'12 (5 rows, 5 columns, 2 diagonals)':'12줄 (가로 5 · 세로 5 · 대각 2)');
-  r(L?'Line rewards':'줄 보상',L?'one 근하신년 gun each (6 S, 6 A, placed at random)':'줄마다 근하신년 무기 1개 (S 6 · A 6, 자리는 무작위)');
+  r(L?'Line rewards':'줄 보상',L?'one All-Clear gun each (6 S, 6 A, placed at random)':'줄마다 격리해제 무기 1개 (S 6 · A 6, 자리는 무작위)');
   r(L?'A decoder':'해독기','',1);r(L?'Price':'가격',`${COIN}${fmtC(g.dec_cost1)} · 10${L?' for ':'개 '}${COIN}${fmtC(g.dec_cost10)}`);if(g.daily_free)r(L?'Free':'무료',L?'1 a day':'하루 1개');
   r(L?'Kept decoders':'보유 해독기',L?'from the season and sidearm cards, instead of coins':'시즌 · 보조무기 해독기 빙고에서 — 코인 대신 사용');
   r(L?'Number shown':'나오는 숫자',L?`one of 0–${hi} not drawn on this card yet (equal chance)`:`0~${hi} 중 이 판에서 아직 안 나온 숫자 (모두 같은 확률)`);
@@ -464,7 +464,7 @@ function sPopRules(kind){const L=LI(),g=ACC.gc(),D=kind==='side',K=SHOP.bk(D?'si
   for(const c of items)cnt[c]=(cnt[c]||0)+1;
   const guns=cardGuns(D?'side':'season'),many=guns.length>1,gname=guns.length?esc(seasonNames(L,guns)):D?(L?'the sidearm guns':'보조무기'):(L?'the season gun':'시즌 무기');
   const nm=c=>{const it=sItem(c),W=it.gun&&WPN[it.gun];return it.k==='gun'?`<b class="${D?'tP':'tE'}">${esc(W?W.n[L]:it.gun)}</b>`:it.k==='coins'?`${COIN}${fmtC(it.n)} ${L?'coins':'코인'}`
-    :it.k==='frags'?`${FRAG}${L?'fragments':'해독 조각'} ×${it.n}`:`${decoderSvg('tki')}${L?'근하신년 decoders':'근하신년 해독기'} ×${it.n}`};
+    :it.k==='frags'?`${FRAG}${L?'fragments':'해독 조각'} ×${it.n}`:`${decoderSvg('tki')}${L?'All-Clear decoders':'격리해제 해독기'} ×${it.n}`};
   r(L?'The card':'빙고판','',1);r(L?'Numbers on the card':'판의 숫자',L?`25 of ${lo}–${hi}`:`${lo}~${hi} 중 25개`);r(L?'Lines':'줄',L?'12 (5 rows, 5 columns, 2 diagonals)':'12줄 (가로 5 · 세로 5 · 대각 2)');
   r(L?'Line rewards (placed at random)':'줄 보상 (자리는 무작위)','',1);for(const c of Object.keys(cnt).sort((a,b)=>sRank(a)-sRank(b)))r(nm(c),L?`${cnt[c]} line${cnt[c]>1?'s':''}`:`${cnt[c]}줄`);
   if(items.length>12)r(L?'Each card':'판마다',L?`12 of these ${items.length} at random`:`이 ${items.length}개 중 무작위 12개`);
@@ -479,18 +479,18 @@ function sPopRules(kind){const L=LI(),g=ACC.gc(),D=kind==='side',K=SHOP.bk(D?'si
   gPop(D?(L?'How the sidearm decoder works':'보조무기 해독기 규칙 · 확률'):(L?'How the season decoder works':'시즌 해독기 규칙 · 확률'),`<table class="grt">${rows.join('')}</table><ul class="grl">
     <li>${L?`A gun line (${gname}) whose gun you own already pays ${fmtC(K.own)} coins instead.`:`무기 줄(${gname})은 그 무기를 이미 가졌으면 대신 ${fmtC(K.own)} 코인.`}</li>
     ${D?`<li>${L?'The guns of this card are not sold in the shop, cannot be exchanged for fragments and cannot be gifts.':'이 판의 무기는 상점 판매 · 조각 교환 · 선물이 없어요.'}</li>`:''}
-    <li>${L?'근하신년 decoders are kept: open them on the 근하신년 tab instead of paying (one or ten at a time).':'근하신년 해독기는 보유해 두었다가 근하신년 해독기 탭에서 코인 대신 열어요 (1개 · 10개씩).'}</li>
+    <li>${L?'All-Clear decoders are kept: open them on the All-Clear tab instead of paying (one or ten at a time).':'격리해제 해독기는 보유해 두었다가 격리해제 해독기 탭에서 코인 대신 열어요 (1개 · 10개씩).'}</li>
     <li>${L?'A full card is replaced by a new one at once (the rest of a ten goes on it).':'25칸이 다 차면 바로 새 판이 깔려요 (10개 열기의 나머지는 새 판에).'}</li>
     <li>${L?`Reset: a new card, free. Shuffle: the numbers not stamped yet change places, ${g.shuffle_free} a day — counted apart from the other cards.`:`초기화: 새 판으로 (무료). 뒤섞기: 안 찍힌 숫자들 자리만 바뀜, 하루 ${g.shuffle_free}번 (다른 판과 따로).`}</li>
     <li>${L?'Every number is drawn on the server; the game only shows it.':'숫자는 전부 서버에서 뽑고, 게임 화면은 결과만 보여줘요.'}</li></ul>`,'wide '+(D?'sd':'sz'))}
 async function gPopHist(){const L=LI();gPop(L?'History':'획득 기록',`<div class="gload">${L?'Loading…':'불러오는 중…'}</div>`);let rows;
   try{rows=await ACC.history()}catch(e){const b=document.querySelector('#gPop .gpb');if(b)b.innerHTML=`<div class="sbm bad">${esc(ACC.errText(e))}</div>`;return}
   const b=document.querySelector('#gPop .gpb');if(!b)return;if(!rows||!rows.length){b.innerHTML=`<div class="gload">${L?'Nothing yet':'아직 기록이 없어요'}</div>`;return}
-  const SRC={free:L?'free':'무료',exchange:L?'exchange':'교환',trans:L?'transcendence':'초월 교환',decode:L?'bingo':'빙고',ticket:L?'bingo · kept':'빙고 · 보유분',season:L?'season':'시즌',side:L?'sidearm':'보조무기'};
+  const SRC={free:L?'free':'무료',exchange:L?'exchange':'교환',trans:L?'awakening':'각성 교환',decode:L?'bingo':'빙고',ticket:L?'bingo · kept':'빙고 · 보유분',season:L?'season':'시즌',side:L?'sidearm':'보조무기'};
   b.innerHTML=`<table class="grt hist">${rows.map(x=>{const d=new Date(x.at),t=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const W=WPN[x.gun_id],nm=esc(W?W.n[L]:(x.gun_id||''));
     const what=x.kind==='gun'?`<b class="${x.tier?'t'+x.tier:x.src==='side'?'tP':x.src==='trans'?'tX':'tE'}">${x.tier?`[${x.tier}] `:''}${nm}</b>`:x.kind==='coins'?`${COIN}${fmtC(x.amount)}${x.gun_id?` <small>(${nm} ${L?'owned':'보유'})</small>`:''}`
-      :x.kind==='tickets'?`${decoderSvg('tki')}${L?'근하신년 decoder':'근하신년 해독기'} ×${x.amount}`:`${FRAG}×${x.amount}`;
+      :x.kind==='tickets'?`${decoderSvg('tki')}${L?'All-Clear decoder':'격리해제 해독기'} ×${x.amount}`:`${FRAG}×${x.amount}`;
     const src=SRC[x.src]||(L?'pouch':'복주머니');return `<tr${x.tier?' class="t'+x.tier+'"':''}><td>${t}</td><td>${what}${x.pity_hit?` <small>${L?'pity':'천장'}</small>`:''}</td><td><small>${src}</small></td></tr>`}).join('')}</table>`}
 
 // ---------- the account window: sign in / sign up / password / my account ----------
@@ -598,7 +598,7 @@ function shopLobby(){const top=document.querySelector('#menu .lobTop');if(!top)r
 // (the shooting range lends every gun: try before you buy; the Event Horizon has its own rule, loadout.js ehOK)
 function shopLocked(P,id){if(id==='bhole'||!ACC.on||!P||G.mode==='range')return false;const W=WPN[id];if(!W||!W.model||W.kind==='nade')return false;if(ACC.owns(id))return false;
   if(P.inv[W.slot]===id)return false;// already in hand (picked up): ammo for it is fine
-  if(W.ny&&P.nyFree>0)return false;// the 근하신년 free pick
+  if(W.ny&&P.nyFree>0)return false;// the All-Clear free pick
   return true}
 
 // ---------- after a match: the coins ----------
@@ -655,7 +655,7 @@ function shopRoundReward(win){const P=G.player;if(!P||!ACC.on||!ACC.signed()||AC
   const act0=UI.act;UI.act=function(a,v,el){
     if(a==='shop'){SHOP.open();return}
     if(a==='acc'){ACCW.open(ACC.signed()?'me':'in');return}
-    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI(),n=W?W.n[L]:'';HUD.note(W&&W.crate?`${n}: ${L?'only from supply crates (an account that owns one can pick it here)':'보급상자에서만 나와요 (계정에 있으면 여기서 고를 수 있어요)'}`:p&&p.tier?`${n}: ${L?'only from the 근하신년 decoder bingo (lobby shop)':'근하신년 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
+    if(a==='buylk'){const W=WPN[v],p=ACC.price(v),L=LI(),n=W?W.n[L]:'';HUD.note(W&&W.crate?`${n}: ${L?'only from supply crates (an account that owns one can pick it here)':'보급상자에서만 나와요 (계정에 있으면 여기서 고를 수 있어요)'}`:p&&p.tier?`${n}: ${L?'only from the All-Clear decoder bingo (lobby shop)':'격리해제 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
       :p&&!p.sold&&seasonGun(v)?`${n}: ${L?'only from its line on the season decoder card (lobby shop)':'시즌 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
       :p&&!p.sold&&sideGun(v)?`${n}: ${L?'only from its line on the sidearm decoder card (lobby shop)':'보조무기 해독기 빙고에서만 얻을 수 있어요 (로비 상점)'}`
       :`${n}: ${L?'buy it in the shop first':'상점에서 먼저 사야 해요'} (${fmtC(p&&p.price)} ${L?'coins':'코인'})`,2.2);AU.play('dry',{vol:.5});return}

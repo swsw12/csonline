@@ -1,5 +1,5 @@
 # the one price list: coins per gun; FREE = handed out to everyone; NOT_SOLD = never in the shop (season decoder lines, supply crates)
-# GACHA = the 근하신년 guns: only from the decoder bingo (해독기) or the fragment exchange, never sold
+# GACHA = the All-Clear guns: only from the decoder bingo (해독기) or the fragment exchange, never sold
 FREE=['knife','p9','sg8','k5','g35']
 PRICES=[
  # pistols

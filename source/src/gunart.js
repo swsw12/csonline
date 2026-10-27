@@ -271,7 +271,7 @@ const GUNS={
     Pt(0,.04,-.07,.13,.13,.24,'blk'),Pt(0,.04,-.2,.11,.11,.04,'blk2'),Pt(0,.15,-.08,.02,.06,.03,'blk2'),Pt(0,.18,-.08,.02,.02,.18,'grip2'),Pt(.07,.04,-.07,.012,.07,.16,'vent'),Pt(-.07,.04,-.07,.012,.07,.16,'vent'),
     Pt(0,-.06,-.22,.035,.09,.035,'grip2'),...pGrip('grip2',-.05,.08,.15),...TAG('mag',[Pt(0,-.1,-.04,.14,.13,.17,'olive2'),Pt(.08,-.02,-.05,.03,.06,.12,'belt')]),Pt(0,.04,.07,.11,.1,.04,'blk')],
     grip:[0,-.035,.08],sup:[0,-.04,-.22],muzzle:[0,.04,-.71],mag:[0,-.12,-.04],eject:[.07,.0,-.06],spinAxis:[0,.04]},
-  // Air Burster: a pistol-gripped air cannon — painted air tank on top (the 'mag': it is swapped on reload), short barrel ending in a
+  // Air Cannon: a pistol-gripped air cannon — painted air tank on top (the 'mag': it is swapped on reload), short barrel ending in a
   // flared bell with an orange rim, pressure gauge on the right, a hose from the tank valve down to the barrel, stock and front grip
   airb:{piv:{mag:[0,.122,-.1]},parts:[...TAG('mag',[Pt(0,.122,-.1,.074,.074,.34,'olive',{r:.034}),Pt(0,.122,.075,.06,.06,.014,'chrome',{r:.026}),Pt(0,.122,-.275,.06,.06,.014,'chrome',{r:.026}),
       Pt(0,.122,-.02,.077,.077,.022,'orange',{r:.035}),Pt(0,.122,-.2,.077,.077,.022,'orange',{r:.035}),Pt(0,.122,-.11,.078,.03,.09,'white',{r:.012}),Pt(0,.165,.06,.018,.018,.03,'steel',{r:.006})]),
@@ -338,8 +338,8 @@ function lookArm(arm,hand,dir){arm.position.set(hand[0],hand[1],hand[2]);arm.loo
 function vmGun(G,mat){const gun=new THREE.Group();const statics=G.parts.filter(p=>!p.tag),tags={};
   if(statics.length){const m=new THREE.Mesh(partGeo(statics),mat);m.frustumCulled=false;gun.add(m)}
   G._tc=G._tc||{};
-  // every tag gets its own group: the named ones (mag, slide, …) have the rules below, any other (the Balrog-XI's pips, the Thunderbolt's
-  // coils and switch, the Winchester's lever, JANUS-1's moving shells …) turns about G.piv[tag] or the gun's origin
+  // every tag gets its own group: the named ones (mag, slide, …) have the rules below, any other (the IGNIS-XI's pips, the Arcline's
+  // coils and switch, the Winchester's lever, TWINFACE-1's moving shells …) turns about G.piv[tag] or the gun's origin
   // (before v6.40 only the eight named tags were built, so parts under any other tag were missing from the first-person view)
   for(const t of [...new Set(G.parts.filter(p=>p.tag).map(p=>p.tag))]){let ps=G.parts.filter(p=>p.tag===t);if(!ps.length)continue;const grp=new THREE.Group();
     if(!G._tc[t]){const c=[0,0,0];for(const p of ps)for(let i=0;i<3;i++)c[i]+=p.c[i]/ps.length;G._tc[t]=c}// where the hand goes to work this part
@@ -362,7 +362,7 @@ function buildVM(id,skinKey,U,dual){const G=GUNS[id];const mat=matVM(GA.texVM,U)
   let gun2=null,tags2=null;
   if(dual){const B=vmGun(G.alt?GUNS[G.alt]:G,mat);gun2=B.gun;tags2=B.tags;root.add(gun2);gun2.add(armL);lookArm(armL,[gr[0]-.012,gr[1]-.02,gr[2]+.02],[-.35,-.42,1])}
   else{gun.add(armL);if(G.sup){lookArm(armL,G.sup,G.armL||[-.45,-.6,.75])}else{armL.visible=false}}
-  if(G.vmFix)G.vmFix(armR,armL);// a model may place its hands itself (the Skull-9's fists round its haft)
+  if(G.vmFix)G.vmFix(armR,armL);// a model may place its hands itself (the Grave-9's fists round its haft)
   return {id,root,gun,tags:A.tags,armR,armL,mat,gun2,tags2}}
 // zombie claws: two arms only
 function buildClaws(zk,U){const mat=matVM(GA.texVM,U);const root=new THREE.Group();const sk='zs_'+zk,fm=zk==='fireman';

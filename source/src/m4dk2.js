@@ -1,6 +1,6 @@
 'use strict';
-// ============ v6.69: M4A1 다크나이트-2 (M4A1 Dark Knight-2) — a crate weapon built to the owner's design sheet ============
-// The sheet applied as written (its id m4dk / name M4A1 다크나이트 belong to the v6.41 transcendence gun, which stays as it is: this one is
+// ============ v6.69: M4A1 오닉스-2 (M4A1 Onyx-2) — a crate weapon built to the owner's design sheet ============
+// The sheet applied as written (its id m4dk / name M4A1 오닉스 belong to the v6.41 awakened gun, which stays as it is: this one is
 // m4dk2, named at the owner's word): its 561 parts (the numbers unchanged), its five materials, the points, the stats, the first draw, the
 // reload, the sounds and effects, the two modes and the passive. An M4A1 with a dragon's-jaw handguard, a spiked-club muzzle, gold horns
 // and red round eyes; special, slot 1, from the supply crates only.
@@ -10,7 +10,7 @@
 // one taking .75 of the one before, the same stagger; kick a third of A's, a tighter spread, the view narrowing to 52° over .2 s, moving at
 // 85 %; a white trail from the muzzle to where it stops, fading over .6 s; a long thin white-yellow flash (A: short orange); a machine
 // gun's heavy beat. The eye-and-horn structure (tag ghorn) never moves; in B the red eyes glow stronger (first person and third).
-// Owning it (or carrying it) makes the Deadshot last a second longer (as the M4A1 다크나이트: one second, not two, for both).
+// Owning it (or carrying it) makes the Deadshot last a second longer (as the M4A1 오닉스: one second, not two, for both).
 // What the sheet leaves open is filled in the plainest way: its zoom [52] is B's view (right click is the mode switch, not a zoom); with
 // one round left B, which needs two, reloads; the world model (third person) leaves out the parts' fillets (plain boxes); the hand's kick
 // in B follows its recoil (a third of A's).
@@ -197,7 +197,7 @@ GUNS.m4dk2w=Object.assign({parts:DK2_P.map(p=>{const q=Object.assign({},p,{r:0})
 // B: its beat, rounds a shot, pierce (zombies, the share kept by each next one), view (degrees, seconds to narrow), speed, the switch (s),
 // how much brighter the eyes glow in B, the trail's life (s)
 const DK2={BRPM:600,PER:2,PEN:3,PENK:.75,FOV:52,FOVT:.2,SPD:.85,SW:.25,EYE:1.9,TRAIL:.6};
-WPN.m4dk2={slot:1,kind:'special',crate:1,cat:'special',n:['M4A1 다크나이트-2','M4A1 Dark Knight-2'],cost:6500,mag:50,res:300,dmg:90,hs:150/90,limbK:50/90,rpm:780,
+WPN.m4dk2={slot:1,kind:'special',crate:1,cat:'special',n:['M4A1 오닉스-2','M4A1 Onyx-2'],cost:6500,mag:50,res:300,dmg:90,hs:150/90,limbK:50/90,rpm:780,
   spread:[.006,.04,.11],rec:[.017,.01],kb:3.4,stag:.6,reload:2.5,draw:.8,speed:.9,snd:'dk2fire',drawS:'dk2draw',model:'m4dk2',hold:'rifle',shell:1,alt:'dk2',
   kickX:[.42,.6,.3],bd:['탄창 50 · 자동 · B모드 관통','50 rounds · Auto · B-mode pierce']};
 // B fires these, off the same magazine (two rounds a shot: DK2.PER)
@@ -228,7 +228,7 @@ function dk2Shot(a,W,eye,base,sp){const dir=new THREE.Vector3();spreadDir(base,s
     if(!NET.ghost&&wb.coffin&&a.team===TH&&typeof COFF!=='undefined')COFF.hurt(wb.coffin,W.dmg,a);AU.at(matKind(m)==='metal'?'imp_metal':'imp_conc',ex,ey,ez,{vol:.5,range:30})}
   const mz=muzzleWorld(a);dk2Beam(mz.x,mz.y,mz.z,ox+dx*tE,oy+dy*tE,oz+dz*tE);
   return {hit:hits.length>0,hs:hsAny,dmg:dmgT}}
-// the trail: a white core in a pale glow, fading over DK2.TRAIL s (the Thunderbolt's beams fade it: csoguns.js)
+// the trail: a white core in a pale glow, fading over DK2.TRAIL s (the Arcline's beams fade it: specguns.js)
 function dk2Beam(x0,y0,z0,x1,y1,z1){if(!TB.geo)TB.geo=new THREE.BoxGeometry(1,1,1);const len=Math.hypot(x1-x0,y1-y0,z1-z0);if(len<.3)return;
   const mk=(col,w,op)=>{const m=new THREE.Mesh(TB.geo,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false}));
     m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);m.lookAt(x1,y1,z1);m.scale.set(w,w,len);m.renderOrder=6;R.scene.add(m);return m};
@@ -309,7 +309,7 @@ const DK2V={k:0,add:0};
     DK2V.k=approach(DK2V.k,on?1:0,dt/DK2.FOVT);const add=Math.min(0,DK2.FOV-cam.fov)*smooth(DK2V.k);if(add<-.01){cam.fov+=add;DK2V.add=add}if(add<-.01||had)cam.updateProjectionMatrix()};
   // the weapon's name: the mode
   const ct=cmbTag;cmbTag=function(P,W){return ct(P,W)+(W===WPN.m4dk2&&P&&P.team===TH&&P.dk2B?(LI()?' · B piercing':' · B 관통'):'')};
-  // the Deadshot: a second longer for an owner of either Dark Knight (m4dk.js dkOwns; not two seconds for both). Owning this one: the
+  // the Deadshot: a second longer for an owner of either Onyx (m4dk.js dkOwns; not two seconds for both). Owning this one: the
   // account has it, or it is carried (a crate gun: carried counts for everyone)
   const dko=dkOwns,don=dkOwnN;dkOwnN=function(a){return dko(a)?don(a):WPN.m4dk2.n};dkOwns=function(a){if(dko(a))return true;if(!a)return false;if(a.inv&&a.inv[1]==='m4dk2')return true;
     return a===G.player&&!!(ACC.on&&ACC.signed()&&ACC.me&&ACC.me.owned&&ACC.me.owned.has('m4dk2'))};

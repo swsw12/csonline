@@ -94,7 +94,7 @@ for(const m of ST_MATS){if(GA.idx[m]==null){GA_MATS.push(m);GA.idx[m]=GA_MATS.le
 function paintStAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getContext('2d');
   const at=n=>{const i=GA.idx[n];return i==null||i>=GA_SLOTS?null:[(i%8)*PS,Math.floor(i/8)*PS]};
   const nz=(X,Y,s,c)=>fbm(X/(c||16),Y/(c||16),s,2,0);
-  // the glow pattern (as the Dark Knight-2's sheet): the three tones in a slow swirl, alpha 232 (a light)
+  // the glow pattern (as the Onyx-2's sheet): the three tones in a slow swirl, alpha 232 (a light)
   ST_MATS.forEach((m,mi)=>{const D0=STK.mats[m],o=at(m);if(!D0||!o)return;const c=D0[0],s=2101+mi*10,id=x.getImageData(o[0],o[1],PS,PS),D=id.data;
     for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const t=nz(o[0]+xx,o[1]+y,s,10),col=t>.62?c[2]:t<.38?c[0]:c[1],r=rgbOf(col),k=(y*PS+xx)*4;D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=D0[1]==='glow'?232:255}
     x.putImageData(id,o[0],o[1])});

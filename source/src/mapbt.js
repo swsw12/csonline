@@ -67,7 +67,7 @@ function bakeBtTex(){if(TEX.btStone)return;
   TEX.btStone=mkTex(texBtStone());TEX.btFlag=mkTex(texBtFlag());TEX.btGrass=mkTex(texBtGrass());TEX.btStep=mkTex(texBtStep());TEX.btBark=mkTex(texBtBark());
   TEX.btLeaf=mkTex(texBtLeaf());TEX.btIvy=mkTex(texBtIvy(),false);TEX.btWood=mkTex(texBtWood());TEX.btArch=mkTex(texBtArch(),false);TEX.btMud=mkTex(texBtMud());
   TEX.btDirt=mkTex(texBtDirt());TEX.btMoss=mkTex(texBtMoss());
-  // the daylight sky and sun belong to Italy's texture set; paint them here too if Italy has not been loaded yet
+  // the daylight sky and sun belong to Whitehill's texture set; paint them here too if Whitehill has not been loaded yet
   if(!TEX.skyDay){TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter}
   if(!TEX.sunDisc){TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false}
   const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['btStone','btFlag','btGrass','btStep','btDirt'])TEX[k].anisotropy=an}

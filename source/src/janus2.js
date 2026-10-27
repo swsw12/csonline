@@ -1,5 +1,5 @@
 'use strict';
-// ============ 「이태훈 딕건」 (JANUS-2: v6.55, the name v6.55.1) — v6.68: rebuilt to the owner's second design sheet ============
+// ============ 「이태훈 딕건」 (TWINFACE-2: v6.55, the name v6.55.1) — v6.68: rebuilt to the owner's second design sheet ============
 // Everything is the sheet's, as written: its 304 parts (the numbers unchanged), its 14 materials, the points, the hinge, the stats, the
 // motions and the B form's timing. None of the v6.55 build's own changes is left (the figures moved back, the bridge under the sight, the
 // longer barrel with a bore, our own Mary). Where the sheet leaves something open it is filled in the plainest way:
@@ -14,14 +14,14 @@
 //    the halves shut (0.85 s in all, no firing)
 //  · the world models (third person, other players) leave out the parts' fillets: plain boxes, as every distant model
 // One-handed (the sheet's sup / leftHand null): the free hand only comes up to put a grenade in on a reload.
-// The JANUS machinery is janus.js's: every blast that catches a zombie counts once (targetHits 5, multiHitCount 1), five give the signal
+// The TWINFACE machinery is janus.js's: every blast that catches a zombie counts once (targetHits 5, multiHitCount 1), five give the signal
 // (Christ's eyes glow gold — glow_jesus, steady, with a halo round them in the first-person view only), a right click within 35 s opens
 // the B form: thorns and halves over 0.5 s; from 0.3 s the figures turn over upward on the sight's back for 0.55 s (ease-in-out), a
 // revolving door about y .07325, z −.025: Christ 0 → −180°, Mary +180° → 0; Mary shows from 90°, where Christ's eyes go out, and Christ
 // goes at 180°. No firing until it is done (0.85 s), then 5 s of grenades without limit at 214 a minute: the same shot, kick and flame
 // as one at a time. The barrel only breaks on a reload and the first draw. No gold flash, no shaking.
-// Damage (the sheet's damageLogic): 120 a blast, 60 % of it still at the edge (×2.5 in the chapters, as JANUS-1); its 35 against people
-// has nothing to hit (no friendly fire, the JANUS guns are not in PvP).
+// Damage (the sheet's damageLogic): 120 a blast, 60 % of it still at the edge (×2.5 in the chapters, as TWINFACE-1); its 35 against people
+// has nothing to hit (no friendly fire, the TWINFACE guns are not in PvP).
 
 // ---------- atlas: the sheet's materials_new — three tones (dark, mid, light), the pattern, gloss, scratch ----------
 const J2_MDEF={
@@ -252,7 +252,7 @@ GUN_DESIGN.janus2={mag:1,ch:0,act:'break',x:.3,d:.15,side:'t',heavy:.7,roll:.4,o
 // the HUD: no spares to count
 {const hu=HUD.update;HUD.update=function(dt){hu.call(this,dt);const P=G.player,e=this.el;if(P&&P.alive&&P.cur==='janus2'&&e&&e.hRes&&e.hRes.textContent!=='/ ∞')e.hRes.textContent='/ ∞'}}
 
-// ---------- the JANUS machinery's own bits (janus.js) ----------
+// ---------- the TWINFACE machinery's own bits (janus.js) ----------
 // the B form's state now: g the thorns and the halves (0..1), f how far the figures have turned (0 Christ .. 1 Mary)
 function j2State(a,o){let g=0,f=0;
   if(a.jnO>0){const u=J2.OT-a.jnO;g=smooth(clamp(u/J2.T_GROW,0,1));f=smooth(clamp((u-J2.T_FLIP0)/J2.T_FLIP,0,1))}

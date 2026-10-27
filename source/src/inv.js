@@ -1,5 +1,5 @@
 'use strict';
-// ============ the inventory: 근·하·신·년 letters (and their exchange), owned weapons, the three loadout presets, zombie and character ============
+// ============ the inventory: 격·리·해·제 letters (and their exchange), owned weapons, the three loadout presets, zombie and character ============
 // Opened from the lobby's 인벤토리 button. Letters, kept decoders and owned guns come from the account (ACC.me); the presets
 // (CFG.sets, loadout.js) and the zombie / character picks (CFG.zclass, CFG.skin) are this device's settings and work for guests too.
 const INV={tab:'ny',busy:false,msg:'',ok:true,
@@ -13,7 +13,7 @@ const INV={tab:'ny',busy:false,msg:'',ok:true,
     if(a==='tab'){this.tab=v;this.msg='';this.render();return}
     if(a==='login'){this.close();ACCW.open('in');return}
     if(a==='ex'){if(this.busy)return;this.busy=true;this.render();
-      try{const r=await ACC.nyExchange(v);this.msg=v==='ny'?(L?'+2 근하신년 decoders':'근하신년 해독기 +2개'):(L?'+1 season decoder':'시즌 해독기 +1개');this.ok=true;AU.play('lvlup',{vol:.6})}
+      try{const r=await ACC.nyExchange(v);this.msg=v==='ny'?(L?'+2 All-Clear decoders':'격리해제 해독기 +2개'):(L?'+1 season decoder':'시즌 해독기 +1개');this.ok=true;AU.play('lvlup',{vol:.6})}
       catch(e){this.msg=ACC.errText(e);this.ok=false;AU.play('dry',{vol:.5})}this.busy=false;this.render();return}
     if(a==='openny'||a==='opensz'){this.close();SHOP.open();SHOP.act('page',a==='openny'?'gacha':'season');return}
     if(a==='gun'){this.close();SHOP.open(v);return}
@@ -27,7 +27,7 @@ const INV={tab:'ny',busy:false,msg:'',ok:true,
   mine(slot){const out=[],seen=new Set();for(const c of BUY_MENU)for(const id of c.items){const W=WPN[id];if(!W||!W.model||W.crate&&!(ACC.on&&ACC.owns(id))||W.kind==='nade'||W.slot!==slot||seen.has(id))continue;seen.add(id);
       if(!ACC.on||ACC.owns(id))out.push(id)}if(slot===3&&!seen.has('knife'))out.unshift('knife');return out},
   render(){const o=$('invWin');if(!o)return;const L=LI(),signed=ACC.signed&&ACC.signed(),me=ACC.me;
-    const tabs=[['ny',L?'근·하·신·년':'근하신년 글자'],['guns',L?'My weapons':'보유 무기'],['sets',L?'Presets':'장비 프리셋'],['char',L?'Zombie · character':'좀비 · 캐릭터']];
+    const tabs=[['ny',L?'격·리·해·제':'격리해제 글자'],['guns',L?'My weapons':'보유 무기'],['sets',L?'Presets':'장비 프리셋'],['char',L?'Zombie · character':'좀비 · 캐릭터']];
     const body=this.tab==='guns'?this.guns(L):this.tab==='sets'?this.sets(L):this.tab==='char'?this.chars(L):this.ny(L,signed,me);
     o.innerHTML=`<div class="ivw"><div class="ivh"><b>${L?'Inventory':'인벤토리'}</b><small>INVENTORY</small><span class="sgap"></span>
       ${signed?`<span class="scoin">${COIN}<b>${fmtC(me.coins)}</b></span>`:''}<button class="ivx" data-iv="x" aria-label="close">×</button></div>
@@ -35,12 +35,12 @@ const INV={tab:'ny',busy:false,msg:'',ok:true,
       <div class="ivb">${body}</div>${this.msg?`<div class="ivm ${this.ok?'ok':'bad'}">${esc(this.msg)}</div>`:''}</div>`},
   ny(L,signed,me){const N=signed&&me&&me.ny?me.ny:[0,0,0,0],sets=Math.min(...N),busy=this.busy;
     const tiles=NY_CH.map((c,i)=>`<div class="ivl${N[i]>0?' on':''}"><b>${c}</b><span>×${N[i]}</span></div>`).join('');
-    return `<div class="ivny"><p class="ivd">${L?'Zombies you kill sometimes drop a 근·하·신·년 letter: walk over it to pick it up. Every letter picked up in a match is kept here once the match ends (signed in). One of each letter makes a set.':'좀비를 잡으면 가끔 근·하·신·년 글자가 떨어져요. 밟으면 줍고, 매치가 끝나면 주운 글자가 여기 저장돼요 (로그인). 네 글자를 하나씩 모으면 한 세트.'}</p>
+    return `<div class="ivny"><p class="ivd">${L?'Zombies you kill sometimes drop a 격·리·해·제 letter: walk over it to pick it up. Every letter picked up in a match is kept here once the match ends (signed in). One of each letter makes a set.':'좀비를 잡으면 가끔 격·리·해·제 글자가 떨어져요. 밟으면 줍고, 매치가 끝나면 주운 글자가 여기 저장돼요 (로그인). 네 글자를 하나씩 모으면 한 세트.'}</p>
       <div class="ivls">${tiles}</div><div class="ivsets">${L?'Sets':'모은 세트'} <b>${sets}</b></div>
       ${!ACC.on?`<div class="ivn">${L?'Accounts are not set up yet.':'계정 서버가 연결되면 쓸 수 있어요.'}</div>`:!signed?`<button class="ivbtn big" data-iv="login">${L?'Sign in to keep letters':'로그인하고 글자 모으기'}</button>`
-      :`<div class="ivex"><button class="ivbtn gold" data-iv="ex" data-v="ny"${sets<1||busy?' disabled':''}>${decoderSvg('tki')}<span><b>${L?'2 근하신년 decoders':'근하신년 해독기 2개'}</b><small>${L?'one set':'세트 1개로 교환'}</small></span></button>
+      :`<div class="ivex"><button class="ivbtn gold" data-iv="ex" data-v="ny"${sets<1||busy?' disabled':''}>${decoderSvg('tki')}<span><b>${L?'2 All-Clear decoders':'격리해제 해독기 2개'}</b><small>${L?'one set':'세트 1개로 교환'}</small></span></button>
         <button class="ivbtn vio" data-iv="ex" data-v="season"${sets<1||busy?' disabled':''}>${seasonSvg('tki')}<span><b>${L?'1 season decoder':'시즌 해독기 1개'}</b><small>${L?'one set':'세트 1개로 교환'}</small></span></button></div>
-      <div class="ivkept"><span>${decoderSvg('tki')} ${L?'근하신년 decoders kept':'보유 근하신년 해독기'} <b>${me.tickets|0}</b></span><button data-iv="openny">${L?'Open':'열러 가기'} ›</button>
+      <div class="ivkept"><span>${decoderSvg('tki')} ${L?'All-Clear decoders kept':'보유 격리해제 해독기'} <b>${me.tickets|0}</b></span><button data-iv="openny">${L?'Open':'열러 가기'} ›</button>
         <span>${seasonSvg('tki')} ${L?'Season decoders kept':'보유 시즌 해독기'} <b>${me.sTickets|0}</b></span><button data-iv="opensz">${L?'Open':'열러 가기'} ›</button></div>`}</div>`},
   guns(L){const K=typeof KIND_N!=='undefined'?KIND_N:{};const all=[];for(const s of [1,2,3])for(const id of this.mine(s))all.push(id);
     const by={};for(const id of all){const k=WPN[id].kind;(by[k]=by[k]||[]).push(id)}

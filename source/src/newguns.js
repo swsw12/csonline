@@ -1,6 +1,6 @@
 'use strict';
-// ============ v6.14 weapons: Blaze-8 (gold semi-auto shotgun), Winchester M1887 (lever-action shotgun), Nata Knife ============
-// (the Nata Knife was called the Kill Knife until v6.15.1; its id stays 'killknife' so purchases, prices and the server keep working)
+// ============ v6.14 weapons: Blaze-8 (gold semi-auto shotgun), Winchester M1887 (lever-action shotgun), Jungle Machete ============
+// (the Jungle Machete was called the Kill Knife until v6.15.1; its id stays 'killknife' so purchases, prices and the server keep working)
 // Models are boxes on the existing atlas materials (no new atlas slots); sounds reuse the game's synthesised ones.
 // relFire: a shell-by-shell reload is cut short by a trigger press and that same press fires (game.js reload block).
 // spEvery: every spEvery shells fired, one special shell goes into its own slot (up to spMax); right click fires it as a wide fan
@@ -50,7 +50,7 @@ WPN.winchester={slot:1,kind:'shotgun',n:['윈체스터 M1887','Winchester M1887'
   shellRel:.42,relStart:.36,relFire:1,draw:.8,speed:.92,snd:'db2',model:'winchester',hold:'rifle',pump:1,lever:1};
 VM_POS.winchester={p:[.15,-.165,-.37],r:[0,.08,.035]};
 
-// ---------- Nata Knife (id killknife): a long hazy-grey blade that curves down to the point, a bright honed edge, blood along the belly,
+// ---------- Jungle Machete (id killknife): a long hazy-grey blade that curves down to the point, a bright honed edge, blood along the belly,
 // a handle of the same steel running on from it (built in slices along the blade so the spine and the edge can curve) ----------
 // stained steel: the hazy grey of 'steel' with old blood soaked into it, faint (kkS1) to deep (kkS3), blotchy so it reads as a stain
 const KK_MATS=['kkS1','kkS2','kkS3'];
@@ -83,7 +83,7 @@ function kkParts(){const P=[],N=26,z0=-.045,z1=-.37;
   P.push(Pt(0,-.002,.108,.026,.04,.016,'steel'),Pt(0,-.004,.118,.022,.03,.008,'steel'),Pt(0,-.004,.112,.0285,.008,.008,'blk'));
   return P}
 GUNS.killknife={parts:kkParts(),grip:[0,0,0],muzzle:[0,.03,-.36],trail:[0,.0,-.12,0,.028,-.35]};
-WPN.killknife={slot:3,kind:'melee',n:['나타나이프','Nata Knife'],cost:12000,dmg:[95,330],rate:[.5,1.1],range:[2.7,2.2],kb:[5,15],stag:[2.2,3],cleave:[1,2],arc:[.55,.6],
+WPN.killknife={slot:3,kind:'melee',n:['정글 마체테','Jungle Machete'],cost:12000,dmg:[95,330],rate:[.5,1.1],range:[2.7,2.2],kb:[5,15],stag:[2.2,3],cleave:[1,2],arc:[.55,.6],
   speed:1,draw:.65,model:'killknife',hold:'knife',sw:1,hitT:[.15,.32]};
 VM_POS.killknife={p:[.16,-.17,-.34],r:[.15,.25,-.15]};
 
@@ -94,12 +94,12 @@ BUY_MENU.find(c=>c.k==='special').items.push('killknife');
 // a.spN[id] = normal shells fired toward the next special shell; a.spAm[id] = special shells in their own slot (at most spMax).
 // Right click fires one: a wide fan of pellets that staggers and blows zombies back (game.js calls spFire).
 function spShot(a,W){if(!W.spEvery||W.sp)return W;const c=a.spN||(a.spN={}),m=a.spAm||(a.spAm={});
-  // Balrog-XI: the four shells must come in one unbroken held burst; a pause longer than the next shot's turn starts the count again
+  // IGNIS-XI: the four shells must come in one unbroken held burst; a pause longer than the next shot's turn starts the count again
   if(W.spFlame){if(G.t-(a.spT||0)>60/W.rpm*1.5+.06)c[a.cur]=0;a.spT=G.t}
   const n=(c[a.cur]|0)+1;
   if(n>=W.spEvery){c[a.cur]=0;if((m[a.cur]|0)<W.spMax){m[a.cur]=(m[a.cur]|0)+1;if(a.isPlayer)AU.play(W.spGain||'shellin',{vol:.5,rate:W.spGain?1:1.3})}}else c[a.cur]=n;return W}
 function spFire(a,W){const m=a.spAm||(a.spAm={});if(!((m[a.cur]|0)>0))return false;m[a.cur]--;
-  if(W.spFlame){bxFlame(a,W);a.nextFire=G.t+60/W.rpm*1.6;return true}// Balrog-XI: five fireballs (csoguns.js)
+  if(W.spFlame){bxFlame(a,W);a.nextFire=G.t+60/W.rpm*1.6;return true}// IGNIS-XI: five fireballs (specguns.js)
   fireGun(a,Object.assign({},W,{sp:1,noMag:1,pellets:0,fan:W.spFan,fanA:W.spFanA,dmg:W.spDmg,spread:[.012,.018,.03],kb:W.spKb,stag:W.spStag,spUp:W.spUp,rec:[W.rec[0]*1.6,W.rec[1]*1.5]}));
   a.nextFire=G.t+60/W.rpm*1.6;return true}
 // the HUD's weapon name: special shells in the slot, then pips toward the next one

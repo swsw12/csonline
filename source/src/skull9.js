@@ -1,6 +1,6 @@
 'use strict';
-// ============ SKULL-9 (스컬-9): a two-handed battle axe ============
-// CSO's name, numbers and moves; the model (boxes), its textures and its sounds are drawn / synthesised here (original designs).
+// ============ GRAVE-9 (그레이브-9): a two-handed battle axe ============
+// The model (boxes), its textures and its sounds are drawn / synthesised here (original designs).
 // Left click: a wide horizontal sweep from right to left that catches up to three zombies in front of you.
 // Right click: hauled up overhead, a beat, then slammed down — the heaviest melee blow in the game: it pops up to two zombies into
 // the air, staggers them for a long time and shakes the ground. Two hands on a long haft: slow to draw, slow to swing, and you walk
@@ -118,7 +118,7 @@ GUNS.skull9={parts:skParts(),grip:[0,0,0],sup:[0,0,SK.zL],muzzle:[0,.2,SK.zH],vm
 // ---------- stats ----------
 // light: a wide sweep, three at most, thrown forward and to the left; heavy: a slam, two at most, popped up and staggered for long.
 // cleave/arc per attack (light, heavy): how many it can hit and the cone (cosine) it reaches over; kbL = sideways share of the sweep's push
-WPN.skull9={slot:3,kind:'melee',n:['스컬-9','SKULL-9'],cost:3000,dmg:[230,520],rate:[1.05,1.65],range:[2.7,2.9],kb:[13,20],up:[0,6],stag:[.6,1.6],
+WPN.skull9={slot:3,kind:'melee',n:['그레이브-9','GRAVE-9'],cost:3000,dmg:[230,520],rate:[1.05,1.65],range:[2.7,2.9],kb:[13,20],up:[0,6],stag:[.6,1.6],
   speed:1,draw:1.3,model:'skull9',hold:'skull9',sw:.55,hitT:[.38,.66],anD:[.83,1.5],cleave:[3,2],arc:[.2,.7],kbL:[.45,0],shk:[.32,.7],slam:1,noDC:1,
   swS:'skswing',hitS:'skhit',drawS:'skdraw'};
 BUY_MENU.find(c=>c.k==='special').items.push('skull9');

@@ -173,7 +173,7 @@ html.touch #hHsk{display:none!important}
 #scope.r{background:radial-gradient(circle at 50% 50%,transparent 0,transparent 41vmin,rgba(0,0,0,.55) 41.3vmin,rgba(0,0,0,.92) 44vmin)}
 #scope.r .sv,#scope.r .sh{background:rgba(0,0,0,.75)}#scope.r .sv{top:36%;bottom:36%}#scope.r .sh{left:calc(50% - 22vmin);right:calc(50% - 22vmin)}
 #scope.r::after{content:'';position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;background:#ff3a2a;border-radius:50%;box-shadow:0 0 6px #ff3a2a}
-/* ---------- 근하신년 letters ---------- */
+/* ---------- All-Clear letters ---------- */
 #hNY{position:absolute;top:220px;left:14px;display:flex;gap:4px;align-items:center}
 /* ---------- multiplayer ---------- */
 #mp,#lobby{background:rgba(5,6,9,.8)}
@@ -695,7 +695,7 @@ html.touch #hRange .rgK{display:none}
 #shopWin .stl button{flex:none}
 @media (max-width:900px){.accChip .aname span{display:none}.accChip button{padding:5px 7px}.tbtns button{padding:4px 6px}}
 @media (max-height:520px){#shopWin .sdesc{display:none}#shopWin .sdet{gap:6px;padding:8px 10px}#shopWin .sdet h4{font-size:15px}#shopWin .sbuy{position:sticky;bottom:-8px;background:#191b1f;padding:6px 0 8px}#shopWin .sbb{padding:8px 10px}}
-/* ===== the 근하신년 lucky pouch (shop.js) ===== */
+/* ===== the All-Clear lucky pouch (shop.js) ===== */
 .fi{display:inline-block;width:12px;height:12px;margin-right:4px;vertical-align:-1px;transform:rotate(45deg) scale(.86);background:linear-gradient(135deg,#ff7a5a,#c8231a 55%,#7a0c08);border:1px solid #f2c230;box-shadow:0 0 4px rgba(255,90,60,.4);flex:none}
 .tbtns .tshop{position:relative}.tshop .dot,#shopWin .spages .dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 6px #ff3a2a}
 #shopWin .scoin.frg b{color:#ff9a7a}
@@ -779,7 +779,7 @@ html.touch #hRange .rgK{display:none}
 #gPop .grt.hist td:nth-child(3){text-align:right}#gPop .grt b.tS{color:#ffd24a}#gPop .grt b.tA{color:#c08aff}
 #gPop .grl{margin:10px 0 0;padding-left:18px;line-height:1.6;color:#a8acb4}#gPop .gload{padding:16px;text-align:center;color:#8a8f98}
 .bi.lk .c small.gb{color:#e07a5a}.bi.lk .c small.gb.gs,.mbi.lk .c small.gb.gs{color:#b48cff}
-/* ---------- the 근하신년 decoder bingo ---------- */
+/* ---------- the All-Clear decoder bingo ---------- */
 #shopWin .bwrap .gleft{background:radial-gradient(ellipse at 50% 26%,#16304a,#0d1015 72%);width:300px}
 #shopWin .bdec{height:118px;display:flex;align-items:center;justify-content:center}
 #shopWin .bdec .dz{height:112px;filter:drop-shadow(0 8px 16px rgba(60,160,255,.25));animation:gbob 2.8s ease-in-out infinite}
@@ -847,7 +847,7 @@ html.touch #hRange .rgK{display:none}
 #shopWin .sz .bc.hl{outline-color:#e0a8ff}
 #shopWin .bstat .ehs{display:inline-flex;align-items:center;color:#d8b8ff}#shopWin .bstat .ehs b{color:#f0dcff}
 #shopWin .bstat .ehs img{height:12px;margin-right:4px;image-rendering:pixelated;filter:drop-shadow(0 0 3px rgba(200,140,255,.8))}
-/* the season card's line tiles: Event Horizon, a coin pile, fragments, 근하신년 decoders, the amount under the picture */
+/* the season card's line tiles: Event Horizon, a coin pile, fragments, All-Clear decoders, the amount under the picture */
 #shopWin .brw.it{flex-direction:column;gap:1px}
 #shopWin .brw.it em{position:relative;right:auto;bottom:auto;z-index:1;display:flex;align-items:center;font-size:max(9px,calc(var(--bs)*.2));line-height:1;white-space:nowrap}
 #shopWin .brw.it em .ci{width:8px;height:8px;margin-right:1px}
@@ -861,7 +861,7 @@ html.touch #hRange .rgK{display:none}
 #shopWin .brw.rE::after{content:'';position:absolute;inset:-30%;background:conic-gradient(rgba(0,0,0,0) 0 18%,rgba(200,130,255,.55) 30%,rgba(0,0,0,0) 44% 66%,rgba(255,170,90,.42) 80%,rgba(0,0,0,0) 94%);animation:szspin 5s linear infinite;pointer-events:none}
 #shopWin .brw.rE img{position:relative;z-index:1;max-height:56%;filter:drop-shadow(0 0 4px rgba(210,160,255,.95))}
 #shopWin .brw.rE.got::after,#shopWin .brw.rE.own::after{opacity:.3}#shopWin .brw.rE em{color:#ffd24a}
-/* 근하신년 decoders kept (won on the season card): the row on the 근하신년 page */
+/* All-Clear decoders kept (won on the season card): the row on the All-Clear page */
 #shopWin .gtk{display:flex;align-items:center;gap:5px;padding:4px 5px 4px 7px;background:linear-gradient(#3a1810,#22100c);border:1px solid #a8562a;border-radius:4px}
 #shopWin .gtk span{flex:1;display:flex;align-items:center;gap:4px;min-width:0;font-size:12px;color:#ffd8b0;white-space:nowrap}#shopWin .gtk span i{font-style:normal}#shopWin .gtk span b{color:#fff;font-size:15px}
 #shopWin .gtk .tki{height:24px}
@@ -1278,7 +1278,7 @@ i.hofc{font-style:normal;display:inline-flex;color:#ffcf3a;margin-left:4px;verti
 #frWin .fcm.you{align-self:flex-start}#frWin .fcm.you .fct{background:#222831;border:1px solid #3a3f48;color:#e6eaf0;border-bottom-left-radius:3px}
 #frWin .fcsend{display:flex;gap:6px;margin-top:8px}#frWin .fcsend input{flex:1;min-width:0;padding:9px 10px;background:#0f1114;border:1px solid #3a3f48;color:#fff;border-radius:3px;font-size:14px}
 #frWin .fcsend button{width:auto;min-width:64px;padding:8px 14px;border:1px solid #e2b54a;background:linear-gradient(#5a3e12,#2e200a);color:#fff;border-radius:3px;cursor:pointer}#frWin .fcsend button:disabled{opacity:.5}
-/* v6.28: Balrog-XI charge ring, Thunderbolt scope and target marks */
+/* v6.28: IGNIS-XI charge ring, Arcline scope and target marks */
 #bxRing{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;pointer-events:none;display:none}
 #bxRing svg{width:100%;height:100%;transform:rotate(-90deg)}
 #bxRing circle{fill:none;stroke-width:2.5}#bxRing .tr{stroke:rgba(255,255,255,.14)}
@@ -1331,7 +1331,7 @@ i.hofc{font-style:normal;display:inline-flex;color:#ffcf3a;margin-left:4px;verti
 .slot button.give{flex:none;min-width:0;width:auto;margin:0;padding:3px 7px;font-size:10px;line-height:1.2;color:#ffd27a;background:rgba(232,163,58,.08);border:1px solid #7a5a26;border-radius:2px;cursor:pointer;white-space:nowrap}
 .slot button.give:hover{border-color:#e8a33a;background:rgba(232,163,58,.18)}.slot button.give.ask{color:#111;background:var(--y);border-color:var(--y)}
 html.touch .slot button.give{min-height:30px;padding:4px 9px}
-/* v6.40 JANUS-1 (janus.js): a violet crosshair in the signal and the form, a ring of five round it (the charge / the signal's time / the form's time) */
+/* v6.40 TWINFACE-1 (janus.js): a violet crosshair in the signal and the form, a ring of five round it (the charge / the signal's time / the form's time) */
 #cross.jn i{background:#c38bff;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 7px rgba(170,90,255,.95)}
 #cross.jnb i{background:#e6c4ff;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 10px rgba(190,110,255,1)}
 #jnRing{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;pointer-events:none;display:none}
@@ -1344,7 +1344,7 @@ html.touch .slot button.give{min-height:30px;padding:4px 9px}
 #jnRing b{position:absolute;left:100%;top:100%;margin:-10px 0 0 -6px;font-size:13px;color:#cf9dff;text-shadow:0 0 6px rgba(150,70,255,.95),0 1px 2px #000;white-space:nowrap}
 @keyframes jnPulse{from{opacity:.55}to{opacity:1}}
 html.touch #touch .tAlt.jn{border-color:rgba(200,140,255,.95)!important;background:rgba(70,20,110,.5)!important;box-shadow:0 0 14px rgba(170,90,255,.8);animation:jnPulse .7s ease-in-out infinite alternate}
-/* v6.55 JANUS-2 (janus2.js): the charge and the signal in gold, the form in blue violet (#8A2BE2) */
+/* v6.55 TWINFACE-2 (janus2.js): the charge and the signal in gold, the form in blue violet (#8A2BE2) */
 #cross.jn.j2 i{background:#ffd75a;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 7px rgba(255,190,60,.95)}
 #cross.jnb.j2 i{background:#8a2be2;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 10px rgba(160,80,255,1)}
 #jnRing.j2 .pg{stroke:#e0b040;filter:drop-shadow(0 0 3px rgba(255,190,60,.85))}
@@ -1353,10 +1353,10 @@ html.touch #touch .tAlt.jn{border-color:rgba(200,140,255,.95)!important;backgrou
 #jnRing.j2 b{color:#ffd75a;text-shadow:0 0 6px rgba(255,180,40,.95),0 1px 2px #000}
 #jnRing.j2.b b{color:#b57cff;text-shadow:0 0 6px rgba(138,43,226,.95),0 1px 2px #000}
 html.touch #touch .tAlt.jn.j2{border-color:rgba(255,215,100,.95)!important;background:rgba(90,60,10,.5)!important;box-shadow:0 0 14px rgba(255,190,60,.8)}
-/* v6.40 Crowbar Maverick (crowbar.js): a shocked zombie player's screen flickers blue at the edges */
+/* v6.40 Shock Crowbar (crowbar.js): a shocked zombie player's screen flickers blue at the edges */
 #hud.shk::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(80,160,255,.28) 85%,rgba(150,210,255,.45) 100%);animation:cbShk .11s steps(2) infinite}
 @keyframes cbShk{from{opacity:.55}to{opacity:1}}
-/* v6.41 THANATOS-9 (thanatos.js): a violet crosshair in the drill form, a ring under it (transforming · ready · the barrage's time) */
+/* v6.41 MORTA-9 (thanatos.js): a violet crosshair in the drill form, a ring under it (transforming · ready · the barrage's time) */
 #cross.th i{background:#c9a0ff;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 8px rgba(160,90,255,.95)}
 #thRing{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;pointer-events:none;display:none}
 #thRing svg{width:100%;height:100%;transform:rotate(-90deg)}
@@ -1367,9 +1367,9 @@ html.touch #touch .tAlt.jn.j2{border-color:rgba(255,215,100,.95)!important;backg
 #thRing.bar .pg{stroke:#e8ccff;stroke-width:3.4;filter:drop-shadow(0 0 6px rgba(190,110,255,1))}
 #thRing b{position:absolute;left:100%;top:100%;margin:-10px 0 0 -6px;font-size:13px;color:#d0a8ff;text-shadow:0 0 6px rgba(150,70,255,.95),0 1px 2px #000;white-space:nowrap}
 html.touch #touch .tAlt.th{border-color:rgba(190,140,255,.9)!important;background:rgba(60,24,100,.45)!important;box-shadow:0 0 10px rgba(160,90,255,.6)}
-/* v6.41 M4A1 Dark Knight (m4dk.js): a crimson crosshair in B */
+/* v6.41 M4A1 Onyx (m4dk.js): a crimson crosshair in B */
 #cross.dkb i{background:#ff5a4a;box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 8px rgba(255,40,30,.95)}
-/* v6.41 the transcendence exchange (shop.js): its fragment (a crimson crystal set in gold), its tab, cards, button and progress bar */
+/* v6.41 the awakening exchange (shop.js): its fragment (a crimson crystal set in gold), its tab, cards, button and progress bar */
 .tfi{display:inline-block;width:11px;height:14px;margin-right:4px;vertical-align:-2px;clip-path:polygon(50% 0,100% 30%,82% 100%,18% 100%,0 30%);background:linear-gradient(160deg,#ffe2a0 0,#ff5a46 30%,#a8101c 70%,#3a0408);box-shadow:0 0 5px rgba(255,60,40,.6);flex:none}
 #shopWin .scoin.tfr{border-color:#a8343c;cursor:pointer}#shopWin .scoin.tfr b{color:#ffb090}
 #shopWin .spages button.tp.on{background:linear-gradient(#4a0c12,#1a0406);border-color:#e8b450;color:#ffe6c0}

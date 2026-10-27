@@ -641,7 +641,7 @@ Object.assign(JAW0,{lorelei:.22,listener:.14});
 //   3 backstage (no power) — 'act': the three dimmer racks (9 s each, any order); LORELEI's first appearance on the scene dock's
 //     catwalk (she leaves by the fly hatch once she has lost 15 %, or when the power is back)
 //   4 the main hall — the boss fight, three phases (the curtain rises at the start of each). A wipe replays the phase it reached
-CHAP[7]={id:7,k:'lorelei',map:'ep7',code:'RT1-03',season:2,n:['로렐라이','LORELEI'],t:['좀비 시나리오: 로렐라이','Zombie Scenario: LORELEI'],
+CHAP[7]={id:7,k:'lorelei',map:'ep7',code:'RT1-03',season:2,n:['로렐라이','LORELEI'],t:['협동 작전: 로렐라이','Co-op Operation: LORELEI'],
   file:[['1차 회수팀 협상 요원 RT1-03. 대피 방송을 하던 목소리로 노래를 불러 사람을 끌어당긴다','RT-1\'s negotiator, RT1-03: the voice from the evacuation broadcasts now sings, and it pulls you in'],
     ['노래는 집중 사격으로 끊어 · 앉으면 덜 끌려간다 · 스피커 · 샹들리에 · 암전엔 소리로 찾아라','Break her song with focused fire · crouch to resist · the speakers · the chandelier · in the dark, find her by ear']],
   cards:{place:['봉쇄선 밖 · 한설 아트센터','BEYOND THE LINE · HANSEOL ARTS CENTER'],who:['1차 회수팀 협상 요원','RT-1 NEGOTIATOR'],line:['혼자 남겨지는 게 무서웠다 — 그래서 모두를 불러 모은다','She could not bear to be left alone — so she calls everyone to her']},
@@ -678,7 +678,7 @@ CHAP[7]={id:7,k:'lorelei',map:'ep7',code:'RT1-03',season:2,n:['로렐라이','LO
   // after the clear: the roster in her vest; a card for the season so far
   ending(){EP.later(3,()=>EP.radio('end0'));EP.later(7,()=>EP.radio('end1'));EP.later(9.6,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 2':'좀비 시나리오 · 시즌 2'}</small><h1>${L?'CHAPTER 7 CLEAR':'7챕터 클리어'}</h1><p>${L?'Three of RT-1 are still out there — north, at the airfield.':'1차 회수팀은 아직 셋 남았다 — 북쪽 비행장.'}</p><b>${L?'NEXT — CHAPTER 8 「CHARON」':'다음 이야기 — 8챕터 「카론」'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'CO-OP OPERATION · SEASON 2':'협동 작전 · 시즌 2'}</small><h1>${L?'CHAPTER 7 CLEAR':'7챕터 클리어'}</h1><p>${L?'Three of RT-1 are still out there — north, at the airfield.':'1차 회수팀은 아직 셋 남았다 — 북쪽 비행장.'}</p><b>${L?'NEXT — CHAPTER 8 「CHARON」':'다음 이야기 — 8챕터 「카론」'}</b></div></div>`;
     el.className='on';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},6500)},
   radio:{
     start:['2차 회수팀, 봉쇄선 밖 한설시다. "북쪽으로 와라" — 그 방송은 저 아트센터 확성기에서 나온다. 대피소였던 곳이다.','RT-2, this is Hanseol, beyond the line. "Come north" — that broadcast is coming from the arts center\'s loudspeakers. It was a shelter.',0],

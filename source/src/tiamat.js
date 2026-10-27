@@ -683,7 +683,7 @@ Object.assign(JAW0,{drowned:.18,hazmat:.06,tiamat:0,centi:0});
 //   3 the surge tank — flooded: turn the two drain wheels (6 s each) while TIAMAT lurks in the water; drained, it is stranded and leaves
 //   4 the boss fight — the tank (phases 1–2), then shaft No. 3 (phase 3). A wipe replays its phase
 //   5 the escape — the shaft caves in and fills: 75 s up the ramp to the surface
-CHAP[5]={id:5,k:'tiamat',map:'ep5',code:'Q7-Ω',n:['티아마트','TIAMAT'],t:['좀비 시나리오: 티아마트','Zombie Scenario: TIAMAT'],
+CHAP[5]={id:5,k:'tiamat',map:'ep5',code:'Q7-Ω',n:['티아마트','TIAMAT'],t:['협동 작전: 티아마트','Co-op Operation: TIAMAT'],
   file:[['Q7 수석연구원과 원종이 합쳐진 거대 지네 군체 Q7-Ω. 물속에선 총알이 안 들어간다','Q7-Ω: the chief researcher fused with the origin strain — a giant centipede colony. Bullets cannot reach it under the water'],
     ['솟구칠 때·좌초됐을 때·코어가 열릴 때를 노려라 · 수문으로 물을 빼고, 수직갱에선 지상에 닿기 전에','Hit it when it rises, when it is stranded, when its core opens · drain the hall, and stop it before it reaches the surface']],
   cards:{place:['새벽천 대심도 방수로','SAEBYEOK DEEP TUNNEL'],who:['Q7 연구팀 수석연구원 · 원종','Q7 CHIEF RESEARCHER · THE ORIGIN STRAIN'],line:['괴물들의 어머니 — 지상의 강에 닿으면 물길 전체가 오염된다','The mother of monsters — if it reaches the river, every waterway is infected']},
@@ -755,7 +755,7 @@ CHAP[5]={id:5,k:'tiamat',map:'ep5',code:'Q7-Ω',n:['티아마트','TIAMAT'],t:['
   // the season's end (every page, from endFx): RT-1's leader on the radio, then the season card
   ending(){EP.later(2.8,()=>EP.radio('end0'));EP.later(5.2,()=>EP.radio('end1'));EP.later(8,()=>EP.radio('end2'));EP.later(9.8,()=>this.seasonCard())},
   seasonCard(){let el=$('epCard');if(!el){el=document.createElement('div');el.id='epCard';$('app').appendChild(el)}const L=LI();
-    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'ZOMBIE SCENARIO · SEASON 1':'좀비 시나리오 · 시즌 1'}</small><h1>${L?'SEASON 1 COMPLETE':'시즌 1 완결'}</h1><p>${L?'Q-7 was only the beginning.':'격리구역 Q-7은 시작에 불과했다.'}</p><b>${L?'NEXT — LEGATUS · RT1-01':'다음 이야기 — 레가투스 · RT1-01'}</b></div></div>`;
+    el.innerHTML=`<div class="ec s1"><div class="tx"><small>${L?'CO-OP OPERATION · SEASON 1':'협동 작전 · 시즌 1'}</small><h1>${L?'SEASON 1 COMPLETE':'시즌 1 완결'}</h1><p>${L?'Q-7 was only the beginning.':'격리구역 Q-7은 시작에 불과했다.'}</p><b>${L?'NEXT — LEGATUS · RT1-01':'다음 이야기 — 레가투스 · RT1-01'}</b></div></div>`;
     el.className='on s1';clearTimeout(EP.cardT);EP.cardT=setTimeout(()=>{el.className=''},6000)},
   radio:{
     start:['2차 회수팀, 새벽천 대심도 방수로 제3수직구 도착. 연구 일지에 따르면 수석연구원이 원종 샘플을 들고 여기로 내려갔다.','RT-2, you are at shaft No. 3 of the Saebyeok deep tunnel. The logs say the chief researcher came down here with the origin-strain sample.',0],

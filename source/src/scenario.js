@@ -1,5 +1,5 @@
 'use strict';
-// ============ Zombie Scenario (co-op PvE): 5 stages × 3 waves, a giant at the end ============
+// ============ Co-op Operation (co-op PvE): 5 stages × 3 waves, a giant at the end ============
 // Humans stay human. Zombies are NPCs drawn from a fixed pool of actors (POOL slots + 1 boss slot) created with the match, so the
 // network roster never changes: a zombie "spawns" by being revived at a spawn point and stays down when killed.
 // Host-authoritative: the host runs the stage flow, spawns, AI, the boss and all damage to humans; clients get compact zombie
@@ -11,8 +11,8 @@ SCEN.SPD={rager:.84,runner:.88,brute:.9,scream:.84,coffin:.86,bomber:.86,spitter
 SCEN.SPD.strait=.9*6.6/ZCLASS.strait.speed;// (v6.91: chapter 1's straitjackets run as fast as before — .9 × the old table speed 6.6; the class that can be picked runs at 5.9)
 const SC_DIFF={hp:[.6,.85,1.1,1.4],n:[.7,.85,1,1.2],dmg:[.5,.75,1,1.3]};
 const scHumans=()=>SCEN.H,scPool=()=>SCEN.Z;
-Object.assign(STR.ko,{scen:'좀비 시나리오',scenD:'협동 PvE — 감염 없이 끝까지 인간으로 싸운다. 스테이지 5개 × 웨이브 3번, 마지막엔 거대 좀비. 팀 목숨 3개: 전멸하면 그 스테이지를 다시 하고, 다 쓰면 게임 오버. 죽어도 다음 웨이브에 부활.',scDead:'다음 웨이브에 부활 — 관전 중',allies:'아군 봇'});
-Object.assign(STR.en,{scen:'Zombie Scenario',scenD:'Co-op PvE — no infection, you stay human. 5 stages × 3 waves, a giant at the end. 3 shared lives: a wipe replays the stage, losing them all ends the run. The fallen come back at the next wave.',scDead:'Back at the next wave — spectating',allies:'Ally bots'});
+Object.assign(STR.ko,{scen:'협동 작전',scenD:'협동 PvE — 감염 없이 끝까지 인간으로 싸운다. 스테이지 5개 × 웨이브 3번, 마지막엔 거대 좀비. 팀 목숨 3개: 전멸하면 그 스테이지를 다시 하고, 다 쓰면 게임 오버. 죽어도 다음 웨이브에 부활.',scDead:'다음 웨이브에 부활 — 관전 중',allies:'아군 봇'});
+Object.assign(STR.en,{scen:'Co-op Operation',scenD:'Co-op PvE — no infection, you stay human. 5 stages × 3 waves, a giant at the end. 3 shared lives: a wipe replays the stage, losing them all ends the run. The fallen come back at the next wave.',scDead:'Back at the next wave — spectating',allies:'Ally bots'});
 SCEN.later=(t,f)=>SCEN.tq.push({t,f});
 // ---------- match setup ----------
 // every page runs this with the same roster: the pool waits dead and out of sight

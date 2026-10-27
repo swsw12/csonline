@@ -1,11 +1,11 @@
 'use strict';
-// ============ v6.40: 크로우바 매버릭 (Crowbar Maverick) — a crowbar with a stun device strapped under its head ============
-// The name and the mechanics follow the CSO weapon; the model (dark forged steel, hazard-taped grip, a black-and-yellow stun pack with two
+// ============ v6.40: 쇼크 크로우바 (Shock Crowbar) — a crowbar with a stun device strapped under its head ============
+// The model (dark forged steel, hazard-taped grip, a black-and-yellow stun pack with two
 // prongs under the gooseneck), its swings and its sounds are this game's own.
-// Left click: heavy diagonal swings that alternate (forehand, backhand), up to two zombies a blow, less than the Nata Knife.
+// Left click: heavy diagonal swings that alternate (forehand, backhand), up to two zombies a blow, less than the Jungle Machete.
 // Right click: the bar is levelled and driven straight in, prongs first: one zombie, and an electric shock — CB.SHOCK s of a body that
 // can barely move (×CB.SPD speed), cannot jump or use its skill and twitches with sparks (bosses only flinch: CB.BOSS s, no slowdown).
-// The stab reaches a little further than the Nata Knife's (2.45 m against 2.2).
+// The stab reaches a little further than the Jungle Machete's (2.45 m against 2.2).
 // Network (host-authoritative): the host (or a solo game) shocks whoever the stab hit and tells every page ('cbsh'), so the page that moves
 // the zombie slows it and every page shows the sparks; the striking page shows the spark of the hit at once.
 
@@ -55,7 +55,7 @@ GUNS.cbmav={parts:cbParts(false),grip:[0,0,0],muzzle:CB_TIP.slice(),piv:{arc:CB_
 GUNS.cbmavw={parts:cbParts(true),grip:[0,0,0],muzzle:CB_TIP.slice()};
 
 // ---------- stats ----------
-WPN.cbmav={slot:3,kind:'melee',n:['크로우바 매버릭','Crowbar Maverick'],cost:5000,dmg:[80,210],rate:[.55,1.15],range:[2.55,2.45],kb:[6,3.5],stag:[.8,1.2],
+WPN.cbmav={slot:3,kind:'melee',n:['쇼크 크로우바','Shock Crowbar'],cost:5000,dmg:[80,210],rate:[.55,1.15],range:[2.55,2.45],kb:[6,3.5],stag:[.8,1.2],
   speed:1,draw:.7,model:'cbmav',hold:'cbmav',sw:.9,hitT:[.16,.27],anD:[.46,.8],cleave:[2,1],arc:[.5,.8],shk:[.3,.4],blunt:1,
   swS:'cbswing',hitS:'cbhit',drawS:'cbdraw'};
 BUY_MENU.find(c=>c.k==='special').items.push('cbmav');

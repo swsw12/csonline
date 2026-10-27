@@ -390,7 +390,7 @@ EPZ.strait={init(a){a.st={mode:'',cd:rr(1,2.5),mt:0}},tick:(a,dt)=>STRAIT.tick(a
 //     lost a tenth of its health (or after 35 s); then the team boards, rides down 15 s and steps out in B4
 //   4 B4 — the boss fight, three phases. A wipe replays the phase it reached, at that phase's health
 //   5 the escape — 60 s back to the lift (late still clears, without the bonus)
-CHAP[1]={id:1,k:'aleph',map:'ep1',code:'Q7-000',n:['알레프','ALEPH'],t:['좀비 시나리오: 알레프','Zombie Scenario: ALEPH'],
+CHAP[1]={id:1,k:'aleph',map:'ep1',code:'Q7-000',n:['알레프','ALEPH'],t:['협동 작전: 알레프','Co-op Operation: ALEPH'],
   file:[['최초 감염자 Q7-000. 맞을수록 분노가 차올라 폭주한다','Patient zero, Q7-000: every hit feeds its rage until it snaps'],['등의 주황 혈청 탱크가 약점 · 기둥 패널로 감전','The orange tank on its back is the weak point · shock it at the pillars']],
   cards:{place:['Q-7','Q-7'],who:['최초 감염자','PATIENT ZERO'],line:['강화 혈청 1호 피험자 — 통증을 못 느끼고, 맞을수록 분노한다','Serum subject no. 1 — feels no pain; every hit makes it angrier']},
   boss:ALEPH,

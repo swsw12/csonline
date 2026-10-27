@@ -1,9 +1,9 @@
 'use strict';
-// ============ v6.16 supply-crate guns: AK-47 60R and Dual MP7A1 ============
+// ============ v6.16 supply-crate guns: AK-47 Drum and Dual MP7A1 ============
 // Both come out of supply crates (supply.js) and are never sold (the shop shows them as crate-only cards). On the buy menu they are
 // locked unless the account owns one (v6.18: granted in the database); a crate gun that is not owned is not carried into the next round
 // and never goes into a saved set. The shooting range lends them to everyone.
-// AK-47 60R: a heavy matte-black AK with a scope on the gas tube and a 60-round half-moon magazine; right click: one zoom step.
+// AK-47 Drum: a heavy matte-black AK with a scope on the gas tube and a 60-round half-moon magazine; right click: one zoom step.
 // Dual MP7A1: a pair of H&K MP7A1s, one in each hand, firing in turns; right click: the spray stance (both guns rolled outward,
 // fire rate x bRpm, spread x bSpread: game.js). The charging handles do not lock back (fd.nolock: vm.js, vmrel.js).
 // Models are boxes on the weapon atlas; the half-moon magazine is built in slices round its arc.
@@ -24,7 +24,7 @@ function paintCgAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getC
   patch('mtRed',(xx,y,X,Y)=>{const t=nz(X,Y,116,10)+(hash2(X,Y,117)-.5)*.1;return t>.62?'#b0261f':t<.38?'#86140f':'#9c1c17'});
   GA.tex.needsUpdate=true;GA.texVM.needsUpdate=true;for(const k in ICONS)delete ICONS[k]}
 
-// ---------- AK-47 60R ----------
+// ---------- AK-47 드럼 ----------
 // The half-moon magazine: slices round an arc under the receiver. Angle 0 points to the rear at the magazine well; it sweeps down
 // through the bottom (90°) and forward until it points ahead under the handguard. Each slice is turned (rx = its angle) so its
 // height runs along the arc; the first slice is the one in the well (the reload takes the well's direction from it).
@@ -80,7 +80,7 @@ GUNS.ak60r={parts:[
   Pt(0,.04,.25,.046,.016,.17,'mtP',{rx:-.13,r:.007}),Pt(0,-.069,.27,.04,.01,.06,'blk2',{rx:-.15}),Pt(0,-.03,.362,.056,.146,.022,'rub',{rx:-.15,r:.007}),
   ...ak60Scope(),...ak60Mag()],
   grip:[0,-.04,.041],sup:[0,-.004,-.44],muzzle:[0,.055,-.798],mag:[0,-.14,-.2],eject:[.03,.05,-.06]};
-WPN.ak60r={slot:1,kind:'rifle',crate:1,cat:'rifle',n:['AK-47 60R','AK-47 60R'],cost:5500,mag:60,res:240,dmg:58,rpm:650,spread:[.005,.04,.11],spreadZ:.0018,zoom:[44],
+WPN.ak60r={slot:1,kind:'rifle',crate:1,cat:'rifle',n:['AK-47 드럼','AK-47 Drum'],cost:5500,mag:60,res:240,dmg:58,rpm:650,spread:[.005,.04,.11],spreadZ:.0018,zoom:[44],
   rec:[.017,.01],kb:3.8,stag:.35,hs:3,reload:3.3,draw:.85,speed:.88,snd:'ak60r',model:'ak60r',hold:'rifle',shell:1};
 VM_POS.ak60r={p:[.15,-.17,-.37],r:[0,.085,.035]};
 
@@ -131,7 +131,7 @@ const CRATE_GUNS=['ak60r','dmp7'];
 for(const id of CRATE_GUNS){const c=BUY_MENU.find(q=>q.k===WPN[id].cat);if(c&&!c.items.includes(id))c.items.push(id)}
 
 // ---------- sounds ----------
-// AK-47 60R: a heavier, lower AK report with the bolt's clack; MP7A1: the sharp, high crack of the small 4.6 mm round
+// AK-47 Drum: a heavier, lower AK report with the bolt's clack; MP7A1: the sharp, high crack of the small 4.6 mm round
 Object.assign(GUNDEF,{
   ak60r:()=>({drive:1.9,crack:.9,crackF:2000,body:[{f:rr(700,820),q:.8,l:.9,d:.11},{f:rr(1750,2050),q:1,l:.72,d:.065},{f:rr(280,330),q:.9,l:.62,d:.15,n:'pink'}],
     punch:{f0:rr(112,126),f1:52,d:.15,l:1.05},mech:{t:rr(.03,.036),f:rr(3200,3800),l:.2},tail:{l:.3,tau:.24,d:rr(.95,1.05),f0:2700,f1:200},echo:echoes()}),

@@ -169,7 +169,7 @@ const SFX={
   dm14:{n:3,dur:1.6,ch:2,peak:.95,gain:.95,rev:.17,poly:4,pj:.02,fn:B=>gunshot(B,GUNDEF.dm14())},
   mg6:{n:3,dur:1.2,ch:2,peak:.93,gain:.84,rev:.12,poly:8,pj:.025,fn:B=>gunshot(B,GUNDEF.mg6())},
   gx6:{n:4,dur:.9,ch:2,peak:.9,gain:.72,rev:.1,poly:10,pj:.03,fn:B=>gunshot(B,GUNDEF.gx6())},
-  // Air Burster: a short pressurised 'pshh' — a falling band of hiss over a soft low thump, a little valve click on top
+  // Air Cannon: a short pressurised 'pshh' — a falling band of hiss over a soft low thump, a little valve click on top
   airb:{n:3,dur:.4,ch:2,peak:.8,gain:.62,rev:.06,poly:6,pj:.06,fn:B=>{const out=B.comp(-12,4,.002,.1,B.g(.9));
     {const e=B.env(0,.003,1,.2,out);const f=B.f('bandpass',rr(2200,2800),.9,e);f.frequency.setValueAtTime(rr(3200,3800),0);f.frequency.exponentialRampToValueAtTime(rr(900,1200),.22);B.nz('white',0,.3,f)}
     {const e=B.env(0,.004,.7,.09,out);B.osc('sine',rr(95,115),48,0,.12,e)}

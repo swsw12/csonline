@@ -1,5 +1,5 @@
 'use strict';
-// ============ v6.27 weapon: Balrog-5 (a heavy assault rifle with a combo gauge) ============
+// ============ v6.27 weapon: IGNIS-5 (a heavy assault rifle with a combo gauge) ============
 // Every bullet that lands fills the gauge (+1, a headshot +2). At W.cmb the gauge is full and the NEXT bullet carries an explosive charge:
 // it hits as usual and blows up where it lands (blastDamage: radius cmbR, cmbDmg at the centre, a hard shove and a hop), then the gauge is empty.
 // a.cmb[id] = the gauge (per weapon, cleared every round). The first-person model shows it as five lit segments on the left of the handguard
@@ -28,7 +28,7 @@ GUNS.balrog5={parts:[
   // stock: a tube, a dark red body with a cheek rest, the pad
   Pt(0,.03,.16,.03,.03,.14,'blk2'),Pt(0,.03,.25,.05,.08,.16,'dred'),Pt(0,.062,.25,.04,.008,.14,'rub'),Pt(0,.03,.338,.056,.11,.02,'rub')],
   grip:[0,-.03,.02],sup:[-.005,.01,-.37],muzzle:[0,.055,-.74],mag:[0,-.15,-.11],eject:[.03,.06,-.08]};
-WPN.balrog5={slot:1,kind:'rifle',n:['발록-5','Balrog-5'],cost:6500,mag:35,res:210,dmg:34,rpm:640,spread:[.005,.04,.11],rec:[.014,.008],kb:2.6,stag:.28,hs:3,reload:2.7,draw:.8,speed:.9,
+WPN.balrog5={slot:1,kind:'rifle',n:['이그니스-5','IGNIS-5'],cost:6500,mag:35,res:210,dmg:34,rpm:640,spread:[.005,.04,.11],rec:[.014,.008],kb:2.6,stag:.28,hs:3,reload:2.7,draw:.8,speed:.9,
   snd:'balrog5',model:'balrog5',hold:'rifle',shell:1,cmb:8,cmbR:3.6,cmbDmg:230,cmbKb:13,cmbUp:4.2};
 VM_POS.balrog5={p:[.15,-.165,-.36],r:[0,.085,.035]};
 BUY_MENU.find(c=>c.k==='rifle').items.push('balrog5');
@@ -39,7 +39,7 @@ function cmbReady(a,W){return !!(a.cmb&&(a.cmb[a.cur]|0)>=W.cmb)}
 function cmbAfter(a,W,hit,hs,xb){const c=a.cmb||(a.cmb={});
   if(xb){c[a.cur]=0;const e=a.shotEnd;if(e)cmbBoom(a,W,e[0],e[1],e[2]);return}
   if(!hit)return;const v=Math.min(W.cmb,(c[a.cur]|0)+(hs?2:1));c[a.cur]=v;
-  if(v>=W.cmb&&a.isPlayer){AU.play('slide',{vol:.55,rate:1.7});HUD.note(LI()?'Balrog-5 — the next bullet explodes':'발록-5 — 다음 한 발은 폭발탄',1.6)}}
+  if(v>=W.cmb&&a.isPlayer){AU.play('slide',{vol:.55,rate:1.7});HUD.note(LI()?'IGNIS-5 — the next bullet explodes':'이그니스-5 — 다음 한 발은 폭발탄',1.6)}}
 function cmbBoom(a,W,x,y,z){miniBlast(x,y,z,1.1);AU.at('explode',x,y,z,{vol:.85,range:70,occ:false,rate:1.35});nearShake(x,y,z,9,.6);
   blastDamage(a,x,y,z,W.cmbR,W.cmbDmg,W.cmbKb,W.cmbUp,a.cur,{he:1})}
 // the HUD's weapon name: the count, or the call that the explosive round is in the chamber

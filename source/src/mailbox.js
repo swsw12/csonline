@@ -18,7 +18,7 @@ const MBOX={list:null,busy:false,off:false,res:'',resBad:false,autoAt:0,
   // what a bundle holds, in words
   rw(rw){const L=LI(),o=[];if(!rw)return o;
     if(rw.coins)o.push([COIN,fmtC(rw.coins)+(L?' coins':' 코인'),'c']);if(rw.frags)o.push([FRAG,(L?'Fragments ':'해독 조각 ')+fmtC(rw.frags),'f']);
-    if(rw.tfrags)o.push([TFRAG,(L?'Transcendence fragments ':'초월 조각 ')+fmtC(rw.tfrags),'t']);if(rw.tickets)o.push([SVG_TICKET,(L?'근하신년 decoders ':'근하신년 해독기 ')+fmtC(rw.tickets),'k']);
+    if(rw.tfrags)o.push([TFRAG,(L?'Awakening fragments ':'각성 조각 ')+fmtC(rw.tfrags),'t']);if(rw.tickets)o.push([SVG_TICKET,(L?'All-Clear decoders ':'격리해제 해독기 ')+fmtC(rw.tickets),'k']);
     if(rw.season_tickets)o.push([SVG_TICKET,(L?'Season decoders ':'시즌 해독기 ')+fmtC(rw.season_tickets),'s']);
     for(const g of rw.guns||[]){const W=WPN[g];o.push([W&&W.model?`<img src="${gunIcon(W.model,26)}" alt="">`:'⌖',W?W.n[L]:g,'g'])}return o},
   chips(rw){return this.rw(rw).map(([i,t,k])=>`<span class="mrw ${k}">${i}<b>${esc(t)}</b></span>`).join('')},

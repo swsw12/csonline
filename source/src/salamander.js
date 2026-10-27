@@ -1,5 +1,5 @@
 'use strict';
-// ============ SALAMANDER (샐러맨더): a two-handed flamethrower ============
+// ============ FIREWYRM (파이어웜): a two-handed flamethrower ============
 // The model (boxes), its textures, the flame and the sounds are drawn / synthesised here (original designs).
 // Hold the trigger: a jet of burning fuel pours out of the nozzle — a short cone (7.6 m, narrower the further it reaches) that licks
 // every zombie inside it with a clear line ten times a second and sets them alight (the burn system in nyw.js: burnT / burnSrc / burnW).
@@ -80,7 +80,7 @@ GUNS.salamander={parts:salParts(),grip:[0,-.03,.02],sup:[0,.014,-.47],muzzle:SAL
 // flame: r reach (m, eye to the body), w0 / wk the cone's half width at the nozzle and its growth per metre (so it narrows as an
 // angle), full = full damage this close, min = the share left at the end of the reach, burn = seconds set alight (topped up every tick)
 // res 100 → 200 once game.js doubles every gun's spare ammo
-WPN.salamander={slot:1,kind:'special',n:['샐러맨더','Salamander'],cost:5500,mag:100,res:100,dmg:38,rpm:600,quiet:1,flame:{r:7.6,w0:.3,wk:.09,full:2.5,min:.38,burn:2.5},
+WPN.salamander={slot:1,kind:'special',n:['파이어웜','Firewyrm'],cost:5500,mag:100,res:100,dmg:38,rpm:600,quiet:1,flame:{r:7.6,w0:.3,wk:.09,full:2.5,min:.38,burn:2.5},
   spread:[0,0,0],rec:[.0035,.004],kb:1.1,stag:.22,hs:1,reload:3.5,draw:1,speed:.85,snd:'salgust',model:'salamander',hold:'rifle'};
 BUY_MENU.find(c=>c.k==='special').items.push('salamander');
 VM_POS.salamander={p:[.16,-.195,-.4],r:[0,.075,.03]};

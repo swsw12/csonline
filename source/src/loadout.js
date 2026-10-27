@@ -21,7 +21,7 @@ const ldLimited=()=>G.mode!=='range';// the shooting range hands out everything 
 function ldOwns(a,id){return !a.isPlayer||!ACC.on||ACC.owns(id)}
 // Event Horizon: owners only, and only with accounts on (offline it stays a supply-crate gun). The host trusts a remote player's request; bots never.
 function ehOK(a){if(a.isPlayer)return !!(ACC.on&&ACC.owns('bhole'));return !!(a.net&&!a.bot)}
-// locked for the local player: the account locks (shop.js), the Event Horizon rule; a set never spends the 근하신년 free pick
+// locked for the local player: the account locks (shop.js), the Event Horizon rule; a set never spends the All-Clear free pick
 // a crate-only gun (v6.18): an account that owns one picks it like any owned gun; the shooting range lends it to everyone; a remote
 // player's page has checked before asking; bots never (they only get one out of a crate)
 function crateOK(a,id){if(G.mode==='range')return true;if(a.isPlayer)return !!(ACC.on&&ACC.owns(id));return !!(a.net&&!a.bot)}
@@ -49,7 +49,7 @@ function buy(a,id,force,o){if(force?(!a||a.team!==TH||!a.alive):buyCheck(a,id))r
   // (a remote player's copy on the host is not drawn here: its weapon in hand comes from its own page)
   if(W.kind==='melee'){a.inv[3]=id;L[3]=id;if(!q&&!a.pup)equip(a,id);return done()}
   if(a.inv[W.slot]===id&&id!=='bhole'){if(!a.ammo[id])fillAmmo(a,id);a.ammo[id].res=W.res;if(W.noRel)a.ammo[id].mag=W.mag;return done()}
-  if(W.ny&&a.isPlayer&&a.nyFree>0&&!ldOwns(a,id))a.nyFree--;// the 근하신년 free pick only goes on a gun the account does not own
+  if(W.ny&&a.isPlayer&&a.nyFree>0&&!ldOwns(a,id))a.nyFree--;// the All-Clear free pick only goes on a gun the account does not own
   a.inv[W.slot]=id;fillAmmo(a,id);gunFresh(a,id);L[W.slot]=id;
   if(id==='bhole'){a.ammo.bhole.res=0;K.bhole=1;a.ehBuy=1}// one magazine a round, no spare
   if(!q&&!a.pup)equip(a,id);return done()}

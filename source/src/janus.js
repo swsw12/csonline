@@ -1,20 +1,20 @@
 'use strict';
-// ============ v6.40: JANUS-1 — a five-shot grenade-launcher pistol that opens into the JANUS form ============
-// The name and the mechanics follow the CSO weapon; the model (a stubby 40 mm revolver with a two-faced mask on its frame), its motions
+// ============ v6.40: TWINFACE-1 — a five-shot grenade-launcher pistol that opens into the TWINFACE form ============
+// The model (a stubby 40 mm revolver with a two-faced mask on its frame), its motions
 // and its sounds are this game's own.
 // Five grenades and no reload: a supply crate (zombie modes) or an ammo box (the chapters) fills it up again; the buy menu's ammo and
 // buying it again do not (W.supOnly), and putting it down and taking a new one hands back the rounds it had (a.jnLeft).
-// Every blast that catches at least one zombie counts once toward the JANUS charge (one count however many it catches). Five counts
+// Every blast that catches at least one zombie counts once toward the TWINFACE charge (one count however many it catches). Five counts
 // (not necessarily in a row) give the signal: the eyes of the mask light violet and so does the crosshair. Right click within JN.SIG s
-// opens it into the JANUS form (else the signal lapses and the count starts again): JN.B s of grenades without limit, full-auto at
+// opens it into the TWINFACE form (else the signal lapses and the count starts again): JN.B s of grenades without limit, full-auto at
 // JN.BRPM (one every 0.28 s, up to 18; the trigger or the touch fire button held). Then it closes up by itself and the count starts again.
 // Putting it away, dying, turning or a new round ends the form (the signal keeps running while it is holstered).
 // Motions: after every shot the hammer falls and comes back while the drum turns a fifth. Opening: the gun is raised and turned up,
 // the free hand slaps down on the mask, the barrel splits into two shells (up, down) round a glowing violet core, the fins on its sides
 // swing out, the crest on the mask lifts and the five chambers light. Closing: it shuts with a clank and lets off steam.
 // Network: the state changes go out as ['jn', id, 0 shut | 1 signal | 2 opening]; the grenades are projectiles like the others.
-// v6.55: JANUS-2 (janus2.js) runs on the same machinery: what differs between the two (the form's round, sounds, clips, light, the
-// grenades) sits in JNW / JNP; WPN[id].jn names the JANUS weapon a WPN entry belongs to. v6.68: a JNW entry may also set its own opening
+// v6.55: TWINFACE-2 (janus2.js) runs on the same machinery: what differs between the two (the form's round, sounds, clips, light, the
+// grenades) sits in JNW / JNP; WPN[id].jn names the TWINFACE weapon a WPN entry belongs to. v6.68: a JNW entry may also set its own opening
 // and closing times (oT / cT), how far open it is (openK), calm (no burst, kick or shake when the form comes on or the world model
 // changes) and no light while open (lit null) — the Dick gun's second sheet.
 
@@ -35,7 +35,7 @@ const JN_PIV={cyl:[0,JN_CY,JN_CZ],cg:[0,JN_CY,JN_CZ],fL:[-.031,JN_BY,-.236],fR:[
 
 // ---------- the model ----------
 // gun frame as every pistol: origin at the grip, the barrel along -Z. v: 'vm' the first-person model (moving and lit parts tagged) |
-// 'n' / 's' / 'b' the world models — shut, signal (lit eyes and inlays), JANUS form (open, everything lit) — each one fixed pose
+// 'n' / 's' / 'b' the world models — shut, signal (lit eyes and inlays), TWINFACE form (open, everything lit) — each one fixed pose
 function jnParts(v){const vm=v==='vm',B=v==='b',S=v==='s'||B,P=[],BY=JN_BY,CY=JN_CY,CZ=JN_CZ,RC=JN_RC,MY=JN_MY,MZ=JN_MZ;
   const show=t=>t==='eye'||t==='gl'||/^h\d$/.test(t)?S:t==='cg'?B:true;
   const pose=t=>t==='aux'?[0,0,0,JN_COCK,0]:!B?null:t==='bU'?[0,JN_OPEN_Y,0,0,0]:t==='bD'?[0,-JN_OPEN_Y,0,0,0]:t==='fL'?[0,0,0,0,-JN_FIN]:t==='fR'?[0,0,0,0,JN_FIN]:t==='crest'?[0,JN_CREST,0,0,0]:null;
@@ -88,18 +88,18 @@ function jnParts(v){const vm=v==='vm',B=v==='b',S=v==='s'||B,P=[],BY=JN_BY,CY=JN
 const JN_G={grip:[0,-.02,.005],sup:[-.012,-.055,.014],muzzle:[0,JN_BY,-.275],mag:[0,JN_CY,JN_CZ],eject:[.02,.06,-.03]};
 GUNS.janus1=Object.assign({parts:jnParts('vm'),piv:JN_PIV,wid:'janus1n'},JN_G);// the first-person model; everything in the world uses janus1n / s / b
 GUNS.janus1n=Object.assign({parts:jnParts('n')},JN_G);GUNS.janus1s=Object.assign({parts:jnParts('s')},JN_G);GUNS.janus1b=Object.assign({parts:jnParts('b')},JN_G);
-// the grenades: a dark shell with a violet nose; the JANUS form's are all light
+// the grenades: a dark shell with a violet nose; the TWINFACE form's are all light
 GUNS.jnnade={parts:[Pt(0,0,0,.04,.04,.06,'gunmetal',{r:.016}),Pt(0,0,-.035,.034,.034,.016,'jnGlow',{r:.012}),Pt(0,0,.034,.032,.032,.008,'brass',{r:.01})],grip:[0,0,0],muzzle:[0,0,0]};
 GUNS.jnorb={parts:[Pt(0,0,0,.05,.05,.07,'jnGlow',{r:.022}),Pt(0,0,0,.034,.034,.1,'jnGlow',{r:.014})],grip:[0,0,0],muzzle:[0,0,0]};
 // (a model may name the world model that stands in for it: wid)
 {const gg=gunGeo;gunGeo=function(id){const G=GUNS[id];return gg(G&&G.wid?G.wid:id)}}
 
 // ---------- stats ----------
-WPN.janus1={slot:2,kind:'pistol',n:['JANUS-1','JANUS-1'],cost:6000,mag:5,res:0,noRel:1,supOnly:1,jn:'janus1',dmg:JN.DMG,rpm:JN.RPM,semi:1,proj:'jn',alt:'janus',
+WPN.janus1={slot:2,kind:'pistol',n:['TWINFACE-1','TWINFACE-1'],cost:6000,mag:5,res:0,noRel:1,supOnly:1,jn:'janus1',dmg:JN.DMG,rpm:JN.RPM,semi:1,proj:'jn',alt:'janus',
   spread:[.004,.02,.06],rec:[.08,.02],kb:JN.KB,stag:JN.STAG,hs:1,reload:1,draw:.7,speed:.97,snd:'jnfire',model:'janus1',hold:'pistol',kickX:[1.15,3,.65]};
-// the JANUS form fires these (unlimited, lighter kick)
+// the TWINFACE form fires these (unlimited, lighter kick)
 JN.WB=Object.assign({},WPN.janus1,{proj:'jnb',noMag:1,snd:'jnfireb',rec:[.026,.012],spread:[.006,.022,.05],kickX:[.5,1.25,.35]});
-// what differs between the JANUS weapons: the form's round (wb), the sounds of opening / the form coming on / closing, the first-person
+// what differs between the TWINFACE weapons: the form's round (wb), the sounds of opening / the form coming on / closing, the first-person
 // clips, the bursts, the light while open (lit) and its sparks, the view model's glow in the form (mz), a crosshair class (cx), the
 // flash of a shot in the form (bfx) and the puff after a normal one (sfx), what closing lets off (cfx)
 const JNW={janus1:{wb:JN.WB,sOpen:'jnopen',sOn:'jnon',sClose:'jnclose',open:()=>jnOpenClip(),close:()=>jnCloseClip(),burst:(x,y,z,s)=>jnBurst(x,y,z,s),
@@ -107,7 +107,7 @@ const JNW={janus1:{wb:JN.WB,sOpen:'jnopen',sOn:'jnon',sClose:'jnclose',open:()=>
   bfx(a){const mz=muzzleWorld(a),me=a.isPlayer&&!G.spec;FX.spawn({x:mz.x,y:mz.y,z:mz.z,life:.07,s0:me?.22:.4,s1:me?.38:.7,r:.75,g:.4,b:1,a:1,f:14,add:1});if(a.isPlayer)VM.U.uMuzzle.value.setRGB(.9,.4,1.8)},
   sfx(a){const mz=muzzleWorld(a);for(let i=0;i<5;i++)FX.spawn({x:mz.x,y:mz.y,z:mz.z,vx:rr(-.4,.4),vy:rr(.2,.9),vz:rr(-.4,.4),life:rr(.6,1.1),s0:.06,s1:rr(.25,.4),r:.58,g:.56,b:.62,a:.35,f:2,drag:2})},
   cfx(a,mz){for(let i=0;i<14;i++)FX.spawn({x:mz.x+rr(-.08,.08),y:mz.y+rr(-.04,.06),z:mz.z+rr(-.08,.08),vx:rr(-.5,.5),vy:rr(.4,1.4),vz:rr(-.5,.5),life:rr(.6,1.2),s0:.05,s1:rr(.25,.45),r:.86,g:.84,b:.92,a:.4,f:2,drag:2})}}};
-// the JANUS weapon an id is (its JNW entry), the one in the hands, the one this actor's state belongs to
+// the TWINFACE weapon an id is (its JNW entry), the one in the hands, the one this actor's state belongs to
 const jnW=id=>{const W=id&&WPN[id];return W&&W.jn?JNW[W.jn]||null:null};
 const jnHeld=a=>!!(a&&jnW(a.cur));
 const jnC=a=>jnW(a.cur)||JNW[a.jnWid]||JNW.janus1;
@@ -137,7 +137,7 @@ const jnForm=a=>a.jnO>0||a.jnB>0;
 function jnEaseBack(x){const c=1.9;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)}
 function jnOpenK(a){const C=jnC(a);if(C.openK)return C.openK(a);if(a.jnO>0){const u=1-a.jnO/JN.OPEN;return u<.4?0:jnEaseBack(clamp((u-.4)/.42,0,1))}if(a.jnB>0)return 1;
   if(a.jnC>0){const u=1-a.jnC/JN.CLOSE;return 1-smooth(clamp((u-.1)/.55,0,1))}return 0}
-// how long the opening and the closing take (v6.68: a JANUS weapon may set its own, oT / cT)
+// how long the opening and the closing take (v6.68: a TWINFACE weapon may set its own, oT / cT)
 const jnOT=a=>jnC(a).oT||JN.OPEN,jnCT=a=>jnC(a).cT||JN.CLOSE;
 function jnReset(a){a.jnH=0;a.jnS=0;a.jnO=0;a.jnB=0;a.jnC=0;if(a.jnL){a.jnL.dead=true;a.jnL=null}}
 // the page that runs this human (its own page, or the host / a solo game for bots)
@@ -148,25 +148,25 @@ function jnAt(a,snd,vol,rate){if(a.isPlayer)AU.play(snd,{vol,rate:rate||1});else
 function jnScore(a){if(!a||a.team!==TH||!a.alive||a.jnS>0||jnForm(a))return;a.jnH=Math.min(JN.N,(a.jnH|0)+1);
   if(a.isPlayer&&a.jnH<JN.N)AU.play('jncyc',{vol:.35,rate:1.5+a.jnH*.1});if(a.jnH>=JN.N)jnSignal(a)}
 function jnSignal(a){a.jnH=JN.N;a.jnS=JN.SIG;jnSigFx(a);jnSend(a,1);
-  if(a.isPlayer)HUD.note(LI()?`JANUS signal! Right click to open it (${JN.SIG}s)`:`JANUS 시그널! 우클릭으로 변신 (${JN.SIG}초)`,2.6)}
+  if(a.isPlayer)HUD.note(LI()?`TWINFACE signal! Right click to open it (${JN.SIG}s)`:`TWINFACE 시그널! 우클릭으로 변신 (${JN.SIG}초)`,2.6)}
 function jnSigFx(a){jnAt(a,'jnsig',.8);if(a.isPlayer){VM.sp.rz.v+=.7;VM.sp.py.v+=.12}}
 // right click (own page): open it
 function jnAlt(a){if(NET.ghost||!jnOwn(a))return;if(jnForm(a)||a.jnC>0)return;
-  if(!(a.jnS>0)){if(a.isPlayer&&!AU.throttle('jnno',700)){HUD.note(LI()?`JANUS — ${a.jnH|0} / ${JN.N} hits`:`JANUS — 적중 ${a.jnH|0} / ${JN.N}`,1.2);AU.play('dry',{vol:.4,rate:1.3})}return}
+  if(!(a.jnS>0)){if(a.isPlayer&&!AU.throttle('jnno',700)){HUD.note(LI()?`TWINFACE — ${a.jnH|0} / ${JN.N} hits`:`TWINFACE — 적중 ${a.jnH|0} / ${JN.N}`,1.2);AU.play('dry',{vol:.4,rate:1.3})}return}
   if(a.drawT>0||a.fmKd>0||a.grabT>0)return;jnOpen(a)}
 function jnOpen(a){a.jnS=0;a.jnO=jnOT(a);a.jnB=0;a.jnC=0;a.jnH=0;jnSend(a,2);jnOpenFx(a)}
 function jnOpenFx(a){const C=jnC(a);jnAt(a,C.sOpen,.85);if(a.isPlayer){try{VM.playClip(C.open(),0,C.oT||JN.OPEN,'jn')}catch(e){console.error(e)}}}
 // the opening is over: the form is on (C.calm: no burst of light, no kick, no shake — v6.68, the Dick gun's sheet)
 function jnBStart(a){const C=jnC(a);a.jnB=JN.B;if(C.sOn)jnAt(a,C.sOn,.85);if(!C.calm&&!(a.isPlayer&&!G.spec)){const mz=muzzleWorld(a);C.burst(mz.x,mz.y,mz.z,1)}// (the player sees it on the view model)
   if(a.isPlayer){if(!C.calm){VM.U.uMuzzle.value.setRGB(C.mz[0],C.mz[1],C.mz[2]);VM.sp.pz.v+=.45;VM.sp.rx.v-=.8;FX.shake=Math.max(FX.shake,.3)}
-    HUD.note(LI()?`JANUS — ${JN.B}s of grenades without limit, hold to fire`:`JANUS 모드 — ${JN.B}초간 유탄 무한 연사 (꾹 누르기)`,2)}}
+    HUD.note(LI()?`TWINFACE — ${JN.B}s of grenades without limit, hold to fire`:`TWINFACE 모드 — ${JN.B}초간 유탄 무한 연사 (꾹 누르기)`,2)}}
 // it closes (its time is up, or it was put away): every page, own pages tell the rest; was = it was open (or opening) until now
 function jnClose(a,own,was){a.jnB=0;a.jnO=0;a.jnH=0;if(own)jnSend(a,0);if(!was)return;
   if(jnHeld(a)&&a.alive){const C=jnC(a);a.jnC=jnCT(a);jnAt(a,C.sClose,.8);C.cfx(a,muzzleWorld(a));
     if(a.isPlayer){a.nextFire=Math.max(a.nextFire,G.t+a.jnC*.9);try{VM.playClip(C.close(),0,a.jnC,'jn')}catch(e){console.error(e)}}}}
 // another page's state change
 function jnRemote(a,st){if(!a||a.team!==TH)return;if(st===1){a.jnS=JN.SIG;a.jnO=a.jnB=a.jnC=0;jnSigFx(a)}else if(st===2){a.jnS=0;a.jnO=jnOT(a);a.jnB=0;a.jnC=0;jnOpenFx(a)}else{jnClose(a,false,a.jnB>0||a.jnO>0);a.jnS=0}}
-// a violet burst (the form opening, a JANUS blast)
+// a violet burst (the form opening, a TWINFACE blast)
 function jnBurst(x,y,z,s){FX.spawn({x,y,z,life:.2,s0:.3*s,s1:1.8*s,r:.75,g:.4,b:1,a:.85,f:14,add:1});FX.spawn({x,y,z,life:.1,s0:.25*s,s1:.6*s,r:1,g:.85,b:1,f:1,add:1});
   for(let i=0;i<10;i++){const g=Math.random()*TAU,e=rr(-.5,1),sp=rr(1.5,4)*s;FX.spawn({x,y,z,vx:Math.cos(g)*Math.cos(e)*sp,vy:Math.sin(e)*sp,vz:Math.sin(g)*Math.cos(e)*sp,life:rr(.2,.4),s0:.06,s1:.01,r:.8,g:.5,b:1,f:11,add:1,grav:2})}
   DL.add(x,y,z,'#a55cff',5*s,2,.18)}
@@ -176,11 +176,11 @@ const jnBotSees=a=>{const B=a.bot,s=B&&B.seen;return s&&s.a&&s.a.alive?s.a:null}
 // ---------- every frame ----------
 function jnTick(a,dt){const own=jnOwn(a);
   if(!a.alive||a.team!==TH){if(a.jnS||a.jnO||a.jnB||a.jnH||a.jnC||a.jnL)jnReset(a);return}
-  // the state belongs to the JANUS weapon in the pistol slot: another one there (JANUS-1 ↔ JANUS-2) starts the count again
+  // the state belongs to the TWINFACE weapon in the pistol slot: another one there (TWINFACE-1 ↔ TWINFACE-2) starts the count again
   const sid=a.inv&&jnW(a.inv[2])?a.inv[2]:null;
   if(sid&&a.jnWid&&sid!==a.jnWid&&own){if(jnForm(a))jnClose(a,true,true);else if(a.jnS>0)jnSend(a,0);a.jnH=0;a.jnS=0}
   if(sid)a.jnWid=sid;
-  if(a.jnS>0){a.jnS=Math.max(0,a.jnS-dt);if(a.jnS<=0&&own){a.jnH=0;jnSend(a,0);if(a.isPlayer)HUD.note(LI()?'The JANUS signal faded':'JANUS 시그널이 사라졌어요',1.6)}}
+  if(a.jnS>0){a.jnS=Math.max(0,a.jnS-dt);if(a.jnS<=0&&own){a.jnH=0;jnSend(a,0);if(a.isPlayer)HUD.note(LI()?'The TWINFACE signal faded':'TWINFACE 시그널이 사라졌어요',1.6)}}
   if(a.jnO>0){a.jnO-=dt;if(own&&!jnHeld(a))jnClose(a,true,true);else if(a.jnO<=0){a.jnO=0;jnBStart(a)}}
   if(a.jnB>0){a.jnB-=dt;if(own&&!jnHeld(a))jnClose(a,true,true);else if(a.jnB<=0)jnClose(a,own,true)}
   if(a.jnC>0)a.jnC=Math.max(0,a.jnC-dt);
@@ -260,22 +260,22 @@ function jnHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P.
       if(b.textContent!==s)b.textContent=s}}
   if(B){const m=HUD.el.hMag;if(m&&m.textContent!=='∞'){m.textContent='∞';m.className=''}}
   // touch: the aim button turns into the transform button while the signal is up
-  if(typeof TOUCH!=='undefined'&&TOUCH.el){const bt=TOUCH.el.querySelector('.tAlt');if(bt&&bt.classList.contains('jn')!==!!sig){bt.classList.toggle('jn',!!sig);const em=bt.querySelector('em');if(em)em.textContent=sig?(LI()?'JANUS':'변신'):(LI()?'AIM':'조준')}
+  if(typeof TOUCH!=='undefined'&&TOUCH.el){const bt=TOUCH.el.querySelector('.tAlt');if(bt&&bt.classList.contains('jn')!==!!sig){bt.classList.toggle('jn',!!sig);const em=bt.querySelector('em');if(em)em.textContent=sig?(LI()?'TWINFACE':'변신'):(LI()?'AIM':'조준')}
     if(bt)for(const k in JNW){const c=JNW[k].cx;if(c&&bt.classList.contains(c)!==(sig&&cx===c))bt.classList.toggle(c,!!(sig&&cx===c))}}}
 // the weapon name: the charge, the signal's time, the form's time
-function jnTag(P){if(jnForm(P))return LI()?` · JANUS ∞ ${Math.max(0,P.jnB).toFixed(1)}s`:` · JANUS ∞ ${Math.max(0,P.jnB).toFixed(1)}초`;
-  if(P.jnS>0)return LI()?` · JANUS ready (right click) ${Math.ceil(P.jnS)}s`:` · JANUS 준비 (우클릭) ${Math.ceil(P.jnS)}초`;
+function jnTag(P){if(jnForm(P))return LI()?` · TWINFACE ∞ ${Math.max(0,P.jnB).toFixed(1)}s`:` · TWINFACE ∞ ${Math.max(0,P.jnB).toFixed(1)}초`;
+  if(P.jnS>0)return LI()?` · TWINFACE ready (right click) ${Math.ceil(P.jnS)}s`:` · TWINFACE 준비 (우클릭) ${Math.ceil(P.jnS)}초`;
   const n=Math.min(JN.N,P.jnH|0);return ' · '+'◆'.repeat(n)+'◇'.repeat(JN.N-n)}
 
 // ---------- hooks ----------
 (function(){
   // right click
   const na=nyAlt;nyAlt=function(a,W){if(W&&W.alt==='janus'){jnAlt(a);return}return na(a,W)};
-  // the JANUS form fires its own rounds (every page: a remote shot is replayed with the form's sound and flash too)
+  // the TWINFACE form fires its own rounds (every page: a remote shot is replayed with the form's sound and flash too)
   const fg=fireGun;fireGun=function(a,W){const C=W&&W.jn&&W===WPN[W.jn]?JNW[W.jn]:null;if(!C)return fg(a,W);a.jnShots=(a.jnShots|0)+1;
     if(a.jnB>0){fg(a,C.wb);C.bfx(a);return}
     fg(a,W);C.sfx(a)};
-  // the JANUS form: full-auto while the trigger is held (touch included), no magazine to run dry; nothing fires while it opens or closes
+  // the TWINFACE form: full-auto while the trigger is held (touch included), no magazine to run dry; nothing fires while it opens or closes
   const aw=actorWeapons;actorWeapons=function(a,dt){if(a.team!==TH||!jnHeld(a)||!a.alive)return aw(a,dt);
     if(a.jnO>0||a.jnC>0){a.cmd.fire=false;return aw(a,dt)}
     if(!(a.jnB>0))return aw(a,dt);

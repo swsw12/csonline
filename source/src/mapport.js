@@ -114,7 +114,7 @@ function bakePtTex(){if(TEX.ptPave)return;
   TEX.ptSignC=mkTex(texPtSign(256,96,'세관','CUSTOMS','#1e4a3a','#e8e6dc',52),false);TEX.ptSignX=mkTex(texPtSign(512,64,'X-RAY  INSPECTION','','#c4a020','#1a1a18',38),false);
   TEX.ptSignP=mkTex(texPtSign(512,96,'PIER 7','CONTAINER TERMINAL · 7부두','#16284a','#ecead8',50),false);
   TEX.ptDecA=mkTex(texPtDec('A'),false);TEX.ptDecB=mkTex(texPtDec('B'),false);
-  // the daylight sky and sun belong to Italy's set; paint them here too if Italy has not been loaded yet
+  // the daylight sky and sun belong to Whitehill's set; paint them here too if Whitehill has not been loaded yet
   if(!TEX.skyDay){TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter}
   if(!TEX.sunDisc){TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false}
   const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['ptPave','ptAsph','ptQuay'])TEX[k].anisotropy=an}

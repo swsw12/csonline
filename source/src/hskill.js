@@ -1,9 +1,9 @@
 'use strict';
-// ============ Human active skills (CSO 인간 전용 액티브): 5 전력질주 (Sprint) · 6 확인사살 (Deadshot) ============
+// ============ Human active skills (인간 전용 액티브): 5 전력질주 (Sprint) · 6 확인사살 (Deadshot) ============
 // A living human can use each one once a round (once a stage in the scenario; on the shooting range they come back when they wear off).
 // Sprint: 10 s at ×1.45 the base run speed whatever the gun weighs (crouch, scope, walk and the hammer stance still slow you),
 // then 5 s out of breath at ×0.4. Deadshot: for 5 s every bullet, bolt or disc that hits a zombie counts as a headshot
-// (head damage multiplier, headshot kill rules: in Mutation a non-host killed that way stays down). Both reset at round / stage
+// (head damage multiplier, headshot kill rules: in Evolved Infection a non-host killed that way stays down). Both reset at round / stage
 // start and are cleared when a human turns.
 // Hooks in shared files: maxSpeed (game.js) calls hskSpeed; shotTrace (weapons.js) and the bolt / disc (nyw.js) call hsForce;
 // keys 5 / 6 (main.js) set cmd.hsk. Everything else wraps from here.

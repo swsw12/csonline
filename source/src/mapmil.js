@@ -1,9 +1,12 @@
 'use strict';
-// ============ Map "밀리샤 Militia": a ranch compound in a red-rock desert canyon under a cold moon ============
+// ============ Map "붉은 메사 목장 Red Mesa Ranch": a ranch compound in a red-rock desert canyon at dusk (the map id stays 'militia') ============
 // The canyon plan comes from MIL_DATA (a 0.5 m grid traced from a top-down plan): rock masses are stacks of boxes whose
 // heights grow away from the open ground, the sunken concrete channels are cut into the dirt. The two-storey house,
 // its garage and annex, the deck and outside stair, culvert, tunnel, fences, crates and lamps are built here.
 // Every texture is painted on first load.
+// v7.3: built mirrored east-west (MAPDEFS.militia.mirror), at dusk (a low warm sun, milDusk sky), and changed in three places (milEdits and
+// the garage, in the unmirrored coordinates of MIL_DATA): a cleft with steps cut through the rock between the east canyon and the east
+// channel, a water tower with a stair in the yard, and the garage turned round (the roll-up door shut, the west wall open wide).
 Object.assign(MATS,{
   milRock:{t:'milRock',s:4,vo:-2,sv:16,k:'stone'},milRockT:{t:'milRockT',s:3,k:'stone',cs:1},milRockF:{t:'milRock',s:4,vo:-2,sv:16,k:'stone',cs:1},
   milDirt:{t:'milDirt',s:3.5,k:'soft'},milGrav:{t:'milGrav',s:2.5,k:'soft'},
@@ -192,6 +195,16 @@ function texMilSky(){return paint(1024,256,P=>{for(let y=0;y<256;y++)for(let x=0
     const bu=(x/1024)*TAU,bv=y/256;const band=Math.exp(-Math.pow((bv-(.35+.22*Math.sin(bu+1.3)))*7,2));if(band>.05){const n=fbm(x/60,y/14,941,5,1024/60);c=mix(c,'#3a4258',clamp(band*(n-.32)*1.6,0,.55));if(n<.42)c=mix(c,'#04060c',band*.35)}
     if(y>214&&y<236){const m=fbm(x/90,0,942,4,1024/90);const top=226-m*16-Math.max(0,Math.sin(x/1024*TAU*3+.4))*6;if(y>top)c=mix('#0a0e18','#141a28',(y-top)/10)}
     if(y>=236)c='#0a0e18';P.set(x,y,c)}})}
+// v7.3 dusk: the sun low over the western mesas (azimuth u .07, elevation 20 deg: row 180 of the 232 above the horizon), indigo overhead,
+// violet in the middle, orange and rose along the horizon (brightest under the sun), a first star or two, the mesas in silhouette
+function texMilDusk(){const SU=.07,SV=180;return paint(1024,256,P=>{for(let x=0;x<1024;x++){const u=x/1024;let du=Math.abs(u-SU);du=Math.min(du,1-du);
+  const near=Math.exp(-du*du*26),m=fbm(x/90,0,942,4,1024/90),top=226-m*16-Math.max(0,Math.sin(u*TAU*3+.4))*6;
+  for(let y=0;y<256;y++){const t=y/232;let c=mix('#14142e','#3a2e5e',clamp(t*1.3,0,1));c=mix(c,'#8a4a66',clamp((t-.55)*2.4,0,1));
+    c=mix(c,mix('#c8603e','#f2a050',near),clamp((t-.78)*4.5,0,1)*(.55+.45*near));
+    const sy=(y-SV)/256;c=mix(c,'#ffe2a8',Math.exp(-(du*du*700+sy*sy*60))*.85);
+    const cl=fbm(x/150,y/18,947,5,1024/150);const band=clamp(1-Math.abs(y-150)/60,0,1);if(band>0&&cl>.56){const k=clamp((cl-.56)*3,0,1)*band*.8;c=mix(c,mix('#4a2a46','#ff9a6a',near*clamp((y-110)/90,0,1)),k)}
+    if(y<120&&hash2(x,y,948)<.0009*(1-t))c=mix(c,'#d8dcf0',.7);
+    if(y>214&&y>top)c=mix('#22161e','#2e1c22',(y-top)/12);if(y>=236)c='#22161e';P.set(x,y,c)}}})}
 function bakeMilTex(){if(TEX.milRock)return;
   TEX.milRock=mkTex(texMilRock());TEX.milRockT=mkTex(texMilRockT());TEX.milDirt=mkTex(texMilDirt());TEX.milGrav=mkTex(texMilGrav());
   TEX.milConc=mkTex(texMilConc());TEX.milConcF=mkTex(texMilConcF());TEX.milWater=mkTex(texMilWater());
@@ -205,7 +218,8 @@ function bakeMilTex(){if(TEX.milRock)return;
   TEX.milSignB=mkTex(texSign([{t:'붉은 메사 목장'},{t:'RED MESA RANCH · EST. 1962',s:7}],'#2e2216','#e8c878',140,34),false);
   TEX.milCurtain=mkTex(texMilCurtain());TEX.milMap=mkTex(texMilMap(),false);TEX.milRadio=mkTex(texMilRadio(),false);TEX.milBag=mkTex(texMilBag());TEX.milCloth=mkTex(texMilCloth());
   TEX.milDrum=mkTex(texMilDrum('#5e6230','DIESEL'));TEX.milDrumR=mkTex(texMilDrum('#7a3a1e','WATER'));TEX.milShelf=mkTex(texMilShelf(),false);
-  TEX.milSky=mkTex(texMilSky());TEX.milSky.wrapT=THREE.ClampToEdgeWrapping;
+  TEX.milSky=mkTex(texMilSky());TEX.milSky.wrapT=THREE.ClampToEdgeWrapping;TEX.milDusk=mkTex(texMilDusk());TEX.milDusk.wrapT=THREE.ClampToEdgeWrapping;TEX.milDusk.magFilter=THREE.LinearFilter;
+  if(!TEX.sunDisc&&typeof texSunDisc==='function'){TEX.sunDisc=mkTex(texSunDisc(),false);TEX.sunDisc.minFilter=THREE.LinearFilter;TEX.sunDisc.generateMipmaps=false}
   const an=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;for(const k of ['milRock','milRockT','milDirt','milGrav','milConc','milConcF','milSiding','milFloor','milPlank','milRoof','milBlock','milGarFl','milFence'])TEX[k].anisotropy=an;
   MIXC.clear();VN_T.clear();_vnK=-1;_vnT=null;_fbC.length=0}
 function texMilShelf(){return paint(128,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<128;x++){let c='#141210';const sy=y%42;if(sy<4)c=sy<2?'#6a6e6a':'#3a3c3a';else if(x<4||x>123)c='#4a4e4a';
@@ -273,8 +287,11 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   for(const y of [-1.4,-.7,0,.6])B(-29.8,y,18.38,-23.6,y+.32,18.5,'milFence',{nosolid:true});
   // ================= the house: two storeys of clapboard on a stone footing, outside stair to the deck =================
   const S='milSiding',WI='milWallIn',FR='milFrame';
-  const exX=(x0,x1,z0,z1,y0,y1,holes,out)=>wallX(x0,x1,z0,z1,y0,y1,FR,holes,{f:out<0?{nz:S,pz:WI}:{pz:S,nz:WI}});
-  const exZ=(x0,x1,z0,z1,y0,y1,holes,out)=>wallZ(x0,x1,z0,z1,y0,y1,FR,holes,{f:out<0?{nx:S,px:WI}:{px:S,nx:WI}});
+  // v7.3: each outside wall is built as two storeys (FL..UP, UP..TOP), each with its own openings. Built whole, a ground-floor door or window
+  // filled everything above it to the eaves, so the upstairs door onto the garage roof and several upstairs windows were solid wall.
+  const band=(y0,y1,holes,fn)=>{for(const [b0,b1] of [[y0,UP],[UP,y1]])fn(b0,b1,holes.filter(h=>h[2]>=b0-.01&&h[3]<=b1+.01))};
+  const exX=(x0,x1,z0,z1,y0,y1,holes,out)=>band(y0,y1,holes,(b0,b1,hs)=>wallX(x0,x1,z0,z1,b0,b1,FR,hs,{f:out<0?{nz:S,pz:WI}:{pz:S,nz:WI}}));
+  const exZ=(x0,x1,z0,z1,y0,y1,holes,out)=>band(y0,y1,holes,(b0,b1,hs)=>wallZ(x0,x1,z0,z1,b0,b1,FR,hs,{f:out<0?{nx:S,px:WI}:{px:S,nx:WI}}));
   const inX=(x0,x1,z,y0,y1,holes)=>wallX(x0,x1,z-.07,z+.07,y0,y1,FR,holes,{f:{pz:WI,nz:WI}});
   const inZ=(x,z0,z1,y0,y1,holes)=>wallZ(x-.07,x+.07,z0,z1,y0,y1,FR,holes,{f:{px:WI,nx:WI}});
   const DG=2.6,DU=UP+2.35,W0=1.15,W1=2.3,U0=4.4,U1=5.5;
@@ -338,7 +355,8 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
   const BL='milBlock';
   B(13.2,-.3,.8,23.2,.05,13.2,'milGarFl',{f:{ny:N}});
   wallX(13.2,23.2,.8,1.1,0,3.15,BL,[[17.2,19,0,DG]]);wallX(13.2,23.2,12.9,13.2,0,3.15,BL,[[14.2,20.2,0,2.8]]);
-  wallZ(13.2,13.5,1.1,12.9,0,3.15,BL,[[3,4.4,W0,W1],[7,8.8,0,DG]]);wallZ(22.9,23.2,1.1,12.9,0,3.15,BL,[[4.6,6.4,0,DG],[9,10.4,W0,W1]]);
+  B(14.2,0,12.95,20.2,2.8,13.15,'milShutter',{f:{nz:'metal2'}});// v7.3: the roll-up door is down; the west wall is open wide instead
+  wallZ(13.2,13.5,1.1,12.9,0,3.15,BL,[[2.4,11.4,0,2.8]]);wallZ(22.9,23.2,1.1,12.9,0,3.15,BL,[[4.6,6.4,0,DG],[9,10.4,W0,W1]]);
   B(13.2,3.15,.8,23.2,UP,13.2,BL,{f:{py:'milCurb',ny:'milCorr'}});
   B(13.2,UP,.8,13.45,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(13.45,UP,12.95,23.2,UP+.9,13.2,BL,{f:{py:'milCurb'}});B(22.95,UP,.8,23.2,UP+.9,12.95,BL,{f:{py:'milCurb'}});
   for(const [x0,z0,x1,z1] of [[14.6,12.9,16.6,13.25],[19.6,12.9,21.6,13.25],[13.15,5,13.5,7.2],[22.9,8,23.25,10.2]])B(x0,UP+.9,z0,x1,UP+1.35,z1,'milBag');
@@ -416,9 +434,33 @@ function buildMilitia(){const D=MIL_DATA,N='none',ROWS=D.grid.split('|');
     {k:'tunnel',w:.06,p:[[-36.2,-1.7,12.5],[-37.2,-1.7,14]],look:[-36,-1,6]},
   ];
   MAP.spawnYaw=null;
-  MAP.moon={d:MOON_D.clone(),c:new THREE.Color('#8ea2d4'),i:.78};
+  // v7.3: dusk — the sun low in the west (the milDusk sky has its glow there), warm and long-shadowed
+  MAP.moon={d:new THREE.Vector3(-.851,.342,.4).normalize(),c:new THREE.Color('#ffb882'),i:1.2};
   // title backdrop: a slow ellipse over the yard, looking at the lit house
   MAP.cam=(t,cam)=>{const a=Math.sin(t*.045)*.6;cam.position.set(28.5+a*3,8.6+Math.sin(t*.07)*.5,18.5-a);cam.lookAt(18+a*2,2.6,-4)};
+  milEdits();mapFreeSpawns();
 }
-MAPDEFS.militia={n:['밀리샤','Militia'],d:['달빛 아래 붉은 협곡의 민병대 목장. 2층 목조 주택과 차고 옥상, 협곡 사이 좁은 통로, 콘크리트 배수로와 터널.','A militia ranch in a red-rock canyon under a cold moon: a two-storey wooden house, a garage roof terrace, narrow canyon passages, concrete drainage channels and a culvert tunnel.'],
-  env:{sky:1,sun:0,skyTex:'milSky',rain:0,storm:0,fog:'#121a2a',fogD:.022,ambOut:'#2e3852',ambIn:'#1a1820',boAmb:.4},bounds:[-43,-27,43,28],probeY:[-1.0,.9,2.4,4.3,6.2],tex:bakeMilTex,build:buildMilitia};
+// ---------- v7.3: the changes to the canyon (coordinates of MIL_DATA, before the mirror; the garage is changed where it is built) ----------
+function milEdits(){const CM='milConc';
+  // 1 · a cleft through the rock wall between the east canyon (ground, y 0) and the east channel (floor -1.7), with six steps down
+  boxCut(-2,-1.75,12.4,1.55,14,14.4,{wall:'milRock'});
+  stairs('x',12.4,14.4,1.5,-2,-1.7,0,6,CM,{f:{pz:'milConc',nz:'milConc'}});
+  B(-2.1,0,12.25,-1.95,1.0,12.4,'milPost');B(-2.1,0,14.4,-1.95,1.0,14.55,'milPost');
+  LIGHT(.2,1.2,13.4,'#ffcf8a',6,.7);B(.05,1.5,14.25,.35,1.7,14.4,'milLamp',{nosolid:true});
+  // 2 · a water tower in the east yard: four legs, a plank platform 2 m up with a rail, the tank up on short posts over it (walk under
+  //     it), a stair up its west side (the top steps run along the platform's west edge: step across at the gap in the rail).
+  //     The platform is 4 x 4 m on whole metres so the 1 m nav cells fall inside it; 2 m up and 2 m off the cliff, no jump from it reaches
+  //     the rock ledges round the yard (5-6 m) or the tank's own frame.
+  const X0=34,X1=38,Z0=-6,Z1=-2,Y=2,T=Y+.22;
+  for(const [x,z] of [[X0+.2,Z0+.2],[X1-.2,Z0+.2],[X0+.2,Z1-.2],[X1-.2,Z1-.2]])B(x-.14,0,z-.14,x+.14,Y,z+.14,'milPost');
+  for(const y of [1.1]){B(X0+.1,y,Z0+.14,X1-.1,y+.1,Z0+.26,'milPost',{nosolid:true});B(X0+.1,y,Z1-.26,X1-.1,y+.1,Z1-.14,'milPost',{nosolid:true})}
+  B(X0,Y,Z0,X1,T,Z1,'milPlank',{f:{ny:'milPlank'}});
+  for(const [x,z] of [[X0+1.1,Z0+.9],[X1-1.1,Z0+.9],[X0+1.1,Z1-.9],[X1-1.1,Z1-.9]])B(x-.07,T,z-.07,x+.07,T+2.3,z+.07,'milPost');
+  B(X0+.9,T+2.3,Z0+.7,X1-.9,T+2.45,Z1-.7,'milPlank');B(X0+1,T+2.45,Z0+.8,X1-1,T+4.6,Z1-.8,'milCorr',{f:{py:'milRoof'}});B(X0+1.3,T+4.6,Z0+1.1,X1-1.3,T+4.95,Z1-1.1,'milRoof');
+  const RL={pass:1};B(X1-.06,T,Z0,X1,T+1,Z1,'milRail',RL);B(X0,T,Z0,X1,T+1,Z0+.06,'milRail',RL);B(X0,T,Z1-.06,X1,T+1,Z1,'milRail',RL);
+  B(X0,T,Z0,X0+.06,T+1,-4.05,'milRail',RL);B(X0,T,-2.85,X0+.06,T+1,Z1,'milRail',RL);
+  stairs('z',X0-1.3,X0,-.5,-4,0,Y,7,'milPlank',{f:{px:'milFence',nx:'milFence'}});
+  B(X0+2.3,T+2.1,Z0+1.8,X0+2.7,T+2.3,Z0+2.2,'milLampW',{nosolid:true});LIGHT(X0+2.5,T+1.8,Z0+2,'#fff0d4',10,.85);
+  MAP.camps.push({k:'tower',w:.12,p:[[X1-.5,T,Z0+.5],[X1-.5,T,Z1-.5],[X0+.5,T,Z1-.5],[X0+2.5,T,Z0+2]],look:[24,1,8]})}
+MAPDEFS.militia={n:['붉은 메사 목장','Red Mesa Ranch'],mirror:1,d:['해 질 녘 붉은 협곡의 목장. 2층 목조 주택과 앞뒤로 뚫린 차고, 차고 옥상, 마당의 급수탑, 협곡 사이 좁은 통로와 바위 틈 계단, 콘크리트 배수로와 터널.','A ranch in a red-rock canyon at dusk: a two-storey wooden house, a garage open at the side and its roof terrace, a water tower in the yard, narrow canyon passages and a stair through a cleft in the rock, concrete drainage channels and a culvert tunnel.'],
+  env:{sky:1,sun:1,skyTex:'milDusk',halo:'#ff9a5a',rain:0,storm:0,fog:'#5e4450',fogD:.015,ambOut:'#7a6474',ambIn:'#2c242c',boAmb:.4},bounds:[-43,-27,43,28],probeY:[-1.0,.9,2.4,4.3,6.2],tex:bakeMilTex,build:buildMilitia};

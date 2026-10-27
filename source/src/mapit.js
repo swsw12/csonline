@@ -1,8 +1,13 @@
 'use strict';
-// ============ Map "이탈리아 Italy": a hill town on a summer afternoon ============
+// ============ Map "하얀 언덕 마을 Whitehill": a whitewashed hill town on a summer afternoon (the map id stays 'italy') ============
 // v6: rebuilt from a 3D reference of the town. The reference was voxelised at 0.25 m offline, the air reachable from the sky flood-filled,
 // everything else made solid, and each column's solid runs merged into boxes (ITALY_DATA, mapit_data.js). Reachable floor tops keep
 // their exact height; roofs and wall heads round up to 0.5 m. Only the geometry is taken: every surface is painted here.
+// Geometry reference: "Cs_Italy with real light" by Neo_minigan (Sketchfab, CC BY 4.0), changed (v6.0, v7.3).
+// v7.3: the town is built mirrored east-west (MAPDEFS.italy.mirror) and whitewashed (white walls, blue and green shutters, no reference
+// paint colours), and changed in four places (itEdits, in the unmirrored coordinates of ITALY_DATA): an underpass through the wedge between
+// the two stair lanes at the south fork, a fountain and two market stalls in the low south street, the kiosk in the east courtyard
+// replaced by a fountain under two trees, and a row of planters across the north terrace.
 Object.assign(MATS,{
   facA:{t:'facA',s:3,k:'stone',cs:1},facB:{t:'facB',s:3,k:'stone',cs:1},facC:{t:'facC',s:3,k:'stone',cs:1},
   // v6 colour variants, picked per wall from the reference's paint colour: salmon, orange, tan, ochre, grey plaster, bare brick
@@ -162,8 +167,8 @@ function texGate(){const W=256,H=320;return paint(W,H,P=>{const R=W/2;for(let y=
 function texIvy(){return paint(128,256,P=>{for(let y=0;y<256;y++)for(let x=0;x<128;x++){const dens=1-y/256*.9;const [f1,f2,id]=cellN(P,x,y,8,1271);const keep=hash2(id,1,1272)<dens*(.55+.45*P.n(x,y,32,1273,2));
   if(!keep||f1>5.2){P.alpha(x,y,0);continue}let c=mix('#5a8a34','#1e3a14',clamp(f1/5,0,1));if(hash2(id,2,1272)<.3)c=lt(c,.12);P.set(x,y,c)}})}
 function texShut(col){return paint(64,128,P=>{for(let y=0;y<128;y++)for(let x=0;x<64;x++){let c=col;if(x<4||x>59||y<4||y>123)c=dk(col,.35);else if(y%8<2)c=dk(col,.3);else if(y%8<3)c=lt(col,.12);if(Math.abs(x-32)<2)c=dk(col,.35);if(hash2(x,y,1281)<.05)c=dk(c,.1);P.set(x,y,c)}})}
-function texRoofFl(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){let t=.5+(P.n(x,y,64,1291,4)-.5)*.5+(hash2(x,y,1292)-.5)*.08;let c=dith(P,x,y,t,['#55534c','#615f58','#6d6b64','#797770'],.08);
-  const m=P.n(x,y,32,1293,3);if(m>.62)c=mix(c,'#4e5e2c',(m-.62)*2);P.set(x,y,c)}})}
+function texRoofFl(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){let t=.5+(P.n(x,y,64,1291,4)-.5)*.5+(hash2(x,y,1292)-.5)*.08;let c=dith(P,x,y,t,['#b4b0a6','#bfbbb1','#c9c5bb','#d3cfc5'],.08);
+  const m=P.n(x,y,32,1293,3);if(m>.62)c=mix(c,'#8e8c7a',(m-.62)*2);P.set(x,y,c)}})}
 // afternoon sky: deep blue overhead, hazy at the horizon, fair-weather clouds, two mountain ranges and a lake far off
 function texSkyDay(){return paint(1024,256,P=>{const SU=.111,SV=106;
   const ridge=(x,s)=>{let v=0,a=0;for(let o=0;o<5;o++){const f=3<<o;v+=fbm(x/1024*f,.5,s+o,1,f)/(1<<o);a+=1/(1<<o)}return v/a};
@@ -190,8 +195,10 @@ function texBrickIt(){const N=TN;return paint(N,N,P=>{for(let y=0;y<N;y++){const
     P.set(x,y,c)}}for(let i=0;i<14;i++)streak(P,Math.floor(hash2(i,1,1455)*N),Math.floor(hash2(i,2,1455)*N*.5),60+Math.floor(hash2(i,3,1455)*140),.14,2)})}
 function bakeItTex(){if(TEX.facA)return;
   // v6: only what the rebuilt town uses (the old hand-built set — awnings, frescoes, racks, cloth… — is no longer painted)
-  TEX.facA=mkTex(texFacade('#e8e3d6','#3e6a46',961));TEX.facB=mkTex(texFacade('#ecd2b6','#8a3026',971));TEX.facC=mkTex(texFacade('#ded5c2','#5a4632',981));
-  TEX.facR=mkTex(texFacade('#dca296','#3e6a46',1401));TEX.facO=mkTex(texFacade('#e0aa78','#5a4632',1411));TEX.facT=mkTex(texFacade('#dcc096','#8a3026',1421));TEX.facY=mkTex(texFacade('#e8cc80','#3e6a46',1431));TEX.facG=mkTex(texFacade('#cfccc4','#5a4632',1441));TEX.brickIt=mkTex(texBrickIt());
+  // v7.3: whitewash — off-white lime on every wall, shutters in blues and greens (the reference's salmon / orange / ochre are gone)
+  TEX.facA=mkTex(texFacade('#ebe8e0','#2d5f8a',961));TEX.facB=mkTex(texFacade('#eee8dc','#2f7a78',971));TEX.facC=mkTex(texFacade('#e4e1d8','#24426e',981));
+  TEX.facR=mkTex(texFacade('#ece5df','#2d5f8a',1401));TEX.facO=mkTex(texFacade('#eee7da','#3e6a46',1411));TEX.facT=mkTex(texFacade('#e8e2d4','#2f7a78',1421));TEX.facY=mkTex(texFacade('#f0eadb','#24426e',1431));TEX.facG=mkTex(texFacade('#dedddb','#2d5f8a',1441));TEX.brickIt=mkTex(texBrickIt());
+  for(const [k,f] of [['water',texWater],['leaves',texLeaves],['bark',texBark],['awn',texAwn],['fruit',texFruit]])if(!TEX[k])TEX[k]=mkTex(f(),k!=='fruit');
   TEX.roofIt=mkTex(texRoofIt());TEX.cobble=mkTex(texCobble(991));TEX.cobbleR=mkTex(texCobbleR());TEX.pavers=mkTex(texPavers());TEX.stoneIt=mkTex(texStoneIt());
   TEX.retW=mkTex(texRetW());TEX.cellarW=mkTex(texCellarW());TEX.cellarF=mkTex(texCellarF());TEX.woodFl=mkTex(texWoodFl());TEX.ceilT=mkTex(texCeilT());TEX.roofFl=mkTex(texRoofFl());
   if(!TEX.skyDay){TEX.skyDay=mkTex(texSkyDay());TEX.skyDay.wrapT=THREE.ClampToEdgeWrapping;TEX.skyDay.magFilter=THREE.LinearFilter}
@@ -205,18 +212,45 @@ function buildItaly(){const D=ITALY_DATA,M=ITALY_META,S=D.boxes,CS=D.cs,N='none'
   // With the reference mesh present (ITALY_MESH) the boxes are collision only: every face is 'nodraw' and the mesh is what you see.
   // then the reference's own paint colour as a tint for the sides and for the top (0..35 -> 0.7..1.3 per channel)
   const v=i=>parseInt(S.substr(i,2),36),VIS=typeof ITALY_MESH==='undefined',ND='nodraw',tq=i=>[0,1,2].map(k=>.7+parseInt(S[i+k],36)/35*.6);
+  // v7.3 whitewash: a wall keeps only how light or dark its reference paint was (half of it), not the colour
+  const wash=t=>{const k=1+((t[0]+t[1]+t[2])/3-1)*.5;return [k,k*.995,k*.985]};
   for(let i=0;i+20<=S.length;i+=20){const x0=D.x0+v(i)*CS,z0=D.z0+v(i+2)*CS,x1=x0+v(i+4)*CS,z1=z0+v(i+6)*CS,y0=v(i+8)/D.yq-D.yo,y1=v(i+10)/D.yq-D.yo;
     const t=parseInt(S[i+12],36),top=D.mats[t&15],side=D.mats[parseInt(S[i+13],36)];
-    const o={f:VIS?{py:top,ny:'ceilT'}:{px:ND,nx:ND,py:ND,ny:ND,pz:ND,nz:ND},tint:tq(i+14),ttop:tq(i+17)};if(t&16)o.stair=1;B(x0,y0,z0,x1,y1,z1,side,o)}
+    const o={f:VIS?{py:top,ny:'ceilT'}:{px:ND,nx:ND,py:ND,ny:ND,pz:ND,nz:ND},tint:wash(tq(i+14)),ttop:tq(i+17)};if(t&16)o.stair=1;B(x0,y0,z0,x1,y1,z1,side,o)}
   // warm lamps over the covered floors (arcades, rooms, the cellar); the sun does the rest
   for(const p of (M.lights||[]).slice(0,20))LIGHT(p[0],p[1],p[2],p[1]<0?'#ffcf8a':'#ffe2b8',6,.8);
   MAP.spawns=M.spawns.map(p=>[p[0],p[2],p[1],rr(-.5,.5)+Math.PI]);
   MAP.zspawns=M.zspawns.map(p=>[p[0],p[2],p[1]]);
-  MAP.camps=M.camps.map(o=>({k:o.k,w:o.w,p:o.p,look:o.look}));
+  MAP.camps=M.camps.map(o=>({k:o.k,w:o.w,p:o.p.map(q=>q.slice()),look:o.look?o.look.slice():null}));
   MAP.spawnYaw=null;
   MAP.moon={d:new THREE.Vector3(-.5,.75,.42).normalize(),c:new THREE.Color('#fff0d6'),i:.8};
   MAP.cam=(t,cam)=>{const a=t*.03+.6;cam.position.set(Math.sin(a)*30,26+1.5*Math.sin(t*.07),Math.cos(a)*44);cam.lookAt(Math.sin(a+1.2)*4,0,Math.cos(a+1.2)*8)};
+  if(VIS)itEdits();mapFreeSpawns();
 }
+// ---------- v7.3: the four changes to the town (coordinates of ITALY_DATA, before the mirror) ----------
+// a fountain: a square stone basin with water in it, a column and a bowl on top (spray from the bowl)
+function itFountain(x,y,z,r){const T=.3,H=.55,o={f:{py:'stoneIt'}};
+  B(x-r,y,z-r,x+r,y+H,z-r+T,'stoneIt',o);B(x-r,y,z+r-T,x+r,y+H,z+r,'stoneIt',o);B(x-r,y,z-r+T,x-r+T,y+H,z+r-T,'stoneIt',o);B(x+r-T,y,z-r+T,x+r,y+H,z+r-T,'stoneIt',o);
+  B(x-r+T,y,z-r+T,x+r-T,y+.28,z+r-T,'stoneIt',{f:{py:'water'}});
+  B(x-.32,y+.28,z-.32,x+.32,y+1.55,z+.32,'stoneIt');B(x-.85,y+1.55,z-.85,x+.85,y+1.72,z+.85,'stoneIt',{f:{py:'water'}});B(x-.14,y+1.72,z-.14,x+.14,y+2.05,z+.14,'stoneIt');
+  MAP.spray.push([x,y+2.05,z])}
+// a market stall against a wall: a counter of fruit crates, four posts and a striped awning you can walk under
+function itStall(x0,z0,x1,z1,y){B(x0,y,z0,x1,y+.95,z1,'woodIt',{f:{py:'fruit'}});
+  for(const [x,z] of [[x0,z0],[x1,z0],[x0,z1],[x1,z1]])B(x-.05,y,z-.05,x+.05,y+2.3,z+.05,'woodIt',{nosolid:true});
+  B(x0-.25,y+2.3,z0-.25,x1+.25,y+2.4,z1+.25,'awn',{nosolid:true})}
+function itTree(x,y,z){B(x-.16,y,z-.16,x+.16,y+2.6,z+.16,'bark');const c={nosolid:true};
+  B(x-1.3,y+2.4,z-1.3,x+1.3,y+3.5,z+1.3,'leaves',c);B(x-.9,y+3.5,z-.9,x+.9,y+4.2,z+.9,'leaves',c)}
+function itEdits(){
+  // 1 · the south fork: an underpass through the wedge between the two stair lanes, a lamp in it
+  boxCut(-12.3,-1.3,23.9,-6.2,1.45,25.7,{fl:'pavers',wall:'retW',ceil:'ceilT'});
+  B(-9.55,1.36,24.6,-8.95,1.45,25,'signIt',{nosolid:true});LIGHT(-9.25,1.05,24.8,'#ffd9a0',5.5,.8);
+  // 2 · the low south street (the human start): a fountain in the middle, two stalls against the walls
+  itFountain(-9.5,-2.1,37.2,2.1);itStall(-14,42.2,-12.4,44.6,-2.05);itStall(-6.6,31.2,-5.05,33.4,-2.1);
+  // 3 · the east courtyard: the kiosk comes down (paving where it stood); a fountain under two trees instead
+  boxCut(14.9,0,5.9,23.1,6,13.1,{fl:'pavers',keep:b=>b.y1<=.01});
+  itFountain(19,0,9.5,1.8);itTree(16,0,6.8);itTree(22,0,12.2);
+  // 4 · the north terrace: a row of stone planters across it (crouch cover, gaps between them)
+  for(const x of [-11,-4.5,2.5,9.5,16])B(x-.7,3.45,-45.6,x+.7,4.65,-44.6,'stoneIt',{f:{py:'leaves'}})}
 // ---------- the reference town as the visible map: its own geometry and baked-light textures ----------
 // the reference's baked light is very dark in the shade: a gamma lift brings the alleys up without washing out the sun
 const FS_BAKED=GLSL_DYN+`uniform sampler2D map;uniform float uK;varying vec2 vUv;varying vec3 vCol;varying vec3 vPos;varying vec3 vN;
@@ -235,5 +269,5 @@ function itMesh(scene){if(typeof ITALY_MESH==='undefined')return;
     tex.anisotropy=R.renderer?Math.min(4,R.renderer.capabilities.getMaxAnisotropy()||1):1;img.onload=()=>{tex.needsUpdate=true};img.src=P.tex;
     const mat=new THREE.ShaderMaterial({uniforms:Object.assign({map:{value:tex},uK:{value:1.1}},LU),vertexShader:VS_WORLD,fragmentShader:FS_BAKED,side:THREE.DoubleSide});
     const mesh=new THREE.Mesh(geo,mat);mesh.matrixAutoUpdate=false;mesh.updateMatrix();scene.add(mesh);MAP.meshes.push(mesh)}}
-MAPDEFS.italy={n:['이탈리아','Italy'],d:['햇살 가득한 언덕 마을. 남쪽 낮은 거리에서 시작해 시장 광장, 와인 저장고, 북쪽 높은 골목까지 이어지는 오르막 시가지.','A hill town on a summer afternoon: from the low street in the south up through the market square and the wine cellar to the high lanes in the north.'],
-  env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.92,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-34,-61,34,61],probeY:[-2.6,-.9,.9,2.6,4.4,6.2,8],mini:[1.2,4.6],tex:bakeItTex,build:buildItaly,mesh:itMesh};
+MAPDEFS.italy={n:['하얀 언덕 마을','Whitehill'],mirror:1,d:['햇살 아래 하얗게 칠한 언덕 마을. 분수가 있는 남쪽 낮은 거리에서 시작해 갈림길 아래 굴다리, 시장 광장, 와인 저장고, 북쪽 높은 골목까지 이어지는 오르막 시가지.','A whitewashed hill town on a summer afternoon: from the low street with its fountain in the south, through the underpass at the fork, the market square and the wine cellar, up to the high lanes in the north.'],
+  env:{sky:1,sun:1,skyTex:'skyDay',halo:'#fff2d6',rain:0,storm:0,fog:'#bfcbd8',fogD:.011,bloomThr:.95,ambOut:'#7686a4',ambIn:'#46443f'},bounds:[-34,-61,34,61],probeY:[-2.6,-.9,.9,2.6,4.4,6.2,8],mini:[1.2,4.6],tex:bakeItTex,build:buildItaly,mesh:itMesh};

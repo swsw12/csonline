@@ -344,7 +344,7 @@ Object.assign(GUN_DESIGN,{vector:{mag:25,ch:1,act:'charge',x:.5,side:'l',d:.045,
 for(const id of ['vector','an94','m82','spas12d','m32c']){WPN[id].fd=GUN_DESIGN[id];WPN[id].ch=GUN_DESIGN[id].ch}
 
 // ---------- the M82: a round through several zombies ----------
-// every zombie on the line to the first wall (tbLine, csoguns.js), up to W.pen of them, each next one taking W.penK of the one before; the
+// every zombie on the line to the first wall (tbLine, specguns.js), up to W.pen of them, each next one taking W.penK of the one before; the
 // tracer runs on through them to the wall (or to the last one the round stops in)
 function penTrace(a,ox,oy,oz,dx,dy,dz,W,pi){const range=140,hw=rayCast(ox,oy,oz,dx,dy,dz,range,SHOT_FILTER),tW=hw?hw.t:range;
   const hits=tbLine(a,ox,oy,oz,dx,dy,dz,tW).slice(0,W.pen||1);

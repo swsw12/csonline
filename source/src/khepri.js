@@ -747,7 +747,7 @@ Object.assign(JAW0,{larva:.14,scrap:.1,khepri:0});
 //   3 the conveyor gallery — hold out 60 s; KHEPRI bursts through the wall and rolls its ball down the gallery (half damage in there);
 //     it goes once its ball breaks (or it has lost 20 %, or the wait is over)
 //   4 the blast-furnace hall — the boss fight, three phases (the slag yard, the furnace, the casting bay). A wipe replays its phase
-CHAP[3]={id:3,k:'khepri',map:'ep3',code:'Q7-303',n:['케프리','KHEPRI'],t:['좀비 시나리오: 케프리','Zombie Scenario: KHEPRI'],
+CHAP[3]={id:3,k:'khepri',map:'ep3',code:'Q7-303',n:['케프리','KHEPRI'],t:['협동 작전: 케프리','Co-op Operation: KHEPRI'],
   file:[['곤충 매개 계획 실험체 3호 Q7-303. 고철을 뭉친 공을 굴린다 — 정면 총알은 공이 다 막는다','Insect-vector subject no. 3, Q7-303: it rolls a ball of scrap that soaks up the bullets from the front'],
     ['드럼통·가스 밸브·래들 쇳물로 공을 깨라 · 날 때 드러나는 배가 약점','Break the ball with drums, gas valves and the ladle\'s iron · the belly shows when it flies']],
   cards:{place:['청운제철 제2공장','CHEONGUN STEEL WORKS'],who:['곤충 매개 계획 실험체 3호','INSECT-VECTOR SUBJECT 3'],line:['쇠붙이를 굴리던 습성만 남았다 — 몸집만 한 고철 공이 갑옷이자 무기','All that is left is the urge to roll — a ball of scrap as big as itself, its armour and its weapon']},

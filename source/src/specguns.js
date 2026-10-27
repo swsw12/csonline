@@ -1,23 +1,23 @@
 'use strict';
-// ============ v6.28 weapons: Balrog-XI (flame-fan shotgun), Plasma Gun (green splash orbs), Thunderbolt (wall-piercing railgun) ============
-// Names and mechanics follow the CSO weapons; the models are this game's own box designs on the weapon atlas (three new glowing / lacquer slots).
+// ============ v6.28 weapons: IGNIS-XI (flame-fan shotgun), Plasma Gun (green splash orbs), Arcline (wall-piercing railgun) ============
+// The models are this game's own box designs on the weapon atlas (three new glowing / lacquer slots).
 //
-// Balrog-XI: a 7-round auto shotgun fed shell by shell. Four shells in ONE pull of the trigger (spShot, newguns.js: a pause longer than 1.5 shot intervals starts the count again) put a
+// IGNIS-XI: a 7-round auto shotgun fed shell by shell. Four shells in ONE pull of the trigger (spShot, newguns.js: a pause longer than 1.5 shot intervals starts the count again) put a
 // special charge into its own slot (up to 7; the Blaze-8's special-shell machinery, newguns.js). Right click looses five fireballs in a fan
 // (spFlame): each grows as it flies, stops in the first zombie it touches and sets it alight, so at point blank all five land in one body.
 // The charge shows as a ring round the crosshair (bxRing) and as seven ember pips on the receiver.
 // Plasma Gun: 45 rounds of green plasma orbs (projectiles) that burst on contact with a splash (full at the centre, 80% at the edge).
 // Every part of the body takes the same damage, a headshot never counts (no 확인사살 either) and morale does not raise it (o.flat).
 // The reload pulls the glowing cell out of its cradle on the right side backwards and pushes a fresh one in (rlCell).
-// Thunderbolt: a railgun with its own ammunition (30 shots, no magazine and no reload; buying ammo or a supply refills it: W.noRel).
+// Arcline: a railgun with its own ammunition (30 shots, no magazine and no reload; buying ammo or a supply refills it: W.noRel).
 // The beam goes through every wall (×0.85 each) and every zombie on its line (×0.9 for each one before). Standing still it never misses,
 // scoped or not. Its own scope: a teal ring that turns red while the line runs over a zombie, and while scoped every zombie in view is marked
 // (only with a clear line to it since v6.38.1: no marks through walls; tbHud). The coils along the rails light up again as it recharges (VMX.thunder).
 
-// ---------- atlas: plasma glow (self-lit green), the Thunderbolt's blue-violet plating, its self-lit cyan ----------
-const CSO_MATS=['plGlow','tbBody','tbGlow'];
-for(const m of CSO_MATS){if(GA.idx[m]==null){GA_MATS.push(m);GA.idx[m]=GA_MATS.length-1}}
-function paintCsoAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getContext('2d');
+// ---------- atlas: plasma glow (self-lit green), the Arcline's blue-violet plating, its self-lit cyan ----------
+const SPG_MATS=['plGlow','tbBody','tbGlow'];
+for(const m of SPG_MATS){if(GA.idx[m]==null){GA_MATS.push(m);GA.idx[m]=GA_MATS.length-1}}
+function paintSpgAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.getContext('2d');
   const patch=(name,fn,alpha)=>{const i=GA.idx[name];if(i==null||i>=GA_SLOTS)return;const x0=(i%8)*PS,y0=Math.floor(i/8)*PS;const id=x.getImageData(x0,y0,PS,PS),D=id.data;
     for(let y=0;y<PS;y++)for(let xx=0;xx<PS;xx++){const c=fn(xx,y,x0+xx,y0+y);if(!c)continue;const k=(y*PS+xx)*4;const r=rgbOf(c);D[k]=r[0];D[k+1]=r[1];D[k+2]=r[2];D[k+3]=alpha||255}
     x.putImageData(id,x0,y0)};
@@ -29,10 +29,10 @@ function paintCsoAtlas(){const PS=GA.P,cv=GA.canvas;if(!cv)return;const x=cv.get
   // energy: a hot cyan core fading to blue
   patch('tbGlow',(xx,y,X,Y)=>{const t=nz(X,Y,5104,10),b=Math.abs(Math.sin(y*.2+t*4));let c=b>.85?'#eaffff':t>.55?'#7ae8ff':'#2aa8f0';return c},232);
   GA.tex.needsUpdate=true;GA.texVM.needsUpdate=true;for(const k in ICONS)delete ICONS[k]}
-{const pc=paintCgAtlas;paintCgAtlas=function(){pc();paintCsoAtlas()}}
+{const pc=paintCgAtlas;paintCgAtlas=function(){pc();paintSpgAtlas()}}
 
 // =====================================================================================================================================
-// ---------- Balrog-XI ----------
+// ---------- IGNIS-XI ----------
 GUNS.balrog11={parts:[
   // receiver: crimson lacquer, engraved side plates, a black top rail with ember vents
   Pt(0,.03,-.05,.054,.078,.26,'lacR'),Pt(.0276,.032,-.05,.002,.054,.19,'engraved'),Pt(-.0276,.032,-.05,.002,.054,.19,'engraved'),
@@ -55,7 +55,7 @@ GUNS.balrog11={parts:[
   // grip and guard, a black stock with a lacquered cheek riser and a rubber pad
   ...pGrip('grip2',-.045,.04,.3),...tGuard(-.01),Pt(0,.04,.18,.042,.064,.24,'blk2',{rx:-.06}),Pt(0,.078,.19,.034,.02,.16,'lacR'),Pt(0,.02,.34,.05,.12,.02,'rub',{rx:-.08})],
   grip:[0,-.03,.02],sup:[0,.005,-.3],muzzle:[0,.066,-.775],mag:[0,.0,-.12],eject:[.03,.05,-.06]};
-WPN.balrog11={slot:1,kind:'shotgun',n:['발록-XI','Balrog-XI'],cost:5750,mag:7,res:49,pellets:6,dmg:24,rpm:240,spread:[.06,.075,.11],rec:[.06,.02],kb:3.2,stag:.45,hs:2,
+WPN.balrog11={slot:1,kind:'shotgun',n:['이그니스-XI','IGNIS-XI'],cost:5750,mag:7,res:49,pellets:6,dmg:24,rpm:240,spread:[.06,.075,.11],rec:[.06,.02],kb:3.2,stag:.45,hs:2,
   shellRel:.36,relStart:.32,relFire:1,spEvery:4,spMax:7,spFlame:1,spGain:'bxchg',spFanA:.2,spDmg:160,spKb:6,spStag:1.1,spBurn:3,spSpd:24,spLife:.6,
   draw:.85,speed:.9,snd:'bx11',model:'balrog11',hold:'rifle',shell:1,spose:[-.09,.1,-.02,.34,.2,-1.0]};
 VM_POS.balrog11={p:[.15,-.165,-.37],r:[0,.08,.035]};
@@ -63,7 +63,7 @@ BUY_MENU.find(c=>c.k==='shotgun').items.push('balrog11');
 
 // right click: five fireballs in a fan (newguns.js spFire hands over here when W.spFlame)
 function bxFlame(a,W){const eye=actorEye(a);aimDir(a.yaw+a.punchY,a.pitch+a.punchP,_dv);const b=_dv.clone(),d=new THREE.Vector3();
-  for(let i=0;i<5;i++){const off=(i-2)/2*W.spFanA,c=Math.cos(off),s=Math.sin(off);d.set(b.x*c+b.z*s,b.y,-b.x*s+b.z*c).normalize();const n=csoProj(a,W,eye,d,'bxfl');if(n&&i===2&&!NET.ghost)n.light=DL.add(n.x,n.y,n.z,'#ff6a20',7,2.2,0,{flick:.2})}
+  for(let i=0;i<5;i++){const off=(i-2)/2*W.spFanA,c=Math.cos(off),s=Math.sin(off);d.set(b.x*c+b.z*s,b.y,-b.x*s+b.z*c).normalize();const n=spgProj(a,W,eye,d,'bxfl');if(n&&i===2&&!NET.ghost)n.light=DL.add(n.x,n.y,n.z,'#ff6a20',7,2.2,0,{flick:.2})}
   const mz=muzzleWorld(a);for(let k=0;k<3;k++)FX.muzzle(mz.x,mz.y,mz.z,b.x,b.y,b.z,true);
   for(let k=0;k<14;k++){const sp=rr(4,9);FX.spawn({x:mz.x,y:mz.y,z:mz.z,vx:b.x*sp+rr(-1.5,1.5),vy:b.y*sp+rr(-.3,.8),vz:b.z*sp+rr(-1.5,1.5),life:rr(.2,.4),s0:rr(.2,.35),s1:.05,r:1,g:rr(.45,.7),b:.15,f:11,add:1})}
   a.punchP+=W.rec[0]*2.2;a.punchY+=(Math.random()*2-1)*W.rec[1]*1.5;a.kick=1;a.shots++;
@@ -137,7 +137,7 @@ function rlCell(W,G,m,L){const E=fdExt(G,'mag');const S=rlMag(W,G,m,L,{style:'pu
 {const rb0=rlBuild;rlBuild=function(W,G,m,L,empty){if(W&&W.model==='plasma')return rlCell(W,G,m,L);return rb0(W,G,m,L,empty)}}
 
 // =====================================================================================================================================
-// ---------- Thunderbolt ----------
+// ---------- Arcline ----------
 GUNS.thunder={parts:[
   // receiver block, the upper deck, a status screen on the right
   Pt(0,.04,-.05,.064,.1,.36,'tbBody'),Pt(0,.1,-.08,.05,.02,.3,'blk'),Pt(-.0335,.05,-.1,.004,.05,.1,'blk'),Pt(-.0358,.05,-.1,.002,.038,.084,'tbGlow'),
@@ -155,7 +155,7 @@ GUNS.thunder={parts:[
   // grip, guard, a thumbhole stock with a cheek rest and pad
   ...pGrip('grip2',-.065,.04,.28),...tGuard(-.01),Pt(0,.06,.2,.05,.06,.26,'tbBody'),Pt(0,-.02,.25,.04,.05,.14,'tbBody'),Pt(0,.098,.18,.036,.016,.16,'blk'),Pt(0,.02,.34,.056,.13,.02,'rub')],
   grip:[0,-.04,.02],sup:[0,.0,-.42],muzzle:[0,.05,-.83],mag:[0,.05,-.48],eject:[.03,.06,-.06]};
-WPN.thunder={slot:1,kind:'sniper',n:['썬더볼트','Thunderbolt'],cost:7000,mag:30,res:0,noRel:1,rail:1,dmg:650,hs:2.5,rpm:40,semi:1,spread:[0,.025,.12],spreadZ:0,zoom:[26,10],
+WPN.thunder={slot:1,kind:'sniper',n:['아크라인','Arcline'],cost:7000,mag:30,res:0,noRel:1,rail:1,dmg:650,hs:2.5,rpm:40,semi:1,spread:[0,.025,.12],spreadZ:0,zoom:[26,10],
   rec:[.1,.015],kb:26,stag:1,reload:1,draw:1,speed:.85,snd:'tbfire',model:'thunder',hold:'rifle',range:150,wallK:.85,pierceK:.9};
 VM_POS.thunder={p:[.145,-.17,-.38],r:[0,.075,.03]};
 BUY_MENU.find(c=>c.k==='sniper').items.push('thunder');
@@ -218,21 +218,21 @@ VMX.thunder=function(V,a,dt,o,m){const W=WPN.thunder;let p=a.drawT>0?clamp(1-a.d
 VMX.balrog11=function(V,a,dt,o,m){const n=(a.spAm&&a.spAm.balrog11)|0;for(let i=1;i<=7;i++){const T=m.tags['p'+i];if(T)T.visible=i<=n}};
 
 // ---------- projectiles: the plasma orb and the fireball (the remote copies come through nyProj, net.js) ----------
-function csoProj(a,W,eye,dir,kind){const sp=kind==='plasma'?W.plSpd||52:W.spSpd||24;
+function spgProj(a,W,eye,dir,kind){const sp=kind==='plasma'?W.plSpd||52:W.spSpd||24;
   const n={kind,owner:a,w:a.cur,x:eye.x+dir.x*.55,y:eye.y+dir.y*.55-.06,z:eye.z+dir.z*.55,vx:dir.x*sp,vy:dir.y*sp,vz:dir.z*sp,t:0,mesh:null,spin:0,hit:new Set(),upd:PROJ_UPD[kind],r:.22};
   if(kind==='plasma'){const m=new THREE.Mesh(gunGeo('plorb'),matGun());m.position.set(n.x,n.y,n.z);R.scene.add(m);n.mesh=m}
   NADES.push(n);NET.on&&netFxPush(['p',a.id,WI[a.cur],kind,r2(n.x),r2(n.y),r2(n.z),r2(n.vx),r2(n.vy),r2(n.vz)]);return n}
 PROJ_UPD.plasma=plUpd;PROJ_UPD.bxfl=bxUpd;
-{const np0=nyProj;nyProj=function(a,W,eye,dir,kind){if(kind==='plasma'||kind==='bxfl')return csoProj(a,WPN[kind==='plasma'?'plasma':'balrog11'],eye,dir,kind);return np0(a,W,eye,dir,kind)}}
+{const np0=nyProj;nyProj=function(a,W,eye,dir,kind){if(kind==='plasma'||kind==='bxfl')return spgProj(a,WPN[kind==='plasma'?'plasma':'balrog11'],eye,dir,kind);return np0(a,W,eye,dir,kind)}}
 
-// ---------- HUD: the Balrog-XI's charge ring, the Thunderbolt's scope, marks and its ammo readout ----------
-function csoHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P.cur],live=P.alive&&P.team===TH&&!G.spec&&G.st!=='menu';
-  // Balrog-XI: the ring fills with the shells of this pull; the count of charges in the slot under it
+// ---------- HUD: the IGNIS-XI's charge ring, the Arcline's scope, marks and its ammo readout ----------
+function spgHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P.cur],live=P.alive&&P.team===TH&&!G.spec&&G.st!=='menu';
+  // IGNIS-XI: the ring fills with the shells of this pull; the count of charges in the slot under it
   let rg=$('bxRing');const showR=live&&W&&W.spFlame&&!(P.zoom>0);
   if(showR&&!rg){rg=document.createElement('div');rg.id='bxRing';rg.innerHTML='<svg viewBox="0 0 52 52"><circle class="tr" cx="26" cy="26" r="22"/><circle class="pg" cx="26" cy="26" r="22"/></svg><b></b>';hud.appendChild(rg)}
   if(rg){rg.style.display=showR?'block':'none';if(showR){const n=(P.spN&&P.spN[P.cur])|0,m=(P.spAm&&P.spAm[P.cur])|0,C=138.2;
       rg.querySelector('.pg').style.strokeDashoffset=(C*(1-(m>=W.spMax?1:n/W.spEvery))).toFixed(1);const b=rg.querySelector('b'),s=m?'◆'+m:'';if(b.textContent!==s)b.textContent=s;rg.classList.toggle('on',m>0)}}
-  // Thunderbolt
+  // Arcline
   const tb=live&&W&&W.rail,sc=$('scope');let mk=$('tbMk');
   if(tb&&P.zoom>0&&sc){const e=actorEye(P);aimDir(P.yaw,P.pitch,_dv);const lock=tbLine(P,e.x,e.y,e.z,_dv.x,_dv.y,_dv.z,W.range).length>0;sc.className='tbsc'+(lock?' lock':'');
     if(!mk){mk=document.createElement('div');mk.id='tbMk';hud.appendChild(mk)}mk.style.display='block';
@@ -246,7 +246,7 @@ function csoHud(){const P=G.player,hud=$('hud');if(!P||!hud)return;const W=WPN[P
     for(;i<mk.children.length;i++)mk.children[i].style.display='none'}
   else if(mk)mk.style.display='none';
   if(live&&W&&W.noRel){const r=$('hRes');if(r&&r.textContent!=='')r.textContent=''}}
-{const hu0=HUD.update;HUD.update=function(dt){hu0.call(this,dt);try{csoHud()}catch(e){console.error(e)}}}
+{const hu0=HUD.update;HUD.update=function(dt){hu0.call(this,dt);try{spgHud()}catch(e){console.error(e)}}}
 
 // ---------- sounds ----------
 Object.assign(SFX,{

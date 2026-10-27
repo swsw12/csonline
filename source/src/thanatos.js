@@ -1,8 +1,8 @@
 'use strict';
-// ============ v6.41: THANATOS-9 — a reaper's scythe whose blade comes apart into a spinning six-bladed drill ============
-// The name and the mechanics follow the CSO weapon (the THANATOS line: violet, the reaper); the model (a black haft with violet inlays, a
+// ============ v6.41: MORTA-9 — a reaper's scythe whose blade comes apart into a spinning six-bladed drill ============
+// Violet, the reaper. The model (a black haft with violet inlays, a
 // hexagonal hub, a crescent blade built from six overlapping plates), its motions and its sounds are this game's own.
-// Left click (scythe): a wide flat sweep, forehand and backhand by turns (the Skull-9's sweep, longer): every zombie within THN.AR m all
+// Left click (scythe): a wide flat sweep, forehand and backhand by turns (the Grave-9's sweep, longer): every zombie within THN.AR m all
 // round — in front, beside or behind — with a clear line from the eye is cut (up to THN.AN). No draw cut (W.noDC).
 // Right click: the transformation (THN.ON s): the plates come off the crescent one by one from the tip down and fan out round the hub,
 // the fan spins a full turn, and they fold forward into a drill of six blades round a violet core. It stays that way until it is used
@@ -119,11 +119,11 @@ GUNS.th9wb={parts:thParts('b'),grip:[0,0,0],sup:[0,0,THN.zL],muzzle:[0,0,THN.zH-
 
 // ---------- stats ----------
 // (the barrage is not a heavy attack of the generic melee code: thanatos.js runs both buttons itself; hs = what a Deadshot doubles by)
-WPN.thanatos9={slot:3,kind:'melee',n:['THANATOS-9','THANATOS-9'],cost:6000,dmg:[THN.AD,THN.BD],rate:[.95,THN.BI],range:[THN.AR,THN.BR],kb:[THN.AKB,THN.BKB],stag:[.2,.2],
+WPN.thanatos9={slot:3,kind:'melee',n:['MORTA-9','MORTA-9'],cost:6000,dmg:[THN.AD,THN.BD],rate:[.95,THN.BI],range:[THN.AR,THN.BR],kb:[THN.AKB,THN.BKB],stag:[.2,.2],
   speed:1,draw:1.2,model:'thanatos9',hold:'thanatos9',sw:.55,hitT:[.34,0],anD:[.9,.2],cleave:[THN.AN,THN.BN],arc:[-1.01,THN.BCOS],noDC:1,hs:2,thn:1,
   swS:'thswing',hitS:'thhit',drawS:'thdraw',drKey:'drS'};
 BUY_MENU.find(c=>c.k==='special').items.push('thanatos9');
-// third person: up in front of the right shoulder like the Skull-9 (its sweep and shoulder turn); the barrage: a thrust (KF.thB, below)
+// third person: up in front of the right shoulder like the Grave-9 (its sweep and shoulder turn); the barrage: a thrust (KF.thB, below)
 HOLDS.thanatos9={off:[-.02,-.3,-.16],rx:1.15,rz:Math.PI,ham:1,kA:'skA',kH:'thB',twA:'skTw'};
 // a thrust from the shoulder, levelled and driven forward, that loops while the barrage lasts (each strike starts it again; u 0–.2 is
 // one thrust) and eases back up to the carry once it stops
@@ -238,7 +238,7 @@ function thSet(a,st,own){const was=a.thS|0;a.thS=st;
   if(own&&NET.on)netFxPush(['th',a.id,st]);thFx(a,st,was)}
 // what it looks and sounds like (every page)
 function thFx(a,st,was){const L=LI();
-  if(st===1){thStop(a);a.thV1=thAt(a,'thon',.9);if(a.isPlayer)HUD.note(L?'THANATOS — transforming…':'THANATOS — 변신 중…',1.4)}
+  if(st===1){thStop(a);a.thV1=thAt(a,'thon',.9);if(a.isPlayer)HUD.note(L?'MORTA — transforming…':'MORTA — 변신 중…',1.4)}
   else if(st===2){if(a.isPlayer){HUD.note(L?`Drill form — left click: the barrage (${THN.BAR} s, cannot be stopped)`:`드릴 모드 — 좌클릭: 연속 찌르기 ${THN.BAR}초 (시작하면 취소 · 교체 불가)`,2.4);FX.shake=Math.max(FX.shake,.25)}}
   else if(st===3){thStop(a);a.thV2=thAt(a,'thbar',.85,1,55);if(a.isPlayer){FX.shake=Math.max(FX.shake,.3);VM.sp.pz.v-=.5}
     // (in first person the flash goes off a little way out in front and smaller, not on the lens)

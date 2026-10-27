@@ -9,7 +9,7 @@
 Object.assign(STR.ko,{race:'무기 레이스',
   raceD:'모두가 적. 처치할 때마다 다음 무기로 바뀌고, 마지막 칼 단계에서 칼로 처치하면 우승. 칼에 당하면 한 단계 내려가요. 쓰러져도 3초 뒤 부활 · 무기는 고를 수 없어요. 시간이 끝나면 가장 높은 단계가 우승.',
   pLadder:'단계 수',lvl:'단계'});
-Object.assign(STR.en,{race:'Arms Race',
+Object.assign(STR.en,{race:'Gun Race',
   raceD:'Everyone is an enemy. Every kill moves you to the next gun; a knife kill on the last step, the knife, wins. A knife kill on you sets you back a step. The fallen are back 3 s later; nobody picks weapons. When time runs out, the highest step wins.',
   pLadder:'Steps',lvl:'Level'});
 const RACE={

@@ -367,7 +367,43 @@ function mapsFor(mode){return MAPLIST().filter(id=>mapOk(mode,id))}
 function buildMapData(id){const D=MAPDEFS[id];
   Object.assign(MAP,{id,gates:{},ez:null,boxes:[],lights:[],spawns:[],camps:[],zspawns:[],deco:[],fires:[],smoke:[],spray:[],dyn:[],moon:null,probe:null,probeY:D.probeY||null,env:D.env,cam:null,spawnYaw:null,
     ambIn:D.env.ambIn?new THREE.Color(D.env.ambIn):null,ambOut:D.env.ambOut?new THREE.Color(D.env.ambOut):null,bounds:D.bounds||[-30,-30,30,30],miniCut:D.mini||null,miniName:D.miniName||null});
-  D.build()}
+  D.build();if(D.mirror)mapMirrorX()}
+// ---------- v7.3: map edits ----------
+// a map built mirrored east-west (D.mirror): every box, light, prop, spawn and camp, the bounds and the title camera flip x -> -x after
+// D.build(). The sun / moon direction is left alone (it matches the sky texture), so the light falls on the mirrored town from the old side.
+function mapMirrorX(){const SW={px:'nx',nx:'px'};
+  for(const b of MAP.boxes){const x0=-b.x1,x1=-b.x0;b.x0=x0;b.x1=x1;const f=b.o.f;
+    if(f&&(f.px!==undefined||f.nx!==undefined)){const g={};for(const k in f)g[SW[k]||k]=f[k];b.o=Object.assign({},b.o,{f:g})}}
+  for(const L of MAP.lights)L.x=-L.x;
+  for(const d of MAP.deco){d.x=-d.x;if(d.rot!=null)d.rot=-d.rot}
+  for(const k of ['fires','smoke','spray','dyn'])for(const p of MAP[k])p[0]=-p[0];
+  for(const p of MAP.spawns){p[0]=-p[0];if(p[3]!=null)p[3]=-p[3]}
+  for(const p of MAP.zspawns)p[0]=-p[0];
+  for(const c of MAP.camps){for(const p of c.p)p[0]=-p[0];if(c.look)c.look[0]=-c.look[0]}
+  if(MAP.spawnYaw!=null)MAP.spawnYaw=-MAP.spawnYaw;
+  const bb=MAP.bounds;MAP.bounds=[-bb[2],bb[1],-bb[0],bb[3]];
+  if(MAP.cam){const c0=MAP.cam,P=new THREE.Vector3(),T=new THREE.Vector3(),fake={position:{set:(x,y,z)=>P.set(x,y,z)},lookAt:(x,y,z)=>T.set(x,y,z)};
+    MAP.cam=(t,cam)=>{c0(t,fake);cam.position.set(-P.x,P.y,P.z);cam.lookAt(-T.x,T.y,T.z)}}}
+// cut a region out of the boxes already placed: each box it overlaps is split into the pieces outside it. o.fl / o.wall / o.ceil
+// re-surface the faces the cut opens (the floor left under it, the walls round it, the ceiling over it); o.keep(b) spares a box.
+function boxCut(x0,y0,z0,x1,y1,z1,o){o=o||{};const out=[];
+  const face=(b,k,m)=>{if(!m)return b;b.o=Object.assign({},b.o,{f:Object.assign({},b.o.f||{},{[k]:m})},k==='py'?{ttop:null}:{});return b};
+  for(const b of MAP.boxes){if(b.x1<=x0||b.x0>=x1||b.y1<=y0||b.y0>=y1||b.z1<=z0||b.z0>=z1||(o.keep&&o.keep(b))){out.push(b);continue}
+    const piece=(a0,a1,c0,c1,e0,e1,k,m)=>{if(a1-a0>1e-4&&c1-c0>1e-4&&e1-e0>1e-4)out.push(face(Object.assign({},b,{x0:a0,x1:a1,y0:c0,y1:c1,z0:e0,z1:e1}),k,m))};
+    const cy0=Math.max(b.y0,y0),cy1=Math.min(b.y1,y1),cx0=Math.max(b.x0,x0),cx1=Math.min(b.x1,x1);
+    piece(b.x0,b.x1,b.y0,Math.min(b.y1,y0),b.z0,b.z1,'py',o.fl);piece(b.x0,b.x1,Math.max(b.y0,y1),b.y1,b.z0,b.z1,'ny',o.ceil);
+    piece(b.x0,Math.min(b.x1,x0),cy0,cy1,b.z0,b.z1,'px',o.wall);piece(Math.max(b.x0,x1),b.x1,cy0,cy1,b.z0,b.z1,'nx',o.wall);
+    piece(cx0,cx1,cy0,cy1,b.z0,Math.min(b.z1,z0),'pz',o.wall);piece(cx0,cx1,cy0,cy1,Math.max(b.z0,z1),b.z1,'nz',o.wall)}
+  MAP.boxes.length=0;for(const b of out)MAP.boxes.push(b)}
+// v7.3: after the nav graph is built on a mirrored map, a camp point with no walkable node under it (the mirror moves box edges across
+// the 1 m sample points) snaps to the nearest node within 2.5 m on its floor, or is dropped; a camp left with no point is dropped
+function campsToNav(){const ok=[];for(const c of MAP.camps){const P=[];for(const p of c.p){const n=navNode(p[0],p[1],p[2]);if(!n||Math.abs(n.y-p[1])>1)continue;const d=Math.hypot(n.x-p[0],n.z-p[2]);
+      if(d<=1.2)P.push(p);else if(d<=2.5)P.push([n.x,n.y,n.z])}if(P.length){c.p=P;ok.push(c)}}MAP.camps.length=0;for(const c of ok)MAP.camps.push(c)}
+// spawn points that the edits buried: each moves to the nearest free spot on the same floor (rings of .5 m, up to 4 m out)
+function mapFreeSpawns(){const solidAt=(x,y,z)=>MAP.boxes.some(b=>!b.nosolid&&!b.o.pass&&x>b.x0-.35&&x<b.x1+.35&&z>b.z0-.35&&z<b.z1+.35&&y+.1<b.y1&&y+1.7>b.y0);
+  const fix=(p,y)=>{if(!solidAt(p[0],y,p[1]))return;for(let r=.5;r<=4;r+=.5)for(let a=0;a<16;a++){const x=p[0]+Math.cos(a/16*TAU)*r,z=p[1]+Math.sin(a/16*TAU)*r;if(!solidAt(x,y,z)){p[0]=x;p[1]=z;return}}};
+  for(const p of MAP.spawns)fix(p,p[2]||0);for(const p of MAP.zspawns)fix(p,p[2]||0);
+  for(const c of MAP.camps)for(const p of c.p){const q=[p[0],p[2]];fix(q,p[1]);p[0]=q[0];p[2]=q[1]}}
 // ---------- loading and switching: a built map is kept (GPU meshes, collision grid, nav graph, probes) so switching back is instant ----------
 const MAPCACHE={};
 const MAPKEYS=['gates','ez','mini','miniCut','id','boxes','lights','spawns','camps','zspawns','deco','fires','smoke','spray','dyn','moon','meshes','probe','probeY','env','cam','spawnYaw','ambIn','ambOut','bounds','miniName'];
@@ -382,7 +418,7 @@ function* mapLoader(id){
     yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}
     // the graph is built with every gate open (they open as the map is played; a shut one simply blocks the way for now)
     const GT=Object.values(MAP.gates||{});for(const G0 of GT)for(const b of G0.boxes)b.nosolid=true;
-    buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));
+    buildNav();MAP.mini=null;navPrune(MAP.spawns.map(p=>[p[0],p[2]||0,p[1]]).concat(MAP.zspawns.map(p=>[p[0],p[2]||0,p[1]])),Math.max(...ZLIST.map(k=>{const Z=ZCLASS[k];return Z.jump*Z.jump/(2*GRAV)+Z.h*.3})));if(D.mirror)campsToNav();
     for(const G0 of GT)for(const b of G0.boxes)b.nosolid=G0.open;MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow||MAP.env.ash))FX.buildRainHM()}
   // bots holding paths through the old graph start over
   for(const a of G.actors)if(a.bot){a.bot.path=null;a.bot.goal=null;a.bot.wander=null;a.bot.spot=null}

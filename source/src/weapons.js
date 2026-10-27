@@ -1,8 +1,8 @@
 'use strict';
-// ============ Weapons: stats (CS/CSO names and numbers), hitscan with spread/recoil/knockback, melee, grenades ============
+// ============ Weapons: stats, hitscan with spread/recoil/knockback, melee, grenades ============
 // spread: [standing, moving, airborne] cone half-angle (rad). kb: knockback m/s per hit. hs: headshot multiplier.
 const WPN={
-  knife:{slot:3,kind:'melee',n:['씰 나이프','Seal Knife'],dmg:[20,70],rate:[.45,1.05],range:[1.9,1.5],kb:[2.5,10],speed:1.02,draw:.6,model:'knife',hold:'knife',sw:1,hitT:[.15,.32]},
+  knife:{slot:3,kind:'melee',n:['전투 나이프','Combat Knife'],dmg:[20,70],rate:[.45,1.05],range:[1.9,1.5],kb:[2.5,10],speed:1.02,draw:.6,model:'knife',hold:'knife',sw:1,hitT:[.15,.32]},
   axe:{slot:3,kind:'melee',n:['토마호크','Tomahawk'],cost:800,dmg:[48,145],rate:[.78,1.4],range:[2.2,2.0],kb:[6,21],speed:.96,draw:.85,model:'axe',hold:'axe',sw:.75,hitT:[.27,.52],anD:[.62,.95]},
   // long-handled sledge: slow, long reach, sends zombies flying; the heavy smash is an overhead blow that catches up to three in front
   hammer:{slot:3,kind:'melee',n:['해머','Hammer'],cost:2000,dmg:[180,112],rate:[1.25,.95],range:[2.8,2.25],kb:[9,62],up:[0,5.5],stag:[.45,1.1],speed:.84,draw:1.15,model:'hammer',hold:'hammer',sw:.52,hitT:[.7,.03],anD:[1.15,.62],blunt:1,cleave:3,stance:1,stanceSpd:.5},
@@ -39,7 +39,7 @@ const WPN={
   gx6:{slot:1,kind:'mg',n:['M134 미니건','M134 Minigun'],cost:7500,mag:200,res:400,dmg:26,rpm:1500,spin:.55,spread:[.02,.045,.12],rec:[.005,.009],kb:2.1,stag:.3,hs:3,reload:5.2,draw:1.2,speed:.72,snd:'gx6',model:'gx6',hold:'rifle',shell:1},
   // special
   // knockback gun: a cone of compressed air that barely hurts but shoves zombies back (and off ledges), 10 blasts a second
-  airb:{slot:1,kind:'special',n:['에어 버스터','Air Burster'],cost:3300,mag:100,res:200,dmg:8,rpm:600,quiet:1,air:{r:8,a:.42,kb:7.5,up:2.2,cap:12},spread:[0,0,0],rec:[.004,.005],kb:3.4,stag:.3,hs:1,reload:2.6,draw:.8,speed:.92,snd:'airb',model:'airb',hold:'rifle'},
+  airb:{slot:1,kind:'special',n:['압축 공기포','Air Cannon'],cost:3300,mag:100,res:200,dmg:8,rpm:600,quiet:1,air:{r:8,a:.42,kb:7.5,up:2.2,cap:12},spread:[0,0,0],rec:[.004,.005],kb:3.4,stag:.3,hs:1,reload:2.6,draw:.8,speed:.92,snd:'airb',model:'airb',hold:'rifle'},
   gl40:{slot:1,kind:'special',n:['M79','M79'],cost:4500,mag:1,res:18,dmg:380,rpm:70,semi:1,proj:'gl',spread:[.004,.02,.06],rec:[.09,.02],kb:16,stag:.8,hs:1,reload:1.9,brk:1,draw:.9,speed:.9,snd:'gl40',model:'gl40',hold:'rifle'},
   // throwables and zombie kit
   he:{slot:4,kind:'nade',n:['HE 수류탄','HE Grenade'],cost:300,model:'he',hold:'nade',draw:.5,speed:1},
@@ -112,7 +112,7 @@ function spreadDir(base,ang,out){if(ang<=0)return out.copy(base);
   const r=ang*Math.sqrt(Math.random()),th=Math.random()*TAU;out.copy(base).addScaledVector(_uv,Math.cos(th)*r).addScaledVector(_rv,Math.sin(th)*r).normalize();return out}
 function curSpread(a,W){const c=a.c;const moving=Math.hypot(c.vx,c.vz)>1.2;let s=!c.onGround?W.spread[2]:moving?W.spread[1]:W.spread[0];
   if(W.zoom&&a.zoom>0){if(c.onGround&&!moving)s=W.spreadZ;else if(W.kind==='sniper')s=W.spread[1]}if(a.duck&&c.onGround)s*=.8;if(W.bSpread&&a.dualB)s*=W.bSpread;return s+a.recoilSpread}
-function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.ammo[a.cur],xb=W.cmb&&cmbReady(a,W);// xb: Balrog-5's explosive round (balrog.js)
+function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.ammo[a.cur],xb=W.cmb&&cmbReady(a,W);// xb: IGNIS-5's explosive round (balrog.js)
   
   const eye=actorEye(a);aimDir(a.yaw+a.punchY,a.pitch+a.punchP,_dv);const base=_dv.clone();
   if(W.dual)a.dualSide=-(a.dualSide||1);
@@ -121,7 +121,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.a
   let hitAny=false,hsAny=false,dmgTotal=0;
   if(W.cone){coneBlast(a,W,eye.clone(),base)}
   else if(W.air){airBlast(a,W,eye.clone(),base)}
-  else if(W.rail){const r=tbShot(a,W,eye,base,sp);if(r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}// the Thunderbolt (csoguns.js)
+  else if(W.rail){const r=tbShot(a,W,eye,base,sp);if(r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}// the Arcline (specguns.js)
   else if(W.proj){spreadDir(base,sp,dir);launchProj(a,W,eye,dir)}
   else if(W.fan){for(let i=0;i<W.fan;i++){const off=(i-(W.fan-1)/2)/((W.fan-1)/2)*W.fanA,c=Math.cos(off),s=Math.sin(off);dir.set(base.x*c+base.z*s,base.y,-base.x*s+base.z*c).normalize();spreadDir(dir,sp,dir);
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}}
@@ -237,7 +237,7 @@ function removeNade(i){const n=NADES[i];if(n.mesh){R.scene.remove(n.mesh);n.mesh
 function clearNades(){for(let i=NADES.length-1;i>=0;i--){if(NADES[i].light)NADES[i].light.dead=true;removeNade(i)}SMK.clear()}
 function detonate(n){const k=n.kind;
   // (a round may carry its own numbers: n.R radius, n.dmg, n.kb, n.stag, n.up, n.sp the share of the damage left at the edge (.35), n.jw the
-  // weapon it counts for, n.he a blast flag, n.vol / n.rate its sound — the JANUS grenades, janus.js / janus2.js; n.hitN = how many zombies
+  // weapon it counts for, n.he a blast flag, n.vol / n.rate its sound — the TWINFACE grenades, janus.js / janus2.js; n.hitN = how many zombies
   // the blast caught)
   if(k==='gl'){const W=WPN.gl40,R0=n.R||4.8,D=n.dmg||W.dmg,KB=n.kb!=null?n.kb:W.kb,ST=n.stag!=null?n.stag:.8,UP=n.up!=null?n.up:5,SP=n.sp!=null?n.sp:.35;FX.explode(n.x,n.y,n.z,'he');AU.at('explode',n.x,n.y,n.z,{vol:n.vol||.85,range:80,occ:false,rate:n.rate||1.15});const pd=G.player?dist3(G.player.c,n):99;if(pd<10){FX.shake=Math.max(FX.shake,(.8-pd/12)*(n.shk||1));AU.shock((.7-pd/14)*(n.shk||1))}
     let hit=0;for(const t of G.actors){if(!t.alive||t.team!==TZ)continue;const dx=t.c.x-n.x,dy=t.c.y+1-n.y,dz=t.c.z-n.z;const d=Math.hypot(dx,dy,dz);if(d>R0)continue;if(!losClear(n.x,n.y+.2,n.z,t.c.x,t.c.y+1,t.c.z))continue;
