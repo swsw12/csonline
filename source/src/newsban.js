@@ -5,6 +5,8 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'map',ref:'apt',tag:['신규 맵','New map'],t:['은행나무 아파트','Ginkgo Apartments'],
+    d:['주민이 모두 대피한 가을 오후의 복도식 아파트 단지. 사람은 은행나무 정원에서, 좀비는 격리선 너머 바깥 도로와 지하주차장에서 와요. 101동 2 · 3층 복도와 벽을 터서 이은 세대, 상가 2층 태권도장과 옥상, 정글짐이 선 놀이터, 등나무 쉼터, 경로당 — 정원 밑엔 세 곳으로 드나드는 지하주차장이 있어요.','An apartment complex on an autumn afternoon, emptied by the evacuation. The humans start in the ginkgo garden, the zombies come from the outer roads beyond the quarantine line and from the car park below. The open corridors of block 101 (2F and 3F) and the flats broken into, the taekwondo studio over the arcade and its roof, a playground with a play tower, a wisteria pergola, the senior centre — and under the garden a car park with three ways in.']},
   {kind:'map',ref:'italy',tag:['맵 동선 개편','New ways through'],t:['하얀 언덕 마을','Whitehill'],
     d:['사람은 북쪽 높은 테라스에서, 좀비는 남쪽 낮은 거리에서 — 출발 위치가 맞바뀌었어요. 갈림길의 쐐기 모양 집을 헐어 기념비가 선 비탈 광장으로 만들었고, 가운데 거리 끝에서 집들을 뚫고 북쪽으로 가는 아치 통로와 하늘이 뚫린 우물 마당이 생겼어요. 분수 광장으로 가던 골목 하나는 막혔어요.','The humans start on the high north terrace now, the zombies in the low south street. The wedge house at the fork came down for a sloping square with a monument; an arched passage runs north through the houses from the top of the middle street, past a well court open to the sky; and one lane to the fountain courtyard is walled up.']},
   {kind:'map',ref:'militia',tag:['맵 동선 개편','New ways through'],t:['붉은 메사 목장','Red Mesa Ranch'],
