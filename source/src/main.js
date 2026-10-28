@@ -108,7 +108,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(this.overlay==='buy'){let n=+k.replace('Digit','').replace('Numpad','');if(k==='Digit0'||k==='Numpad0')n=10;if(n>=1&&n<=10){if(UI.buyStage===0){if(n<=BUY_MENU.length){UI.buyCat=n-1;UI.buyStage=1;UI.renderBuy()}}else{const it=BUY_MENU[UI.buyCat].items[n-1];if(it)this.buyItem(it);UI.buyStage=0}return}if(k==='KeyB'){this.closeOverlay();return}}
       if(this.overlay==='zsel'){const n=+k.replace('Digit','');if(n>=1&&n<=ZLIST.length){this.pickZ(ZLIST[n-1]);return}if(k==='KeyM'){this.closeOverlay();return}}
       if(!P)return;
-      if(KC.on&&(k==='Space'||k==='KeyV'||k==='Enter'||k==='NumpadEnter')){KC.skip();return}
+      if(KC.on&&(k==='Space'||k==='KeyV')){KC.skip();return}// (Enter opens the chat, chat.js — a word while you are down)
       if(k==='KeyV'&&!P.alive)this.toggleFree();
       if(k==='Tab'){this.boardOn=true;UI.board(true)}
       if(k==='KeyB')this.openOverlay('buy');

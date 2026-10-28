@@ -198,7 +198,7 @@ const _pr=new THREE.Color(),_fyo=[0,0,0,0];
 function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.isPlayer&&!G.spec&&a.alive)&&(a.alive||a.deadT<60||!a.permaDead||G.st!=='menu');
   ch.grp.visible=show&&(a.alive||a.an.dead>0);if(!ch.grp.visible){if(a.gun)a.gun.visible=false;
     // the local player's body is not drawn, but its head (the hit sphere, and where claws and bot bullets aim) must still follow it
-    if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14;if(KC.rec&&a.isPlayer)KC.ghost(a,dt)}return}
+    if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14;if(KC.rec&&a.isPlayer){KC.ghost(a,dt);visUni(a,dt);ensureGun(a)}}return}
   const st=visState(a,dt);if(KC.rec)a._st=st;
   if(a.team===TZ)poseZombie(ch,st);else poseHuman(ch,st);
   visTail(a,dt)}
@@ -239,11 +239,7 @@ function visTail(a,dt){const ch=a.ch,c=a.c;
       const sp=rr(1.6,3.2)*Math.min(1,S.t/1.2+.3);FX.spawn({x:_sv.x+_sd.x*.05,y:_sv.y+_sd.y*.05,z:_sv.z+_sd.z*.05,vx:_sd.x*sp+rr(-.25,.25),vy:_sd.y*sp+rr(0,.5),vz:_sd.z*sp+rr(-.25,.25),life:rr(.5,.9),s0:.05,s1:.03,r:.5,g:.03,b:.02,f:4,grav:9.8,col:.05,splat:Math.random()<.25?rr(.05,.1):0})}}
   // level of detail: rounded fillets up close, chamfered parts further out
   {const cp=R.cam.position,dc=Math.hypot(c.x-cp.x,c.y+1-cp.y,c.z-cp.z),g=dc<14?ch.A.geo:ch.A.geoLo;if(ch.mesh.geometry!==g)ch.mesh.geometry=g}
-  sampleProbe(c.x,c.y+1.1,c.z,_pr);ch.mat.uniforms.uProbe.value.copy(_pr).multiplyScalar(1.25);
-  const U=ch.mat.uniforms;U.uFlash.value=Math.max(0,U.uFlash.value-dt*8);
-  // status tints: frozen (ice blue), frenzy (red), harden (stone), level glow
-  const T=U.uTint.value;if(a.team===TZ&&a.zc==='runner'&&a.skillT>0&&a.alive)T.set(.5,.75,1,-(a.skillT<.6?a.skillT/.6*.7:.7));else if(a.frozen>0)T.set(.55,.8,1,.55);else if(a.skillT>0&&a.zc==='rager')T.set(.9,.1,.05,.3+.1*Math.sin(G.t*20));else if(a.skillT>0&&a.zc==='brute')T.set(.45,.42,.38,.45);else T.set(0,0,0,0);
-  U.uEmisA.value=a.team===TZ?(a.lvl>=3?1.6:a.lvl>=2?1.25:1):1;
+  const U=visUni(a,dt);
   ensureGun(a);if(a.gun){a.gun.visible=!!ch.gunOn;if(ch.gunOn){a.gun.matrix.multiplyMatrices(ch.M[1],ch.gunM);a.gun.material.uniforms.uProbe.value.copy(U.uProbe.value)}}
   if(a.gun2){a.gun2.visible=!!ch.gunOn2;if(ch.gunOn2)a.gun2.matrix.multiplyMatrices(ch.M[1],ch.gunM2)}
   charHead(ch,a.head);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14;
@@ -251,6 +247,15 @@ function visTail(a,dt){const ch=a.ch,c=a.c;
   if(a.team===TZ&&a.alive){if(!a.arms)a.arms=[0,1,2,3,4,5].map(()=>new THREE.Vector3());a.armR=charArms(ch,a.arms);a.armT=G.t}else a.armT=-1e9;
   // flashlight beam for human bots
   if(a.team===TH&&a.alive&&!a.isPlayer&&a.flash&&a.gun&&a.gun.visible){if(!a.beam){a.beam=mkBeam();a.gun.add(a.beam)}a.beam.visible=true}else if(a.beam)a.beam.visible=false}
+// (v7.8.2) a body's light and colour: the probe at it, a hit's white flash fading, status tints, the level glow. Also kept up for the
+// local player while its body is not drawn and a kill cam records (updateVisual): the kill cam draws it as it was
+function visUni(a,dt){const ch=a.ch,c=a.c;
+  sampleProbe(c.x,c.y+1.1,c.z,_pr);ch.mat.uniforms.uProbe.value.copy(_pr).multiplyScalar(1.25);
+  const U=ch.mat.uniforms;U.uFlash.value=Math.max(0,U.uFlash.value-dt*8);
+  // status tints: frozen (ice blue), frenzy (red), harden (stone), level glow
+  const T=U.uTint.value;if(a.team===TZ&&a.zc==='runner'&&a.skillT>0&&a.alive)T.set(.5,.75,1,-(a.skillT<.6?a.skillT/.6*.7:.7));else if(a.frozen>0)T.set(.55,.8,1,.55);else if(a.skillT>0&&a.zc==='rager')T.set(.9,.1,.05,.3+.1*Math.sin(G.t*20));else if(a.skillT>0&&a.zc==='brute')T.set(.45,.42,.38,.45);else T.set(0,0,0,0);
+  U.uEmisA.value=a.team===TZ?(a.lvl>=3?1.6:a.lvl>=2?1.25:1):1;
+  return U}
 let BEAM_GEO=null,BEAM_MAT=null;
 function mkBeam(){if(!BEAM_GEO){BEAM_GEO=new THREE.ConeGeometry(1.5,9,10,1,true);BEAM_GEO.translate(0,-4.5,0);BEAM_GEO.rotateX(Math.PI/2);
     BEAM_MAT=new THREE.ShaderMaterial({vertexShader:'varying float vZ;varying vec3 vP;void main(){vZ=-position.z/9.;vec4 wp=modelMatrix*vec4(position,1.);vP=wp.xyz;gl_Position=projectionMatrix*viewMatrix*wp;}',

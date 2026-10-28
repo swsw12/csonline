@@ -506,7 +506,8 @@ function mapDrop(id){const C=MAPCACHE[id];if(!C||id===MAP.id)return false;delete
   // what the map in play and the other kept maps use stays (and the gun models, shared with the weapons)
   const kM=new Set(),kT=new Set(),kG=new Set(Object.values(GUN_CACHE));
   for(const L of [MAP.meshes||[],...Object.values(MAPCACHE).map(c=>c.meshes||[])])for(const m of L)m.traverse(o=>{if(o.geometry)kG.add(o.geometry);mapMats(o,mt=>{kM.add(mt);mapTexs(mt,t=>kT.add(t))})});
-  const base=new Set();for(const k in TEX)if(!MAPTEXK.has(k))base.add(TEX[k]);
+  // (and the gun atlas: chapter 10's props on the table wear it, as does every gun in the world and in hand — gunart.js)
+  const base=new Set();for(const k in TEX)if(!MAPTEXK.has(k))base.add(TEX[k]);if(typeof GA!=='undefined'){if(GA.tex)base.add(GA.tex);if(GA.texVM)base.add(GA.texVM)}
   for(const m of C.meshes||[]){if(m.parent)m.parent.remove(m);m.traverse(o=>{if(o.geometry&&!kG.has(o.geometry))o.geometry.dispose();
     mapMats(o,mt=>{if(kM.has(mt))return;kM.add(mt);mapTexs(mt,t=>{if(!kT.has(t)&&!base.has(t)){kT.add(t);t.dispose()}});mt.dispose()})})}
   return true}

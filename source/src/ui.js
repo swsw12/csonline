@@ -168,7 +168,8 @@ function cfgFix(){const C=CFG,D=CFG_DEF,num=(k,lo,hi,d,int)=>{let v=+C[k];if(C[k
   if(!MAPDEFS[C.map]||MAPDEFS[C.map].practice)C.map=D.map;
   if(!(typeof ZLIST!=='undefined'?ZLIST:[]).includes(C.zclass)||!ZCLASS[C.zclass])C.zclass=D.zclass;
   if(!HSKINS.includes(C.skin))C.skin=D.skin;
-  const epOk=e=>typeof EPS!=='undefined'&&!!EPS[e|0]&&!EPS[e|0].soon;if(C.ep!=null&&!epOk(C.ep))C.ep=1;
+  // (0 is the free scenario, episode.js epSel)
+  const epOk=e=>{if(typeof e!=='number'&&(typeof e!=='string'||e.trim()===''))return false;const n=+e;return Number.isInteger(n)&&(n===0||typeof EPS!=='undefined'&&!!EPS[n]&&!EPS[n].soon)};if(C.ep!=null)C.ep=epOk(C.ep)?+C.ep:1;
   if(C.scale!=='auto'){const v=+C.scale;C.scale=Number.isFinite(v)&&v>=.25&&v<=2?v:'auto'}
   num('bots',0,31,D.bots,1);num('diff',0,3,D.diff,1);num('rounds',1,15,D.rounds,1);num('time',60,600,D.time,1);
   for(const [k,lo,hi,d] of [['pbots',0,15,7],['scBots',0,7,3],['pg',0,9,1],['pw',0,9,1],['ptime',60,1200,480]])if(C[k]!=null)num(k,lo,hi,d,1);
@@ -177,7 +178,7 @@ function cfgFix(){const C=CFG,D=CFG_DEF,num=(k,lo,hi,d,int)=>{let v=+C[k];if(C[k
   for(const k in D)if(typeof D[k]==='boolean'&&typeof C[k]!=='boolean')C[k]=D[k];
   for(const k of ['autoFire','aimAssist','leftFire'])if(C[k]!=null&&typeof C[k]!=='boolean')delete C[k];
   if(C.touch!=null&&!['auto','on','off'].includes(C.touch))delete C.touch;
-  if(C.mpCfg!=null){if(typeof C.mpCfg!=='object'||Array.isArray(C.mpCfg))delete C.mpCfg;else{const M=C.mpCfg;if(M.mode!=null&&!MODES.includes(M.mode))delete M.mode;if(M.map!=null&&(!MAPDEFS[M.map]||MAPDEFS[M.map].practice))delete M.map;if(M.ep!=null&&!epOk(M.ep))delete M.ep;
+  if(C.mpCfg!=null){if(typeof C.mpCfg!=='object'||Array.isArray(C.mpCfg))delete C.mpCfg;else{const M=C.mpCfg;if(M.mode!=null&&!MODES.includes(M.mode))delete M.mode;if(M.map!=null&&(!MAPDEFS[M.map]||MAPDEFS[M.map].practice))delete M.map;if(M.ep!=null){if(epOk(M.ep))M.ep=+M.ep;else delete M.ep}
     for(const k of ['bots','diff','rounds','time','pg','pw','ptime','blackout','scBots'])if(M[k]!=null&&!Number.isFinite(+M[k]))delete M[k]}}
   saveCfg()}
 if(CFG.gore!==0)CFG.gore=1;// (v6.73: 15세 is the most — 원본 is no longer offered)

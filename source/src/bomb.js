@@ -93,6 +93,8 @@ const BOMB={FREEZE:6,ROUND:105,TIMER:40,PLANT:3.2,DEFUSE:6,BUYT:20,ENDT:5,REACH:
     if(hD&&!nD){this.end(at,'elim');return}if(hA&&!nA){this.end(df,'elim');return}if(G.time<=0)this.end(df,'time')},
   // a round's end: the score, the call, the next round (or the match when a side has its wins)
   end(w,why,remote,fin){if(G.st!=='fight'&&!(remote&&G.st==='prep'))return;
+    // (v7.8.2) a kill cam still playing ends here, so the blast and its sound below are the live ones (the kill cam holds world effects back)
+    if(typeof KC!=='undefined'&&KC.on)KC.end();
     if(!remote){G.score[w]=(G.score[w]|0)+1;fin=G.score[w]>=this.W}
     for(const a of G.actors){a.bAct=null;a.cmd.fire=a.cmd.alt=false}
     const L=LI(),S=PVP.SIDES,P=G.player,won=P&&(P.side===1?1:0)===w;

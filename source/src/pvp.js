@@ -479,8 +479,8 @@ AI.pvp=function(a,dt){PVP.bot(a,dt)};
   // the rewards: won = my side (player) won, no infections; the match's "rounds" are its minutes
   const srs=shopRoundStats;shopRoundStats=function(win){const r=srs(win);if(!G.pvp)return r;const P=G.player;r.won=PVP.iWon();r.survived=false;r.infects=0;r.round=1;r.mvp=PVP.mvp()===P&&(P.kills|0)>0;return r};
   const sms=shopMatchStats;shopMatchStats=function(){const r=sms();if(!G.pvp)return r;const P=G.player;r.won=PVP.iWon();r.infects=0;r.mvp=PVP.mvp()===P&&(P.kills|0)>0;r.rounds=Math.min(10,Math.max(1,G.mode==='bomb'?G.round|0:Math.round(PVP.played/60)));return r};
-  // the side's colour on every body (팀 데스매치), a white shimmer while spawn protection lasts
-  const uv=updateVisual;updateVisual=function(a,dt){uv(a,dt);if(!G.pvp||!a.ch||a.team!==TH||!a.ch.grp.visible)return;const T0=a.ch.mat.uniforms.uTint.value;
+  // the side's colour on every body (팀 데스매치), a white shimmer while spawn protection lasts (yours too while a kill cam records: it draws you)
+  const uv=updateVisual;updateVisual=function(a,dt){uv(a,dt);if(!G.pvp||!a.ch||a.team!==TH||!(a.ch.grp.visible||a.isPlayer&&a.alive&&KC.rec))return;const T0=a.ch.mat.uniforms.uTint.value;
     // (the side colour follows the light at the body, so a team colour does not glow in the dark)
     const pr=a.ch.mat.uniforms.uProbe.value,k=clamp((pr.r+pr.g+pr.b)*.45,.3,.85);
     if(a.alive&&a.pvpProt>G.t)T0.set(.9*k,.95*k,k,.22+.12*Math.sin(G.t*14));else if(PVP.teams()){const s=PVP.SIDES[a.side===1?1:0].t;T0.set(s[0]*k,s[1]*k,s[2]*k,.22)}};

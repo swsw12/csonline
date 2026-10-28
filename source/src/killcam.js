@@ -23,13 +23,13 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
     for(const rc of this.C.values()){if(rc.grp.parent)rc.grp.parent.remove(rc.grp);rc.mat.dispose();if(rc.gMat)rc.gMat.dispose()}this.C.clear()},
   // the effects, lights and sounds of the world: recorded while a match records; held back while the kill cam plays (its own run through)
   init(){if(this.ok)return;this.ok=true;const K=this;
-    const wrap=(O,name,k,one)=>{const f=O[name];O[name]=function(...A){if(k&&K.rec&&!K.rp)K.E.push({t:G.t,k,p:one?A[0]:A});if(K.on&&!K.rp)return;return f.apply(this,A)}};
+    const wrap=(O,name,k,one)=>{const f=O[name];O[name]=function(...A){if(k&&K.rec&&!K.rp)K.E.push({t:G.t,k,p:one?A[0]:A});if(K.on&&!K.rp&&K.live())return;return f.apply(this,A)}};
     // (an emitter is not recorded: the particles it gives off later go through FX.spawn and are recorded one by one)
     wrap(FX,'spawn','p',1);wrap(FX,'spark','k');wrap(FX,'tracer','r');wrap(FX,'emit',null,1);
     // a short light (a muzzle flash, a blast) is a moment; a lasting one (a fire, a lamp) belongs to now and always goes through
     const dl=DL.add;DL.add=function(x,y,z,col,range,int,life,o){const sh=life>0&&life<1.5;if(sh&&K.rec&&!K.rp)K.E.push({t:G.t,k:'l',p:[x,y,z,col,range,int,life,o]});
-      if(sh&&K.on&&!K.rp)return Object.assign({x,y,z,c:new THREE.Color(col),r:range,i:int,life,t:0,flick:0},o||{});return dl.call(this,x,y,z,col,range,int,life,o)};
-    for(const [name,k] of [['at','a'],['stepAt','f']]){const f=AU[name];AU[name]=function(n,x,y,z,o){if(K.rec&&!K.rp)K.E.push({t:G.t,k,p:[n,x,y,z,Object.assign({},o||{})]});if(K.on&&!K.rp)return null;return f.call(this,n,x,y,z,o)}}},
+      if(sh&&K.on&&!K.rp&&K.live())return Object.assign({x,y,z,c:new THREE.Color(col),r:range,i:int,life,t:0,flick:0},o||{});return dl.call(this,x,y,z,col,range,int,life,o)};
+    for(const [name,k] of [['at','a'],['stepAt','f']]){const f=AU[name];AU[name]=function(n,x,y,z,o){if(K.rec&&!K.rp)K.E.push({t:G.t,k,p:[n,x,y,z,Object.assign({},o||{})]});if(K.on&&!K.rp&&K.live())return null;return f.call(this,n,x,y,z,o)}}},
   // ---------- recording ----------
   tick(dt){this.init();
     if(!this.want()){if(this.on)this.end();if(this.rec){this.rec=false;this.clear()}return}
@@ -52,7 +52,8 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   // the local player's body is not drawn while it lives, so nothing poses it: a shadow animation state does (its own stride clock, swings)
   ghost(a,dt){const S=a._kcS||(a._kcS={an:{atk:0,atkSide:1,flinch:0,dead:0,skill:0},ph:0});const an0=a.an,ph0=a.stepPh;a.an=S.an;a.stepPh=S.ph;
     try{a._st=visState(a,dt)}finally{S.ph=a.stepPh;a.an=an0;a.stepPh=ph0}},
-  shot(a,W,eye){this.E.push({t:G.t,k:'s',id:a.id,W,side:a.dualSide||1,pl:!!a.isPlayer,snd:a.isPlayer&&W.snd?W.snd:null,x:eye.x,y:eye.y,z:eye.z})},
+  // (quiet: the flamethrower's ticks, salamander.js — its sound is not one shot each)
+  shot(a,W,eye,quiet){this.E.push({t:G.t,k:'s',id:a.id,W,side:a.dualSide||1,pl:!!a.isPlayer,snd:a.isPlayer&&W.snd&&!quiet?W.snd:null,x:eye.x,y:eye.y,z:eye.z})},
   mel(a,heavy){this.E.push({t:G.t,k:'m',id:a.id,heavy:!!heavy});const S=a.isPlayer&&a._kcS;if(S){S.an.atk=1;S.an.heavy=!!heavy;S.an.atkSide=a.an.atkSide||1;S.an.atkD=meleeAtkD(WPN[a.cur],heavy)}},
   nade(a,kind){this.E.push({t:G.t,k:'n',id:a.id,kind})},
   // frame j from the oldest kept (0) to the newest (fn-1)
@@ -61,10 +62,13 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   // ---------- going down ----------
   death(src,o){const P=G.player;if(!this.rec||this.on||!P||!src||src===P||!src.ch||!G.actors.includes(src))return;o=o||{};
     // the time before you are back: 3 s in the respawning PvP modes, a zombie's 8 s rise; staying down (폭파미션, a perma kill): plenty
-    let avail=99;if(G.pvp&&G.mode!=='bomb')avail=P.pvpRT!=null?P.pvpRT:PVP.RESP;else if(!P.permaDead&&P.team===TZ)avail=P.reviveT>0?P.reviveT:P.respawnT>0?P.respawnT:5;
+    // (진화 감염: a comeback brings the dead back ZBAL.cbRevive times sooner, and one can begin while you are down — taken as the time)
+    let avail=99;if(G.pvp&&G.mode!=='bomb')avail=P.pvpRT!=null?P.pvpRT:PVP.RESP;else if(!P.permaDead&&P.team===TZ)avail=P.reviveT>0?P.reviveT/(G.mode==='mut'&&typeof ZBAL!=='undefined'?ZBAL.cbRevive:1):P.respawnT>0?P.respawnT:5;
+    // in a match over the network another player's shots are shown NET_DELAY late (net.js netQueueFx), his kill is not: the moment is his shot
+    const lag=NET.on&&src.pup?NET_DELAY/1000:0;
     const long=avail>=6,delay=long?.8:.42,post=long?.7:.3,slow=long?[.34,.16,.35]:[.22,.08,.5],extra=(slow[0]+slow[1])*(1/slow[2]-1);
     const pre=clamp(long?4.2:avail-delay-post-extra-.18,.8,4.2);
-    this.pend={at:G.t+delay,tD:G.t,pre,post,slow,kid:src.id,k:src,w:o.w||src.cur,hs:!!o.hs,he:!!o.he,hp:Math.max(0,Math.ceil(src.hp||0)),alive:!!src.alive,
+    this.pend={at:G.t+delay,tD:G.t+lag,pre,post,slow,kid:src.id,k:src,w:o.w||src.cur,hs:!!o.hs,he:!!o.he,hp:Math.max(0,Math.ceil(src.hp||0)),alive:!!src.alive,
       d:Math.round(Math.hypot(src.c.x-P.c.x,src.c.y-P.c.y,src.c.z-P.c.z)),name:src.name,cls:G.pvp?PVP.cls(src):(src.team===TZ?'z':'h'),col:G.pvp?PVP.col(src):null,pid:P.id}},
   start(p){const t0=Math.max(p.tD-p.pre,this.oldest()+.02),t1=Math.min(p.tD+p.post,this.lastT);if(t1-t0<.5||!this.fn)return;
     this.on=true;this.pk=p;this.t0=t0;this.t1=t1;this.pt=t0;this.real=0;this.left=0;this.kx=0;this.cy=null;this.cp=null;this.vmSave=[VM.id,VM.skin];this.vmErr=0;
@@ -72,7 +76,10 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
     this.fxClear();this.post();this.sample();const k=this.S.get(p.kid);if(k)this.vmFor(k,true);
     this.ui(true);AU.play('ui',{vol:.25,rate:.6})},
   speed(t){const p=this.pk,s=p.slow;return t>p.tD-s[0]&&t<p.tD+s[1]?s[2]:1},
-  play(dt){const P=G.player;if(!P||P.alive||!(G.st==='fight'||G.st==='prep')){this.end();return}
+  // while it may go on: you are still down and the round still on (what happens the moment either changes — you rising, a bomb going off —
+  // is seen and heard live, not held back: it ends there)
+  live(){const P=G.player;return !!P&&!P.alive&&(G.st==='fight'||G.st==='prep')},
+  play(dt){if(!this.live()){this.end();return}
     const a=this.pt,b=Math.min(this.t1,a+dt*this.speed(a));this.runTo(b);this.pt=b;this.real+=dt;this.sample();
     G.deathCam=Math.max(G.deathCam,.5);// (keeps the spectator view off while it plays)
     if(this.pt>=this.t1-1e-4){this.left+=dt;if(this.left>.18)this.end()}},
@@ -109,6 +116,8 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
       for(let j=0;j<4;j++)s.tn[j]=n.tn[j];
       if(n.vis){const a0=r0.vis?r0.st:n.st,a1=r1.vis?r1.st:n.st;Object.assign(s.st,n.st);
         for(const key of this.NUM){const x=a0[key],y=a1[key];if(typeof x!=='number'||typeof y!=='number')continue;s.st[key]=this.JUMP[key]&&Math.abs(y-x)>.5?(u<.5?x:y):lerp(x,y,u)}
+        // between the last frame alive and the first one down: the fall from its start (a living body's deadT and deadDir are the last death's)
+        if(r0.alive&&!r1.alive){s.st.deadT=a1.deadT;s.st.deadDir=a1.deadDir}
         const y0=r0.vis?r0.fy:n.fy,y1=r1.vis?r1.fy:n.fy;s.fy[0]=y0[0]+wrapA(y1[0]-y0[0])*u;s.fy[1]=y0[1]+wrapA(y1[1]-y0[1])*u;s.fy[2]=lerp(y0[2],y1[2],u);s.fy[3]=lerp(y0[3],y1[3],u);s.st.footYaw=s.fy}
       S.set(s.id,s)}},
   // ---------- drawing it ----------
@@ -134,7 +143,8 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   pose(dt){for(const a of G.actors)if(a.ch)a.ch.grp.visible=false;for(const n of NADES)if(n.mesh&&n.mesh.visible){n.mesh.visible=false;n._kcH=1}
     this.later(dt);
     for(const rc of this.C.values())rc.used=false;const kid=this.pk.kid,cp=R.cam.position;
-    for(const s of this.S.values()){if(!s.vis||s.id===kid&&s.alive)continue;let rc;try{rc=this.char(s)}catch(e){continue}rc.used=true;const st=s.st;
+    // (not the killer's own body, dead or alive: the camera is his eye — in a trade it would sit inside him as he falls)
+    for(const s of this.S.values()){if(!s.vis||s.id===kid)continue;let rc;try{rc=this.char(s)}catch(e){continue}rc.used=true;const st=s.st;
       if(s.team===TZ)poseZombie(rc,st);else poseHuman(rc,st);rc.hide=s.hide;rigCompute(rc);
       rc.grp.position.set(s.x,s.y,s.z);rc.grp.rotation.y=s.yaw;rc.grp.visible=true;
       const dc=Math.hypot(s.x-cp.x,s.y+1-cp.y,s.z-cp.z),g=dc<14?rc.A.geo:rc.A.geoLo;if(rc.mesh.geometry!==g)rc.mesh.geometry=g;
@@ -145,7 +155,7 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   // the replay reaches the moment it came (the gun a human let fall as he turned shows from the moment he turned)
   objs(){const L=[];if(typeof DROPS!=='undefined')for(const d of DROPS.list)L.push([d,d.mesh,null]);if(typeof SUP!=='undefined'&&SUP.list)for(const b of SUP.list)L.push([b,b.mesh,b.chute]);return L},
   later(dt){const t=this.pt,now=G.t;
-    for(const [o,m1,m2] of this.objs()){if(now-(o.t||0)>t+.05){for(const m of [m1,m2])if(m&&m.visible){m.visible=false;o._kcH=1}}else if(o._kcH){o._kcH=0;for(const m of [m1,m2])if(m)m.visible=true}}},
+    for(const [o,m1,m2] of this.objs()){if(now-(o.t||0)>t+.05){for(const m of [m1,m2])if(m&&m.visible){m.visible=false;o._kcH=1}if(o._kcH&&o.light)o.light.i=0}else if(o._kcH){o._kcH=0;for(const m of [m1,m2])if(m)m.visible=true}}},// (a landed box's beacon, supply.js, blinks again on its next tick)
   unhide(){for(const [o,m1,m2] of this.objs())if(o._kcH){o._kcH=0;for(const m of [m1,m2])if(m)m.visible=true}},
   gun(rc,s){const want=s.team===TH?s.gm:null;
     if(rc.gId!==want){for(const g of [rc.g1,rc.g2])if(g)rc.grp.remove(g);rc.g1=rc.g2=null;rc.gId=want;
