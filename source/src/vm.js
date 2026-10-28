@@ -198,6 +198,8 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       if(m.vd)trailOn=this.vdPose(A,dt,m);
       // the straitjacket zombie (strait.js): the sleeves stay crossed in front; it butts with its head — a nod of the view, no trail
       else if(m.sj)SJ.vmPose(this,A,dt);
+      // v7.10: a zombie with a tool in hand (zkit.js) poses both arms itself — the pickaxe, the cleaver and the hook, the mallets
+      else if(m.zp)trailOn=m.zp(this,A,dt,m,a);
       else if(this.mel){const M=this.mel;M.t+=dt;const p=clamp(M.t/M.d,0,1);
         if(M.heavy){kfv(VMK.clH,p,_vk);A[0].set(_vk);A[1].set(_vk);A[1][0]=-_vk[0];A[1][3]=-_vk[3];trailOn=p>.47&&p<.74;this.camPitch=-Math.sin(clamp((p-.45)/.3,0,1)*Math.PI)*.05+(p<.45?smooth(p/.45)*.02:0)}
         else{kfv(VMK.clL,p,_vk);const sd=M.side>0?1:-1,S1=A[sd>0?0:1];S1.set(_vk);if(sd<0){S1[0]=-_vk[0];S1[3]=-_vk[3]}
@@ -212,11 +214,13 @@ const VM={U:null,cache:{},cur:null,id:null,skin:null,t:0,swx:0,swy:0,drawT:0,dra
       const idle=Math.sin(this.t*2.4)*.01;A[0][1]+=idle-Math.abs(Math.cos(ph))*.014*bobA;A[1][1]+=-idle-Math.abs(Math.sin(ph))*.014*bobA;A[0][2]+=Math.sin(ph)*.02*bobA;A[1][2]-=Math.sin(ph)*.02*bobA;
       const tw=[jerk(this.t,3,1.9,.4)*.12,jerk(this.t,5,2.3,.4)*.1];
       for(let i=0;i<2;i++){const g=i?L_:R_,v=A[i];g.position.set(v[0],v[1],v[2]);_vd.set(v[3],v[4],v[5]).normalize();_vb.set(i?-.25:.25,-.5,1).normalize();
-        g.quaternion.setFromUnitVectors(_vb,_vd);_vq.setFromAxisAngle(_vd,tw[i]+(i?.12:-.12));g.quaternion.premultiply(_vq)}
-      m.root.position.set(S.px.x*.6,S.py.x*.6+drY,0);m.root.rotation.set(S.rx.x*.4+drX,S.ry.x*.5,S.rz.x*.5)}
+        g.quaternion.setFromUnitVectors(_vb,_vd);_vq.setFromAxisAngle(_vd,tw[i]+(i?.12:-.12)+(m.zp&&this.zTw?this.zTw[i]:0));g.quaternion.premultiply(_vq)}
+      m.root.position.set(S.px.x*.6,S.py.x*.6+drY,0);m.root.rotation.set(S.rx.x*.4+drX,S.ry.x*.5,S.rz.x*.5);
+      if(m.zq)m.zq(this,m,a)}// (v7.10: then the tools in their fists are aimed, zkit.js zkAim)
     // ---- trail sampling ----
     if(trailOn){m.root.updateMatrixWorld(true);
-      if(kind==='claw'&&m.vd){const am=m.doll;am.localToWorld(_vv.set(0,0,-.08));am.localToWorld(_vw.set(0,.02,-.22));this.trailPush(_vv,_vw)}
+      if(kind==='claw'&&m.zt&&m.zt(this,m,_vv,_vw))this.trailPush(_vv,_vw);// (v7.10: the tool's edge, zkit.js)
+      else if(kind==='claw'&&m.vd){const am=m.doll;am.localToWorld(_vv.set(0,0,-.08));am.localToWorld(_vw.set(0,.02,-.22));this.trailPush(_vv,_vw)}
       else if(kind==='claw'){const M=this.mel;const arms=M&&M.heavy?[m.armR,m.armL]:[M&&M.side>0?m.armR:m.armL];const am=arms[0].children[0];am.localToWorld(_vv.set(0,-.02,-.08));am.localToWorld(_vw.set(0,-.05,-.22));this.trailPush(_vv,_vw)}
       else if(kind==='axe'){m.gun.localToWorld(_vv.set(0,.03,-.49));m.gun.localToWorld(_vw.set(0,.15,-.49));this.trailPush(_vv,_vw)}
       else if(kind==='hammer'){m.gun.localToWorld(_vv.set(0,-.13,-.81));m.gun.localToWorld(_vw.set(0,.13,-.81));this.trailPush(_vv,_vw)}

@@ -122,6 +122,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);if(KC.rec&&a.salT===G.t)KC.shot(a
   if(W.cone){coneBlast(a,W,eye.clone(),base)}
   else if(W.air){airBlast(a,W,eye.clone(),base)}
   else if(W.rail){const r=tbShot(a,W,eye,base,sp);if(r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}// the Arcline (specguns.js)
+  else if(W.storm&&typeof stmShot==='function'){const r=stmShot(a,W,eye,base,sp,false);if(r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}// the Stormchain's bolt (storm.js)
   else if(W.proj){spreadDir(base,sp,dir);launchProj(a,W,eye,dir)}
   else if(W.fan){for(let i=0;i<W.fan;i++){const off=(i-(W.fan-1)/2)/((W.fan-1)/2)*W.fanA,c=Math.cos(off),s=Math.sin(off);dir.set(base.x*c+base.z*s,base.y,-base.x*s+base.z*c).normalize();spreadDir(dir,sp,dir);
     const r=shotTrace(a,eye.x,eye.y,eye.z,dir.x,dir.y,dir.z,W,i);if(r&&r.hit){hitAny=true;if(r.hs)hsAny=true;dmgTotal+=r.dmg}}}
@@ -132,7 +133,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);if(KC.rec&&a.salT===G.t)KC.shot(a
   // recoil: view punch + accumulating spread
   const rv=W.rec[0]*(a.duck?.75:1),rh=W.rec[1];a.punchP+=rv*(.7+Math.min(a.shots,8)*.06);a.punchY+=(Math.random()*2-1)*rh;a.recoilSpread=Math.min(W.spread[1]*1.4,a.recoilSpread+W.rec[0]*.35);a.kick=1;
   // effects + sound
-  const mz=muzzleWorld(a);if(!W.quiet&&!W.cone&&W.proj!=='disc')FX.muzzle(mz.x,mz.y,mz.z,base.x,base.y,base.z,W.kind==='shotgun'||W.kind==='sniper'||W.kind==='mg'||W.kind==='special');
+  const mz=muzzleWorld(a);if(!W.quiet&&!W.cone&&W.proj!=='disc'&&!W.storm)FX.muzzle(mz.x,mz.y,mz.z,base.x,base.y,base.z,W.kind==='shotgun'||W.kind==='sniper'||W.kind==='mg'||W.kind==='special');
   a.heat=Math.min(1.4,(a.heat||0)+(W.kind==='shotgun'||W.kind==='sniper'?.35:W.kind==='mg'?.07:.09));// barrel heat: smokes when you stop
   if(W.shell){const sd=a.isPlayer?1:.6;FX.shell(mz.x-base.x*.4,mz.y-.05,mz.z-base.z*.4,Math.cos(a.yaw)*sd,-Math.sin(a.yaw)*sd,W.kind==='mg')}
   const loud=W.spin?(a.shots%2===0):true;

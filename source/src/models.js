@@ -64,7 +64,7 @@ let CK=3;
 // gloss: the atlas alpha carries the surface finish (FS_CHAR): 255 matte cloth, 240..254 increasingly wet/shiny, 232 glowing
 const GLOSS={plate:248,rubber:245,boot:243,flesh:252,meat:253,tumor:250,skin:241,zskin:242,hair:243};
 const FACE_GA={gasmask:246,visor:249,man:241,woman:241,balaclava:255,gaiter:255,m50:245};// the gloss a painted face starts with
-const WET={flesh:252,wounds:252,ribs:251,bonep:247,drip:253,bite:252,soak:250,gash:252,blood:251,rot:250,teethrow:247,tear:242,veins:243,stitch:246};
+const WET={flesh:252,wounds:252,ribs:251,bonep:247,drip:253,bite:252,soak:250,gash:252,blood:251,rot:250,teethrow:247,tear:242,veins:243,stitch:246,smear:250};
 // materials: {base, style}; decor ops use face-normalised coords (u right, v up, 0..1)
 function fillMat(P,x0,y0,w,h,M,seed,fk,partN){let st=M.style||'cloth',base=M.base;const blot=GORE.de(M.blot||'#4a2a28');// (GORE.lv < 2: a blood-red blot turns to grime)
   if(GORE.lv<2&&(st==='flesh'||st==='meat')){st='zskin';base=GORE.de(base)}// (and raw meat to rotten skin)
@@ -95,6 +95,7 @@ function goreOp(op){const k=op[0];
   if(k==='gash')return ['scratch',op[1],op[2],op[3],op[4],op[5],op[6]];
   if(k==='soak')return ['grimes',op[1],op[2],GORE.de(op[3]||'#5a0808'),(op[4]||.85)*.6];
   if(k==='blood')return ['spots',op[1],op[2],GORE.de(op[3]||'#5a0c0c')];
+  if(k==='smear')return ['smearD',op[1],op[2],op[3],op[4],op[5],GORE.de(op[6]||'#5a0808'),(op[7]||.7)*.75];
   return op}
 function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
     if(k==='rect')R(op[1],op[2],op[3],op[4],(x,y)=>{const t=hash2(x,y,seed+7);P.set(x,y,t<.15?dk(op[5],.15):t>.9?lt(op[5],.08):op[5])});
@@ -153,6 +154,14 @@ function decorOp(P,x0,y0,w,h,op,k,seed,M,X,Y,R){{
       for(let y=-ry;y<=ry;y++)for(let x=-rx;x<=rx;x++){const d=Math.hypot(x/rx,y/ry)+(hash2(Math.floor(x/CK)+i,Math.floor(y/CK),62)-.5)*.4;if(d>1)continue;const px=Math.floor(cx+x),py=Math.floor(cy+y);if(px<0||py<0||px>=w||py>=h)continue;
         P.set(x0+px,y0+py,d<.35?'#1a0a14':d<.6?'#3a1a2a':d<.82?'#4a5a24':'#6a7a34',d<.6?1:.7)}
       for(let q=0;q<3;q++){const px=Math.floor(cx+(hash2(i,q,63)-.5)*rx),py=Math.floor(cy+(hash2(i,q,64)-.5)*ry);if(px>=0&&py>=0&&px<w-CK&&py<h-CK){for(let a=0;a<CK;a++)for(let b=0;b<CK;b++)P.set(x0+px+b,y0+py+a,'#d8c860');P.set(x0+px,y0+py,'#f0e8a0')}}}}
+    // v7.10 a wiped smear: a broad stroke from (u0,v0) to (u1,v1), op[5] design px wide, the paint thinning out along it and breaking up
+    // in streaks at its ragged edges (a bloody hand wiped down an apron; smearD: the 15세 dry grime)
+    else if(k==='smear'||k==='smearD'){const ax=X(op[1]),ay=Y(op[2]),bx=X(op[3]),by=Y(op[4]),wd=Math.max(1,(op[5]||3)*CK/2),col=op[6]||'#5a0808',al=op[7]||.7;
+      const L=Math.max(1,Math.hypot(bx-ax,by-ay)),ux=(bx-ax)/L,uy=(by-ay)/L;
+      for(let y=Math.floor(Math.min(ay,by)-wd-1);y<=Math.max(ay,by)+wd+1;y++)for(let x=Math.floor(Math.min(ax,bx)-wd-1);x<=Math.max(ax,bx)+wd+1;x++){if(x<x0||y<y0||x>=x0+w||y>=y0+h)continue;
+        const px=x-ax,py=y-ay,t=(px*ux+py*uy)/L,q=px*uy-py*ux,d=Math.abs(q)/wd;if(t<-.04||t>1.04)continue;
+        const n=P.n(x,y,2*CK,seed+81,2),streak=hash2(Math.round(q/CK*1.4),5,seed+82),a=al*(1-clamp(t,0,1)*.7)*clamp((1-d)*2.2-(n-.5)*.9,0,1)*(.5+streak*.5);
+        if(a>.04)P.set(x,y,hash2(x,y,seed+83)<.08?dk(col,.25):col,a)}}
     else if(k==='soak'||k==='grimes'){const col=op[3]||'#5a0808',al=op[4]||.85;// blood soaking down cloth from v1, fading towards v0 (grimes: the 15세 grime, dry)
       R(0,op[1],1,op[2],(x,y,i,j,W,H)=>{const t=1-j/(H||1);const n=P.n(x,y,6*CK,seed+71,2);const a=al*clamp(t*1.25-(.5-n)*.9,0,1);if(a>.05)P.set(x,y,hash2(x,y,seed+72)<.1?dk(col,.3):col,a)})}
     else if(k==='gash'){const n=op[5]||3;for(let g=0;g<n;g++){const off=(g-(n-1)/2)*(op[6]||.09);const ax=X(op[1]+off),ay=Y(op[2]),bx=X(op[3]+off),by=Y(op[4]);const L=Math.max(1,Math.hypot(bx-ax,by-ay));// parallel claw slashes
@@ -265,7 +274,7 @@ function axisFr(L,r,q){const h=L/2,o=[-h];if(r>1e-5){const T=_TANS[q];for(let i=
 // face(fk,{na,nb,A,B,P,N}) receives each face grid (row-major, a fastest).
 function profK(k,b,t,bt,bw){const u=(t-bt)/bw,w=Math.max(0,1-u*u);return (k?lerp(k[0],k[1],t):1)+(b?b*w*w:0)}
 function rbox(s,S,lod,face){const hx=s[0]/2,hy=s[1]/2,hz=s[2]/2,r=Math.min(S.r,hx,hy,hz),ix=hx-r,iy=hy-r,iz=hz-r,q=lod?0:r>.02?2:r>.006?1:0;
-  const tx=S.tx,tz=S.tz,bx=S.bx||0,bz=S.bz||0,bt=S.bt==null?.5:S.bt,bw=S.bw||.5,prof=tx||tz||bx||bz;
+  const tx=S.tx,tz=S.tz,bx=S.bx||0,bz=S.bz||0,bt=S.bt==null?.5:S.bt,bw=S.bw||.5,prof=tx||tz||bx||bz,cyl=S.cyl;
   // grid fractions per axis: fillet samples plus optional evenly spaced interior rows (bulging limbs, sculpted faces)
   const sub=(L,iv,n)=>{let F=axisFr(L,r,q);if(n&&!lod){const lo=-iv/L+.5,hi=iv/L+.5;for(let i=1;i<n;i++)F.push(lo+(hi-lo)*i/n);F.sort((a,b)=>a-b)}return F};
   const AX=sub(s[0],ix,S.nx),AY=sub(s[1],iy,S.ny),AZ=sub(s[2],iz,S.nz),sc=lod?null:S.sculpt;
@@ -276,6 +285,12 @@ function rbox(s,S,lod,face){const hx=s[0]/2,hy=s[1]/2,hz=s[2]/2,r=Math.min(S.r,h
       const qx=clamp(x,-ix,ix),qy=clamp(y,-iy,iy),qz=clamp(z,-iz,iz);let dx=x-qx,dy=y-qy,dz=z-qz;const l=Math.hypot(dx,dy,dz);
       if(l>1e-9){dx/=l;dy/=l;dz/=l}else{dx=F.n[0];dy=F.n[1];dz=F.n[2]}
       x=qx+dx*r;y=qy+dy*r;z=qz+dz*r;
+      // v7.10 S.cyl ('x' | 'y' | 'z'): the box's cross-section across that axis pushed out onto its inscribed ellipse (a drum, a barrel).
+      // Each side face then wraps a quarter of the round and the two end faces become discs: a square painted on an end face comes out a circle
+      if(cyl){let a,b,na,nb,ha,hb;if(cyl==='z'){a=x;b=y;na=dx;nb=dy;ha=hx;hb=hy}else if(cyl==='y'){a=x;b=z;na=dx;nb=dz;ha=hx;hb=hz}else{a=y;b=z;na=dy;nb=dz;ha=hy;hb=hz}
+        const ln=Math.hypot(a/ha,b/hb);if(ln>1e-9){const k=Math.max(Math.abs(a)/ha,Math.abs(b)/hb)/ln,m=Math.hypot(na,nb);a*=k;b*=k;
+          const ea=a/(ha*ha),eb=b/(hb*hb),el=Math.hypot(ea,eb)||1;na=m*ea/el;nb=m*eb/el;
+          if(cyl==='z'){x=a;y=b;dx=na;dy=nb}else if(cyl==='y'){x=a;z=b;dx=na;dz=nb}else{y=a;z=b;dy=na;dz=nb}}}
       // sculpted front (faces): a height field over the face's own texture coords (so it lines up with the painted eyes and mouth) pushes the
       // surface out along its normal; the normal tilts by the gradient taken along the face axes
       if(sc&&fk==='front'){const u=(a-.5)*2,v=(b-.5)*2,h=sc(u,v);if(h){const e=.02,hu=(sc(u+e,v)-sc(u-e,v))/(e*fu),hv=(sc(u,v+e)-sc(u,v-e))/(e*fv);
@@ -304,6 +319,8 @@ function partShape(p){const n=p.n,[sx,sy,sz]=p.s,mn=Math.min(sx,sy,sz),mxz=Math.
   else if(/^(bone)/.test(n))S.r=mn*.16;
   else if(/^(rib|vert|spike|claw)/.test(n))S.r=mn*.3;
   else if(/^(vest|pack|pouch|radio)/.test(n))S.r=Math.min(.024,mn*.22);
+  else if(/^drum/.test(n))S={r:Math.min(.014,mn*.2),cyl:'x',ny:14,nz:14};// v7.10 a drum: round across x, its heads the left and right faces
+  else if(/^apron/.test(n))S={r:Math.min(.008,mn*.3),tx:p.tx||null};// (an apron's bib can narrow towards the neck: tx [bottom, top])
   if(p.fr)S.r=mn*p.fr;// (a part may ask for its own roundness: fr = fillet radius / its thinnest side, up to .5)
   S.r=Math.min(S.r,mn*.5);return S}
 // ambient occlusion baked per vertex in the rest pose: every part is a chain of spheres; a vertex is darkened by the parts of its own bone and the
@@ -565,6 +582,24 @@ KF.vdA=[[0,[0,0,0,0,0]],[.25,[2.1,.9,.18,.25,.1]],[.34,[2.2,.95,.2,.3,.1]],[.45,
 KF.vdH=[[0,[0,0,0,0,0]],[.32,[2.5,1,.25,.35,0]],[.44,[2.6,1.05,.28,.4,0]],[.55,[-.65,-.35,-.55,.9,0]],[.72,[-.7,-.3,-.45,.7,0]],[1,[0,0,0,0,0]]];
 const JAW0={fireman:.14,coffin:.14,rager:.12,runner:.3,brute:.08,scream:.34,bomber:.1,spitter:.3,strait:.02};
 Object.assign(ZGAIT,{bomber:{stride:.85,knee:.7,runK:.6,bob:1.5,wide:2.5,twist:1.2,roll:1.6},spitter:{stride:1.05,knee:1.1,runK:.9,bob:1.2,twist:1.4,sway:1.2},boss:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},aleph:{stride:2.3,knee:.7,runK:.6,bob:1.6,wide:3,twist:1.6,roll:1.4},strait:{stride:1.05,knee:1.1,runK:.95,bob:1.25,twist:.6,sway:1.3}});
+// v7.10: the miner (stooped, a heavy tread), the butcher (wide and heavy), the drummer (a march: high knees, little twist)
+Object.assign(ZGAIT,{miner:{stride:1,knee:.9,runK:.8,bob:1.25,wide:1.3,twist:1.2,roll:1.15},butcher:{stride:.95,knee:.72,runK:.62,bob:1.5,wide:2.2,twist:1.4,roll:1.35},drummer:{stride:1.05,knee:1.3,runK:.85,bob:1.15,twist:.6,roll:.8}});
+Object.assign(JAW0,{miner:.12,butcher:.1,drummer:.16});
+// v7.10 tool swings (third person): [shoulder forward, shoulder out, elbow, spine pitch, spine twist, jaw] for the arm with the tool, offsets from
+// the class's carry; a light blow lands at .4 of it, a heavy one at .51 (the claw's timing, game.js zombieAttack). The pickaxe comes over the
+// shoulder and down; the cleaver chops from behind the ear; a mallet is clubbed down; heavy: the pickaxe two-handed overhead, the cleaver
+// with the other hand grabbing, both mallets together
+KF.mnA=[[0,[0,0,0,0,0,0]],[.26,[2,.12,.9,.16,-.35,.4]],[.33,[2.1,.14,.95,.18,-.38,.45]],[.44,[.8,.02,-.25,-.34,.3,.9]],[.56,[.1,-.04,-.3,-.4,.38,.7]],[.8,[.05,0,-.1,-.12,.12,.25]],[1,[0,0,0,0,0,0]]];
+KF.mnH=[[0,[0,0,0,0,0,0]],[.34,[2.4,0,1,.28,0,.6]],[.44,[2.5,0,1.05,.3,0,.7]],[.54,[.9,0,-.25,-.55,0,1.1]],[.68,[.2,0,-.3,-.6,0,.9]],[.88,[.05,0,-.1,-.2,0,.3]],[1,[0,0,0,0,0,0]]];
+KF.bhA=[[0,[0,0,0,0,0,0]],[.24,[1.8,.18,.9,.12,-.3,.35]],[.32,[1.9,.2,.95,.14,-.32,.4]],[.43,[.55,0,-.3,-.3,.28,.85]],[.56,[.1,-.06,-.4,-.32,.32,.6]],[.8,[.04,0,-.12,-.1,.1,.2]],[1,[0,0,0,0,0,0]]];
+KF.bhH=[[0,[0,0,0,0,0,0]],[.34,[2.3,.1,1.05,.3,-.45,.6]],[.44,[2.4,.1,1.1,.32,-.48,.7]],[.55,[.6,-.05,-.35,-.5,.4,1.1]],[.7,[.1,-.1,-.45,-.52,.42,.9]],[.88,[.04,0,-.14,-.16,.12,.3]],[1,[0,0,0,0,0,0]]];
+KF.drA=[[0,[0,0,0,0,0,0]],[.24,[1.7,.1,.25,.12,-.25,.35]],[.32,[1.8,.12,.3,.14,-.28,.4]],[.43,[.6,0,-.9,-.28,.25,.85]],[.56,[.2,-.04,-.6,-.3,.3,.6]],[.8,[.05,0,-.2,-.1,.1,.2]],[1,[0,0,0,0,0,0]]];
+KF.drH=[[0,[0,0,0,0,0,0]],[.34,[2,0,.3,.26,0,.6]],[.44,[2.1,0,.35,.28,0,.7]],[.54,[.7,0,-.95,-.5,0,1.1]],[.68,[.2,0,-.65,-.52,0,.9]],[.88,[.05,0,-.2,-.16,0,.3]],[1,[0,0,0,0,0,0]]];
+// the miner digging in (zminer.js, st.mnD 0..1; absolute: both arms, spine, jaw): the pick lifted high, driven into the ground in front, the body folding over it
+KF.mnDig=[[0,[.2,.14,.35,-.28,0,.12]],[.35,[2.6,.05,1.1,.2,0,.6]],[.5,[2.7,.05,1.15,.22,0,.7]],[.68,[.7,0,-.1,-.8,0,1.1]],[1,[.5,0,0,-.9,0,.9]]];
+// the butcher's throw (zbutcher.js, st.bhW 0..1; absolute, the left arm): swung back and round, then whipped forward and held out after the hook
+KF.bhThrow=[[0,[.15,-.22,.35,0,0,.1]],[.45,[-.6,-.5,1.2,.15,.35,.4]],[.6,[-.7,-.55,1.3,.18,.4,.5]],[.75,[1.7,-.1,.1,-.25,-.35,.9]],[1,[1.4,-.08,.15,-.1,-.15,.6]]];
+const ZTOOL={miner:{A:KF.mnA,H:KF.mnH,free:1,both:1},butcher:{A:KF.bhA,H:KF.bhH,free:1,grab:1},drummer:{A:KF.drA,H:KF.drH,both:1}};
 function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.dead>0){poseDead(ch,st);return}
   const t=st.t,z=ZBIG[st.zclass]?'brute':st.zclass,sd=st.seed||0,cfg=ZGAIT[z]||ZGAIT.rager;const turn=st.turn>0?Math.min(1,st.turn):0;
@@ -577,9 +612,9 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   ch.root.set(g.sway*sc,-g.drop*sc,rootZ*sc);
   // twitches: the head snaps sideways, a shoulder jerks; frequency differs per class
   const jH=jerk(t,sd,z==='runner'?1.1:1.7,.55),jH2=jerk(t+.3,sd+3,2.3,.45),jS=jerk(t,sd+7,2.9,.4);
-  const hunch={fireman:-.2,coffin:-.34,rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1,bomber:-.04,spitter:-.4}[z]||-.2;
+  const hunch={fireman:-.2,coffin:-.34,rager:-.24,runner:-.52*g.amp-.14,brute:-.22,scream:-.1,bomber:-.04,spitter:-.4,miner:-.28,butcher:-.16,drummer:-.06}[z]||-.2;
   let spP=hunch-g.run*.12*(z==='runner'?1.6:1)+(st.flinch||0)*.45+(st.stun>0?.2:0),twist=0,spR=Math.sin(t*1.1+sd)*.05;
-  let aL,aR,zL,zR,fL,fR;// shoulder X (forward), shoulder Z (out), elbow flex
+  let aL,aR,zL,zR,fL,fR,tL=0,tR=0;// shoulder X (forward), shoulder Z (out), elbow flex, forearm twist
   if(z==='runner'){aL=-.45-g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;aR=-.45+g.arm*1.3*(g.amp>.2?1:0)+(1-g.amp)*.45;zL=-.18;zR=.18;fL=fR=1.25+.2*g.run}
   else if(z==='brute'){aL=.22-g.arm*.75+Math.sin(t*1.6)*.05;aR=.28+g.arm*.75+Math.sin(t*1.8)*.05;zL=-.35;zR=.42;fL=fR=.45}
   else if(z==='scream'){aL=aR=.72+g.arm*.1;zL=.3;zR=-.3;fL=fR=.62;spR+=Math.sin(st.phase)*.08*g.amp}// both hands on the doll in front of the belly
@@ -587,6 +622,11 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   else if(z==='strait'){aL=aR=.62+Math.sin(t*2.1+sd)*.05;zL=.62+Math.sin(t*5.3+sd)*.04;zR=-.62-Math.sin(t*4.7+sd)*.04;fL=fR=2.05;spR+=Math.sin(t*3.3+sd)*.07}// sleeves strapped across the chest, straining
   else if(z==='fireman'){aL=.42+Math.sin(t*1.5+sd)*.05-g.arm*.7;aR=.46+Math.sin(t*1.7+sd)*.05+g.arm*.7;zL=-.2;zR=.22;fL=.6+Math.max(0,Math.sin(t*2.1+sd))*.15;fR=.55}// heavy arms swinging in the padded coat
   else if(z==='spitter'){aL=.3+Math.sin(t*1.3+sd)*.08-g.arm*.45;aR=.26+Math.sin(t*1.5+sd*2)*.08+g.arm*.45;zL=-.14;zR=.16;fL=.75;fR=.8}
+  // v7.10: the miner carries its pickaxe low in the right hand and reaches with the left; the butcher holds the cleaver ready, the chain hand
+  // low; the drummer keeps both mallets at the drum's heads, bouncing with the march
+  else if(z==='miner'){aR=.2+Math.sin(t*1.5+sd)*.04+g.arm*.45;zR=.14;fR=.35+g.run*.2;aL=.55-g.arm*.6+Math.sin(t*1.7+sd)*.06;zL=-.12;fL=.5+Math.max(0,Math.sin(t*2.4+sd))*.25}
+  else if(z==='butcher'){aR=.25+g.arm*.55+Math.sin(t*1.4+sd)*.04;zR=.2;fR=.5;aL=.15-g.arm*.45;zL=-.22;fL=.35+Math.sin(t*1.9+sd)*.05}
+  else if(z==='drummer'){const mb=Math.abs(Math.sin(st.phase))*.08*g.amp;aL=aR=.85+mb;zL=zR=0;fL=fR=1.05}
   else{// rager: reaching, grasping hands that open and close
     aL=1.02+Math.sin(t*1.7+sd)*.1-g.arm*.25;aR=.95+Math.sin(t*1.9+sd*2)*.1+g.arm*.25;zL=-.1;zR=.12;fL=.3+Math.max(0,Math.sin(t*2.6+sd))*.25;fR=.25+Math.max(0,Math.sin(t*2.2+sd*3))*.3}
   if(st.frenzy){aL=-.3-g.arm;aR=-.3+g.arm;fL=fR=1.1;spP-=.25}
@@ -599,6 +639,14 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(a>0&&z==='scream'){const c=kfv(heavy?KF.vdH:KF.vdA,a,_kv2);aL+=c[0];aR+=c[0];fL+=c[1];fR+=c[1];spP+=c[2];jaw+=c[3];twist+=c[4]}
   // straitjacket: the arms stay strapped; the body rears back and drives the head in (the head nods further than the spine)
   else if(a>0&&z==='strait'){const k=kf1(heavy?KF.sjH:KF.sjA,a);spP+=k*(heavy?1.2:1);sjHd=k*(heavy?.9:.7);jaw+=Math.max(0,-k)*.2}
+  // v7.10 the tools: every other light blow of the miner and the butcher is the free hand's claw; the drummer swings either mallet
+  else if(a>0&&ZTOOL[z]){const T=ZTOOL[z];
+    if(!heavy&&side<0&&T.free){const c=kfv(KF.clawA,a,_kv2);aL+=c[0];zL-=c[1];fL+=c[2];twist+=c[3];spP+=c[4];aR-=c[0]*.15;jaw+=c[5]}
+    else{const c=kfv(heavy?T.H:T.A,a,_kv2),L=!heavy&&side<0;
+      if(heavy&&T.both){aL+=c[0];aR+=c[0];zL-=c[1];zR+=c[1];fL+=c[2];fR+=c[2]}
+      else if(L){aL+=c[0];zL-=c[1];fL+=c[2];aR-=c[0]*.12}else{aR+=c[0];zR+=c[1];fR+=c[2];aL-=c[0]*.12}
+      spP+=c[3];twist+=L?-c[4]:c[4];jaw+=c[5];
+      if(heavy&&T.grab){const k=Math.max(0,-c[3]);aL+=k*2.2;fL-=k*.5;zL+=k*.2}}}
   else if(a>0){const c=kfv(heavy?KF.clawH:KF.clawA,a,_kv2);
     if(heavy){aL+=c[0];aR+=c[0];zL-=c[1];zR+=c[1];fL+=c[2]*.8;fR+=c[2]*.8;spP+=c[4]}
     else if(side>0){aR+=c[0];zR+=c[1];fR+=c[2];twist-=c[3];spP+=c[4];aL+=-c[0]*.15}else{aL+=c[0];zL-=c[1];fL+=c[2];twist+=c[3];spP+=c[4];aR+=-c[0]*.15}
@@ -612,6 +660,15 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   if(st.skill>0&&z==='bomber'){const k=Math.min(1,st.skill*3),tr=Math.sin(t*50)*.08;aL=lerp(aL,1.2+tr,k);aR=lerp(aR,1.2-tr,k);zL=lerp(zL,-1.1,k);zR=lerp(zR,1.1,k);fL=fR=lerp(fL,.25,k);spP=lerp(spP,.3,k);jaw=lerp(jaw,1.35,k)}
   if(st.skill>0&&z==='spitter'){const p=1-Math.min(1,st.skill/.55);spP+=kf1([[0,0],[.3,.4],[.5,-.55],[.8,-.4],[1,0]],p);jaw=Math.max(jaw,kf1([[0,.3],[.3,.7],[.45,1.45],[.8,1.2],[1,.3]],p))}
   if(st.skill>0&&z==='strait'){const k=Math.min(1,st.skill*3);spP=lerp(spP,-.75,k);jaw=lerp(jaw,.1,k)}// the pounce: low and forward
+  // v7.10: the miner digging in (zminer.js); the butcher's throw and its haul on the chain (zbutcher.js); the drummer's beats (zdrummer.js:
+  // st.drL / st.drR -1..1, up as a mallet lifts, down as it strikes its head)
+  if(z==='miner'&&st.mnD>0){const c=kfv(KF.mnDig,st.mnD,_kv2);aR=c[0];zR=c[1];fR=c[2];aL=c[0]*.92;zL=-c[1];fL=c[2];spP=c[3];jaw=Math.max(jaw,c[5])}
+  if(z==='miner'&&st.mnR>0){const q=Math.sin(st.mnR*Math.PI);aL=lerp(aL,2.5,q);aR=lerp(aR,2.6,q);zL=lerp(zL,-.3,q);zR=lerp(zR,.3,q);fL=lerp(fL,.3,q);fR=lerp(fR,.35,q);spP=lerp(spP,.25,q);jaw=Math.max(jaw,1.2*q)}// bursting out: arms flung up
+  if(z==='butcher'&&st.bhW>0){const c=kfv(KF.bhThrow,st.bhW,_kv2);aL=c[0];zL=c[1];fL=c[2];spP+=c[3];twist+=c[4];jaw=Math.max(jaw,c[5])}
+  if(z==='butcher'&&st.bhP>0){const k=st.bhP,h=Math.sin(t*14)*.5+.5;aL=lerp(aL,1.25-h*.35,k);zL=lerp(zL,-.05,k);fL=lerp(fL,.2+h*.7,k);spP=lerp(spP,.12,k);twist+=.2*k;jaw=Math.max(jaw,.7*k)}
+  // (a bass drum's stroke is the forearm turning: the felt swings off its head and back; the forearm lifts a little with it)
+  if(z==='drummer'&&st.drm>0&&!(a>0)){const l=st.drL||0,r=st.drR||0,lu=Math.max(0,l),ls=Math.max(0,-l),ru=Math.max(0,r),rs=Math.max(0,-r);
+    tL=-.62*lu+.1*ls;fL+=.22*lu-.05*ls;aL+=.08*lu;tR=.62*ru-.1*rs;fR+=.22*ru-.05*rs;aR+=.08*ru;spP+=.04+(ls+rs)*.02;jaw=Math.max(jaw,.3+.25*Math.max(Math.abs(l),Math.abs(r)))}
   if(st.shield&&z==='brute'&&!(a>0)&&!(st.skill>0)){aL=1.15+Math.sin(t*1.4)*.04;zL=.1;fL=.55}// ALEPH carries the torn bulkhead leaf on the left forearm
   // ALEPH floored (the stagger gauge, a broken tank or shield): sunk on its haunches, slumped forward, arms hanging, mouth open
   if(st.down>0){const k=st.down;spP=lerp(spP,-.78,k);aL=lerp(aL,.16,k);aR=lerp(aR,.24,k);zL=lerp(zL,-.24,k);zR=lerp(zR,.26,k);fL=lerp(fL,.4,k);fR=lerp(fR,.32,k);jaw=lerp(jaw,.85,k);twist+=Math.sin(t*1.7)*.06*k}
@@ -620,7 +677,7 @@ function poseZombie(ch,st){const R=ch.R,P=ch.A.piv;const sc=P[0][1]/.93;
   setE(R[0],0,g.twist,g.roll);setE(R[1],spP,-g.twist*1.2+twist,-g.roll*.7+spR-(st.flinchX||0)*.25);
   const hp=clamp(st.pitch*.6-spP*.85,-.6,.9)+sjHd+(st.skill>0&&z==='scream'?.6:0)+(turn?Math.sin(t*29)*.5:0)-(st.flinch||0)*.3;
   setE(R[2],hp+jH2*.2,Math.sin(t*1.3+sd)*.12+jH*.45+(turn?Math.sin(t*19)*.4:0),Math.sin(t*.9+sd)*.12+jH*.5+(z==='scream'?.25:0));
-  setE(R[3],aL,0,zL);setE(R[4],Math.max(-.05,fL),0,0);setE(R[5],aR,0,zR);setE(R[6],Math.max(-.05,fR),0,0);
+  setE(R[3],aL,0,zL);setE(R[4],Math.max(-.05,fL),tL,0);setE(R[5],aR,0,zR);setE(R[6],Math.max(-.05,fR),tR,0);
   setE(R[11],-clamp(jaw,0,1.45),0,0);ch.gunOn=false;ch.gunOn2=false}
 // death: the knees buckle with the feet still planted, then the body topples with gravity, slams down, bounces once and settles
 // flat on its back or face; arms, legs and head land in a pose that differs per body. Zombie corpses keep twitching.

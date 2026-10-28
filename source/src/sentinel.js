@@ -84,7 +84,7 @@ function sntMuzzle(T,out){return out.set(SNT_MZ[0],SNT_MZ[1],SNT_MZ[2]).applyMat
 // the nearest zombie it can see (it keeps the one it is on unless another is clearly closer)
 function sntPick(T){const e=sntEye(T,_sntw);let best=null,bd=1e9;
   for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0||z.epHide)continue;const d=Math.hypot(z.c.x-e.x,z.c.z-e.z);if(d>SNN.RANGE)continue;
-    if(z.zc==='runner'&&z.skillT>0&&d>4)continue;// (an invisible light zombie slips past it too)
+    if(z.zc==='runner'&&z.skillT>0&&d>4||z.mnB)continue;// (an invisible light zombie slips past it too, and a miner underground: zminer.js)
     const ty=z.c.y+z.c.h*.55;if(!losClear(e.x,e.y,e.z,z.c.x,ty,z.c.z))continue;if(typeof SMK!=='undefined'&&SMK.n&&SMK.blocks(e.x,e.y,e.z,z.c.x,ty,z.c.z))continue;
     const sc=d*(z===T.tgt?.7:1);if(sc<bd){bd=sc;best=z}}
   return best}

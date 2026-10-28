@@ -20,7 +20,13 @@ const ZCLASS={
   // flat and throws them back); shooting the tank during the charge breaks it: the charge stops and a smoke cloud billows out
   fireman:{n:['소방관 좀비','Firefighter Zombie'],sk:['산소통 돌진','Tank Charge'],d:['돌격형 · 방화복: 불·폭발 피해 ½ · 스킬 G: 산소통 돌진 (넘어뜨리며 밀어냄 · 돌진 중 산소통을 쏘면 멈추고 연막)','Assault · Turnout coat: fire and blasts ½ · Skill G: Tank Charge (knocks humans flat and back; shoot the tank mid-charge to stop it, smoke bursts out)'],hp:3000,armor:170,speed:5.4,jump:7.1,kb:.75,dmg:60,skill:'charge',cd:15,dur:1.4,hw:.32,h:1.9,eye:1.72},
 };
-const ZLIST=['rager','runner','brute','scream','coffin','fireman','strait'];// v6.91: the straitjacket zombie can be picked (strait.js)
+// v7.10: three more to pick, each with its own tool for the claws (wn: its name on the HUD) — the miner burrows (zminer.js), the butcher
+// throws a hook on a chain (zbutcher.js), the drummer beats a war drum for the zombies round it (zdrummer.js)
+Object.assign(ZCLASS,{
+  miner:{n:['광부 좀비','Miner Zombie'],sk:['굴착','Burrow'],wn:['곡괭이','Pickaxe'],d:['기습형 · 곡괭이로 할퀴기 · 스킬 G: 굴착 (2.6초 동안 땅속으로 빠르게 이동 — 총알이 닿지 않음 · G를 다시 누르거나 인간 밑을 지나면 솟구쳐 둘레 인간을 넘어뜨림)','Ambusher · claws with a pickaxe · Skill G: Burrow (2.6 s fast underground — no bullet reaches it · press G again or pass under a human to burst out, knocking the humans round it flat)'],hp:2700,armor:140,speed:5.5,jump:7,kb:.9,dmg:52,skill:'burrow',cd:16,dur:2.6,hw:.31,h:1.84,eye:1.68},
+  butcher:{n:['도축업자 좀비','Butcher Zombie'],sk:['갈고리','Meat Hook'],wn:['식칼','Cleaver'],d:['포획형 · 식칼로 할퀴기 · 스킬 G: 갈고리 (사슬 달린 갈고리를 던져 처음 꿴 인간을 바로 앞까지 끌어옴 · 끌려오는 동안 동료가 쏴서 사슬을 끊을 수 있음)','Catcher · claws with a cleaver · Skill G: Meat Hook (throws a hook on a chain and drags the first human it catches right up to it · teammates can shoot it to break the chain)'],hp:3200,armor:180,speed:5.2,jump:7,kb:.7,dmg:60,skill:'hook',cd:17,dur:1.2,hw:.34,h:1.9,eye:1.72},
+  drummer:{n:['고적대 좀비','Drummer Zombie'],sk:['진군 북','War Drum'],wn:['북채','Mallets'],d:['지휘형 · 북채로 할퀴기 · 스킬 G: 진군 북 (6초 동안 북을 쳐서 14 m 안 좀비 모두 이동속도 +20% · 밀려남 −40% · 북이 울릴 때마다 가까운 인간의 조준이 흔들림)','Commander · claws with drum mallets · Skill G: War Drum (6 s of drumming: every zombie within 14 m moves 20 % faster and is pushed back 40 % less · each beat jolts the aim of humans close by)'],hp:2700,armor:130,speed:5.4,jump:7.1,kb:1,dmg:50,skill:'drum',cd:18,dur:6,hw:.33,h:1.88,eye:1.7}});
+const ZLIST=['rager','runner','brute','scream','coffin','fireman','strait','miner','butcher','drummer'];// v6.91: the straitjacket zombie can be picked (strait.js), v7.10: the miner, the butcher, the drummer
 // every gun carries twice the spare ammo it used to
 for(const W of Object.values(WPN))if(W.res&&W.kind!=='nade'&&!W.resX2){W.res=Math.round(W.res*2);W.resX2=1}
 // scenario-only zombies (never picked by players). ZALL lists every class; its order is also the network index.
@@ -89,7 +95,7 @@ Object.assign(ZCLASS,{
   elpis:{n:['엘피스','ELPIS'],sk:['의무병','Medic'],d:['10챕터 보스 · RT1-02','Chapter 10 boss · RT1-02'],hp:22000,armor:0,speed:5.6,jump:9,kb:.2,dmg:30,skill:'none',cd:99,dur:0,hw:.3,h:1.9,eye:1.78},
   patient:{n:['환자 좀비','Patient Zombie'],sk:['재기','Gets back up'],d:['10챕터 · Q-7 지하 병동의 환자 — 쓰러뜨려도 한 번 다시 일어난다 (머리 · 폭발 · 불로 끝내면 못 일어난다)','Chapter 10 · a patient from Q-7\'s ward below — put it down and it gets back up once (finish it with a headshot, a blast or fire and it stays down)'],hp:1250,armor:10,speed:5.3,jump:6.6,kb:1,dmg:24,skill:'none',cd:99,dur:0,hw:.3,h:1.8,eye:1.66},
   aed:{n:['제세동기','AED'],sk:['소생','Resuscitate'],d:['10챕터 · 엘피스의 제세동기 — 시체 옆에 떨어지면 3초 뒤 시체를 다시 일으킨다. 쏴서 부숴라','Chapter 10 · ELPIS\'s AED — dropped by a body, it shocks the body back up 3 s later. Shoot it apart'],hp:260,armor:0,speed:0,jump:0,kb:0,dmg:0,skill:'none',cd:99,dur:0,hw:.3,h:.45,eye:.3}});
-const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield','lorelei','listener','charon','frozen','daedalus','static','sentry','elpis','patient','aed'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
+const ZALL=['rager','runner','brute','scream','coffin','bomber','spitter','boss','aleph','strait','argus','squad','khepri','larva','scrap','lyrebird','radioman','spore','mirage','tiamat','drowned','hazmat','centi','fireman','legatus','shield','lorelei','listener','charon','frozen','daedalus','static','sentry','elpis','patient','aed','miner','butcher','drummer'],BOSS_S=2.2,ZBIG={boss:1,aleph:1};
 const BOT_NAMES=['칼바람','도토리','Nox','라임','Vex','곰돌이','Kite','먹구름','Pilot','쥐불','Ash','소금빵','Rook','반딧불','Echo','짱돌','Mako','새벽','Juno','고등어','Wren','탄산수','Oslo','호떡'];
 const G={pvp:false,st:'menu',mode:'mut',round:0,rounds:7,roundTime:180,prepTime:20,time:0,t:0,actors:[],player:null,score:[0,0],moralePts:0,moraleLvl:0,endT:0,winner:-1,lastHuman:null,cfg:null,spec:null,specIdx:0,deathCam:0,
   hostN:0,beepAt:0,lastAnn:'',paused:false,stats:null};
@@ -413,7 +419,7 @@ function zombieAttack(a,dt){const cmd=a.cmd,pc=a.pc,Z=ZCLASS[a.zc];
   if(a.drawT>0||G.t<a.nextFire||a.pendingClaw)return;
   if(G.t<(a.clawLock||0)){if(a.isPlayer&&(cmd.fire||cmd.alt)&&!pc.fire&&!pc.alt)HUD.note(LI()?'Still turning — claws in a moment':'아직 변이 중 — 잠시 후 공격 가능',1);return}
   if(cmd.fire||cmd.alt){const heavy=!cmd.fire&&cmd.alt;a.nextFire=G.t+(heavy?1.1:.62);a.an.atk=1;a.an.atkD=heavy?.78:.48;a.an.heavy=heavy;a.an.atkSide=-a.an.atkSide;
-    if(a.isPlayer){VM.claw(heavy,a.an.atkSide);if(a.zc==='strait')AU.play('zatk',{vol:.5,rate:1.15});else AU.play('claw',{vol:.6})}else AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.7,range:30});
+    if(a.isPlayer){VM.claw(heavy,a.an.atkSide);if(typeof zkSwing==='function'&&zkSwing(a,heavy)){}else if(a.zc==='strait')AU.play('zatk',{vol:.5,rate:1.15});else AU.play('claw',{vol:.6})}else{AU.at('zatk',a.c.x,a.c.y+1.5,a.c.z,{vol:.7,range:30});if(typeof zkSwing==='function')zkSwing(a,heavy)}// (zkSwing: a tool's own whoosh, zkit.js)
     a.pendingClaw={t:heavy?.4:.19,heavy};NET.on&&netFxPush(['c',a.id,heavy?1:0,a.an.atkSide])}}
 // zombie grenade: press → a hand reaches into the bomb's mouth and yanks the bone pin out (BOMB_PULL s); keep holding to carry it armed,
 // release to throw. Left click = hard throw, right click = underhand lob (drop it at your feet for a bomb jump).
@@ -436,7 +442,7 @@ function clawStrike(a,heavy){const r=meleeHit(a,heavy?CLAW_R[1]:CLAW_R[0],heavy?
 function clawApply(a,t,heavy){aimDir(a.yaw,0,_dv);t.kvx+=_dv.x*(heavy?4:2);t.kvz+=_dv.z*(heavy?4:2);infect(t,a)}
 function useSkill(a){if(NET.cli&&!NET.ev){if(a===G.player&&a.skillCD<=0&&(G.st==='fight'||G.st==='prep'))netToHost({t:'sk'});return}
   if(a.skillCD>0||G.st!=='fight'&&G.st!=='prep')return;const Z=ZCLASS[a.zc];const c=a.c;
-  if(Z.skill==='invis'||Z.skill==='trap'||Z.skill==='heal'||Z.skill==='coffin'||Z.skill==='charge'||Z.skill==='pounce'){if(nySkill(a,Z)){a.skillCD=Z.cd;if(NET.host)netEv('sk',{i:a.id,k:Z.skill})}return}
+  if(Z.skill==='invis'||Z.skill==='trap'||Z.skill==='heal'||Z.skill==='coffin'||Z.skill==='charge'||Z.skill==='pounce'||Z.skill==='burrow'||Z.skill==='hook'||Z.skill==='drum'){if(nySkill(a,Z)){a.skillCD=Z.cd;if(NET.host)netEv('sk',{i:a.id,k:Z.skill})}return}
   if(Z.skill==='frenzy'){if(a.hp<a.maxHp*.15)return;a.hp-=a.maxHp*.08;a.skillT=Z.dur;AU.at('zroar',c.x,c.y+1.5,c.z,{vol:1,range:50})}
   else if(Z.skill==='leap'){if(!c.onGround)return;aimDir(a.yaw,0,_dv);a.kvx+=_dv.x*11;a.kvz+=_dv.z*11;c.vy=6.5;c.onGround=false;c.jumped=true;a.skillT=.8;AU.at('zleap',c.x,c.y+1.5,c.z,{vol:1})}
   else if(Z.skill==='harden'){a.skillT=Z.dur;AU.at('zharden',c.x,c.y+1.5,c.z,{vol:1,range:40})}

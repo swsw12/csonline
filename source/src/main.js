@@ -106,7 +106,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(this.paused)return;
       if(this.overlay==='buy'&&e.shiftKey&&/^Digit[1-3]$/.test(k)){ldEquipSet(+k[5]-1);return}// Shift+1-3: put a saved set on
       if(this.overlay==='buy'){let n=+k.replace('Digit','').replace('Numpad','');if(k==='Digit0'||k==='Numpad0')n=10;if(n>=1&&n<=10){if(UI.buyStage===0){if(n<=BUY_MENU.length){UI.buyCat=n-1;UI.buyStage=1;UI.renderBuy()}}else{const it=BUY_MENU[UI.buyCat].items[n-1];if(it)this.buyItem(it);UI.buyStage=0}return}if(k==='KeyB'){this.closeOverlay();return}}
-      if(this.overlay==='zsel'){const n=+k.replace('Digit','');if(n>=1&&n<=ZLIST.length){this.pickZ(ZLIST[n-1]);return}if(k==='KeyM'){this.closeOverlay();return}}
+      if(this.overlay==='zsel'){const n=+k.replace('Digit',''),i=n===0?9:n-1;if(/^Digit\d$/.test(k)&&i<ZLIST.length){this.pickZ(ZLIST[i]);return}if(k==='KeyM'){this.closeOverlay();return}}
       if(!P)return;
       if(KC.on&&(k==='Space'||k==='KeyV')){KC.skip();return}// (Enter opens the chat, chat.js — a word while you are down)
       if(k==='KeyV'&&!P.alive)this.toggleFree();

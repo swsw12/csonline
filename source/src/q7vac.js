@@ -86,7 +86,7 @@ const VXH={mk:[],t:0,list:[]};
 function vaxHud(dt){const P=G.player,on=!!(P&&P.alive&&P.team===TH&&P.cur==='q7vac'&&vaxMode()&&G.st!=='menu');
   if(!on){if(VXH.list.length||VXH.mk.some(m=>m.style.display!=='none')){VXH.list.length=0;for(const m of VXH.mk)m.style.display='none'}return}
   VXH.t-=dt;if(VXH.t<=0){VXH.t=.12;const e=actorEye(P),L=[];
-    for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0||z.epHide)continue;if(z.zc==='runner'&&z.skillT>0)continue;const d=Math.hypot(z.c.x-e.x,z.c.z-e.z);if(d>VAX.SCAN)continue;
+    for(const z of G.actors){if(!z.alive||z.team!==TZ||z.reviving>0||z.epHide)continue;if(z.zc==='runner'&&z.skillT>0||z.mnB)continue;const d=Math.hypot(z.c.x-e.x,z.c.z-e.z);if(d>VAX.SCAN)continue;
       if(!losClear(e.x,e.y,e.z,z.c.x,z.head.y,z.c.z))continue;L.push([d,z])}
     L.sort((p,q)=>p[0]-q[0]);VXH.list=L.slice(0,6).map(q=>q[1])}
   const Li=LI();

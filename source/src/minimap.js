@@ -37,7 +37,7 @@ const RADAR={cv:null,ctx:null,px:170,t:0,band:0,seen:new Map(),rr:0,
     const s=this.seen.get(a);return !!(s&&G.t-s<.6)},
   look(P){const L=G.actors;if(!L.length)return;const e=actorEye(P);
     for(let k=0;k<4;k++){this.rr=(this.rr+1)%L.length;const a=L[this.rr];if(!a||!a.alive||a===P||!foe(P,a))continue;
-      if(a.zc==='runner'&&a.skillT>0&&a.team===TZ)continue;// an invisible light zombie stays off the radar
+      if(a.zc==='runner'&&a.skillT>0&&a.team===TZ||a.mnB)continue;// an invisible light zombie stays off the radar (and a miner underground: zminer.js)
       if(Math.hypot(a.c.x-P.c.x,a.c.z-P.c.z)<45&&losClear(e.x,e.y,e.z,a.c.x,a.c.y+1.2,a.c.z)&&!(SMK.n&&SMK.blocks(e.x,e.y,e.z,a.c.x,a.c.y+1.2,a.c.z)))this.seen.set(a,G.t)}},
   update(dt){const cv=this.cv,P=G.player;if(!cv)return;const on=CFG.minimap!==false&&!!P&&!!MAP.mini&&G.st!=='menu';cv.style.display=on?'block':'none';if(!on)return;
     this.look(P);this.t+=dt;if(this.t<1/30)return;this.t=0;

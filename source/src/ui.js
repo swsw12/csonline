@@ -3,11 +3,12 @@
 const esc=s=>String(s).replace(/[&<>"'`]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
 // full-body front "paper doll" portrait from a character's skin atlas
 const PORTRAITS={};
+// (v7.10: a turned part — a held tool — is left out: it would show as its front face, unturned)
 function portrait(key,s){s=s||70;const k=key+':'+s;if(PORTRAITS[k])return PORTRAITS[k];const A=charAsset(key);const d=A.def;
   const fm={};for(const f of A.faces)if(f.fk==='front')fm[f.pi]=f;let top=0;for(const p of d.parts)top=Math.max(top,p.c[1]+p.s[1]/2);
   const W=Math.ceil(1.5*s),H=Math.ceil((top+.08)*s);const [cv,x]=mkCanvas(W,H);x.imageSmoothingEnabled=false;
   const order=d.parts.map((p,i)=>i).sort((a,b)=>(d.parts[b].c[2]-d.parts[b].s[2]/2)-(d.parts[a].c[2]-d.parts[a].s[2]/2));
-  for(const i of order){const p=d.parts[i],f=fm[i];if(!f||p.b>=14)continue;const dx=W/2-(p.c[0]+p.s[0]/2)*s,dy=H-(p.c[1]+p.s[1]/2)*s-.04*s;x.drawImage(A.canvas,f.x,f.y,f.w,f.h,Math.round(dx),Math.round(dy),Math.round(p.s[0]*s),Math.round(p.s[1]*s))}
+  for(const i of order){const p=d.parts[i],f=fm[i];if(!f||p.b>=14||p.rx||p.ry||p.rz)continue;const dx=W/2-(p.c[0]+p.s[0]/2)*s,dy=H-(p.c[1]+p.s[1]/2)*s-.04*s;x.drawImage(A.canvas,f.x,f.y,f.w,f.h,Math.round(dx),Math.round(dy),Math.round(p.s[0]*s),Math.round(p.s[1]*s))}
   return PORTRAITS[k]=cv.toDataURL()}
 // small procedural icons for the kill feed
 const MINI={};
@@ -145,7 +146,7 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
     {const ik=zt?(P.cur==='zbomb'?'zbomb':'claw'):P.cur;if(this.wIcon!==ik){this.wIcon=ik;const src=ik==='claw'?miniIcon('claw'):ik&&WPN[ik]&&WPN[ik].model?gunIcon(WPN[ik].model,30):'';if(src)e.hWIcon.src=src;e.hWIcon.style.display=src?'block':'none';e.hWIcon.className=ik==='claw'?'cl':''}}
     e.hLvl.style.display=zt?'block':'none';if(zt){const Z=ZCLASS[P.zc];e.hLvl.innerHTML=`<b>${Z.n[LI()]}</b> ${P.host?'<span class="host">HOST</span> ':''}${T('lvl')}.${P.lvl|0}`}
     // weapon / skill
-    if(zt){e.hAmmo.style.display='none';e.hWName.textContent=P.cur==='zbomb'?T('bomb'):P.zc==='strait'?(LI()?'Head-butt':'박치기'):WPN.claw.n[LI()];const Z=ZCLASS[P.zc];
+    if(zt){e.hAmmo.style.display='none';e.hWName.textContent=P.cur==='zbomb'?T('bomb'):P.zc==='strait'?(LI()?'Head-butt':'박치기'):ZCLASS[P.zc]&&ZCLASS[P.zc].wn?ZCLASS[P.zc].wn[LI()]:WPN.claw.n[LI()];const Z=ZCLASS[P.zc];
       e.hSkill.style.display='block';e.hSkill.innerHTML=`<span class="k">G</span> ${Z.sk?Z.sk[LI()]:T('skill')}: ${P.skillCD>0?Math.ceil(P.skillCD)+'s':`<b>${T('ready')}</b>`}${P.skillT>0?' ▲':''}<br><span class="k">4</span> ${T('bomb')} ×${P.bombs}  <span class="k">N</span> ${T('nv')} ${P.nv?'ON':'OFF'}`;e.hNades.textContent=''}
     else{e.hSkill.style.display='none';const am=P.ammo[P.cur];const Wn=WPN[P.cur];e.hWName.textContent=Wn?Wn.n[LI()]+(Wn.dual&&P.dualB?(Wn.bRpm?(LI()?' · spray':' · 난사'):(LI()?' · full auto':' · 연사')):'')+(Wn.stance?(P.hamB?(LI()?' · B knock-away':' · B 날리기'):(LI()?' · A pound':' · A 떡찧기')):'')+spTag(P,Wn)+cmbTag(P,Wn):'';
       if(am){e.hAmmo.style.display='flex';e.hMag.textContent=am.mag;e.hRes.textContent='/ '+am.res;e.hMag.className=am.mag<=Math.ceil(Wn.mag*.2)?'low':''}else e.hAmmo.style.display='none';
@@ -278,5 +279,5 @@ const UI={open:null,
       const icon=W&&W.model?`<img src="${gunIcon(W.model,26)}">`:id==='armor'?'<b class="ico">◆</b>':'<b class="ico">▤</b>';
       return `<div class="bi${st.ok?'':' na'}${st.own?' own':''}${st.lk?' lk':''}" data-act="buy" data-v="${id}"><span class="n">${i+1}</span>${icon}<div class="bn"><b>${nm}</b><small>${this.wTags(W||{},id)}</small></div>${W&&(W.dmg||W.kind==='melee')?this.statBars(W):'<span class="sbs"></span>'}<span class="c">${st.t}</span></div>`}).join('');
     $('buy').innerHTML=`<h3>${T('buyT')} <span class="bfree">${T('ldFree')}</span></h3>${ldSetsHTML(P,false)}<div class="bwrap"><div class="cats">${BUY_MENU.map((c,i)=>`<div class="cat${i===this.buyCat?' on':''}" data-act="buycat" data-v="${i}"><span class="n">${i+1}</span>${c.n[L]}</div>`).join('')}</div><div class="items">${items}</div></div><p class="hint">${T('buyHint')}</p>`},
-  renderZsel(){const L=LI();const P=G.player;$('zsel').innerHTML=`<h3>${T('zselT')}</h3><div class="cards wide">${ZLIST.map((k,i)=>{const Z=ZCLASS[k];return `<div class="card z${P.zpick===k?' on':''}" data-act="zsel" data-v="${k}"><span class="n">${i+1}</span><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${Z.n[L]}</span><small>HP ${Z.hp} · ${L?'SPD':'속도'} ${Z.speed}</small><p>${Z.d[L]}</p></div>`}).join('')}</div><p class="hint">${T('zselHint')}</p>`},
+  renderZsel(){const L=LI();const P=G.player;$('zsel').innerHTML=`<h3>${T('zselT')}</h3><div class="cards wide">${ZLIST.map((k,i)=>{const Z=ZCLASS[k];return `<div class="card z${P.zpick===k?' on':''}" data-act="zsel" data-v="${k}"><span class="n">${(i+1)%10}</span><img src="${portrait('z_'+k,k==='brute'?52:62)}"><span>${Z.n[L]}</span><small>HP ${Z.hp} · ${L?'SPD':'속도'} ${Z.speed}</small><p>${Z.d[L]}</p></div>`}).join('')}</div><p class="hint">${T('zselHint')}</p>`},
 };

@@ -684,6 +684,7 @@ create policy "read own episodes" on public.ep_records for select to authenticat
 -- v6.60: vector (3,500) · an94 (5,000) · m82 (8,500) sold; spas12d (SPAS-12 Dragon's Breath) · m32c (M32 Cluster) crate guns
 -- v6.69: m4dk2 (M4A1 오닉스-2) a crate gun like the others
 -- v6.93: startrack (스타트랙) a crate gun like the others
+-- v7.10: garand (M1 개런드, 5,500) · tommy (톰슨 M1928, 3,800) sold; storm (스톰체인) a crate gun like the others
 alter table public.gun_prices add column if not exists admin_set  boolean not null default false;
 alter table public.gun_prices add column if not exists file_price integer;
 alter table public.gun_prices add column if not exists file_sold  boolean;
@@ -701,6 +702,8 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('vector',3500,false,true,null),
   ('an94',5000,false,true,null),
   ('m82',8500,false,true,null),
+  ('garand',5500,false,true,null),
+  ('tommy',3800,false,true,null),
   ('db2',1500,false,true,null),
   ('m14',3500,false,true,null),
   ('as12',4500,false,true,null),
@@ -752,6 +755,7 @@ insert into public.gun_prices (gun_id, price, free, sold, tier) values
   ('m32c',0,false,false,null),
   ('m4dk2',0,false,false,null),
   ('startrack',0,false,false,null),
+  ('storm',0,false,false,null),
   ('rdc',0,false,false,'S'),
   ('mdrill',0,false,false,'S'),
   ('mlaunch',0,false,false,'S'),

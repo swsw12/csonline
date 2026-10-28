@@ -82,6 +82,12 @@ const SOUND_DESIGN={
   m82fire: {vol:1, rate:1, file:''},  // 바렛 M82A1 발사음 — 깊고 긴 .50 BMG 굉음
   spasfire:{vol:1, rate:1, file:''},  // SPAS-12 드래곤브레스 (보급상자 전용) 발사음 — 묵직한 12게이지 (불길 소리는 따로)
   m32fire: {vol:1, rate:1, file:''},  // M32 클러스터 (보급상자 전용) 발사음 — 40mm '퉁' + 실린더 '철컥'
+  garfire: {vol:1, rate:1, file:''},  // M1 개런드 발사음 — 크고 깊은 .30-06, 산을 넘어가는 긴 울림 (v7.10)
+  garping: {vol:1, rate:1, file:''},  // M1 개런드 클립이 튀어나오는 '팅' (마지막 발 · 남은 클립 뽑을 때)
+  tomfire: {vol:1, rate:1, file:''},  // 톰슨 M1928 발사음 — 낮고 묵직한 .45 연사
+  stmzap:  {vol:1, rate:1, file:''},  // 스톰체인 (보급상자 전용) 발사음 — 방전 '파직' + 코일 웅웅 + 높은 '찡' (연쇄로 튈 때도 작게)
+  stmcharge:{vol:1,rate:1, file:''},  // 스톰체인 과충전(우클릭) — 차오르는 '위이잉' + 지지직
+  stmblast:{vol:1, rate:1, file:''},  // 스톰체인 과충전 벼락 — '쩌적' 갈라지는 소리 + 천둥 '쾅' + 멀어지는 우르릉
   // ── 총소리 · 소총 / 저격총 / 기관총 ──────────────────────────────────────────────────────────
   ar7:     {vol:1, rate:1, file:''},  // M4A1 발사음
   kv47:    {vol:1, rate:1, file:''},  // AK-47 발사음
@@ -209,6 +215,17 @@ const SOUND_DESIGN={
   zrevive: {vol:1, rate:1, file:''},  // 좀비 부활
   zscream: {vol:1, rate:1, file:''},  // 비명 스킬 (지금 이 스킬을 쓰는 좀비 없음, 예비)
   zharden: {vol:1, rate:1, file:''},  // 경화 스킬 (지금 이 스킬을 쓰는 좀비 없음, 예비)
+  mnswing: {vol:1, rate:1, file:''},  // 광부 좀비 곡괭이 휘두르는 묵직한 바람 소리 (v7.10)
+  mndig:   {vol:1, rate:1, file:''},  // 광부 좀비 굴착 — 곡괭이가 땅에 박히며 '깡' + 흙 무너지는 소리
+  mnrumble:{vol:1, rate:1, file:''},  // 광부 좀비가 땅속을 파고 갈 때 반복되는 우르르 진동
+  mnburst: {vol:1, rate:1, file:''},  // 광부 좀비가 땅을 뚫고 튀어나올 때 '쿵' + 흙·돌 튀는 소리
+  bhswing: {vol:1, rate:1, file:''},  // 도축업자 좀비 식칼 휘두르는 짧은 '쉭'
+  bhrattle:{vol:1, rate:1, file:''},  // 도축업자 좀비가 갈고리 사슬을 휘두를 때 짤랑짤랑
+  bhthrow: {vol:1, rate:1, file:''},  // 갈고리 던지기 — 바람 소리 + 따라가는 사슬
+  bhhit:   {vol:1, rate:1, file:''},  // 갈고리가 인간에게 박힐 때 '퍽' + '깡' + 사슬
+  bhsnap:  {vol:1, rate:1, file:''},  // 사슬이 끊어질 때 날카로운 '팅' + 흩어지는 고리
+  drswing: {vol:1, rate:1, file:''},  // 고적대 좀비 북채 휘두르는 둥근 바람 소리
+  drboom:  {vol:1, rate:1, file:''},  // 고적대 좀비 진군 북 — 큰북 '둥' (울릴 때마다 근처 인간 조준이 흔들림)
 
   // ── 인간 ─────────────────────────────────────────────────────────────────────────────────────
   hurt:    {vol:1, rate:1, file:''},  // 인간이 맞았을 때 '윽'
@@ -268,6 +285,12 @@ const ARM_DESIGN={
   zs_fireman:['#5e4c42','#2a1410'],             // 소방관 좀비 팔 — 그을린 잿빛 피부 (손등)
   sl_fmcoat: ['#8a6c3e'],                       // 소방관 좀비 소매 — 그을린 황갈색 방화복 (손목에 형광 띠: fmRefl, fireman.js)
   sl_strait: ['#cfc8b4'],                       // 구속복 좀비 소매 (1인칭) — 때 묻은 흰 캔버스, 끝이 막힌 소매 (손목의 가죽 끈 · 버클: strait.js)
+  // v7.10 (zkit.js 가 칠한다)
+  zs_miner:  ['#7e7a70','#2a2622'],             // 광부 좀비 팔 — 탄가루 낀 잿빛 피부
+  sl_miner:  ['#2c3850','#c8ccc6'],             // 광부 좀비 소매 — 짙은 남색 작업 점퍼, 손목에 은색 반사띠
+  zs_butcher:['#a48a70','#6a3a30'],             // 도축업자 좀비 팔 — 누렇게 뜬 살색 (걷어 올린 맨팔)
+  zs_drummer:['#9a9e92','#4a3a4a'],             // 고적대 좀비 손 — 창백한 회색 피부
+  sl_drummer:['#a61e1c','#d2a63a'],             // 고적대 좀비 소매 — 빨간 제복, 손목에 금빛 장식끈
 };
 
 // ================================================================================================
@@ -425,8 +448,21 @@ function defHuman(k){
 //        | 'sentry' 자동 포탑(9챕터: 포탑은 daedalus.js 가 따로 만들고, 여기 몸은 숨겨 둔 자리표시)
 //        | 'elpis' 엘피스(10챕터 보스: 1차 회수팀 의무병 — 다트 권총 · 패들 · 링거 팩 · 군번줄은 elpis.js 가 붙인다) | 'patient' 환자 좀비(10챕터: 지하 병동의 환자)
 //        | 'aed' 제세동기(10챕터: 기계는 elpis.js 가 따로 그리고, 여기 몸은 숨겨 둔 자리표시)
+//        | 'miner' 광부 좀비 · 'butcher' 도축업자 좀비 · 'drummer' 고적대 좀비 (v7.10, 플레이 가능: zminer.js · zbutcher.js · zdrummer.js)
 //    host = 숙주 좀비(라운드 처음 감염된 좀비)면 true → 붉게 빛나는 혈관 + 빨간 눈.
 //    vein = 숙주·보스 혈관 색,  eyeH = 숙주·보스 눈 색.  아래 eye:eyeH||'#…' 는 '숙주면 빨간 눈, 아니면 이 색'.
+// v7.10: 손에 든 연장 (곡괭이 · 식칼 · 북채). parts 는 연장 자체의 좌표 — 쥔 곳이 원점, 자루가 -z 쪽 — 이고, rot (x,y,z 회전, XYZ) 만큼
+// 돌려서 차렷 자세(팔을 내리고 손바닥이 몸 쪽)의 주먹(sd: -1 왼손, 1 오른손)에 쥐여 준다. 부품마다 rx/ry/rz 를 줄 수 있다.
+const _ztq=new THREE.Quaternion(),_ztq2=new THREE.Quaternion(),_zte=new THREE.Euler(),_ztv=new THREE.Vector3();
+function zTool(H,sd,rot,parts){const o=H.o,b=sd<0?4:6,g=[sd*o.shX,H.hand[1]+o.hand*.12,-.005];_ztq.setFromEuler(_zte.set(rot[0],rot[1],rot[2],'XYZ'));
+  return parts.map(p=>{_ztv.set(p.c[0],p.c[1],p.c[2]).applyQuaternion(_ztq);_ztq2.setFromEuler(_zte.set(p.rx||0,p.ry||0,p.rz||0,'XYZ')).premultiply(_ztq);_zte.setFromQuaternion(_ztq2,'XYZ');
+    return {n:p.n,b,c:[g[0]+_ztv.x,g[1]+_ztv.y,g[2]+_ztv.z],s:p.s,m:p.m,rx:_zte.x,ry:_zte.y,rz:_zte.z}})}
+// the tools' turn in the fist (third person; the swings in models.js poseZombie are built round them)
+// (the mallets: turned so that, held where models.js keeps the drummer's fists — up and in front of each head — the felt sits on the head's
+// centre; worked out by probing the posed rig)
+const ZT_ROT={miner:[-.55,0,0],butcher:[-.2,0,0],drumL:[2.034,-.253,0],drumR:[2.034,.253,0]};
+// the drummer's drum (here and zdrummer.js): its radius, its width between the heads, its centre on the spine bone (just clear of the belly)
+const DRUM_R=.24,DRUM_W=.3,DRUM_AT=(o,sY,zf)=>[0,sY+o.torsoH*.26,zf-DRUM_R-.005];
 function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k==='tiamat'||k==='centi'||k==='sentry'||k==='aed'?k:'',boss=k==='boss'||aleph||khepri||!!tiamat;if(boss)k='brute';// the giant (and ALEPH): the heavy zombie's body in different colours (scaled up by the game)
   let o={},mats,decor,extra=()=>[];const vein=host||boss?'#ff3020':null,eyeH=host?'#ff3a1a':boss?'#ff5a20':null;
   // shared gore materials: exposed bone, intestine, tumour flesh, nails
@@ -1082,6 +1118,129 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       {n:'wrist',b:6,c:[H.piv[6][0],H.piv[6][1]-o.fore+.045,0],s:[o.armW*1.04,.035,o.armW*1.04],m:'wrist'},
       {n:'tape',b:4,c:[el[0],el[1]-.05,-o.armW*.5],s:[.07,.06,.012],m:'tape'},
       {n:'tube',b:4,c:[el[0]-.01,el[1]-.2,-o.armW*.56],s:[.012,.3,.012],m:'tube'}]}}
+  // ▶ 광부 좀비 (miner, v7.10 · 플레이 가능: zminer.js) — 채석장 갱도에서 감염된 발파 작업자
+  //    탄가루에 찌든 짙은 남색 작업 점퍼 위에 주황 형광 조끼(은색 반사띠 두 줄, 지퍼, 등에 'BLAST'), 흙빛 작업 바지와 무릎 보호대, 검은 장화,
+  //    노란 안전모(가운데 능선, 넓은 챙, 녹십자 스티커, 앞에 켜진 헤드램프 — 빛줄기는 zminer.js 가 그린다), 목에 걸린 방진 마스크,
+  //    허리에 램프 배터리와 주황 도화선 뭉치, 오른손의 곡괭이(천을 감은 나무 자루, 뒤로 휜 뾰족 날 · 반대쪽 납작 날),
+  //    잿빛 피부에 탄가루 — 마스크를 썼던 입가만 조금 밝다, 희멀건 노란 눈.
+  else if(k==='miner'){// 광부 — a quarry's blasting hand, infected down the adit: hi-vis vest over a soot-black jacket, a hard hat with its lamp still lit, a pickaxe
+    o={hipY:.93,thigh:.43,legW:.155,legD:.17,shinW:.135,torsoW:.45,torsoH:.52,torsoD:.26,belly:.04,shX:.265,armW:.125,upper:.3,fore:.28,hand:.115,headW:.23,headH:.25,headD:.25,headZ:-.03,neck:.05,claw:.02,fingL:.5,curl:.85,curlJ:151,ears:[1,1],browH:.032};
+    const sk='#7e7a70',jk='#2c3850',vs='#d86a1e',rf='#c8ccc6',tr='#4e4a40';
+    mats=Object.assign({top:{base:jk},legs:{base:tr},sleeve:{base:jk},fore:{base:jk},shin:{base:tr},skin:{base:sk,style:'zskin',blot:'#2a2622'},
+      hand:{base:dk(sk,.14),style:'zskin',blot:'#221e1a'},boot:{base:'#161614',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#2a2622'},
+      vest:{base:vs},helm:{base:'#d2a01c',style:'plate',gloss:245},lamp:{base:'#1c1c1e',style:'plate',gloss:246},lens:{base:'#fff2c0',style:'flat'},
+      mask:{base:'#d8d4c8'},batt:{base:'#24262a',style:'plate',gloss:244},fuse:{base:'#c8601c',style:'rubber'},pad:{base:'#1e2022',style:'rubber'},
+      haft:{base:'#6e4c2c',style:'hair'},pick:{base:'#4c4e50',style:'plate',gloss:246},rag:{base:'#8a7e62'}},goreM);
+    decor={torso:{front:[['soak',.25,.8,'#4a0606',.45],['tear',2,151,sk],['grime',.95]],back:[['tear',1,152,sk],['grime',.95]],side:[['grime',.9]]},
+      vest:{front:[['zip',.5],['band',.2,.27,rf],['band',.52,.59,rf],['pocket',.08,.06,.34,.3,dk(vs,.12)],['pocket',.66,.06,.92,.3,dk(vs,.12)],['blood',2,153],['grime',.8]],
+        back:[['band',.2,.27,rf],['band',.52,.59,rf],['text','BLAST',.24,.9,'#2a2a2a'],['grime',.8]],side:[['band',.2,.27,rf],['band',.52,.59,rf],['grime',.75]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#e8dc98',tears:1,cheek:1}],['grime',.95],['rect',.18,.06,.82,.4,lt(sk,.05)],['gash',.66,.95,.84,.7,2,.06]],side:[['grime',.9],['blood',1,154]],back:[['grime',.9]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a0606',.75]]},
+      neck:{all:[['grime',.9]]},uaL:{all:[['grime',.9],['tear',1,155,sk]]},uaR:{all:[['grime',.9]]},faL:{all:[['grime',.9],['blood',2,156]]},faR:{all:[['band',.1,.18,rf],['grime',.9]]},
+      handL:{all:[['grime',.9],['soak',0,.5,'#4a0606',.5]]},handR:{all:[['grime',.95]]},
+      thL:{all:[['grime',.9],['tear',1,157,'#2a2c30']]},thR:{all:[['grime',.9],['soak',.4,1,'#4a0606',.4]]},shL:{all:[['grime',.85]]},shR:{all:[['grime',.85]]},
+      pelvis:{fb:[['belt',.72,.92,'#2a2622','#8a8a80'],['grime',.85]]},
+      helm:{all:[['grime',.55]],front:[['rect',.36,.5,.64,.74,'#2a8a3a'],['rect',.46,.53,.54,.71,'#e8e8e0'],['rect',.39,.59,.61,.65,'#e8e8e0']]},
+      lamp:{all:[['grime',.3]]},lens:{all:[['glow',0,0,1,1,'#fff6d0']]},mask:{front:[['disc',.5,.5,.3,'#b8b4a8','#8a8678'],['grime',.5]],all:[['grime',.4]]},
+      batt:{all:[['grime',.4]],front:[['rect',.2,.6,.8,.75,'#d8a81e']]},fuse:{all:[['band',.3,.36,'#8a3a10'],['band',.62,.68,'#8a3a10']]},
+      haft:{all:[['grime',.35],['blood',1,158]]},pick:{all:[['grime',.5],['soak',0,.35,'#4a0606',.6]]},rag:{all:[['grime',.6],['band',.3,.4,'#6a5e48']]},pad:{all:[['grime',.4]]}};
+    extra=H=>{const o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],hc=H.headC,W=o.headW,Hh=o.headH,zf=o.belly*.25-(o.torsoD+o.belly)/2,zb=o.belly*.25+(o.torsoD+o.belly)/2,knY=H.piv[8][1];
+      const L=[{n:'vest',b:1,c:[0,sY+o.torsoH*.54,o.belly*.25],s:[o.torsoW*1.08,o.torsoH*.8,o.torsoD+o.belly+.036],m:'vest'},
+        {n:'helm',b:2,c:[0,hc[1]+Hh*.4,o.headZ+.004],s:[W*1.16,Hh*.5,o.headD*1.14],m:'helm'},{n:'helmB',b:2,c:[0,hc[1]+Hh*.17,o.headZ-.014],s:[W*1.44,.022,o.headD*1.46],m:'helm'},
+        {n:'helmR',b:2,c:[0,hc[1]+Hh*.64,o.headZ+.004],s:[.042,.05,o.headD*1.1],m:'helm'},
+        {n:'lamp',b:2,c:[0,hc[1]+Hh*.42,o.headZ-o.headD*.6],s:[.076,.062,.05],m:'lamp'},{n:'lens',b:2,c:[0,hc[1]+Hh*.42,o.headZ-o.headD*.6-.026],s:[.056,.044,.006],m:'lens'},
+        {n:'mask',b:1,c:[0,nY-.05,zf-.036],s:[.12,.08,.05],m:'mask'},
+        {n:'batt',b:0,c:[.15,o.hipY+.03,zb+.022],s:[.1,.11,.05],m:'batt'},{n:'fuse',b:0,c:[-o.torsoW*.5,o.hipY-.03,-.02],s:[.05,.11,.13],m:'fuse'},
+        {n:'pad',b:8,c:[-o.legSep,knY-.035,-o.legD*.6],s:[o.shinW*1.12,.12,.04],m:'pad'},{n:'pad',b:10,c:[o.legSep,knY-.035,-o.legD*.6],s:[o.shinW*1.12,.12,.04],m:'pad'}];
+      // the pickaxe in the right fist: the haft (a rag wound round the grip), the eye, the pick curving back to its point, the flat blade
+      L.push(...zTool(H,1,ZT_ROT.miner,[{n:'haft',c:[0,0,-.27],s:[.03,.038,.74],m:'haft'},{n:'haft',c:[0,0,.085],s:[.036,.044,.03],m:'haft'},{n:'rag',c:[0,0,-.01],s:[.038,.046,.12],m:'rag'},
+        {n:'pick',c:[0,0,-.62],s:[.052,.088,.066],m:'pick'},{n:'pick',c:[0,.1,-.625],s:[.04,.13,.046],m:'pick'},{n:'pick',c:[0,.2,-.611],s:[.028,.1,.034],m:'pick',rx:.3},{n:'pick',c:[0,.268,-.588],s:[.016,.06,.02],m:'pick',rx:.55},
+        {n:'pick',c:[0,-.1,-.625],s:[.046,.13,.046],m:'pick'},{n:'pick',c:[0,-.188,-.619],s:[.074,.07,.022],m:'pick',rx:-.25}]));
+      return L}}
+  // ▶ 도축업자 좀비 (butcher, v7.10 · 플레이 가능: zbutcher.js) — 봉쇄선 안 도축장의 작업 반장
+  //    큰 덩치, 손을 닦은 자국투성이 흰 고무 앞치마(목끈 둘, 허리끈과 등 뒤 매듭, 무릎 위까지 내려오는 자락), 소매를 걷어 올린 바랜 청회색 작업복, 흰 고무 장화, 그물 위생모,
+  //    왼팔엔 검은 고무 팔토시 위로 감아 둔 사슬, 오른손엔 넓은 식칼(날 끝 구멍), 허리에 S자 고기 갈고리 둘과 칼 가는 봉,
+  //    누렇게 뜬 살색 피부, 흐린 회색 눈. 사슬 끝의 큰 갈고리는 zbutcher.js 가 따로 그린다(던져서 날아가기 때문).
+  else if(k==='butcher'){// 도축 반장 — the slaughterhouse's foreman: a blood-soaked white rubber apron, rubber boots, a chain wound round the left arm, a cleaver
+    o={hipY:.96,thigh:.45,legSep:.13,legW:.19,legD:.21,shinW:.165,torsoW:.56,torsoH:.57,torsoD:.33,belly:.11,shX:.32,armW:.155,upper:.31,fore:.3,hand:.13,headW:.24,headH:.25,headD:.25,headZ:-.05,neck:.035,
+      claw:.02,fingL:.52,curl:.85,curlJ:161,ears:[1,1],browH:.036,noseW:.17};
+    const sk='#a48a70',sh='#6a7a86',ap='#d4d0c2';
+    mats=Object.assign({top:{base:sh},legs:{base:'#3e4044'},sleeve:{base:sh},fore:{base:sk,style:'zskin',blot:'#6a3a30'},shin:{base:'#d2d2c8',style:'rubber'},skin:{base:sk,style:'zskin',blot:'#6a3a30'},
+      hand:{base:dk(sk,.12),style:'zskin',blot:'#5a1a12'},boot:{base:'#d0d0c6',style:'rubber'},jaw:{base:sk,style:'zskin',blot:'#6a3a30'},
+      apron:{base:ap,style:'rubber'},strapA:{base:'#c8c8be',style:'rubber'},cap:{base:'#e2e2da'},chainC:{base:'#6a6c6e',style:'plate',gloss:247},glove:{base:'#1c1c1e',style:'rubber'},
+      hookS:{base:'#8a8c8e',style:'plate',gloss:248},haft:{base:'#4a3424',style:'hair'},blade:{base:'#a4a6a8',style:'plate',gloss:250}},goreM);
+    decor={torso:{front:[['grime',.5]],back:[['soak',.2,.7,'#4a0606',.4],['tear',2,161,sk],['grime',.6]],side:[['grime',.5]]},
+      // the apron: hands wiped down it again and again (smears, not spatter: at 15세 they dry to grime, and round blots read as a cow's hide), the hem
+      // dragged through the floor, the bib narrowing to the neck
+      apronB:{front:[['smear',.26,.74,.31,.16,5,'#6a0a08',.55],['smear',.7,.8,.65,.3,4,'#6a0a08',.42],['smear',.5,.5,.56,.1,3,'#6a0a08',.35],['soak',0,.34,'#5a0606',.4],['grime',.4]],all:[['grime',.25]]},
+      apronS:{front:[['soak',.55,1,'#6a0606',.5],['smear',.27,.97,.31,.08,6,'#6a0a08',.62],['smear',.67,.93,.62,.18,5,'#6a0a08',.5],['smear',.47,.7,.5,.3,3,'#6a0a08',.35],
+        ['drip',.4,.8,4,.7],['grime',.55]],all:[['grime',.3]]},
+      strapA:{all:[['soak',0,.6,'#5a0606',.5]]},strapT:{all:[['grime',.4],['soak',0,1,'#5a0606',.3]]},
+      head:{front:[['face','brute',{skin:sk,eye:eyeH||'#c8ccc8',tears:1,cheek:1}],['blood',2,163],['gash',.2,.92,.42,.66,2,.06]],side:[['blood',1,164],['grime',.4]],back:[['grime',.5]],bottom:[['teethrow','bottom',.32]]},
+      jaw:{top:[['teethrow','top',.34]],front:[['teethrow','top',.4],['soak',0,.8,'#6a0606',.7],['drip',.5,.5,3,.7]],bottom:[['soak',0,1,'#4a0606',.85]]},
+      cap:{all:[['check','#c4c4bc',1.6],['grime',.35]]},
+      uaL:{all:[['grime',.5]]},uaR:{all:[['band',.05,.22,dk(sh,.12)],['grime',.5]]},faR:{all:[['soak',0,.7,'#5a0606',.7],['blood',3,165],['veins',2,'#5a2a2a']]},faL:{all:[['grime',.4]]},
+      handR:{all:[['soak',0,1,'#5a0606',.85]]},handL:{all:[['soak',0,.6,'#4a0606',.6]]},
+      chainC:{all:[['band',.08,.16,'#3a3c3e'],['band',.3,.38,'#3a3c3e'],['band',.52,.6,'#3a3c3e'],['band',.74,.82,'#3a3c3e'],['grime',.4]]},glove:{all:[['soak',0,.7,'#3a0404',.5]]},
+      thL:{all:[['grime',.55],['soak',.6,1,'#4a0606',.5]]},thR:{all:[['grime',.55]]},shL:{all:[['soak',.5,1,'#6a0606',.5],['grime',.35]]},
+      shR:{all:[['soak',.6,1,'#6a0606',.4],['grime',.35]],front:[['smear',.32,.92,.42,.3,4,'#6a0a08',.55]]},
+      pelvis:{fb:[['belt',.72,.92,'#2a1e16','#9a9a90'],['grime',.5]]},hookS:{all:[['soak',0,.5,'#4a0606',.6]]},haft:{all:[['grime',.4]]},
+      blade:{all:[['soak',0,.65,'#6a0606',.75],['grime',.25]],right:[['px',.84,.78,'#1a1a1a']],left:[['px',.16,.78,'#1a1a1a']]}};
+    extra=H=>{const o=H.o,sY=H.piv[1][1],nY=H.piv[2][1],hc=H.headC,W=o.headW,Hh=o.headH,zf=o.belly*.25-(o.torsoD+o.belly)/2,el=H.piv[4];
+      const L=[{n:'apronB',b:1,c:[0,sY+o.torsoH*.44,zf-.013],s:[o.torsoW*.84,o.torsoH*.92,.022],m:'apron',tx:[1,.76]},{n:'apronS',b:0,c:[0,o.hipY-.15,zf-.03],s:[o.torsoW*.96,.44,.022],m:'apron',tx:[1.1,1]},
+        // the apron string round the waist (over the pelvis, under the torso's hem) and its bow at the back
+        {n:'strapT',b:0,c:[0,o.hipY+.064,o.belly*.3],s:[o.torsoW*.86+.024,.024,o.torsoD*.9+o.belly*.4+.024],m:'strapA'},
+        {n:'strapA',b:0,c:[0,o.hipY+.064,o.belly*.3+(o.torsoD*.9+o.belly*.4)/2+.018],s:[.05,.038,.022],m:'strapA'},
+        {n:'strapA',b:0,c:[-.03,o.hipY-.01,o.belly*.3+(o.torsoD*.9+o.belly*.4)/2+.016],s:[.024,.14,.008],m:'strapA',rz:-.18},
+        {n:'strapA',b:0,c:[.032,o.hipY-.02,o.belly*.3+(o.torsoD*.9+o.belly*.4)/2+.016],s:[.024,.16,.008],m:'strapA',rz:.14},
+        {n:'strapA',b:1,c:[-.11,nY-.07,zf-.016],s:[.026,.2,.012],m:'strapA'},{n:'strapA',b:1,c:[.11,nY-.07,zf-.016],s:[.026,.2,.012],m:'strapA'},
+        {n:'cap',b:2,c:[0,hc[1]+Hh*.4,o.headZ+.012],s:[W*1.12,Hh*.38,o.headD*1.1],m:'cap'},
+        {n:'glove',b:4,c:[el[0],el[1]-o.fore*.55,0],s:[o.armW*1.04,o.fore*.62,o.armW*1.04],m:'glove'},{n:'chainC',b:4,c:[el[0],el[1]-o.fore*.38,0],s:[o.armW*1.2,o.fore*.42,o.armW*1.2],m:'chainC'},
+        {n:'hookS',b:0,c:[o.torsoW*.47,o.hipY-.1,.03],s:[.018,.15,.055],m:'hookS'},{n:'hookS',b:0,c:[o.torsoW*.49,o.hipY-.12,.085],s:[.018,.13,.05],m:'hookS'},
+        {n:'hookS',b:0,c:[-o.torsoW*.47,o.hipY-.15,.01],s:[.018,.3,.018],m:'hookS'},{n:'haft',b:0,c:[-o.torsoW*.47,o.hipY+.02,.01],s:[.034,.06,.034],m:'haft'}];
+      // the cleaver in the right fist: the handle, a broad square blade with the hole at its tip
+      L.push(...zTool(H,1,ZT_ROT.butcher,[{n:'haft',c:[0,0,-.03],s:[.03,.036,.14],m:'haft'},{n:'blade',c:[0,-.032,-.2],s:[.008,.135,.2],m:'blade'},{n:'blade',c:[0,.034,-.2],s:[.012,.012,.2],m:'blade'}]));
+      return L}}
+  // ▶ 고적대 좀비 (drummer, v7.10 · 플레이 가능: zdrummer.js) — 격리 첫날 시민 축제 퍼레이드의 고적대 큰북 연주자
+  //    빨간 제복(가슴에 금빛 장식끈 다섯 줄과 금단추, 어깨에 금술 견장, 흰 십자 멜빵), 붉은 줄이 내려가는 흰 바지, 검은 장화,
+  //    높은 샤코 모자(검은 챙, 금 휘장, 끊어져 기울어진 흰 깃털 장식), 배 앞에 멘 큰북(빨간 몸통에 흰 조임끈, 양옆의 흰 북면에 금테),
+  //    양손의 북채(나무 자루 · 둥근 펠트 머리), 창백한 회색 피부, 흐린 연두 눈.
+  else if(k==='drummer'){// 큰북 — the festival parade's bass drummer: a red band tunic with gold braid, a tall shako with a broken plume, the drum on its belly
+    o={hipY:.95,thigh:.44,legSep:.1,legW:.14,legD:.16,shinW:.12,torsoW:.42,torsoH:.52,torsoD:.24,shX:.25,armW:.115,upper:.3,fore:.28,hand:.11,headW:.22,headH:.25,headD:.24,headZ:-.03,neck:.06,claw:.02,fingL:.5,curl:.85,curlJ:171,ears:[1,1]};
+    const sk='#9a9e92',rd='#a61e1c',gd='#d2a63a',wt='#dcd8cc',dr='#b21e1a';
+    mats=Object.assign({top:{base:rd},legs:{base:wt},sleeve:{base:rd},fore:{base:rd},shin:{base:wt},skin:{base:sk,style:'zskin',blot:'#4a3a4a'},hand:{base:dk(sk,.12),style:'zskin',blot:'#3a2a3a'},
+      boot:{base:'#141414',style:'boot'},jaw:{base:sk,style:'zskin',blot:'#4a3a4a'},
+      shell:{base:dr,style:'skin',gloss:247},gold:{base:gd,style:'plate',gloss:248},fringe:{base:gd,style:'hair'},shako:{base:'#1a1a1e',style:'plate',gloss:244},
+      shakoV:{base:'#0e0e10',style:'plate',gloss:249},plume:{base:'#ece8de',style:'hair'},haft:{base:'#c8a46a',style:'hair'},felt:{base:'#ece6d6'}},goreM);
+    const braid=[];for(const v of [.8,.69,.58,.47,.36])braid.push(['rect',.2,v,.8,v+.028,gd],['px',.18,v+.02,gd],['px',.82,v+.02,gd]);
+    // the drum (one part, round across x — partShape 'drum'): its shell between two gold hoops laced with white cord in a diamond; its heads, where a
+    // painted square comes out a circle: the hoop, a dark seam, the cream skin, a red ring and a gold boss in the middle
+    const shellD=[['vband',0,.085,gd],['vband',.915,1,gd],['vband',.085,.1,'#4a0c0a'],['vband',.9,.915,'#4a0c0a'],
+      ['line',.1,0,.9,.5,1.2,'#efe9da'],['line',.9,.5,.1,1,1.2,'#efe9da'],['line',.9,0,.1,.5,1.2,'#efe9da'],['line',.1,.5,.9,1,1.2,'#efe9da'],
+      ['px',.07,.5,'#7a5a20'],['px',.93,.5,'#7a5a20'],['px',.07,0,'#7a5a20'],['px',.93,0,'#7a5a20'],['grime',.35]];
+    const headD=[['rect',0,0,1,1,gd],['rect',.07,.07,.93,.93,'#5a3a12'],['rect',.085,.085,.915,.915,'#e6e0d0'],['rect',.3,.3,.7,.7,dr],['rect',.335,.335,.665,.665,'#e6e0d0'],
+      ['rect',.44,.44,.56,.56,gd],['grime',.3]];
+    decor={torso:{front:[...braid,['line',.08,.98,.92,.02,1.6,wt],['line',.92,.98,.08,.02,1.6,wt],['soak',.1,.6,'#4a0606',.5],['tear',2,171,sk],['grime',.5]],
+        back:[['line',.08,.98,.92,.02,1.6,wt],['line',.92,.98,.08,.02,1.6,wt],['tear',2,172,sk],['grime',.5]],side:[['grime',.45]]},
+      head:{front:[['face','zombie',{skin:sk,eye:eyeH||'#cce88a',tears:1}],['blood',1,173]],side:[['grime',.3]],back:[['grime',.4]],bottom:[['teethrow','bottom',.3]]},
+      jaw:{top:[['teethrow','top',.32]],front:[['teethrow','top',.38],['drip',.5,.55,3,.6]],bottom:[['soak',0,1,'#4a0606',.75]]},
+      uaL:{all:[['grime',.45]]},uaR:{all:[['tear',2,174,sk],['grime',.45]]},faL:{all:[['band',.04,.14,gd],['grime',.45]]},faR:{all:[['band',.04,.14,gd],['blood',2,175],['grime',.45]]},
+      handL:{all:[['grime',.5]]},handR:{all:[['soak',0,.5,'#4a0606',.5]]},
+      thL:{all:[['grime',.55]],side:[['vband',.42,.58,rd]]},thR:{all:[['grime',.55],['soak',.5,1,'#4a0606',.4]],side:[['vband',.42,.58,rd]]},shL:{all:[['grime',.6]],side:[['vband',.42,.58,rd]]},shR:{all:[['grime',.6]],side:[['vband',.42,.58,rd]]},
+      pelvis:{fb:[['belt',.72,.92,wt,gd],['grime',.4]]},
+      drum:{fb:shellD,top:shellD,bottom:shellD,left:[...headD,['smear',.16,.34,.34,.14,4,'#6a0a08',.55]],right:[...headD,['smear',.64,.86,.84,.66,4,'#6a0a08',.5]]},
+      gold:{all:[['grime',.3]]},helmSk:{all:[['grime',.3]],front:[['band',.9,1,gd]]},hairPl:{all:[['grime',.25]]},haft:{all:[['grime',.3]]},sacFt:{all:[['grime',.4],['soak',0,.5,'#5a0606',.4]]}};
+    extra=H=>{const o=H.o,sY=H.piv[1][1],hc=H.headC,W=o.headW,Hh=o.headH,zf=o.belly*.25-(o.torsoD+o.belly)/2,sh=H.piv[3][1];
+      const dc=DRUM_AT(o,sY,zf),R0=DRUM_R,DW=DRUM_W;// the drum: its centre, radius, depth (the heads face left and right)
+      const L=[{n:'drum',b:1,c:dc,s:[DW,R0*2,R0*2],m:'shell'}];
+      // the shako (its peak, the gold plate, the broken plume), the epaulettes and their fringe
+      L.push({n:'helmSk',b:2,c:[0,hc[1]+Hh*.66,o.headZ+.004],s:[W*1.04,.25,o.headD*1.02],m:'shako'},{n:'shakoV',b:2,c:[0,hc[1]+Hh*.38,o.headZ-o.headD*.52],s:[W*1.0,.016,.085],m:'shakoV'},
+        {n:'gold',b:2,c:[0,hc[1]+Hh*.74,o.headZ-o.headD*.52-.004],s:[.09,.1,.012],m:'gold'},{n:'hairPl',b:2,c:[.035,hc[1]+Hh*1.18,o.headZ-.05],s:[.05,.17,.05],m:'plume',rz:-.4});
+      for(const sd of [-1,1]){const b=sd<0?3:5;L.push({n:'gold',b,c:[sd*(o.shX+.01),sh+.065,0],s:[.14,.032,.13],m:'gold'},{n:'hairFr',b,c:[sd*(o.shX+.075),sh+.025,0],s:[.025,.065,.12],m:'fringe'})}
+      // the mallets: a wooden haft and a round felt head in each fist
+      for(const sd of [-1,1])L.push(...zTool(H,sd,sd<0?ZT_ROT.drumL:ZT_ROT.drumR,[{n:'haft',c:[0,0,-.1],s:[.022,.022,.26],m:'haft'},{n:'haft',c:[0,0,.04],s:[.028,.028,.02],m:'haft'},
+        {n:'sacFt',c:[0,0,-.235],s:[.07,.07,.07],m:'felt'}]));
+      return L}}
   // ▶ 주술사 좀비 (scream) — 저장소 주인이 직접 만든 디자인   (위의 어느 것도 아니면 이 모습)
   //    자주색 상의, 베이지 바지, 짙은 갈색 피부, 빨간 눈(입술 없음), 눈가에 흰 천 띠 + 흐르는 피,
   //    머리 뒤 상투(bun)와 흰 천 매듭(knot), 작은 귀, 정강이에 금색 각반(검은 줄 2개),
@@ -1141,7 +1300,7 @@ function defZombie(k,host){const aleph=k==='aleph',khepri=k==='khepri',tiamat=k=
       stumpAL:{all:[['flesh',0,0,1,1,.8]],left:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},stumpAR:{all:[['flesh',0,0,1,1,.8]],right:[['bonep',.32,.32,.68,.68]],bottom:[['drip',.5,.6,4,.9]]},
       stumpLL:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]},stumpLR:{all:[['flesh',0,0,1,1,1.57]],bottom:[['bonep',.3,.3,.7,.7]]}})}
   // 15세 / 피 끄기 (GORE.lv < 2): no ribs bursting out, no bare spine, no hanging guts, no stumps (nothing is ever torn off)
-  H.parts.push(...ex.filter(e=>GORE.lv>=2||!/^(rib|vert|guts|stump)/.test(e.n)).map(e=>({n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}})));
+  H.parts.push(...ex.filter(e=>GORE.lv>=2||!/^(rib|vert|guts|stump)/.test(e.n)).map(e=>{const p={n:e.n,b:e.b,c:e.c,s:e.s,m:e.m,f:{}};if(e.rx||e.ry||e.rz){p.rx=e.rx||0;p.ry=e.ry||0;p.rz=e.rz||0}if(e.tx)p.tx=e.tx;return p}));// (v7.10: a part may be turned — the held tools — or tapered, tx)
   return Object.assign(H,{key:'z_'+(aleph?'aleph':khepri?'khepri':tiamat?tiamat:boss?'boss':k)+(host?'_h':''),mats,decor,ppm:k==='brute'?82:100})}
 
 // ================================================================================================

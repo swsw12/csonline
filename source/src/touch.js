@@ -104,7 +104,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
   assist(dt){const P=G.player;const wasAuto=this.autoF;this.tgt=null;this.autoF=false;if(!P||!P.alive||Main.overlay||G.st==='menu')return;const W=WPN[P.cur];if(!W||W.kind==='nade')return;
     const zt=P.team===TZ,melee=zt||W.kind==='melee';const eye=actorEye(P);const ex=eye.x,ey=eye.y,ez=eye.z;aimDir(P.yaw,P.pitch,_tdir);
     const maxD=melee?(zt?2.4:(W.range?W.range[0]+.2:2.3)):70;let best=null,bs=1e9;
-    for(const t of G.actors){if(!t.alive||t===P||t.team===P.team)continue;if(t.team===TZ&&t.zc==='runner'&&t.skillT>0&&!zt)continue;
+    for(const t of G.actors){if(!t.alive||t===P||t.team===P.team)continue;if(t.team===TZ&&t.zc==='runner'&&t.skillT>0&&!zt||t.mnB)continue;
       const ty=t.c.y+(t.team===TZ?1.15:1.2);const dx=t.c.x-ex,dy=ty-ey,dz=t.c.z-ez,d=Math.hypot(dx,dy,dz);if(d>maxD||d<.2)continue;
       const ang=Math.acos(clamp((dx*_tdir.x+dy*_tdir.y+dz*_tdir.z)/d,-1,1));const body=Math.atan(.42/d);const cone=melee?.75:Math.max(.07,body*3.2);if(ang>cone)continue;
       if(!losClear(ex,ey,ez,t.c.x,ty,t.c.z))continue;const s=ang/cone+d*.004;if(s<bs){bs=s;best={dx,dy,dz,d,ang,body}}}

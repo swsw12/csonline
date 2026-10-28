@@ -106,7 +106,8 @@ function partGeo(parts,o){o=o||{};const pos=[],nrm=[],uv=[],idx=[];const W=GA.W,
   const bev=o.bevel==null?.0035:o.bevel;
   parts.forEach((p,pi)=>{const [cx,cy,cz]=p.c,[sx,sy,sz]=p.s;const mi=GA.idx[p.m]!=null?GA.idx[p.m]:0;const px0=(mi%8)*PS,py0=Math.floor(mi/8)*PS;
     e.set(p.rx||0,p.ry||0,p.rz||0,'XYZ');m4.makeRotationFromEuler(e);const mn=Math.min(sx,sy,sz);const r=p.r!=null?Math.min(p.r,mn*.5):Math.min(bev,mn*.22);const D=partDef(p);
-    rbox(p.s,p.ky?{r,tx:[p.ky[0],p.ky[1]],tz:[p.ky[2],p.ky[3]]}:{r},0,(fk,g)=>{if(D)D(g.P,g.N);const [fu,fv]=faceDims(p.s,fk);const pw=Math.min(LIM,Math.max(1,fu*(o.gd||GD))),ph=Math.min(LIM,Math.max(1,fv*(o.gd||GD)));
+    const S0=p.ky?{r,tx:[p.ky[0],p.ky[1]],tz:[p.ky[2],p.ky[3]]}:{r};if(p.cyl){S0.cyl=p.cyl;if(p.cyl!=='x')S0.nx=8;if(p.cyl!=='y')S0.ny=8;if(p.cyl!=='z')S0.nz=8}// (v7.10 p.cyl: round across that axis, models.js rbox)
+    rbox(p.s,S0,0,(fk,g)=>{if(D)D(g.P,g.N);const [fu,fv]=faceDims(p.s,fk);const pw=Math.min(LIM,Math.max(1,fu*(o.gd||GD))),ph=Math.min(LIM,Math.max(1,fv*(o.gd||GD)));
       const ox=px0+1+Math.floor(hash2(pi,FK.indexOf(fk),3)*(LIM-pw)),oy=py0+1+Math.floor(hash2(pi,FK.indexOf(fk),4)*(LIM-ph));const base=pos.length/3;
       for(let j=0;j<g.nb;j++)for(let i=0;i<g.na;i++){const k=(j*g.na+i)*3;v.set(g.P[k],g.P[k+1],g.P[k+2]).applyMatrix4(m4);pos.push(v.x+cx,v.y+cy,v.z+cz);
         n.set(g.N[k],g.N[k+1],g.N[k+2]).applyMatrix4(m4);nrm.push(n.x,n.y,n.z);uv.push((ox+g.A[i]*pw)/W,1-(oy+(1-g.B[j])*ph)/H)}
