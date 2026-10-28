@@ -493,14 +493,32 @@ function mapFreeSpawns(){const solidAt=(x,y,z)=>MAP.boxes.some(b=>!b.nosolid&&!b
 // ---------- loading and switching: a built map is kept (GPU meshes, collision grid, nav graph, probes) so switching back is instant ----------
 const MAPCACHE={};
 const MAPKEYS=['gates','ez','mini','miniCut','id','boxes','lights','spawns','camps','zspawns','deco','fires','smoke','spray','dyn','moon','meshes','probe','probeY','env','cam','spawnYaw','ambIn','ambOut','bounds','miniName'];
+// (v7.8) but a built map holds 15–75 MB of geometry on the GPU, and its textures: past mapKeep() kept maps (the one in play not
+// counted — 1 on a phone, 3 on a computer) the one left longest ago goes: its meshes, their materials and the map textures no kept
+// map uses (MAPTEXK: the TEX keys that came while a map was built; those made in a build and kept nowhere else) are freed, its data
+// dropped; going back to it builds it again (the bakers keep their canvases: the textures go up to the GPU again)
+const MAPTEXK=new Set();
+function mapTexNew(k0){for(const k in TEX)if(!k0.has(k))MAPTEXK.add(k)}
+function mapKeep(){return (typeof TOUCH!=='undefined'&&TOUCH.on)||CFG.mob===2?1:3}
+function mapMats(o,f){const ms=Array.isArray(o.material)?o.material.slice():o.material?[o.material]:[];if(o.userData&&o.userData.dm)ms.push(o.userData.dm);for(const m of ms)f(m)}
+function mapTexs(m,f){for(const k in m)if(m[k]&&m[k].isTexture)f(m[k]);if(m.uniforms)for(const k in m.uniforms){const v=m.uniforms[k]&&m.uniforms[k].value;if(v&&v.isTexture)f(v)}}
+function mapDrop(id){const C=MAPCACHE[id];if(!C||id===MAP.id)return false;delete MAPCACHE[id];
+  // what the map in play and the other kept maps use stays (and the gun models, shared with the weapons)
+  const kM=new Set(),kT=new Set(),kG=new Set(Object.values(GUN_CACHE));
+  for(const L of [MAP.meshes||[],...Object.values(MAPCACHE).map(c=>c.meshes||[])])for(const m of L)m.traverse(o=>{if(o.geometry)kG.add(o.geometry);mapMats(o,mt=>{kM.add(mt);mapTexs(mt,t=>kT.add(t))})});
+  const base=new Set();for(const k in TEX)if(!MAPTEXK.has(k))base.add(TEX[k]);
+  for(const m of C.meshes||[]){if(m.parent)m.parent.remove(m);m.traverse(o=>{if(o.geometry&&!kG.has(o.geometry))o.geometry.dispose();
+    mapMats(o,mt=>{if(kM.has(mt))return;kM.add(mt);mapTexs(mt,t=>{if(!kT.has(t)&&!base.has(t)){kT.add(t);t.dispose()}});mt.dispose()})})}
+  return true}
+function mapEvict(){const ids=Object.keys(MAPCACHE).filter(k=>k!==MAP.id).sort((a,b)=>(MAPCACHE[b].used||0)-(MAPCACHE[a].used||0));for(const id of ids.slice(mapKeep()))mapDrop(id)}
 function* mapLoader(id){
-  if(MAP.id){const C=MAPCACHE[MAP.id]={};for(const k of MAPKEYS)C[k]=MAP[k];C.cells=WORLD.cells;C.grid=[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh];
+  if(MAP.id){const C=MAPCACHE[MAP.id]={used:performance.now()};for(const k of MAPKEYS)C[k]=MAP[k];C.cells=WORLD.cells;C.grid=[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh];
     C.nav={nodes:NAV.nodes,col:NAV.col,g:NAV.g,f:NAV.f,came:NAV.came,mark:NAV.mark,heap:NAV.heap,hf:NAV.hf,X0:NAV.X0,Z0:NAV.Z0,NX:NAV.NX,NZ:NAV.NZ};C.rainHM=FX.rain?FX.rain.hm:null;
     for(const m of MAP.meshes)R.scene.remove(m)}
   const C=MAPCACHE[id];
   if(C){for(const k of MAPKEYS)MAP[k]=C[k];WORLD.boxes=MAP.boxes;WORLD.cells=C.cells;if(C.grid)[WORLD.gx0,WORLD.gz0,WORLD.gw,WORLD.gh]=C.grid;Object.assign(NAV,C.nav);if(FX.rain&&C.rainHM)FX.rain.hm=C.rainHM;for(const m of MAP.meshes)R.scene.add(m)}
-  else{yield 'lMap';const D=MAPDEFS[id];if(D.tex)D.tex();buildMapData(id);WORLD.boxes=MAP.boxes;worldIndex();if(D.post)D.post();// (v7.6: D.post runs with the collision grid in place)
-    yield 'lLight';MAP.meshes=[];buildMapMeshes(R.scene);if(D.mesh)D.mesh(R.scene);bakeProbes();
+  else{yield 'lMap';const D=MAPDEFS[id];let tk=new Set(Object.keys(TEX));if(D.tex)D.tex();buildMapData(id);WORLD.boxes=MAP.boxes;worldIndex();if(D.post)D.post();// (v7.6: D.post runs with the collision grid in place)
+    mapTexNew(tk);yield 'lLight';tk=new Set(Object.keys(TEX));MAP.meshes=[];buildMapMeshes(R.scene);if(D.mesh)D.mesh(R.scene);bakeProbes();mapTexNew(tk);
     yield 'lNav';{const bb=MAP.bounds;NAV.X0=bb[0];NAV.Z0=bb[1];NAV.NX=Math.round(bb[2]-bb[0]);NAV.NZ=Math.round(bb[3]-bb[1])}
     // the graph is built with every gate open (they open as the map is played; a shut one simply blocks the way for now)
     const GT=Object.values(MAP.gates||{});for(const G0 of GT)for(const b of G0.boxes)b.nosolid=true;
@@ -508,7 +526,7 @@ function* mapLoader(id){
     for(const G0 of GT)for(const b of G0.boxes)b.nosolid=G0.open;MAP.mini=miniBuild();if(FX.rain&&(MAP.env.rain||MAP.env.snow||MAP.env.ash))FX.buildRainHM()}
   // bots holding paths through the old graph start over
   for(const a of G.actors)if(a.bot){a.bot.path=null;a.bot.goal=null;a.bot.wander=null;a.bot.spot=null}
-  mapEnv()}
+  mapEnv();mapEvict()}
 // finish a load that is in progress (another caller needs the map right now)
 function mapFinish(){const g=MAP.gen;if(!g)return;MAP.gen=null;for(const _ of g){}MAP.loading=false}
 // synchronous load (multiplayer start, boot)

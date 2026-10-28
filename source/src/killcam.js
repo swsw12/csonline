@@ -3,7 +3,7 @@
 // While a match of a mode with a kill cam runs (팀 데스매치, 개인전, 폭파미션, 무기 레이스; the infection modes when you go down as a zombie)
 // and the option is on (옵션 → 게임: 킬캠), the page keeps the last 7 s: every character's place, aim and pose inputs (visState, game.js)
 // up to 60 times a second — the local player's too, posed from a shadow copy of its animation state since its own body is not drawn
-// (KC.ghost) — and what was seen and heard: particles, sparks, tracers, emitters, short lights, sounds in the world, each shot, swing
+// (KC.ghost) — and what was seen and heard: particles (an emitter's one by one), sparks, tracers, short lights, sounds in the world, each shot, swing
 // and throw. When someone takes you down, the death cam runs a moment, then the kill cam plays the seconds before (and a little after)
 // from the killer's eye: copies of the rigs posed from the record (the live bodies are hidden while the game goes on underneath), the
 // killer's gun in the view model firing where he fired, his scope when he was zoomed, the moment of the kill slowed down. Live effects
@@ -23,8 +23,9 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
     for(const rc of this.C.values()){if(rc.grp.parent)rc.grp.parent.remove(rc.grp);rc.mat.dispose();if(rc.gMat)rc.gMat.dispose()}this.C.clear()},
   // the effects, lights and sounds of the world: recorded while a match records; held back while the kill cam plays (its own run through)
   init(){if(this.ok)return;this.ok=true;const K=this;
-    const wrap=(O,name,k,one)=>{const f=O[name];O[name]=function(...A){if(K.rec&&!K.rp)K.E.push({t:G.t,k,p:one?A[0]:A});if(K.on&&!K.rp)return;return f.apply(this,A)}};
-    wrap(FX,'spawn','p',1);wrap(FX,'spark','k');wrap(FX,'tracer','r');wrap(FX,'emit','e',1);
+    const wrap=(O,name,k,one)=>{const f=O[name];O[name]=function(...A){if(k&&K.rec&&!K.rp)K.E.push({t:G.t,k,p:one?A[0]:A});if(K.on&&!K.rp)return;return f.apply(this,A)}};
+    // (an emitter is not recorded: the particles it gives off later go through FX.spawn and are recorded one by one)
+    wrap(FX,'spawn','p',1);wrap(FX,'spark','k');wrap(FX,'tracer','r');wrap(FX,'emit',null,1);
     // a short light (a muzzle flash, a blast) is a moment; a lasting one (a fire, a lamp) belongs to now and always goes through
     const dl=DL.add;DL.add=function(x,y,z,col,range,int,life,o){const sh=life>0&&life<1.5;if(sh&&K.rec&&!K.rp)K.E.push({t:G.t,k:'l',p:[x,y,z,col,range,int,life,o]});
       if(sh&&K.on&&!K.rp)return Object.assign({x,y,z,c:new THREE.Color(col),r:range,i:int,life,t:0,flick:0},o||{});return dl.call(this,x,y,z,col,range,int,life,o)};
@@ -79,6 +80,7 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   end(){if(!this.on)return;this.on=false;this.pend=null;
     for(const rc of this.C.values())rc.grp.visible=false;
     for(const n of NADES)if(n._kcH){n._kcH=0;if(n.mesh)n.mesh.visible=true}
+    this.unhide();
     this.fxClear();const P=G.player;
     if(P&&!P.alive){const [id,sk]=this.vmSave;if(id&&sk&&WPN[id])VM.set(id,sk);VM.vis=false;G.deathCam=Math.min(G.deathCam,.01)}
     R.PU.uDmg.value=0;this.ui(false)},
@@ -88,7 +90,7 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   // what happened between two moments of the record, again
   runTo(b){const E=this.E,kid=this.pk.kid;this.rp=true;
     try{while(this.ei<E.length&&E[this.ei].t<=b){const e=E[this.ei++],q=e.p;
-      switch(e.k){case 'p':FX.spawn(q);break;case 'k':FX.spark.apply(FX,q);break;case 'r':FX.tracer.apply(FX,q);break;case 'e':FX.emit(q);break;
+      switch(e.k){case 'p':FX.spawn(q);break;case 'k':FX.spark.apply(FX,q);break;case 'r':FX.tracer.apply(FX,q);break;
         case 'l':DL.add.apply(DL,q);break;case 'a':AU.at(q[0],q[1],q[2],q[3],Object.assign({},q[4]));break;case 'f':AU.stepAt(q[0],q[1],q[2],q[3],Object.assign({},q[4]));break;
         case 's':if(e.id===kid&&VM.cur)VM.fire(e.W,e.side);if(e.snd)AU.at(e.snd,e.x,e.y,e.z,{vol:.95,range:70});break;
         case 'm':if(e.id===kid&&VM.cur)VM.melee(e.heavy);break;case 'n':if(e.id===kid&&VM.cur&&VM.throwNade)VM.throwNade(false);break}}}
@@ -130,6 +132,7 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   char(s){const key=s.id+'|'+s.key;let rc=this.C.get(key);if(!rc){rc=makeChar(s.key);rc.gId=null;this.C.set(key,rc)}if(!rc.grp.parent)R.scene.add(rc.grp);return rc},
   // the live bodies (and thrown grenades) are hidden for the frame — the game updates them underneath; copies posed from the record are drawn
   pose(dt){for(const a of G.actors)if(a.ch)a.ch.grp.visible=false;for(const n of NADES)if(n.mesh&&n.mesh.visible){n.mesh.visible=false;n._kcH=1}
+    this.later(dt);
     for(const rc of this.C.values())rc.used=false;const kid=this.pk.kid,cp=R.cam.position;
     for(const s of this.S.values()){if(!s.vis||s.id===kid&&s.alive)continue;let rc;try{rc=this.char(s)}catch(e){continue}rc.used=true;const st=s.st;
       if(s.team===TZ)poseZombie(rc,st);else poseHuman(rc,st);rc.hide=s.hide;rigCompute(rc);
@@ -138,6 +141,12 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
       const U=rc.mat.uniforms;sampleProbe(s.x,s.y+1.1,s.z,_kcP);U.uProbe.value.copy(_kcP).multiplyScalar(1.25);U.uFlash.value=s.flash||0;U.uTint.value.set(s.tn[0],s.tn[1],s.tn[2],s.tn[3]);U.uEmisA.value=s.em||1;
       this.gun(rc,s);rc.grp.updateMatrixWorld(true);if(s.id===this.pk.pid){charHead(rc,_kcV);this.vh=_kcV.clone()}}
     for(const rc of this.C.values())if(!rc.used)rc.grp.visible=false},
+  // what was not there yet at the moment played: a weapon dropped later, a supply box that fell later (their ages tell): hidden until
+  // the replay reaches the moment it came (the gun a human let fall as he turned shows from the moment he turned)
+  objs(){const L=[];if(typeof DROPS!=='undefined')for(const d of DROPS.list)L.push([d,d.mesh,null]);if(typeof SUP!=='undefined'&&SUP.list)for(const b of SUP.list)L.push([b,b.mesh,b.chute]);return L},
+  later(dt){const t=this.pt,now=G.t;
+    for(const [o,m1,m2] of this.objs()){if(now-(o.t||0)>t+.05){for(const m of [m1,m2])if(m&&m.visible){m.visible=false;o._kcH=1}}else if(o._kcH){o._kcH=0;for(const m of [m1,m2])if(m)m.visible=true}}},
+  unhide(){for(const [o,m1,m2] of this.objs())if(o._kcH){o._kcH=0;for(const m of [m1,m2])if(m)m.visible=true}},
   gun(rc,s){const want=s.team===TH?s.gm:null;
     if(rc.gId!==want){for(const g of [rc.g1,rc.g2])if(g)rc.grp.remove(g);rc.g1=rc.g2=null;rc.gId=want;
       if(want){const [m,two]=want.split('+');if(GUNS[m]){if(!rc.gMat)rc.gMat=matGun();const g1=new THREE.Mesh(gunGeo(m),rc.gMat);g1.matrixAutoUpdate=false;rc.grp.add(g1);rc.g1=g1;
@@ -148,7 +157,7 @@ const KC={rec:false,on:false,rp:false,CAP:440,KEEP:7,
   ui(on){const hud=$('hud');if(!hud)return;let el=$('kcam');
     if(!el){el=document.createElement('div');el.id='kcam';el.innerHTML='<div class="kcb kct"><span class="kcl"><i></i><b></b></span><span class="kch"></span></div><div class="kcb kcd"><div class="kcc"><b class="kcn"></b><span class="kcw"></span><span class="kci"></span></div><button class="kcs" data-kc="skip"></button><div class="kcp"><i></i></div></div><div class="kcx"><i></i><i></i><i></i><i></i></div><div class="kcv"></div>';
       hud.appendChild(el);el.querySelector('.kcs').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();this.skip()})}
-    hud.classList.toggle('kc',on);el.classList.toggle('on',on);if(!on){el.classList.remove('kill');return}
+    hud.classList.toggle('kc',on);el.classList.toggle('on',on);const tc=$('touch');if(tc)tc.classList.toggle('kc',on);if(!on){el.classList.remove('kill');return}
     const L=LI(),p=this.pk,W=WPN[p.w];el.querySelector('.kcl b').textContent=L?'KILLCAM':'킬캠';el.querySelector('.kch').textContent=L?'how you went down':'쓰러진 순간 다시 보기';
     const n=el.querySelector('.kcn');n.textContent=p.name||'?';n.className='kcn '+p.cls;n.style.color=p.col||'';el.querySelector('.kcw').textContent=W&&W.n?W.n[L]:'';
     const bits=[];if(p.alive)bits.push(L?`${p.hp} HP left`:`남은 체력 ${p.hp}`);bits.push(`${p.d} m`);if(p.hs)bits.push(L?'headshot':'헤드샷');

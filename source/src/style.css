@@ -2181,3 +2181,5 @@ html[data-lob="l"] .rsL>.szRes{flex:none;max-width:none;margin:0;padding:6px 10p
 html.touch #kcam .kcb{padding:0 12px;min-height:40px}html.touch #kcam .kcl{font-size:15px}html.touch #kcam .kch{display:none}
 html.touch #kcam .kcd{justify-content:flex-start}html.touch #kcam .kcc{flex-wrap:wrap;gap:2px 8px;max-width:calc(100% - 120px)}html.touch #kcam .kcn{font-size:16px}
 html.touch #kcam .kcs{padding:9px 14px;font-size:13px}
+/* (v7.8) the touch controls while the kill cam plays: the fire buttons (they skip it) and the pause button only */
+#touch.kc .tstick,#touch.kc .tAlt,#touch.kc .tJump,#touch.kc .tDuck,#touch.kc .tRel,#touch.kc .tSkill,#touch.kc .tbar,#touch.kc .ttop>*:not(.tPause){visibility:hidden!important}

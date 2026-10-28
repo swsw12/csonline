@@ -137,11 +137,13 @@ const SMK={R:5.2,C:.8,TOP:3.8,LIFE:18,GROW:2.4,FADE:3.2,EDGE:1.5,THR:1.6,RB:7.4,
     P.length=w;P.sort((a,b)=>b.dz-a.dz);
     // (puffs right at the eye are faded out anyway; inside a cloud the veil hides the near ones: neither is drawn)
     const g=this.geo,n=Math.min(P.length,this.MAXP),pos=g.attributes.position.array,sz=g.attributes.aS.array,ro=g.attributes.aR.array,co=g.attributes.aC.array,fr=g.attributes.aF.array,near=this.vk>.5?2:.25;let m=0;
-    for(let i=0;i<n;i++){const p=P[i];if(p.dz<near)continue;const S=p.S,e=p.tr?.8:clamp((S.Re-p.c.d)/this.EDGE,.35,1),a=p.a*e*S.k*smooth(clamp(p.t/(p.tr?.35:.9),0,1))*(1-smooth(clamp((p.t-p.life+1.6)/1.6,0,1))),r=lerp(p.r0,p.r1,Math.min(1,p.t/p.life*1.6));
+    for(let i=0;i<n;i++){const p=P[i];if(p.dz<near)continue;const S=p.S,q=this.kq(S);if(q<=0)continue;const e=p.tr?.8:clamp((S.Re-p.c.d)/this.EDGE,.35,1),a=q*p.a*e*S.k*smooth(clamp(p.t/(p.tr?.35:.9),0,1))*(1-smooth(clamp((p.t-p.life+1.6)/1.6,0,1))),r=lerp(p.r0,p.r1,Math.min(1,p.t/p.life*1.6));
       for(let v=0;v<4;v++){const j=m*4+v;pos[j*3]=p.x;pos[j*3+1]=p.y;pos[j*3+2]=p.z;sz[j]=r;ro[j]=p.rot;co[j*4]=p.cr;co[j*4+1]=p.cg;co[j*4+2]=p.cb;co[j*4+3]=a;fr[j]=p.f}m++}
     for(const k of ['position','aS','aR','aC','aF'])g.attributes[k].needsUpdate=true;g.setDrawRange(0,m*6);
     // the eye inside a cloud: a grey veil as thick as the smoke there, lit like it
-    let d=0;for(const S of this.list)d+=this.dens(S,cam.x,cam.y,cam.z);this.veilK(dt,Math.min(1,d))},
+    let d=0;for(const S of this.list){const q=this.kq(S);if(q>0)d+=this.dens(S,cam.x,cam.y,cam.z)*q}this.veilK(dt,Math.min(1,d))},
+  // the kill cam (v7.8): a cloud that came after the moment played is not there yet; one that came during it swells in
+  kq(S){return KC.on?clamp((KC.pt-S.t0)/.8,0,1):1},
   veilK(dt,t){this.vk=approach(this.vk,t*.88,dt*(t*.88>this.vk?2.6:1.8));const V=this.veil;if(!V)return;V.visible=this.vk>.004;if(!V.visible)return;const U=V.material.uniforms,cam=R.cam.position;
     U.uK.value=this.vk;smkLit(cam.x,cam.y,cam.z,.92,_smL);U.uC.value.setRGB(_smL[0],_smL[1],_smL[2]);
     const P=G.player,s=G.spec&&P&&!P.alive?G.spec:P;if(s)U.uO.value.set(s.yaw*1.1,(s.pitch||0)*1.1)},
