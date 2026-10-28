@@ -8,9 +8,11 @@ function passClear(n,m){const y=Math.max(n.y,m.y)+.5;for(const k of [.25,.5,.75]
   const fx=(n.x+m.x)/2,fz=(n.z+m.z)/2;const fl=floorBelow(fx,Math.max(n.y,m.y)+.6,fz,.2);return fl>Math.min(n.y,m.y)-.7}
 function jumpClear(n,m){return navClearBox(n.x-.25,n.y+.05,n.z-.25,n.x+.25,m.y+1.75,n.z+.25)&&navClearBox((n.x+m.x)/2-.22,m.y+.05,(n.z+m.z)/2-.22,(n.x+m.x)/2+.22,m.y+1.7,(n.z+m.z)/2+.22)}
 function dropClear(n,m){return navClearBox(m.x-.25,m.y+.05,m.z-.25,m.x+.25,n.y+1.75,m.z+.25)&&navClearBox((n.x+m.x)/2-.22,n.y+.05,(n.z+m.z)/2-.22,(n.x+m.x)/2+.22,n.y+1.7,(n.z+m.z)/2+.22)}
-function buildNav(){const N=NAV;N.nodes=[];N.col=new Array(N.NX*N.NZ);
+// (v7.9) floors lower than 5 m under the ground are left out (buried slabs, the void under a map), unless the map says how deep its
+// own floors go (D.navMinY: 회색 채석장's pit floor is 8 m down)
+function buildNav(){const N=NAV;N.nodes=[];N.col=new Array(N.NX*N.NZ);const D0=MAPDEFS[MAP.id],minY=D0&&D0.navMinY!=null?D0.navMinY:-5;
   for(let j=0;j<N.NZ;j++)for(let i=0;i<N.NX;i++){const x=N.X0+(i+.5)*N.S,z=N.Z0+(j+.5)*N.S;_nq.length=0;boxesIn(x-.01,z-.01,x+.01,z+.01,_nq);
-    const tops=[];const stairY={};for(const b of _nq){if(b.nosolid)continue;if(x>=b.x0&&x<b.x1&&z>=b.z0&&z<b.z1&&b.y1>-5){if(tops.indexOf(b.y1)<0)tops.push(b.y1);if(b.o.stair)stairY[b.y1]=1}}
+    const tops=[];const stairY={};for(const b of _nq){if(b.nosolid)continue;if(x>=b.x0&&x<b.x1&&z>=b.z0&&z<b.z1&&b.y1>minY){if(tops.indexOf(b.y1)<0)tops.push(b.y1);if(b.o.stair)stairY[b.y1]=1}}
     tops.sort((a,b)=>a-b);const list=[];
     for(const y of tops){if(insideSolid(x,y+.05,z))continue;const st=!!stairY[y];if(overlapAny(x-.26,y+(st?.5:.3),z-.26,x+.26,y+1.7,z+.26))continue;if(!st&&overlapAny(x-.12,y+.05,z-.12,x+.12,y+1.7,z+.12))continue;
       const nd={id:N.nodes.length,i,j,x,z,y,e:[],stair:st};N.nodes.push(nd);list.push(nd)}

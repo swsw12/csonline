@@ -245,7 +245,9 @@ function insideSolid(x,y,z,self){_bq.length=0;boxesIn(x,z,x,z,_bq);for(const b o
 // the material a face is drawn with (null: not drawn). A box reaching below -.99 has no bottom (it is ground); (v7.6) a ground slab
 // shows its sides too — buried ones are dropped like any other, the rest face something lower beside it (a pit, a ditch, a basement)
 // and were holes into the void before — in its own material, the map's gside or an f override
-function faceMatOf(b,fk){if(fk==='ny'&&b.y0<=-.99)return null;const f=b.o.f&&b.o.f[fk];if(b.o.ground&&fk!=='py'){if(fk==='ny'&&!f)return null;return f||MAP.gside||b.mat}return f||b.mat}
+// (v7.9) a box reaching more than a metre under the ground has no bottom; a map deeper than that says where its own buried part
+// begins (D.noBottomY: 회색 채석장's pit goes 8 m down, so the steps, the timbers and the adit's roof under -1 still have their undersides)
+function faceMatOf(b,fk){if(fk==='ny'){const D=MAPDEFS[MAP.id],nb=D&&D.noBottomY!=null?D.noBottomY:-.99;if(b.y0<=nb)return null}const f=b.o.f&&b.o.f[fk];if(b.o.ground&&fk!=='py'){if(fk==='ny'&&!f)return null;return f||MAP.gside||b.mat}return f||b.mat}
 const matOf=k=>MATS[k.endsWith('|d')?k.slice(0,-2):k];
 function buildMapGeometry(pick){
   const groups={};const g=m=>groups[m]||(groups[m]={pos:[],nrm:[],uv:[],col:[],tn:[]});
