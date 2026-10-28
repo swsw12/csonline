@@ -141,6 +141,7 @@ function fireGun(a,W){if(W.flame){salFire(a,W);return}W=spShot(a,W);const am=a.a
   else if(loud){AU.at(W.snd,eye.x,eye.y,eye.z,{vol:.9,range:70});if(typeof SNDV!=='undefined')SNDV.ping(a,'shot',70)}
   if(W.bolt){a.boltT=.95;a.zoomWas=a.zoom;a.zoom=0}
   if(W.pump){a.pumpT=.55}
+  if(KC.rec)KC.shot(a,W,eye);
   a.lastFire=G.t;alertBots(a,eye.x,eye.z)}
 // one pellet/bullet: world first, then actors, apply damage/knockback/effects
 const SHOT_FILTER={skip:b=>b.o.pass};
@@ -172,7 +173,7 @@ function meleeHit(a,range,cone){const eye=actorEye(a);aimDir(a.yaw,a.pitch,_dv);
   if(best)return {t:best,d:bd};
   const hw=rayCast(eye.x,eye.y,eye.z,_dv.x,_dv.y,_dv.z,range);if(hw)return {wall:hw,x:eye.x+_dv.x*hw.t,y:eye.y+_dv.y*hw.t,z:eye.z+_dv.z*hw.t,n:[hw.nx,hw.ny,hw.nz]};return null}
 function meleeW(a,w){const W=WPN[w||a.cur];return W&&W.kind==='melee'?W:WPN.knife}
-function meleeSwing(a,heavy){const W=meleeW(a);NET.on&&netFxPush(['m',a.id,heavy?1:0,a.an.atkSide||1,WI[a.cur]]);
+function meleeSwing(a,heavy){const W=meleeW(a);NET.on&&netFxPush(['m',a.id,heavy?1:0,a.an.atkSide||1,WI[a.cur]]);if(KC.rec)KC.mel(a,heavy);
   // a weapon with its own whoosh (swS) plays it as the stroke comes through, not at the start of the wind-up (the view model's clip times it for the player)
   if(W.swS){if(a.isPlayer)VM.melee(heavy);else nyLater(Math.max(0,W.hitT[heavy?1:0]-.12),()=>AU.at(W.swS,a.c.x,a.c.y+1.4,a.c.z,{vol:.6,rate:heavy?.9:1}));return}
   if(a.isPlayer){AU.play('kswing',{vol:.7,rate:(heavy?.8:1)*(W.sw||1)});VM.melee(heavy)}else AU.at('kswing',a.c.x,a.c.y+1.4,a.c.z,{vol:.5,rate:W.sw||1})}
@@ -197,7 +198,7 @@ function meleeStrike(a,heavy,w,dc){w=w&&WPN[w]&&WPN[w].kind==='melee'?w:a.cur;co
 function knifeAttack(a,heavy){meleeSwing(a,heavy);meleeStrike(a,heavy)}
 // ---------- grenades ----------
 const NADES=[];
-function throwNade(a,kind,X){if(!WPN[kind])return;const eye=actorEye(a);const soft=kind==='zbomb'&&a.bSoft;aimDir(a.yaw,a.pitch+(soft?.05:.12),_dv);const sp=soft?5.5:kind==='zbomb'?15:14.5;
+function throwNade(a,kind,X){if(!WPN[kind])return;if(KC.rec)KC.nade(a,kind);const eye=actorEye(a);const soft=kind==='zbomb'&&a.bSoft;aimDir(a.yaw,a.pitch+(soft?.05:.12),_dv);const sp=soft?5.5:kind==='zbomb'?15:14.5;
   const n={kind,owner:a,x:eye.x+_dv.x*.4,y:eye.y+_dv.y*.4-.1,z:eye.z+_dv.z*.4,vx:_dv.x*sp+a.c.vx*.6,vy:_dv.y*sp+(soft?1:2)+Math.max(0,a.c.vy)*.5,vz:_dv.z*sp+a.c.vz*.6,t:0,fuse:kind==='flare'?1.2:kind==='zbomb'?1.3:kind==='smoke'?3:1.6,rest:false,mesh:null,spin:rr(-12,12),ghost:NET.ghost>0};
   if(X){n.x=X.x;n.y=X.y;n.z=X.z;n.vx=X.vx;n.vy=X.vy;n.vz=X.vz}
   const m=new THREE.Mesh(gunGeo(kind==='zbomb'?'zbombT':WPN[kind].model),matGun());m.position.set(n.x,n.y,n.z);R.scene.add(m);n.mesh=m;NADES.push(n);

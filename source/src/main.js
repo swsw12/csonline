@@ -73,7 +73,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     document.addEventListener('pointerlockerror',()=>{this.lockPend=false;this.onLockFail()});
     cv.addEventListener('mousedown',e=>{AU.init();if(G.st==='menu'||G.st==='over'||this.paused)return;if(!this.locked&&!this.lockFail&&!this.overlay){this.lock();return}
       if(e.button===0)this.ml=true;if(e.button===2)this.mr=true;
-      if(e.button===0&&this.specOn())this.specClick()});
+      if(e.button===0&&KC.on){KC.skip();return}if(e.button===0&&this.specOn())this.specClick()});
     addEventListener('mouseup',e=>{if(e.button===0)this.ml=false;if(e.button===2)this.mr=false});
     addEventListener('contextmenu',e=>{if(G.st!=='menu')e.preventDefault()});
     addEventListener('mousemove',e=>{this.mx=e.clientX;this.my=e.clientY;if(!G.player||this.paused||G.st==='menu'||G.st==='over')return;if(!this.locked&&!this.lockFail)return;if(this.overlay&&!this.locked)return;
@@ -107,6 +107,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       if(this.overlay==='buy'){let n=+k.replace('Digit','').replace('Numpad','');if(k==='Digit0'||k==='Numpad0')n=10;if(n>=1&&n<=10){if(UI.buyStage===0){if(n<=BUY_MENU.length){UI.buyCat=n-1;UI.buyStage=1;UI.renderBuy()}}else{const it=BUY_MENU[UI.buyCat].items[n-1];if(it)this.buyItem(it);UI.buyStage=0}return}if(k==='KeyB'){this.closeOverlay();return}}
       if(this.overlay==='zsel'){const n=+k.replace('Digit','');if(n>=1&&n<=ZLIST.length){this.pickZ(ZLIST[n-1]);return}if(k==='KeyM'){this.closeOverlay();return}}
       if(!P)return;
+      if(KC.on&&(k==='Space'||k==='KeyV'||k==='Enter'||k==='NumpadEnter')){KC.skip();return}
       if(k==='KeyV'&&!P.alive)this.toggleFree();
       if(k==='Tab'){this.boardOn=true;UI.board(true)}
       if(k==='KeyB')this.openOverlay('buy');
@@ -159,7 +160,8 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
   camera(dt){const cam=R.cam,P=G.player;FX.shake=Math.max(0,FX.shake-dt*1.6);const sh=FX.shake*FX.shake;
     this.shakeP=(Math.random()*2-1)*sh*.06;this.shakeY=(Math.random()*2-1)*sh*.06;
     let fov=CFG.fov;R.vmVisible=false;if(this.fc&&(!P||P.alive||G.st==='menu'||!this.specOn()))this.fc=null;
-    if(G.st==='menu'||!P){this.camT+=dt;if(MAP.cam)MAP.cam(this.camT,cam);else{cam.position.set(0,6,20);cam.lookAt(0,1.5,0)}LU.uSpotK.value.w=0;R.PU.uZ.value=0;R.PU.uNV.value=0;R.PU.uDeath.value=0}
+    if(KC.on)fov=KC.cam(dt,cam);
+    else if(G.st==='menu'||!P){this.camT+=dt;if(MAP.cam)MAP.cam(this.camT,cam);else{cam.position.set(0,6,20);cam.lookAt(0,1.5,0)}LU.uSpotK.value.w=0;R.PU.uZ.value=0;R.PU.uNV.value=0;R.PU.uDeath.value=0}
     else if(P.alive&&!G.spec){const e=actorEye(P);
       // smooth crouch transitions, a light head bob, a dip on landing, a lean into strafes and the roll of melee strokes
       const eh=e.y-P.c.y;this.eyeOff=this.eyeOff==null||Math.abs(this.eyeOff-eh)>1?eh:lerp(this.eyeOff,eh,1-Math.exp(-dt*14));
@@ -208,13 +210,13 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
     if(MAP.loading)return;
     try{
       if(NET.on)NET.frameStart(dt);
-      if(G.st==='menu'){this.demoUpdate(dt);gameUpdate(dt)}
+      if(G.st==='menu'){this.demoUpdate(dt);gameUpdate(dt);if(KC.on||KC.rec)KC.tick(dt)}
       else if(netHold()){for(const a of G.actors)updateVisual(a,dt)}// (a multiplayer match waits while a new host takes over)
-      else if(!this.paused||NET.on){if(G.player){if(!this.paused)this.playerCmd(dt);else{const c=G.player.cmd;c.f=c.s=0;c.jump=c.duck=c.walk=c.fire=c.alt=c.reload=c.skill=false}}gameUpdate(dt)}
+      else if(!this.paused||NET.on){if(G.player){if(!this.paused)this.playerCmd(dt);else{const c=G.player.cmd;c.f=c.s=0;c.jump=c.duck=c.walk=c.fire=c.alt=c.reload=c.skill=false}}gameUpdate(dt);KC.tick(dt)}
       if(NET.on)NET.frameEnd(dt);
       if(!draw){FX.update(dt);return}
       this.camera(dt);this.look(dt);
-      if(G.player&&G.st!=='menu'){const P=G.player;if(P.alive&&P.team===TH&&P.cur)VM.set(P.cur,P.skin);VM.vis=P.alive&&!G.spec;VM.update(dt,P,R.cam)}
+      if(KC.on){KC.vmTick(dt);KC.pose(dt)}else if(G.player&&G.st!=='menu'){const P=G.player;if(P.alive&&P.team===TH&&P.cur)VM.set(P.cur,P.skin);VM.vis=P.alive&&!G.spec;VM.update(dt,P,R.cam)}
       if(!this.paused||NET.on){this.fires(dt);FX.update(dt);SMK.draw(dt);DL.update(dt,R.cam)}
       if(AU.spin)AU.spin(G.player&&G.player.alive&&!this.paused&&G.st!=='menu'?G.player.spinV||0:0,G.player&&G.player.cmd.fire);
       if(AU.saw&&!(G.player&&G.player.alive&&G.player.cur==='ripper'&&!this.paused&&G.st!=='menu'))AU.saw(0);
@@ -222,7 +224,7 @@ const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,ov
       AU.update(dt,{play:G.st==='fight',music:null,low:G.player&&G.player.alive&&G.player.team===TH&&G.lastHuman===G.player?.6:0,flash:()=>{this.lightning=.6}});
       FX.rain.k=1;AU.rainIndoor&&!AU.throttle('ri',300)&&AU.rainIndoor(rayCast(R.cam.position.x,R.cam.position.y,R.cam.position.z,0,1,0,30)?1:0);
       $('app').classList.toggle('playing',!!G.player&&G.st!=='menu'&&G.st!=='over'&&!this.paused&&!this.overlay);
-      if(G.player&&G.st!=='menu')HUD.update(dt);netHud(dt);if(this.boardOn&&!AU.throttle('bd',400))UI.board(true);
+      if(G.player&&G.st!=='menu')HUD.update(dt);KC.hud(dt);netHud(dt);if(this.boardOn&&!AU.throttle('bd',400))UI.board(true);
       R.render();if(!this.paused&&document.visibilityState==='visible')R.adapt(dt*1000)}catch(e){ERRLOG.report(e,'frame');console.error(e);window.__err=String(e.stack||e)}},
 };
 addEventListener('load',()=>{Main.boot()});

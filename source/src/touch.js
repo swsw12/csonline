@@ -81,7 +81,7 @@ const TOUCH={on:false,el:null,stick:null,look:new Map(),btn:new Map(),mv:{x:0,y:
     const Wz=WPN[P.cur];const z=P.zoom>0&&Wz&&Wz.zoom?Wz.zoom[P.zoom-1]/CFG.fov:1;const k=(CFG.tsens||1)*.0048*z*acc*(this.tgt?.75:1);
     P.yaw=wrapA(P.yaw-dx*k);P.pitch=clamp(P.pitch-(CFG.invert?-1:1)*dy*k*.85,-1.53,1.53)},
   press(id,on,v){const P=G.player,M=Main;
-    if(id==='fire'){if(on&&M.specOn()){M.specClick();return}M.ml=on||[...this.btn.values()].some(b=>b.id==='fire');return}
+    if(id==='fire'){if(on&&KC.on){KC.skip();return}if(on&&M.specOn()){M.specClick();return}M.ml=on||[...this.btn.values()].some(b=>b.id==='fire');return}
     if(id==='alt'){M.mr=on;return}
     if(id==='score'){M.boardOn=on;UI.board(on);return}
     // long press on the weapon in hand = drop it; a short tap still swaps back (quick switch)

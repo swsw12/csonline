@@ -198,7 +198,13 @@ const _pr=new THREE.Color(),_fyo=[0,0,0,0];
 function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.isPlayer&&!G.spec&&a.alive)&&(a.alive||a.deadT<60||!a.permaDead||G.st!=='menu');
   ch.grp.visible=show&&(a.alive||a.an.dead>0);if(!ch.grp.visible){if(a.gun)a.gun.visible=false;
     // the local player's body is not drawn, but its head (the hit sphere, and where claws and bot bullets aim) must still follow it
-    if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14}return}
+    if(a.alive){a.head.set(c.x,c.y+eyeH(a)+.05,c.z);a.headR=a.team===TZ?(a.zc==='brute'?.16:ZBIG[a.zc]?.16*BOSS_S:.14):.14;if(KC.rec&&a.isPlayer)KC.ghost(a,dt)}return}
+  const st=visState(a,dt);if(KC.rec)a._st=st;
+  if(a.team===TZ)poseZombie(ch,st);else poseHuman(ch,st);
+  visTail(a,dt)}
+// (v7.7) what a drawn character's pose is made from: its locomotion state for the animation (body-space velocity, the stride clock,
+// turning, crouch, air), then what it holds and does. The kill cam (killcam.js) records it and poses a copy of the rig from it
+function visState(a,dt){const ch=a.ch,c=a.c;
   const an=a.an;an.atk=Math.max(0,an.atk-dt/(an.atkD||.42));an.flinch=Math.max(0,an.flinch-dt*4);an.flx=(an.flx||0)*Math.exp(-dt*5);an.skill=Math.max(0,an.skill-dt);
   if(!a.alive)an.dead=Math.min(1,an.dead+dt*2.2);else if(a.reviving>0){an.dead=a.reviving/1.2}else an.dead=a.kdP>0?Math.min(.999,a.kdP):0;// kdP: knocked flat by a charge (fireman.js), drawn with the get-up pose
   // locomotion state for animation: body-space velocity, a stride clock tied to distance, turn rate, acceleration, smoothed crouch / air / sprint
@@ -222,7 +228,9 @@ function updateVisual(a,dt){if(!a.ch)return;const ch=a.ch,c=a.c;const show=!(a.i
     hold:a.team===TH?holdFor(a.cur):null,kick:Wv.dual&&a.dualSide<0?0:a.kick,kick2:Wv.dual&&a.dualSide<0?a.kick:0,
     reload:a.reloadT>0&&a.relKind==='mag'?1-a.reloadT/(Wv.reload||2):0,relKind:a.reloadT>0?a.relKind:null,shellP:a.relKind==='shell'?1-a.reloadT/(Wv.shellRel||.5):a.relKind==='start'?1-a.reloadT/(Wv.relStart||.4):0,brk:!!Wv.brk,sprint:an.spr,
     atk:an.atk>0?1-an.atk:0,atkSide:an.atkSide,heavy:!!an.heavy,flinch:an.flinch,flinchX:an.flx,skill:an.skill,stun:a.frozen,turn:a.turning>0?Math.min(1,a.turning*1.5):0,frenzy:a.team===TZ&&a.zc==='rager'&&a.skillT>0,shield:!!a.epShield,down:a.epDown||0};
-  if(a.team===TZ)poseZombie(ch,st);else poseHuman(ch,st);
+  if(KC.rec){const fy=a._fy||(a._fy=[0,0,0,0]);for(let i=0;i<4;i++)fy[i]=_fyo[i];st.footYaw=fy}
+  return st}
+function visTail(a,dt){const ch=a.ch,c=a.c;
   if(a.alive&&ch.hide!==STUMPS){ch.hide=STUMPS;a.spurts=null}// anything revived is whole again
   rigCompute(ch);ch.grp.position.set(c.x,c.y,c.z);ch.grp.rotation.y=a.yaw;ch.grp.updateMatrixWorld(true);
   // arterial spurts from fresh stumps, pulsing with the last heartbeats
@@ -484,7 +492,7 @@ function killZombie(t,src,o){if(NET.cli&&!NET.ev)return;t.alive=false;t.hp=0;t.d
   t.poolT=GORE.lv>=2?.75:0;t.poolN=0;
   if(src&&src.isPlayer){HUD.killConfirm(o.hs);if(o.hs)AU.play('hsding',{vol:.5})}
   if(G.mode==='mut'&&src&&src.team===TH&&!NET.cli){G.moralePts+=perma?2:1;const nl=Math.min(ZBAL.moraleMax,Math.floor(G.moralePts/3));if(nl>G.moraleLvl){G.moraleLvl=nl;HUD.announce(T('moraleUp',nl*10),'h',2.2);if(G.player&&G.player.team===TH)AU.play('morale',{vol:.55})}}
-  if(t.isPlayer)onPlayerDeath(src);
+  if(t.isPlayer)onPlayerDeath(src,o);
   if(NET.host)netEv('kill',{i:t.id,s:src?src.id:-1,w:o.w||'',hs:o.hs?1:0,d:o.dir?[r2(o.dir[0]),r2(o.dir[1]),r2(o.dir[2])]:0,k:o.knife?1:0,h:o.heavy?1:0,he:o.he?1:0})}
 // dismemberment: only on bodies that stay down (perma kills, or the classic mode where the dead respawn elsewhere).
 // Headshots take the head off (heavy guns may burst it instead), explosions tear off one or two limbs, heavy blades lop off a head or an arm,
@@ -532,7 +540,7 @@ function reviveZombie(a,at,rise){if(NET.cli&&!NET.ev)return;
   equip(a,'claw',true);if(G.mode!=='scen'&&a.bombs<1)a.bombs=1;// a fresh spore bomb with every life
   AU.at('zrevive',a.c.x,a.c.y+1,a.c.z,{vol:1});if(a.isPlayer){G.spec=null;VM.set('claw','z_'+a.zc);VM.draw(1);HUD.note(T('revived'))}if(a.bot)AI.onTeam(a);
   if(NET.host)netEv('rv',{i:a.id,at:at?[r2(a.c.x),r2(a.c.y),r2(a.c.z)]:0,rs:rise?1:0,z:a.zc})}
-function onPlayerDeath(src){G.deathCam=3;G.killer=src||null;if(G.player)G.player.zoom=0}
+function onPlayerDeath(src,o){G.deathCam=3;G.killer=src||null;if(G.player)G.player.zoom=0;KC.death(src,o)}
 // ---------- round flow ----------
 function startMatch(cfg){G.cfg=cfg;G.mode=cfg.mode;G.rounds=cfg.rounds;G.roundTime=cfg.time;G.prepTime=20;G.diff=cfg.diff;G.round=0;G.score=[0,0];G.t=0;
   for(const a of G.actors){if(a.ch)R.scene.remove(a.ch.grp)}G.actors=[];ACTOR_ID=0;

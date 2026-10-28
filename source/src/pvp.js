@@ -198,7 +198,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
     HUD.feed(src,o.w||'',t,{hs:o.hs});
     if(src&&src.isPlayer){HUD.killConfirm(o.hs);AU.play('hsding',{vol:o.hs?.55:.35,rate:o.hs?1:1.2});const n=src.pvpStreak,L=LI();
       if(n>=2)HUD.announce(n===2?(L?'DOUBLE KILL':'더블 킬'):n===3?(L?'TRIPLE KILL':'트리플 킬'):(L?`${n} KILLS IN A ROW`:`${n}연속 킬`),'w',1.4)}
-    if(t.isPlayer){onPlayerDeath(src);G.deathCam=this.KCAM;G.pvpKC=src&&src!==t?src:null;G.pvpKCd=false}
+    if(t.isPlayer){onPlayerDeath(src,o);G.deathCam=this.KCAM;G.pvpKC=src&&src!==t?src:null;G.pvpKCd=false}
     if(t.bot)this.botDie(t);
     let rw=null;if(G.mode==='race')rw=RACE.onKill(t,src,o);
     if(NET.host)netEv('pk',{i:t.id,s:src?src.id:-1,w:o.w||'',hs:o.hs?1:0,d:o.dir?[r2(o.dir[0]),r2(o.dir[1]),r2(o.dir[2])]:0,as,rl:o.rl||0});

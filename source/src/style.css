@@ -2152,3 +2152,32 @@ html.ljw #hSpec{display:none!important}
 .szRes .szx{display:flex;flex-direction:column;gap:1px;text-align:left;min-width:0}.szRes small{font-size:10px;letter-spacing:2px;color:#cfc0ff}
 .szRes b{font-size:16px;color:#fff6e0}.szRes span{font-size:12px;color:#ecdcff}.szRes em{display:flex;flex-wrap:wrap;align-items:center;gap:3px 4px;font-style:normal;font-size:10px;color:#c9b8e0}.szRes em .ttl{margin-left:2px}
 html[data-lob="l"] .rsL>.szRes{flex:none;max-width:none;margin:0;padding:6px 10px;gap:8px}html[data-lob="l"] .rsL>.szRes .szi .szd{width:28px;height:28px}html[data-lob="l"] .rsL>.szRes b{font-size:14px}
+/* (v7.7) the kill cam: bands at the top and bottom, who did it and with what, the replay's progress, the killer's sight, you */
+#hud.kc>*:not(#kcam):not(#scope){visibility:hidden!important}
+#kcam{position:absolute;inset:0;display:none;pointer-events:none;z-index:6}
+#kcam.on{display:block}
+#kcam .kcb{position:absolute;left:0;right:0;height:9vh;min-height:44px;max-height:74px;background:rgba(4,5,8,.84);display:flex;align-items:center;padding:0 22px;box-sizing:border-box}
+#kcam .kct{top:0;justify-content:space-between;animation:kcDn .22s ease-out}
+#kcam .kcd{bottom:0;justify-content:center;animation:kcUp .22s ease-out}
+#kcam .kcl{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:bold;letter-spacing:3px;color:#fff}
+#kcam .kcl i{width:9px;height:9px;border-radius:50%;background:#ff3a2a;box-shadow:0 0 8px #ff3a2a;animation:kcRec 1s steps(2,jump-none) infinite}
+#kcam .kch{font-size:12px;color:#a8a49a;letter-spacing:1px}
+#kcam .kcc{display:flex;align-items:baseline;gap:12px;white-space:nowrap;max-width:calc(100% - 190px);overflow:hidden}
+#kcam .kcn{font-size:20px;color:var(--z);overflow:hidden;text-overflow:ellipsis}#kcam .kcn.h{color:var(--h)}
+#kcam .kcw{font-size:14px;color:var(--y)}
+#kcam .kci{display:flex;gap:8px;font-size:12px;color:#c8c4b8}#kcam .kci span+span:before{content:'·';margin-right:8px;color:#6a6660}#kcam .kci .hs{color:#ff7a5a}
+#kcam .kcs{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:auto;min-width:0;padding:6px 12px;font-size:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.24);color:#e8e4d8}
+#kcam .kcs:hover{background:rgba(255,255,255,.16)}
+#kcam .kcp{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.12)}#kcam .kcp i{display:block;height:100%;width:0;background:#ff3a2a}
+#kcam .kcx{position:absolute;left:50%;top:50%;width:0;height:0}
+#kcam .kcx i{position:absolute;background:rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+#kcam .kcx i:nth-child(1),#kcam .kcx i:nth-child(2){width:2px;height:8px;left:-1px}#kcam .kcx i:nth-child(3),#kcam .kcx i:nth-child(4){height:2px;width:8px;top:-1px}
+#kcam .kcx i:nth-child(1){bottom:6px}#kcam .kcx i:nth-child(2){top:6px}#kcam .kcx i:nth-child(3){right:6px}#kcam .kcx i:nth-child(4){left:6px}
+#kcam.kill .kcx{transform:rotate(45deg);animation:kcPop .3s ease-out}#kcam.kill .kcx i{background:#ff3a2a;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 6px rgba(255,40,20,.85)}
+#kcam .kcv{position:absolute;left:0;top:0;display:none;width:44px;margin-left:-22px;margin-top:-30px;text-align:center;font-size:12px;font-weight:bold;color:#fff;letter-spacing:1px;text-shadow:0 0 3px #000,0 0 6px #000}
+#kcam .kcv:after{content:'';display:block;width:0;height:0;margin:2px auto 0;border:6px solid transparent;border-top-color:#ff3a2a;border-bottom:0}
+@keyframes kcDn{from{transform:translateY(-100%)}to{transform:none}}@keyframes kcUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes kcRec{0%{opacity:1}50%{opacity:.15}}@keyframes kcPop{from{transform:rotate(45deg) scale(1.8)}to{transform:rotate(45deg) scale(1)}}
+html.touch #kcam .kcb{padding:0 12px;min-height:40px}html.touch #kcam .kcl{font-size:15px}html.touch #kcam .kch{display:none}
+html.touch #kcam .kcd{justify-content:flex-start}html.touch #kcam .kcc{flex-wrap:wrap;gap:2px 8px;max-width:calc(100% - 120px)}html.touch #kcam .kcn{font-size:16px}
+html.touch #kcam .kcs{padding:9px 14px;font-size:13px}
