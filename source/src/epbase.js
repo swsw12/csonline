@@ -42,7 +42,7 @@ const TELE={list:[],geo:null,tc:null,tr:null,id:0,
 // The host relays it to the remote player it hit; every page applies it to its own player and the host to its bots.
 function epFx(h,k,t){if(!h||!h.alive||h.team!==TH)return;if(h.net&&NET.host&&!h.isPlayer){netEv('epst',{i:h.id,k,t:r2(t)});return}epFxApply(h,k,t)}
 function epFxApply(h,k,t){
-  if(k==='kd'){h.knockT=Math.max(h.knockT||0,t);h.dizzy=Math.max(h.dizzy||0,t*.9);if(h.isPlayer){FX.shake=Math.max(FX.shake,.65);AU.play('bodyfall',{vol:.6});if(HUD.daze)HUD.daze()}}
+  if(k==='kd'){h.knockT=Math.max(h.knockT||0,t);h.dizzy=Math.max(h.dizzy||0,t*.9);if(h.isPlayer){FX.shake=Math.max(FX.shake,.65);AU.play('land',{vol:.6,rate:.8});if(HUD.daze)HUD.daze()}}
   else if(k==='bl'){h.blindT=Math.max(h.blindT||0,t);if(h.isPlayer)EPV.blind(t)}
   else if(k==='dz'){h.dizzy=Math.max(h.dizzy||0,t);if(h.isPlayer&&HUD.daze)HUD.daze()}
   else if(k==='du'){h.blindT=Math.max(h.blindT||0,t*.5);if(h.isPlayer)EPV.dust(t)}}

@@ -18,8 +18,6 @@ Object.assign(MATS,{
   facTp:{t:'facTp',s:3,k:'stone',cs:1},facYp:{t:'facYp',s:3,k:'stone',cs:1},facGp:{t:'facGp',s:3,k:'stone',cs:1},
   // v6 colour variants, picked per wall from the reference's paint colour: salmon, orange, tan, ochre, grey plaster, bare brick
   facR:{t:'facR',s:3,k:'stone',cs:1},facO:{t:'facO',s:3,k:'stone',cs:1},facT:{t:'facT',s:3,k:'stone',cs:1},facY:{t:'facY',s:3,k:'stone',cs:1},facG:{t:'facG',s:3,k:'stone',cs:1},brickIt:{t:'brickIt',s:2,k:'stone',cs:1},
-  // v6 colour variants, chosen per wall from the reference's paint colour (salmon, orange, tan, ochre, grey)
-  facR:{t:'facR',s:3,k:'stone',cs:1},facO:{t:'facO',s:3,k:'stone',cs:1},facT:{t:'facT',s:3,k:'stone',cs:1},facY:{t:'facY',s:3,k:'stone',cs:1},facG:{t:'facG',s:3,k:'stone',cs:1},
   roofIt:{t:'roofIt',s:2,k:'stone',cs:2},cobble:{t:'cobble',s:1.5},pavers:{t:'pavers',s:2.4},cobbleR:{t:'cobbleR',s:1.5},
   stoneIt:{t:'stoneIt',s:2,cs:1},woodIt:{t:'woodIt',s:2,k:'wood'},doorIt:{t:'doorIt',uv:'box',k:'wood'},awn:{t:'awn',s:2,k:'soft'},fruit:{t:'fruit',uv:'box',k:'wood'},
   water:{t:'water',s:3,emis:.12,k:'glass'},flowers:{t:'flowers',uv:'box',k:'soft'},
@@ -163,12 +161,6 @@ function texFresco(){const W=256,H=320;return paint(W,H,P=>{const R=W/2;
       for(const [cu,cv,hh] of [[.18,.82,.24],[.25,.84,.18],[.86,.86,.22]]){const dx=Math.abs(u-cu)*W,dy=(cv-v)*H;if(dy>0&&dy<hh*H&&dx<9*(1-dy/(hh*H))+1.5)c=mix('#2e4a24','#1e3018',dy/(hh*H))}
       c=mix(c,'#b8a888',clamp((P.n(x,y,32,1253,3)-.6)*1.2,0,.35));if(hash2(x,y,1254)<.03)c=dk(c,.1)}
     P.set(x,y,c)}})}
-// an arched iron gate in front of a shaded garden
-function texGate(){const W=256,H=320;return paint(W,H,P=>{const R=W/2;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const inA=y>=R||Math.hypot(x-R+.5,y-R+.5)<=R;if(!inA){P.alpha(x,y,0);continue}
-  let c=mix('#1e2a1a','#3a4a2a',clamp(P.n(x,y,32,1261,3)*1.2-.2,0,1));if(y>H*.8)c=mix(c,'#4a4436',.6);
-  const bar=(x%22)<3,rail=Math.abs(y-H*.55)<3||Math.abs(y-H*.9)<3||Math.abs(y-R*.9)<2,ring=Math.abs(Math.hypot(x-R+.5,y-R+.5)-R*.82)<2.5&&y<R,
-    scroll=Math.abs(Math.hypot((x%44)-22,(y%44)-22)-12)<2&&y>H*.58&&y<H*.88;
-  if(bar||rail||ring||scroll)c=(x+y)%9===0?'#4a4a46':'#1a1a18';const dE=y>=R?Math.min(x,W-1-x):R-Math.hypot(x-R+.5,y-R+.5);if(dE<4)c='#121210';P.set(x,y,c)}})}
 // hanging ivy: dense at the top, thinning out downwards
 function texIvy(){return paint(128,256,P=>{for(let y=0;y<256;y++)for(let x=0;x<128;x++){const dens=1-y/256*.9;const [f1,f2,id]=cellN(P,x,y,8,1271);const keep=hash2(id,1,1272)<dens*(.55+.45*P.n(x,y,32,1273,2));
   if(!keep||f1>5.2){P.alpha(x,y,0);continue}let c=mix('#5a8a34','#1e3a14',clamp(f1/5,0,1));if(hash2(id,2,1272)<.3)c=lt(c,.12);P.set(x,y,c)}})}

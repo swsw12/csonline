@@ -158,7 +158,28 @@ const HUD={el:{},feedL:[],ann:null,annT:0,noteT:0,hitT:0,hitHs:false,dmgK:0,cd:0
 // ---------------- menus ----------------
 // n small skulls (difficulty rank)
 function skulls(n){const s='<svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M8 1C4.1 1 1.5 3.6 1.5 7c0 2.1 1 3.6 2.5 4.4V14h2v-1.5h1V14h2v-1.5h1V14h2v-2.6c1.5-.8 2.5-2.3 2.5-4.4C14.5 3.6 11.9 1 8 1zM5.3 9.2a1.6 1.6 0 110-3.2 1.6 1.6 0 010 3.2zm5.4 0a1.6 1.6 0 110-3.2 1.6 1.6 0 010 3.2z"/></svg>';return s.repeat(n)}
-const CFG=Object.assign({mode:'mut',map:'q7',minimap:true,bots:15,diff:1,rounds:7,time:180,skin:'guard',zclass:'rager',sens:1.6,fov:74,scale:'auto',bloom:true,shadow:true,vol:.7,music:true,stepVol:1,hrtf:true,sndViz:false,gamma:1,invert:false,gore:1,kc:true},LS.get('cfg',{}));
+const CFG_DEF={mode:'mut',map:'q7',minimap:true,bots:15,diff:1,rounds:7,time:180,skin:'guard',zclass:'rager',sens:1.6,fov:74,scale:'auto',bloom:true,shadow:true,vol:.7,music:true,stepVol:1,hrtf:true,sndViz:false,gamma:1,invert:false,gore:1,kc:true};
+const CFG=Object.assign({},CFG_DEF,(()=>{const c=LS.get('cfg',{});return c&&typeof c==='object'&&!Array.isArray(c)?c:{}})());
+// (v7.8.1) saved settings from an older version or edited by hand: what does not exist any more or is out of range goes back to a
+// working value (at boot, when every module has put in its modes, maps, zombie classes and skins) — a zombie class or a mode that
+// is not there broke the room setup and a match outright
+function cfgFix(){const C=CFG,D=CFG_DEF,num=(k,lo,hi,d,int)=>{let v=+C[k];if(C[k]==null||C[k]===''||!Number.isFinite(v))v=d;v=Math.min(hi,Math.max(lo,v));C[k]=int?Math.round(v):v};
+  const MODES=['mut','orig','scen','tdm','ffa','race','bomb'];if(!MODES.includes(C.mode))C.mode=D.mode;
+  if(!MAPDEFS[C.map]||MAPDEFS[C.map].practice)C.map=D.map;
+  if(!(typeof ZLIST!=='undefined'?ZLIST:[]).includes(C.zclass)||!ZCLASS[C.zclass])C.zclass=D.zclass;
+  if(!HSKINS.includes(C.skin))C.skin=D.skin;
+  const epOk=e=>typeof EPS!=='undefined'&&!!EPS[e|0]&&!EPS[e|0].soon;if(C.ep!=null&&!epOk(C.ep))C.ep=1;
+  if(C.scale!=='auto'){const v=+C.scale;C.scale=Number.isFinite(v)&&v>=.25&&v<=2?v:'auto'}
+  num('bots',0,31,D.bots,1);num('diff',0,3,D.diff,1);num('rounds',1,15,D.rounds,1);num('time',60,600,D.time,1);
+  for(const [k,lo,hi,d] of [['pbots',0,15,7],['scBots',0,7,3],['pg',0,9,1],['pw',0,9,1],['ptime',60,1200,480]])if(C[k]!=null)num(k,lo,hi,d,1);
+  num('sens',.4,4,D.sens);num('fov',60,95,D.fov);num('vol',0,1,D.vol);num('stepVol',.5,2,D.stepVol);num('gamma',.6,1.2,D.gamma);
+  for(const [k,lo,hi] of [['tsens',.4,2.5],['tal',.25,1],['tsz',.75,1.35],['xg',2,14]])if(C[k]!=null){const v=+C[k];if(Number.isFinite(v))C[k]=Math.min(hi,Math.max(lo,v));else delete C[k]}
+  for(const k in D)if(typeof D[k]==='boolean'&&typeof C[k]!=='boolean')C[k]=D[k];
+  for(const k of ['autoFire','aimAssist','leftFire'])if(C[k]!=null&&typeof C[k]!=='boolean')delete C[k];
+  if(C.touch!=null&&!['auto','on','off'].includes(C.touch))delete C.touch;
+  if(C.mpCfg!=null){if(typeof C.mpCfg!=='object'||Array.isArray(C.mpCfg))delete C.mpCfg;else{const M=C.mpCfg;if(M.mode!=null&&!MODES.includes(M.mode))delete M.mode;if(M.map!=null&&(!MAPDEFS[M.map]||MAPDEFS[M.map].practice))delete M.map;if(M.ep!=null&&!epOk(M.ep))delete M.ep;
+    for(const k of ['bots','diff','rounds','time','pg','pw','ptime','blackout','scBots'])if(M[k]!=null&&!Number.isFinite(+M[k]))delete M[k]}}
+  saveCfg()}
 if(CFG.gore!==0)CFG.gore=1;// (v6.73: 15세 is the most — 원본 is no longer offered)
 function saveCfg(){LS.set('cfg',CFG)}
 // v3 renders at full resolution by default: reset the old half-resolution default once

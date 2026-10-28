@@ -3,6 +3,7 @@
 function applyCfg(){if(R.ok){R.setScale(CFG.scale);R.setFov(CFG.fov);R.bloom=CFG.bloom!==false;R.shadowsOn=CFG.shadow!==false}R.PU&&(R.PU.uGamma.value=CFG.gamma);AU.vol=CFG.vol;AU.musicOn=CFG.music;AU.apply();GORE.set(CFG.gore)}
 const Main={keys:{},ml:false,mr:false,locked:false,lockFail:false,lockAsked:0,overlay:null,paused:false,last:0,dtAvg:16,mx:0,my:0,boardOn:false,demo:[],shakeP:0,shakeY:0,camT:0,specCam:new THREE.Vector3(),fpsT:0,
   async boot(){const step=async(t,p)=>{$('loadT').textContent=t;$('loadFill').style.width=(p*100)+'%';await new Promise(r=>setTimeout(r,16))};
+    try{cfgFix()}catch(e){console.error(e)}
     try{
       await step(T('lTex'),.05);bakeTextures();paintGunAtlas();paintNYAtlas();paintSupAtlas();paintSkAtlas();paintSalAtlas();paintKkAtlas();paintCgAtlas();
       if(!R.init($('cv'))){$('loadT').textContent='WebGL is not available on this device.';return}

@@ -283,7 +283,7 @@ const AAG={L:[],T:3,CD:30,R:85,FT:2.2,
       else if(G0.st===2){G0.ft+=dt;if(G0.ft>=this.FT){const b=EP.bossA();if(b&&b.cn&&HELI.flying())CHARON.flak(b,G0);this.set(G0.i,3,this.CD)}}
       else if(G0.st===3){G0.cd-=dt;if(G0.cd<=0)this.set(G0.i,0)}}},
   set(i,st,cd,remote){const G0=this.L[i];if(!G0)return;const was=G0.st;G0.st=st;G0.cd=cd||0;G0.ft=0;if(st!==0)G0.p=0;
-    if(st===1&&was!==1){AU.at('reload',G0.x,1.6,G0.z,{vol:.9,range:30,rate:.7});AU.at('pickup',G0.x,1.6,G0.z,{vol:.5,range:20,rate:.6})}
+    if(st===1&&was!==1){AU.at('magin',G0.x,1.6,G0.z,{vol:.9,range:30,rate:.7});AU.at('pickup',G0.x,1.6,G0.z,{vol:.5,range:20,rate:.6})}
     if(st===2&&was!==2)AU.at('chflak',G0.x,2,G0.z,{vol:1,range:150,occ:false});
     if(NET.host&&!remote)netEv('ech',{k:'ag',i,s:st,c:Math.ceil(cd||0)})},
   // every page: the guns turn toward the helicopter, the loader's lamp, the burst
@@ -697,7 +697,7 @@ const CHARON={cur:null,said:{},sayT:{},encNext:false,dutyT:0,dutyD:null,cs:-1,cy
   fxApply(m){const a=m.i!=null?byIdAny(m.i):null,P=G.player,L=LI();
     switch(m.k){
     case 'hp':if(NET.cli){HELI.place(m.x/100,m.y/100,m.z/100,m.yw/1000);HELI.gun=!!m.g}break;
-    case 'w':if(a){const c=a.c;if(m.s==='gun'||m.s==='sw')AU.at('rack',HELI.x,HELI.y+1.6,HELI.z,{vol:.8,range:80,rate:.8});else if(m.s==='fl')AU.at('reload',c.x,c.y+1.5,c.z,{vol:.7,range:40,rate:1.3});
+    case 'w':if(a){const c=a.c;if(m.s==='gun'||m.s==='sw')AU.at('rack',HELI.x,HELI.y+1.6,HELI.z,{vol:.8,range:80,rate:.8});else if(m.s==='fl')AU.at('magin',c.x,c.y+1.5,c.z,{vol:.7,range:40,rate:1.3});
       else if(m.s==='scr')AU.at('zroar',c.x,c.y+1.8,c.z,{vol:1,range:70,rate:1.25});else if(m.s==='dv')AU.at('chalarm',HELI.x,HELI.y+2,HELI.z,{vol:.8,range:70});
       if(m.s==='sw'&&P&&P.alive&&this.inCabH(P))HUD.note(L?'The door gun — get down below the sills!':'문 기관총 — 앉아서 창틀 아래로!',2)}break;
     case 'gf':{const q=CHGFX.add({k:'gf',x:m.x/100,z:m.z/100,y:m.y/100,yw:m.yw/1000,l:m.l/100,d:m.d||1,nose:!!m.n});if(NET.cli)HELI.gunT=new THREE.Vector3(q.x-Math.sin(q.yw)*q.l/2,q.y+1,q.z-Math.cos(q.yw)*q.l/2);break}

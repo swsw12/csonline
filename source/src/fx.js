@@ -250,7 +250,7 @@ const FX={ptex:null,A:null,B:null,tr:null,dec:null,rain:null,shake:0,
         _gbv.set(0,1,0).applyQuaternion(L.q);const ey=Math.abs(_gbv.y)*L.half;const low=p.y-Math.max(L.thick,ey);
         const fl=floorBelow(p.x,p.y+.4,p.z,.05);
         if(low<fl){p.y+=fl-low;if(v.y<0)v.y*=-.25;v.x*=.6;v.z*=.6;w.multiplyScalar(.55);
-          if(L.hits++<3){this.decal(p.x,fl,p.z,0,1,0,rr(.18,.32),4+((Math.random()*3)|0),[.5,.04,.03],.92);if(L.hits===1)AU.at('bodyfall',p.x,p.y,p.z,{vol:.5,range:20})}
+          if(L.hits++<3){this.decal(p.x,fl,p.z,0,1,0,rr(.18,.32),4+((Math.random()*3)|0),[.5,.04,.03],.92);if(L.hits===1)AU.at('land',p.x,p.y,p.z,{vol:.5,range:20,rate:.85})}
           // settle: lay a limb flat along the floor, let a head roll to a stop
           if(Math.hypot(v.x,v.y,v.z)<.7){L.rest=Math.min(1,L.rest+dt*2.5);v.multiplyScalar(.8);w.multiplyScalar(.8);
             if(L.key!=='head'){_gbv.set(0,1,0).applyQuaternion(L.q);const hz=Math.hypot(_gbv.x,_gbv.z)||1e-3;_gbv2.set(_gbv.x/hz,0,_gbv.z/hz);_gbq.setFromUnitVectors(_gbv,_gbv2);_gbq2.identity().slerp(_gbq,Math.min(1,dt*6));L.q.premultiply(_gbq2).normalize()}}}
