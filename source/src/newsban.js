@@ -5,6 +5,21 @@
 // the NEW button on the notice panel opens it again. To add an entry, put it at the top of NEW_CONTENT:
 //   kind 'weapon' (ref = WPN id) / 'zombie' (ref = ZCLASS id) / 'map' (ref = map id) / 'feature' (ico = a symbol); missing refs are skipped.
 const NEW_CONTENT=[
+  {kind:'map',ref:'starlight',tag:['신규 맵','New map'],t:['별빛랜드','Starlight Land'],
+    d:['문 닫은 밤의 놀이공원. 아무도 불을 안 꺼서 네온과 전구가 그대로 빛나고, 회전목마의 오르골 왈츠가 계속 돌아요. 성의 옥상 성벽(홀 안 계단 하나뿐), 4.2 m 높이 롤러코스터 승강장, 한 칸 들어갈 수 있는 관람차 곤돌라, 관이 놓인 막다른 방이 있는 유령의 집, 생울타리 정원, 옥상 테라스가 있는 푸드코트와 상점 — 어디서 버틸지 골라 보세요.',
+       'An amusement park shut for the night with nobody to switch it off: the neon and the bulbs still glow and the carousel\'s music box keeps playing its waltz. The castle\'s battlements (one stair up, inside its hall), the roller coaster\'s platform 4.2 m up, the one ferris-wheel cabin you can climb into, the haunted house and its dead-end room of coffins, the hedge garden, the food court and the shops with terraces on their roofs — pick where to hold.']},
+  {kind:'map',ref:'school',tag:['신규 맵','New map'],t:['새봄고등학교','Saebom High School'],
+    d:['체육대회 날 저녁, 텅 빈 학교. 벚꽃 흩날리는 운동장엔 천막과 점수판이 그대로예요. 3층 본관의 교실 · 교무실 · 과학실 · 도서실, 양 끝 계단으로 오르는 물탱크 옥상, 무대와 2층 회랑이 있는 체육관과 구름다리, 급식실 옥상, 구령대와 스탠드 — 좀비는 담장 안쪽 둘레에서 와요.',
+       'The school on the evening of its sports festival, emptied: the tents and the score board still out on a yard under falling cherry blossom. The classrooms, the teachers\' room, the lab and the library of the three-storey main building, the roof and its water tank up the stairs at either end, the gym with its stage and gallery and the covered bridge, the cafeteria roof, the podium and the stands — the zombies come from all round inside the wall.']},
+  {kind:'weapon',ref:'glacier',tag:['보급 무기 · 특수','Crate weapon · special'],t:['글레이셔','Glacier'],
+    d:['냉기를 뿜는 냉각포. 맞은 좀비는 점점 느려지다가 꽁꽁 얼어요 — 언 좀비는 무엇에 맞든 1.6배로 아프고, 언 채로 쓰러지면 산산이 깨지며 주위 좀비에게 얼음 파편이 튀어요. 우클릭: 보는 곳에 얼음벽을 세워요 — 좀비는 막고 총알은 지나가요. 보스는 얼지 않고 느려지기만 해요. 보급상자에서만 나와요.',
+       'A cryo projector. A zombie in its jet slows and slows until it freezes solid — frozen, it takes everything 1.6 times as hard, and if it dies that way it shatters and the shards hit the zombies round it. Right click: a wall of ice across the aim — it stops zombies, not bullets. A boss never freezes, it only slows. From the supply crates only.']},
+  {kind:'weapon',ref:'mosin',tag:['신규 저격총 · 상점 5,000 코인','New sniper rifle · Shop · 5,000 coins'],t:['모신나강','Mosin-Nagant'],
+    d:['7.62×54R 볼트액션 저격총, 5발. 한 발에 108, 두 명까지 꿰뚫어요. PU 스코프로 조준하고, 쏠 때마다 볼트를 당겨요. 재장전은 한 발씩 — 도중에 쏘면 그 자리에서 볼트를 닫고 쏴요. 대인전에서도 쓸 수 있어요.',
+       'A 7.62×54R bolt-action sniper rifle, five rounds: 108 a hit, through up to two. Aim through the PU scope and work the bolt after every shot. It loads a round at a time — fire before it is done and the bolt closes on what is in. Allowed in PvP.']},
+  {kind:'weapon',ref:'lewis',tag:['신규 기관총 · 상점 6,000 코인','New machine gun · Shop · 6,000 coins'],t:['루이스 기관총','Lewis Gun'],
+    d:['.303 기관총, 위에 얹은 47발 원반 탄창, 분당 550발. 묵직하게 밀어내고, 오래 쏴도 탄이 천천히 퍼져요. 쏠 때마다 원반이 한 칸씩 돌아가요. 재장전은 원반을 통째로 갈아 얹어요. 대인전에서도 쓸 수 있어요.',
+       'A .303 machine gun with a 47-round pan on top, 550 rounds a minute. It shoves hard, and its spread opens slowly however long you hold it. The pan turns a notch with every shot; a reload swaps the whole pan. Allowed in PvP.']},
   {kind:'zombie',ref:'miner',tag:['신규 좀비 · 플레이 가능','New zombie · playable'],t:['광부 좀비','Miner Zombie'],
     d:['채석장 갱도에서 감염된 발파 작업자. 곡괭이로 할퀴어요. G를 누르면 곡괭이를 땅에 박고 파고들어 2.6초 동안 땅속을 빠르게 달려요 — 땅속에선 총알도 칼도 폭발도 닿지 않고 봇 · 센트리 · 레이더에도 안 잡혀요. 대신 흙더미가 땅 위로 따라오고 우르릉 소리가 나니, 흙더미가 다가오면 자리를 옮겨요. G를 다시 누르거나 인간 밑을 지나가면 솟구쳐 나오며 둘레 인간을 넘어뜨려요.',
        'A quarry\'s blasting hand, infected down the adit. It claws with a pickaxe. Press G: it drives the pick into the ground and runs underground for 2.6 s, fast — no bullet, blade or blast reaches it there, and bots, sentries and the radar lose it. But a mound of earth runs along above it with a rumble: when one comes your way, move. Press G again or pass under a human and it bursts out, knocking the humans round it flat.']},

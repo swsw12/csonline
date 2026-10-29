@@ -24,7 +24,7 @@ const PVP={RESP:3,PROT:2,BUYW:12,WARM:5,ENDT:7,KCAM:1.4,SIGHT:70,HER:6.5,HED:98,
   SIDES:[{n:['블루','BLUE'],c:'#5ab4ff',t:[.16,.4,1]},{n:['레드','RED'],c:'#ff4b3a',t:[1,.2,.12]}],
   // what 대인전 lets in: the plain guns, the three melee weapons, HE, flares, smoke, armour and ammo (no frost, no specials, no crate guns)
   GUNS:['knife','axe','hammer','p9','glock','f7','tw9','d50','r6','sg8','db2','m14','as12','k5','k9','um45','pd50','g35','kv47','br3','ar7','ar5c','hr17','vector','an94','garand','tommy',
-    'sr8','r700','dm14','hmg','mg6','he','flare','smoke','armor','ammo'],
+    'sr8','r700','dm14','mosin','hmg','mg6','lewis','he','flare','smoke','armor','ammo'],
   MEL:{knife:.85,axe:.8,hammer:.6},AP:{sniper:.97,rifle:.78,mg:.8,smg:.62,pistol:.65,shotgun:.72},
   mid:0,mode:'tdm',goal:50,time:480,assigned:false,bases:null,played:0,intel:[[],[]],recent:[],hits:[],bm0:null,bi0:null,_D:null,aiS:'',aiT:0,
   isMode(m){return m==='tdm'||m==='ffa'||m==='bomb'||m==='race'},
